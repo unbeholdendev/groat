@@ -1,4 +1,5 @@
 {
   "name": "expense-tracker",
-  "image": "oven/bun:1.4"
+  "image": "oven/bun:1.4",
+  "appPort": ["38697:38697"]
 }
