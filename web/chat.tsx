@@ -1,4 +1,5 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { type FormEvent, useState } from "react";
 import { formatAmount } from "../shared/amount";
 
 type Message = { role: string; content: string | null };
@@ -7,60 +8,52 @@ type Chat = { id: number; title: string; messages?: Message[] };
 
 
 export function ChatPage({ onDraft }: { onDraft: (d: Draft) => void }) {
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [open, setOpen] = useState<Chat | null>(null);
+  const [openId, setOpenId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const chats = useQuery<Chat[]>({ queryKey: ["/api/chats"] }).data ?? [];
+  const chat = useQuery<Chat>({ queryKey: [`/api/chats/${openId}`], enabled: openId !== null }).data;
+  const open = openId === null ? null : chat;
 
-  const list = () =>
-    fetch("/api/chats")
-      .then((r) => r.json())
-      .then(setChats);
-  useEffect(() => {
-    list();
-  }, []);
+  const asking = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(openId ? `/api/chats/${openId}/messages` : "/api/chats", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error);
+      return body as Chat;
+    },
+    onSuccess: (body) => {
+      setMessage("");
+      setOpenId(body.id);
+    },
+  });
+  const deleting = useMutation({ mutationFn: (id: number) => fetch(`/api/chats/${id}`, { method: "DELETE" }) });
 
-  const show = (id: number) =>
-    fetch(`/api/chats/${id}`)
-      .then((r) => r.json())
-      .then(setOpen);
-
-  async function ask(e: FormEvent) {
+  function ask(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setError("");
-    const res = await fetch(open ? `/api/chats/${open.id}/messages` : "/api/chats", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ message }),
-    });
-    const body = await res.json();
-    setBusy(false);
-    if (!res.ok) return setError(body.error);
-    setMessage("");
-    setOpen(body);
-    list();
+    asking.mutate();
   }
 
-  async function remove(id: number) {
+  function remove(id: number) {
     if (!confirm("Delete this chat?")) return;
-    await fetch(`/api/chats/${id}`, { method: "DELETE" });
-    if (open?.id === id) setOpen(null);
-    list();
+    if (openId === id) setOpenId(null);
+    deleting.mutate(id);
   }
 
   return (
     <div className="grid gap-4">
       <ul className="grid gap-1 text-sm">
         <li>
-          <button onClick={() => setOpen(null)} className={open ? "text-zinc-500" : "font-semibold"}>
+          <button onClick={() => setOpenId(null)} className={openId ? "text-zinc-500" : "font-semibold"}>
             + New chat
           </button>
         </li>
         {chats.map((c) => (
           <li key={c.id} className="flex justify-between gap-2">
-            <button onClick={() => show(c.id)} className={`truncate text-left ${open?.id === c.id ? "font-semibold" : ""}`}>
+            <button onClick={() => setOpenId(c.id)} className={`truncate text-left ${openId === c.id ? "font-semibold" : ""}`}>
               {c.title}
             </button>
             <button onClick={() => remove(c.id)} className="text-zinc-500" aria-label="Delete chat">
@@ -90,8 +83,8 @@ export function ChatPage({ onDraft }: { onDraft: (d: Draft) => void }) {
               </p>
             );
           })}
-        {busy && <p className="text-sm text-zinc-500">Thinking…</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {asking.isPending && <p className="text-sm text-zinc-500">Thinking…</p>}
+        {asking.error && <p className="text-sm text-red-600">{asking.error.message}</p>}
       </div>
       <form onSubmit={ask} className="flex gap-2">
         <input
@@ -101,7 +94,7 @@ export function ChatPage({ onDraft }: { onDraft: (d: Draft) => void }) {
           placeholder="Ask about your spending"
           required
         />
-        <button disabled={busy} className="rounded-lg bg-zinc-900 px-4 text-white dark:bg-zinc-100 dark:text-zinc-900">
+        <button disabled={asking.isPending} className="rounded-lg bg-zinc-900 px-4 text-white dark:bg-zinc-100 dark:text-zinc-900">
           Ask
         </button>
       </form>

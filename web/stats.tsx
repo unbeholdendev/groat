@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { formatAmount, type Unit } from "../shared/amount";
 
@@ -52,15 +53,12 @@ export default function StatsPage({ unit }: { unit: Unit }) {
   const [preset, setPreset] = useState("This month");
   const [range, setRange] = useState(presets()["This month"]);
   const [group, setGroup] = useState<"day" | "week" | "month">("day");
-  const [stats, setStats] = useState<Stats>();
   const [drill, setDrill] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (range[0] > range[1]) return;
-    fetch(`/api/stats?from=${range[0]}&to=${range[1]}&group=${group}`)
-      .then((r) => r.json())
-      .then(setStats);
-  }, [range, group]);
+  const { data: stats } = useQuery<Stats>({
+    queryKey: [`/api/stats?from=${range[0]}&to=${range[1]}&group=${group}`],
+    enabled: range[0] <= range[1],
+  });
 
   if (!stats) return null;
   const base = stats.baseCurrency;

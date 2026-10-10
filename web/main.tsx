@@ -1,5 +1,6 @@
 import { type FormEvent, Fragment, lazy, Suspense, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { keepPreviousData, MutationCache, QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
 import { formatAmount, parseAmount, type Unit } from "../shared/amount";
 import "./index.css";
 import { ChatPage, type Draft } from "./chat";
@@ -41,8 +42,45 @@ type Settings = {
 const today = () => new Date().toLocaleDateString("en-CA");
 const button = "rounded-lg bg-zinc-900 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900";
 
-const send = (method: string, path: string, body: unknown) =>
-  fetch(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+type Request = [method: string, path: string, body?: unknown];
+async function send(...[method, path, body]: Request) {
+  const res = await fetch(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error);
+  return json;
+}
+const useSend = (onSuccess?: () => void) => useMutation({ mutationFn: (r: Request) => send(...r), onSuccess });
+
+const queryClient: QueryClient = new QueryClient({
+  defaultOptions: {
+    queries: { queryFn: ({ queryKey }) => fetch(queryKey.join("")).then((r) => r.json()), placeholderData: keepPreviousData },
+  },
+  mutationCache: new MutationCache({ onSuccess: saved }),
+});
+
+function saved(data: unknown, variables: unknown) {
+  if (!Array.isArray(variables)) return refresh("/api/chats");
+  const [method, path] = variables as Request;
+  if (!/^\/api\/(expenses|bin)\/\d+/.test(path) && !(method === "POST" && path === "/api/expenses"))
+    return queryClient.invalidateQueries();
+  const row = data as Expense;
+  const gone = method === "DELETE";
+  for (const [key, rows] of queryClient.getQueriesData<Expense[]>({ queryKey: ["/api/expenses?"] })) {
+    if (!rows) continue;
+    if (key[1] && !gone) queryClient.invalidateQueries({ queryKey: key, exact: true });
+    else
+      queryClient.setQueryData(
+        key,
+        [...rows.filter((r) => r.id !== row.id), ...(gone ? [] : [row])].sort(
+          (a, b) => b.date.localeCompare(a.date) || b.id - a.id,
+        ),
+      );
+  }
+  ["/api/settings", "/api/tags", "/api/notes", "/api/bin", "/api/stats"].forEach(refresh);
+}
+
+const refresh = (prefix: string) =>
+  queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith(prefix) });
 
 function useTheme(theme?: Settings["theme"]) {
   useEffect(() => {
@@ -60,23 +98,15 @@ function useTheme(theme?: Settings["theme"]) {
 }
 
 function App() {
-  const [settings, setSettings] = useState<Settings>();
+  const { data: settings } = useQuery<Settings>({ queryKey: ["/api/settings"] });
   const [page, setPage] = useState<"expenses" | "stats" | "chat" | "categories" | "settings">("expenses");
   const [unit, setUnit] = useState<Unit>("BTC");
   const [draft, setDraft] = useState<Draft | null>(null);
-  const load = () =>
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then(setSettings);
-
-  useEffect(() => {
-    load();
-  }, []);
   useTheme(settings?.theme);
 
   if (!settings) return null;
   if (!settings.onboarded)
-    return <SettingsForm settings={settings} path="/api/onboarding" method="POST" title="Welcome" onSaved={load} />;
+    return <SettingsForm settings={settings} path="/api/onboarding" method="POST" title="Welcome" />;
   return (
     <main className="mx-auto max-w-md p-4">
       <nav className="mb-4 flex gap-4 text-sm">
@@ -87,7 +117,7 @@ function App() {
         ))}
       </nav>
       {page === "expenses" ? (
-        <Expenses settings={settings} onAdded={load} unit={unit} setUnit={setUnit} draft={draft} />
+        <Expenses settings={settings} unit={unit} setUnit={setUnit} draft={draft} />
       ) : page === "stats" ? (
         <Suspense>
           <StatsPage unit={unit} />
@@ -97,7 +127,7 @@ function App() {
       ) : page === "categories" ? (
         <Categories />
       ) : (
-        <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" onSaved={load} />
+        <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" />
       )}
     </main>
   );
@@ -108,23 +138,21 @@ function SettingsForm(props: {
   path: string;
   method: string;
   title: string;
-  onSaved: () => void;
 }) {
   const onboarding = !props.settings.onboarded;
   const [baseCurrency, setBase] = useState(props.settings.baseCurrency);
   const [currencies, setCurrencies] = useState(props.settings.currencies.join(", "));
   const [theme, setTheme] = useState(props.settings.theme);
-  const [message, setMessage] = useState("");
+  const mutation = useSend();
+  const message = mutation.isSuccess ? "Saved" : mutation.error?.message;
 
-  async function save(e: FormEvent) {
+  function save(e: FormEvent) {
     e.preventDefault();
-    const res = await send(props.method, props.path, {
-      baseCurrency: baseCurrency.trim().toUpperCase(),
-      currencies: currencies.toUpperCase().split(/[\s,]+/).filter(Boolean),
-      theme,
-    });
-    setMessage(res.ok ? "Saved" : (await res.json()).error);
-    if (res.ok) props.onSaved();
+    mutation.mutate([
+      props.method,
+      props.path,
+      { baseCurrency: baseCurrency.trim().toUpperCase(), currencies: currencies.toUpperCase().split(/[\s,]+/).filter(Boolean), theme },
+    ]);
   }
 
   return (
@@ -156,13 +184,11 @@ function SettingsForm(props: {
 
 function Expenses({
   settings,
-  onAdded,
   unit,
   setUnit,
   draft,
-}: { settings: Settings; onAdded: () => void; unit: Unit; setUnit: (u: Unit) => void; draft: Draft | null }) {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [bin, setBin] = useState<Expense[] | null>(null);
+}: { settings: Settings; unit: Unit; setUnit: (u: Unit) => void; draft: Draft | null }) {
+  const [showBin, setShowBin] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [amount, setAmount] = useState("");
@@ -170,7 +196,6 @@ function Expenses({
   const [date, setDate] = useState(today);
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [tags, setTags] = useState("");
-  const [error, setError] = useState("");
   const show = (amount: number, c: string) => `${formatAmount(amount, c, unit)} ${c === "BTC" ? unit : c}`;
 
   function toggleUnit() {
@@ -179,38 +204,27 @@ function Expenses({
     if (sats) setAmount(formatAmount(sats, "BTC", next));
     setUnit(next);
   }
-  const [categories] = useCategories();
+  const categories = useCategories();
   const [filter, setFilter] = useState<Record<string, string>>({});
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const noRepeat = { period: "", every: "1", endDate: "", needsConfirmation: false };
   const [repeat, setRepeat] = useState(noRepeat);
-  const [templates, setTemplates] = useState<Template[]>([]);
   const [template, setTemplate] = useState<number | null>(null);
 
   const query = new URLSearchParams(Object.entries(filter).filter(([, v]) => v));
-  const load = () => {
-    fetch("/api/recurring")
-      .then((r) => r.json())
-      .then(setTemplates);
-    return fetch(`/api/expenses?${query}`)
-      .then((r) => r.json())
-      .then(setExpenses);
-  };
-
-  const loadBin = () =>
-    fetch("/api/bin")
-      .then((r) => r.json())
-      .then(setBin);
-
-  useEffect(() => {
-    load();
-  }, [filter]);
+  const expenses = useQuery<Expense[]>({ queryKey: ["/api/expenses?", query.toString()] }).data ?? [];
+  const templates = useQuery<Template[]>({ queryKey: ["/api/recurring"] }).data ?? [];
+  const bin = useQuery<Expense[]>({ queryKey: ["/api/bin"], enabled: showBin }).data;
+  const suggestions =
+    useQuery<Suggestion[]>({ queryKey: ["/api/notes?prefix=", encodeURIComponent(note)], enabled: !!note }).data ?? [];
+  const mutation = useSend();
+  const saving = useSend(reset);
+  const error = saving.error?.message;
 
   useEffect(() => {
     if (draft) edit({ ...draft, id: 0 }, null);
   }, []);
 
-  async function typeNote(value: string) {
+  function typeNote(value: string) {
     setNote(value);
     const match = suggestions.find((s) => s.note === value);
     if (match && !editing) {
@@ -218,7 +232,6 @@ function Expenses({
       setCurrency(match.currency);
       setCategoryId(match.categoryId);
     }
-    if (value) setSuggestions(await (await fetch(`/api/notes?prefix=${encodeURIComponent(value)}`)).json());
   }
 
   const filterInput = (key: string, placeholder: string, type = "text") => (
@@ -234,7 +247,7 @@ function Expenses({
   function reset() {
     setEditing(null);
     setCurrency(settings.lastCurrency);
-    setError("");
+    saving.reset();
     setNote("");
     setAmount("");
     setDate(today());
@@ -251,15 +264,9 @@ function Expenses({
     setRepeat({ period: t.period, every: String(t.every), endDate: t.endDate ?? "", needsConfirmation: t.needsConfirmation });
   }
 
-  async function templateAction(t: Template, action: string) {
+  function templateAction(t: Template, action: string) {
     if (action === "DELETE" && !confirm("Stop this recurring expense? Expenses it created are kept.")) return;
-    await fetch(`/api/recurring/${t.id}${action === "DELETE" ? "" : `/${action}`}`, { method: action === "DELETE" ? "DELETE" : "POST" });
-    load();
-  }
-
-  async function confirmExpense(e: Expense) {
-    await fetch(`/api/expenses/${e.id}/confirm`, { method: "POST" });
-    load();
+    mutation.mutate(action === "DELETE" ? ["DELETE", `/api/recurring/${t.id}`] : ["POST", `/api/recurring/${t.id}/${action}`]);
   }
 
   function edit(e: Expense, id: number | null = e.id) {
@@ -272,7 +279,7 @@ function Expenses({
     setTags(e.tags.join(", "));
   }
 
-  async function save(e: FormEvent) {
+  function save(e: FormEvent) {
     e.preventDefault();
     const body = {
       note,
@@ -286,46 +293,33 @@ function Expenses({
         .map((t) => t.trim())
         .filter(Boolean),
     };
-    const res = repeat.period
-      ? await send(template ? "PUT" : "POST", template ? `/api/recurring/${template}` : "/api/recurring", {
-          ...body,
-          ...repeat,
-          startDate: date,
-          every: Number(repeat.every),
-          endDate: repeat.endDate || null,
-        })
-      : await send(editing ? "PUT" : "POST", editing ? `/api/expenses/${editing}` : "/api/expenses", body);
-    if (!res.ok) return setError((await res.json()).error);
-    reset();
-    load();
-    onAdded();
+    saving.mutate(
+      repeat.period
+        ? [
+            template ? "PUT" : "POST",
+            template ? `/api/recurring/${template}` : "/api/recurring",
+            { ...body, ...repeat, startDate: date, every: Number(repeat.every), endDate: repeat.endDate || null },
+          ]
+        : [editing ? "PUT" : "POST", editing ? `/api/expenses/${editing}` : "/api/expenses", body],
+    );
   }
 
-  async function remove() {
-    if (!confirm("Move this expense to the bin?")) return;
-    await fetch(`/api/expenses/${editing}`, { method: "DELETE" });
-    reset();
-    load();
+  function remove() {
+    if (confirm("Move this expense to the bin?")) saving.mutate(["DELETE", `/api/expenses/${editing}`]);
   }
 
-  async function restore(id: number) {
-    await fetch(`/api/bin/${id}/restore`, { method: "POST" });
-    loadBin();
-    load();
-  }
-
-  async function emptyBin() {
-    if (!confirm("Permanently delete everything in the bin?")) return;
-    await fetch("/api/bin", { method: "DELETE" });
-    loadBin();
+  function emptyBin() {
+    if (confirm("Permanently delete everything in the bin?")) mutation.mutate(["DELETE", "/api/bin"]);
   }
 
   async function setRate(e: Expense) {
     for (const c of new Set([e.currency, settings.baseCurrency].filter((c) => c !== "USD"))) {
       const rate = prompt(`1 USD = ? ${c} on ${e.date} (blank to keep)`);
-      if (rate) await send("PUT", "/api/rates", { date: e.date, currency: c, rate });
+      if (rate)
+        await mutation
+          .mutateAsync(["PUT", "/api/rates", { date: e.date, currency: c, rate }])
+          .catch((err: Error) => alert(err.message));
     }
-    load();
   }
 
   const row = (e: Expense) => {
@@ -360,7 +354,7 @@ function Expenses({
               className="block w-full text-right text-xs text-amber-600 underline"
               onClick={(ev) => {
                 ev.stopPropagation();
-                confirmExpense(e);
+                mutation.mutate(["POST", `/api/expenses/${e.id}/confirm`]);
               }}
             >
               Pending: confirm
@@ -388,11 +382,11 @@ function Expenses({
     );
   };
 
-  if (bin)
+  if (showBin && bin)
     return (
       <>
         <div className="flex justify-between">
-          <button onClick={() => setBin(null)}>Back</button>
+          <button onClick={() => setShowBin(false)}>Back</button>
           {bin.length > 0 && (
             <button className="text-red-600" onClick={emptyBin}>
               Empty bin
@@ -404,7 +398,7 @@ function Expenses({
           {bin.map((e) => (
             <li key={e.id} className="flex items-center justify-between gap-2 py-2">
               {row(e)}
-              <button className="text-sm underline" onClick={() => restore(e.id)}>
+              <button className="text-sm underline" onClick={() => mutation.mutate(["POST", `/api/bin/${e.id}/restore`])}>
                 Restore
               </button>
             </li>
@@ -563,24 +557,14 @@ function Expenses({
           </ul>
         </section>
       )}
-      <button className="mt-6 text-sm text-zinc-500 underline" onClick={loadBin}>
+      <button className="mt-6 text-sm text-zinc-500 underline" onClick={() => setShowBin(true)}>
         Bin
       </button>
     </>
   );
 }
 
-function useCategories() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const load = () =>
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then(setCategories);
-  useEffect(() => {
-    load();
-  }, []);
-  return [categories, load] as const;
-}
+const useCategories = () => useQuery<Category[]>({ queryKey: ["/api/categories"] }).data ?? [];
 
 function CategoryOptions({ categories, except }: { categories: Category[]; except?: number }) {
   const children = (id: number | null) => categories.filter((c) => c.parentId === id && c.id !== except);
@@ -600,58 +584,43 @@ function CategoryOptions({ categories, except }: { categories: Category[]; excep
 }
 
 function Categories() {
-  const [categories, load] = useCategories();
-  const [tags, setTags] = useState<Tag[]>([]);
+  const categories = useCategories();
+  const tags = useQuery<Tag[]>({ queryKey: ["/api/tags"] }).data ?? [];
   const [deleting, setDeleting] = useState<number | null>(null);
   const [moveTo, setMoveTo] = useState("");
   const [draft, setDraft] = useState({ name: "", icon: "📁", color: "#71717a", parentId: "" });
-  const [error, setError] = useState("");
+  const { mutate: call, error } = useSend();
 
-  const loadTags = () =>
-    fetch("/api/tags")
-      .then((r) => r.json())
-      .then(setTags);
-  useEffect(() => {
-    loadTags();
-  }, []);
-
-  async function call(res: Promise<Response>, reload: () => void) {
-    const r = await res;
-    setError(r.ok ? "" : (await r.json()).error);
-    reload();
-  }
-
-  const update = (id: number, field: string, value: string) =>
-    call(send("PUT", `/api/categories/${id}`, { [field]: value }), load);
+  const update = (id: number, field: string, value: string) => call(["PUT", `/api/categories/${id}`, { [field]: value }]);
 
   function move(c: Category, by: number) {
     const ids = categories.filter((s) => s.parentId === c.parentId).map((s) => s.id);
     const i = ids.indexOf(c.id);
     if (i + by < 0 || i + by >= ids.length) return;
     [ids[i], ids[i + by]] = [ids[i + by], ids[i]];
-    call(send("PUT", "/api/categories/order", ids), load);
+    call(["PUT", "/api/categories/order", ids]);
   }
 
   function remove(id: number) {
     setDeleting(null);
     setMoveTo("");
-    call(fetch(`/api/categories/${id}${moveTo ? `?moveTo=${moveTo}` : ""}`, { method: "DELETE" }), load);
+    call(["DELETE", `/api/categories/${id}${moveTo ? `?moveTo=${moveTo}` : ""}`]);
   }
 
   function add(e: FormEvent) {
     e.preventDefault();
-    call(send("POST", "/api/categories", { ...draft, parentId: Number(draft.parentId) || null }), load);
+    call(["POST", "/api/categories", { ...draft, parentId: Number(draft.parentId) || null }]);
     setDraft({ ...draft, name: "" });
   }
 
   function renameTag(t: Tag) {
     const name = prompt("Rename tag", t.name);
-    if (name) call(send("PUT", `/api/tags/${t.id}`, { name }), loadTags);
+    if (name) call(["PUT", `/api/tags/${t.id}`, { name }]);
   }
 
   function deleteTag(t: Tag) {
     if (confirm(`Delete #${t.name}? It will be removed from every expense.`))
-      call(fetch(`/api/tags/${t.id}`, { method: "DELETE" }), loadTags);
+      call(["DELETE", `/api/tags/${t.id}`]);
   }
 
   const tree = categories
@@ -660,7 +629,7 @@ function Categories() {
 
   return (
     <div className="flex flex-col gap-6">
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error.message}</p>}
       <ul className="flex flex-col gap-1">
         {tree.map((c) => (
           <li key={c.id} className={`flex flex-wrap items-center gap-1 ${c.parentId ? "pl-6" : ""}`}>
@@ -729,5 +698,9 @@ function Categories() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <QueryClientProvider client={queryClient}>
+    <App />
+  </QueryClientProvider>,
+);
 navigator.serviceWorker?.register("/sw.js");
