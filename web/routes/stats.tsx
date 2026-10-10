@@ -1,8 +1,10 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useContext, useState } from "react";
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { formatAmount, type Unit } from "../shared/amount";
+import { formatAmount } from "../../shared/amount";
+import { dated, pick, UnitContext } from "../shared";
 
 type Slice = { id: number; name: string; icon: string; color: string; total: number };
 type Category = Slice & { children: Slice[] };
@@ -49,10 +51,22 @@ function ChartTip({ active, payload, label, money }: { active?: boolean; payload
   );
 }
 
-export default function StatsPage({ unit }: { unit: Unit }) {
-  const [preset, setPreset] = useState("This month");
-  const [range, setRange] = useState(presets()["This month"]);
-  const [group, setGroup] = useState<"day" | "week" | "month">("day");
+export const Route = createFileRoute("/stats")({
+  validateSearch: (s) => pick(s, { from: dated, to: dated, group: /^(day|week|month)$/ }),
+  component: StatsPage,
+});
+
+function StatsPage() {
+  const [unit] = useContext(UnitContext);
+  const [thisFrom, thisTo] = presets()["This month"];
+  const { from = thisFrom, to = thisTo, group = "day" } = Route.useSearch();
+  const range = [from, to];
+  const navigate = Route.useNavigate();
+  const setSearch = (s: { from?: string; to?: string; group?: string }) =>
+    navigate({ search: (prev) => ({ ...prev, ...s }), replace: true });
+  const setRange = ([from, to]: string[]) => setSearch({ from, to });
+  const [custom, setCustom] = useState(false);
+  const preset = (!custom && Object.entries(presets()).find(([, r]) => r[0] === from && r[1] === to)?.[0]) || "Custom";
   const [drill, setDrill] = useState<number | null>(null);
 
   const { data: stats } = useQuery<Stats>({
@@ -80,7 +94,7 @@ export default function StatsPage({ unit }: { unit: Unit }) {
             key={p}
             className={`rounded-full px-3 py-1 ${preset === p ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800"}`}
             onClick={() => {
-              setPreset(p);
+              setCustom(p === "Custom");
               if (p !== "Custom") setRange(presets()[p]);
             }}
           >
@@ -167,7 +181,7 @@ export default function StatsPage({ unit }: { unit: Unit }) {
       <section>
         <div className="mb-2 flex gap-3 text-sm">
           {(["day", "week", "month"] as const).map((g) => (
-            <button key={g} className={`capitalize ${group === g ? "font-semibold" : "text-zinc-500"}`} onClick={() => setGroup(g)}>
+            <button key={g} className={`capitalize ${group === g ? "font-semibold" : "text-zinc-500"}`} onClick={() => setSearch({ group: g })}>
               {g}
             </button>
           ))}

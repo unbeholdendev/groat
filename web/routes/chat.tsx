@@ -1,13 +1,17 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
-import { formatAmount } from "../shared/amount";
+import { formatAmount } from "../../shared/amount";
+import type { Draft } from "../shared";
 
 type Message = { role: string; content: string | null };
-export type Draft = { note: string; amount: number; currency: string; date: string; categoryId: number; tags: string[] };
 type Chat = { id: number; title: string; messages?: Message[] };
 
+export const Route = createFileRoute("/chat")({ component: ChatPage });
 
-export function ChatPage({ onDraft }: { onDraft: (d: Draft) => void }) {
+function ChatPage() {
+  const navigate = useNavigate();
+  const onDraft = (draft: Draft) => navigate({ to: "/", state: { draft } });
   const [openId, setOpenId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const chats = useQuery<Chat[]>({ queryKey: ["/api/chats"] }).data ?? [];
