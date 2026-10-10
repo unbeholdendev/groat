@@ -1,6 +1,8 @@
 import { decimals } from "../shared/amount";
-import type { Deps } from "./app";
+import { eq } from "drizzle-orm";
+import type { Ctx, Deps } from "./app";
 import { settings, today } from "./db";
+import * as t from "./schema";
 
 type Row = { amount: number; currency: string; date: string };
 type Source = (fetch: Deps["fetch"], date: string, currencies: string[]) => Promise<Record<string, number>>;
@@ -26,9 +28,8 @@ const sources = { frankfurter, mempool };
 
 export type Valuer = ReturnType<typeof valuer>;
 
-export function valuer({ db, fetch, clock }: Pick<Deps, "db" | "fetch" | "clock">) {
+export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">) {
   const failed = new Set<string>();
-  const insert = db.query("INSERT OR IGNORE INTO rates (date, currency, rate, source) VALUES (?, ?, ?, ?)");
 
   return async <T extends Row>(rows: T[]) => {
     const { baseCurrency: base, currencies } = settings(db);
@@ -38,9 +39,12 @@ export function valuer({ db, fetch, clock }: Pick<Deps, "db" | "fetch" | "clock"
     await Promise.all(
       [...new Set(rows.filter((r) => r.currency !== base).map((r) => r.date))].map(async (date) => {
         const have = new Map(
-          (db.query("SELECT currency, rate FROM rates WHERE date = ?").all(date) as { currency: string; rate: number }[]).map(
-            (r) => [r.currency, r.rate],
-          ),
+          db
+            .select({ currency: t.rates.currency, rate: t.rates.rate })
+            .from(t.rates)
+            .where(eq(t.rates.date, date))
+            .all()
+            .map((r) => [r.currency, r.rate]),
         ).set("USD", 1);
         rates.set(date, have);
         const needed = rows.filter((r) => r.date === date).map((r) => r.currency).concat(base);
@@ -50,7 +54,7 @@ export function valuer({ db, fetch, clock }: Pick<Deps, "db" | "fetch" | "clock"
           const got = await source(fetch, date, missing).catch(() => ({}));
           for (const [currency, rate] of Object.entries(got)) {
             have.set(currency, rate);
-            if (date < now) insert.run(date, currency, rate, name);
+            if (date < now) db.insert(t.rates).values({ date, currency, rate, source: name }).onConflictDoNothing().run();
           }
         }
         if (date < now) for (const c of missing) if (!have.has(c)) failed.add(`${date} ${c}`);

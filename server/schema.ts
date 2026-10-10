@@ -1,0 +1,99 @@
+import { type AnySQLiteColumn, check, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+
+export const expenses = sqliteTable("expenses", {
+  id: integer().primaryKey(),
+  note: text().notNull(),
+  amount: integer().notNull(),
+  currency: text().notNull(),
+  date: text().notNull(),
+  createdAt: text().notNull(),
+  updatedAt: text().notNull(),
+  deletedAt: text(),
+  categoryId: integer().references(() => categories.id),
+  recurringId: integer().references(() => recurring.id),
+  status: text().notNull().default("normal"),
+});
+
+export const settings = sqliteTable(
+  "settings",
+  {
+    id: integer().primaryKey(),
+    baseCurrency: text().notNull(),
+    currencies: text({ mode: "json" }).notNull().$type<string[]>(),
+    theme: text().notNull(),
+    onboarded: integer({ mode: "boolean" }).notNull(),
+  },
+  (t) => [check("single_row", sql`${t.id} = 1`)],
+);
+
+export const categories = sqliteTable("categories", {
+  id: integer().primaryKey(),
+  name: text().notNull(),
+  icon: text().notNull(),
+  color: text().notNull(),
+  parentId: integer().references((): AnySQLiteColumn => categories.id),
+  sort: integer().notNull(),
+  builtin: integer({ mode: "boolean" }).notNull().default(false),
+});
+
+export const rates = sqliteTable(
+  "rates",
+  {
+    date: text().notNull(),
+    currency: text().notNull(),
+    rate: real().notNull(),
+    source: text().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.date, t.currency] })],
+);
+
+export const tags = sqliteTable("tags", {
+  id: integer().primaryKey(),
+  name: text().notNull().unique(),
+});
+
+export const expenseTags = sqliteTable(
+  "expense_tags",
+  {
+    expenseId: integer()
+      .notNull()
+      .references(() => expenses.id, { onDelete: "cascade" }),
+    tagId: integer()
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.expenseId, t.tagId] })],
+);
+
+export const recurring = sqliteTable("recurring", {
+  id: integer().primaryKey(),
+  note: text().notNull(),
+  amount: integer().notNull(),
+  currency: text().notNull(),
+  categoryId: integer()
+    .notNull()
+    .references(() => categories.id),
+  tags: text({ mode: "json" }).notNull().$type<string[]>(),
+  period: text().notNull(),
+  every: integer().notNull(),
+  startDate: text().notNull(),
+  endDate: text(),
+  needsConfirmation: integer({ mode: "boolean" }).notNull(),
+  paused: integer({ mode: "boolean" }).notNull().default(false),
+  lastDate: text(),
+  deletedAt: text(),
+});
+
+export const chats = sqliteTable("chats", {
+  id: integer().primaryKey(),
+  title: text().notNull(),
+});
+
+export const chatMessages = sqliteTable("chat_messages", {
+  id: integer().primaryKey(),
+  chatId: integer()
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  message: text({ mode: "json" }).notNull(),
+});

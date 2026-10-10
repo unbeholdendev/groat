@@ -1,25 +1,26 @@
 import { type Context, Hono } from "hono";
-import { type Deps, expenseFilter, expenses, json, readExpense } from "./app";
+import { desc, eq, sql } from "drizzle-orm";
+import { type Ctx, type Deps, expenseFilter, expenses, json, newest, readExpense } from "./app";
 import { countable, settings, today, uncategorised } from "./db";
 import type { Valuer } from "./rates";
+import { categories, chatMessages, chats as chatTable } from "./schema";
 import { period } from "./stats";
 
 type Message = { role: string; content: string | null; tool_calls?: { id: string; function: { name: string; arguments: string } }[] };
 
 export const aiEnabled = ({ aiApiKey, aiBaseUrl, aiModel }: Deps["config"]) => !!(aiApiKey && aiBaseUrl && aiModel);
 
-export function chats({ db, clock, fetch, config }: Deps, value: Valuer) {
+export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
   const app = new Hono();
   app.use("*", async (c, next) => (aiEnabled(config) ? next() : c.json({ error: "AI is not configured" }, 403)));
 
-  const save = (chat: number, message: object) =>
-    db.query("INSERT INTO chat_messages (chat_id, message) VALUES (?, ?)").run(chat, JSON.stringify(message));
+  const save = (chatId: number, message: object) => db.insert(chatMessages).values({ chatId, message }).run();
 
   const chat = (id: number | string) => {
-    const row = db.query("SELECT id, title FROM chats WHERE id = ?").get(id) as { id: number; title: string } | null;
+    const row = db.select().from(chatTable).where(eq(chatTable.id, Number(id))).get();
     if (!row) return null;
-    const messages = db.query("SELECT message FROM chat_messages WHERE chat_id = ? ORDER BY id").all(id) as { message: string }[];
-    return { ...row, messages: messages.map((m) => JSON.parse(m.message) as Message) };
+    const messages = db.select().from(chatMessages).where(eq(chatMessages.chatId, row.id)).orderBy(chatMessages.id).all();
+    return { ...row, messages: messages.map((m) => m.message as Message) };
   };
 
   const range = { from: { type: "string", description: "YYYY-MM-DD" }, to: { type: "string", description: "YYYY-MM-DD" } };
@@ -46,10 +47,7 @@ export function chats({ db, clock, fetch, config }: Deps, value: Valuer) {
           q: { type: "string", description: "text the note contains" },
         },
       },
-      run: async (args) => {
-        const { where, params } = expenseFilter(args, countable);
-        return value(expenses(db, `${where} ORDER BY date DESC, id DESC LIMIT 200`, ...params));
-      },
+      run: async (args) => value(expenses(db, expenseFilter(db, args, countable)).orderBy(...newest).limit(200).all()),
     },
     compare_periods: {
       description: "Spend per category for two date ranges, in base currency.",
@@ -64,11 +62,14 @@ export function chats({ db, clock, fetch, config }: Deps, value: Valuer) {
       description: [
         "Run one read-only SQLite query for questions the other tools cannot answer. Max 200 rows, 2 second timeout.",
         "Binned and pending expenses are included: add `deleted_at IS NULL AND status = 'normal'` on expenses unless asked otherwise.",
-        `Schema:\n${(db.query("SELECT sql FROM sqlite_schema WHERE type = 'table'").all() as { sql: string }[]).map((t) => t.sql).join(";\n")}`,
+        `Schema:\n${db
+          .all<{ sql: string }>(sql`SELECT sql FROM sqlite_schema WHERE type = 'table' AND name != '__drizzle_migrations'`)
+          .map((t) => t.sql)
+          .join(";\n")}`,
       ].join("\n"),
       parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
       run: async ({ query }) => {
-        const child = Bun.spawn([process.execPath, `${import.meta.dir}/sql.ts`, query, "200"], { stdin: db.serialize(), timeout: 2000 });
+        const child = Bun.spawn([process.execPath, `${import.meta.dir}/sql.ts`, query, "200"], { stdin: db.$client.serialize(), timeout: 2000 });
         const out = await new Response(child.stdout).text();
         return (await child.exited) === 0 ? JSON.parse(out) : { error: "query timed out" };
       },
@@ -98,13 +99,13 @@ export function chats({ db, clock, fetch, config }: Deps, value: Valuer) {
   };
 
   const system = () => {
-    const categories = db.query("SELECT id, name, parent_id AS parentId FROM categories").all();
+    const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).all();
     return [
       "You answer questions about the user's spending, and give recommendations when asked, using the tools for real data.",
       `Today is ${today(clock)}. Base currency: ${settings(db).baseCurrency}.`,
       "Binned (deleted_at set) and pending (status 'pending') expenses are not spending: leave them out unless the user asks for them.",
       "Amounts are integers in the currency's smallest unit (pence, cents, whole yen, sats for BTC).",
-      `Categories: ${JSON.stringify(categories)}`,
+      `Categories: ${JSON.stringify(cats)}`,
     ].join("\n");
   };
 
@@ -142,15 +143,15 @@ export function chats({ db, clock, fetch, config }: Deps, value: Valuer) {
       }
     }
     return db.transaction(() => {
-      const id = chatId ?? (db.query("INSERT INTO chats (title) VALUES (?) RETURNING id").get(message.slice(0, 60)) as { id: number }).id;
+      const id = chatId ?? db.insert(chatTable).values({ title: message.slice(0, 60) }).returning().get().id;
       for (const m of added) save(id, m);
       return chat(id);
-    })();
+    });
   };
 
   app.onError((e, c) => c.json({ error: e.message }, 502));
 
-  app.get("/", (c) => c.json(db.query("SELECT id, title FROM chats ORDER BY id DESC").all()));
+  app.get("/", (c) => c.json(db.select().from(chatTable).orderBy(desc(chatTable.id)).all()));
 
   app.post("/", async (c) => {
     const message = await question(c);
@@ -171,7 +172,7 @@ export function chats({ db, clock, fetch, config }: Deps, value: Valuer) {
   });
 
   app.delete("/:id", (c) =>
-    db.query("DELETE FROM chats WHERE id = ? RETURNING id").get(c.req.param("id")) ? c.json({}) : c.json({ error: "not found" }, 404),
+    db.delete(chatTable).where(eq(chatTable.id, Number(c.req.param("id")))).returning().get() ? c.json({}) : c.json({ error: "not found" }, 404),
   );
 
   return app;

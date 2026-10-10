@@ -1,9 +1,13 @@
-import type { Database, SQLQueryBindings } from "bun:sqlite";
+import type { Database } from "bun:sqlite";
+import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, ne, or, type SQL, sql } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/bun-sqlite";
+import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { type Context, Hono } from "hono";
 import { formatAmount, parseAmount } from "../shared/amount";
-import { countable, isDate, migrate, settings as stored, today, uncategorised, visible } from "./db";
+import { countable, type Db, isDate, settings as stored, today, uncategorised, visible } from "./db";
 import { aiEnabled, chats } from "./ai";
 import { valuer } from "./rates";
+import * as t from "./schema";
 import { groups, stats } from "./stats";
 
 export type Deps = {
@@ -12,6 +16,8 @@ export type Deps = {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
   config: { aiBaseUrl?: string; aiApiKey?: string; aiModel?: string };
 };
+
+export type Ctx = Omit<Deps, "db"> & { db: Db };
 
 const defaultCategories: [string, string, string, [string, string][]?][] = [
   ["Food", "🍽️", "#f97316", [["Groceries", "🛒"], ["Eating out", "🍔"]]],
@@ -33,57 +39,66 @@ function shortlist(base: unknown, list: unknown) {
   return [...new Set([base as string, ...list])];
 }
 
-const expenseSql = `SELECT id, note, amount, currency, date, category_id AS categoryId, status, recurring_id AS recurringId,
-  (SELECT json_group_array(name) FROM (SELECT name FROM expense_tags JOIN tags ON tags.id = tag_id
-    WHERE expense_id = expenses.id ORDER BY name)) AS tags
-  FROM expenses`;
+const e = t.expenses;
+const { createdAt, updatedAt, deletedAt, ...expenseColumns } = getTableColumns(e);
 
-export const expenses = (db: Database, where: string, ...params: SQLQueryBindings[]) =>
-  (db.query(`${expenseSql} WHERE ${where}`).all(...params) as { amount: number; currency: string; date: string; note: string; categoryId: number; tags: string }[]).map((e) => ({
-    ...e,
-    tags: JSON.parse(e.tags) as string[],
-  }));
+export const newest = [desc(e.date), desc(e.id)];
+
+export const expenses = (db: Db, where?: SQL) =>
+  db
+    .select({
+      ...expenseColumns,
+      tags: sql`(SELECT json_group_array(name) FROM (SELECT name FROM expense_tags JOIN tags ON tags.id = tag_id
+        WHERE expense_id = expenses.id ORDER BY name))`.mapWith((v: string) => JSON.parse(v) as string[]),
+    })
+    .from(e)
+    .where(where);
 
 export const json = (c: Context) => c.req.json().catch(() => ({}));
 
-export function expenseFilter(q: Record<string, string>, base = visible) {
-  const where = [base];
-  const params: string[] = [];
-  const add = (value: string | undefined, sql: string) => {
-    if (!value) return;
-    where.push(sql);
-    params.push(value);
-  };
-  add(q.from, "date >= ?");
-  add(q.to, "date <= ?");
-  add(q.category, "category_id IN (SELECT id FROM categories WHERE CAST(? AS INTEGER) IN (id, parent_id))");
-  add(q.tag, "id IN (SELECT expense_id FROM expense_tags JOIN tags ON tags.id = tag_id WHERE name = ?)");
-  add(q.currency, "currency = ?");
-  add(q.q, "instr(lower(note), lower(?))");
-  return { where: where.join(" AND "), params };
+export function expenseFilter(db: Db, q: Record<string, string>, base = visible) {
+  const category = Number(q.category);
+  return and(
+    base,
+    q.from ? gte(e.date, q.from) : undefined,
+    q.to ? lte(e.date, q.to) : undefined,
+    q.category
+      ? inArray(e.categoryId, db.select({ id: t.categories.id }).from(t.categories).where(or(eq(t.categories.id, category), eq(t.categories.parentId, category))))
+      : undefined,
+    q.tag
+      ? inArray(e.id, db.select({ id: t.expenseTags.expenseId }).from(t.expenseTags).innerJoin(t.tags, eq(t.tags.id, t.expenseTags.tagId)).where(eq(t.tags.name, q.tag)))
+      : undefined,
+    q.currency ? eq(e.currency, q.currency) : undefined,
+    q.q ? sql`instr(lower(${e.note}), lower(${q.q}))` : undefined,
+  );
 }
 
-export function readExpense(body: Record<string, any>, db: Database, today: string, fallback: string, currencies: string[], category: number) {
+export function readExpense(body: Record<string, any>, db: Db, today: string, fallback: string, currencies: string[], category: number) {
   const note = typeof body.note === "string" ? body.note.trim() : "";
   const currency = body.currency ?? fallback;
   if (currency !== fallback && !currencies.includes(currency)) return { error: "currency not enabled" };
   const amount = typeof body.amount === "string" ? parseAmount(body.amount, currency, body.unit) : null;
   const date = body.date ?? today;
-  const categoryId = body.categoryId ?? category;
+  const categoryId: number = body.categoryId ?? category;
   const tags = body.tags ?? [];
   if (!note) return { error: "note is required" };
   if (amount === null) return { error: "invalid amount" };
   if (!isDate(date) || date > today) return { error: "invalid date" };
-  if (!db.query("SELECT 1 FROM categories WHERE id = ?").get(categoryId)) return { error: "invalid category" };
+  if (!db.select().from(t.categories).where(eq(t.categories.id, categoryId)).get()) return { error: "invalid category" };
   if (!Array.isArray(tags) || !tags.every((t) => typeof t === "string" && t.trim())) return { error: "invalid tags" };
   return { note, amount, currency, date, categoryId, tags: [...new Set(tags.map((t: string) => t.trim()))] };
 }
 
 export function createApp(deps: Deps) {
-  const { db, clock, fetch, config } = deps;
-  migrate(db);
+  const { clock, config } = deps;
+  deps.db.run("PRAGMA foreign_keys = ON");
+  const db = drizzle(deps.db, { casing: "snake_case" });
+  migrate(db, { migrationsFolder: `${import.meta.dir}/drizzle` });
+  const ctx = { ...deps, db };
   const app = new Hono();
-  const value = valuer(deps);
+  const value = valuer(ctx);
+  const cat = t.categories;
+  const r = t.recurring;
 
   for (const file of ["sw.js", "manifest.webmanifest"])
     app.get(`/${file}`, () => new Response(Bun.file(`${import.meta.dir}/${file}`)));
@@ -96,10 +111,10 @@ export function createApp(deps: Deps) {
   const settings = () => ({ ...stored(db), ai: aiEnabled(config) });
 
   const saveTags = (id: number, tags: string[]) => {
-    db.query("DELETE FROM expense_tags WHERE expense_id = ?").run(id);
+    db.delete(t.expenseTags).where(eq(t.expenseTags.expenseId, id)).run();
     for (const name of tags) {
-      db.query("INSERT INTO tags (name) VALUES (?) ON CONFLICT DO NOTHING").run(name);
-      db.query("INSERT INTO expense_tags SELECT ?, id FROM tags WHERE name = ?").run(id, name);
+      const { tagId } = db.insert(t.tags).values({ name }).onConflictDoUpdate({ target: t.tags.name, set: { name } }).returning({ tagId: t.tags.id }).get();
+      db.insert(t.expenseTags).values({ expenseId: id, tagId }).run();
     }
   };
 
@@ -110,7 +125,7 @@ export function createApp(deps: Deps) {
     const list = shortlist(baseCurrency, currencies);
     if (!list) return c.json({ error: "invalid currencies" }, 400);
     if (!["system", "light", "dark"].includes(theme)) return c.json({ error: "invalid theme" }, 400);
-    db.query("UPDATE settings SET base_currency = ?, currencies = ?, theme = ?").run(baseCurrency, JSON.stringify(list), theme);
+    db.update(t.settings).set({ baseCurrency, currencies: list, theme }).run();
     return c.json(settings());
   });
 
@@ -119,121 +134,106 @@ export function createApp(deps: Deps) {
     const body = await json(c);
     const currencies = shortlist(body.baseCurrency, body.currencies);
     if (!currencies) return c.json({ error: "invalid currencies" }, 400);
-    const insert = db.query("INSERT INTO categories (name, icon, color, parent_id, sort) VALUES (?, ?, ?, ?, ?) RETURNING id");
     db.transaction(() => {
-      db.query("UPDATE settings SET base_currency = ?, currencies = ?, onboarded = 1").run(
-        body.baseCurrency,
-        JSON.stringify(currencies),
-      );
+      db.update(t.settings).set({ baseCurrency: body.baseCurrency, currencies, onboarded: true }).run();
       defaultCategories.forEach(([name, icon, color, children = []], i) => {
-        const { id } = insert.get(name, icon, color, null, i) as { id: number };
-        children.forEach(([child, childIcon], j) => insert.run(child, childIcon, color, id, j));
+        const { id } = db.insert(cat).values({ name, icon, color, sort: i }).returning({ id: cat.id }).get();
+        children.forEach(([child, childIcon], j) => db.insert(cat).values({ name: child, icon: childIcon, color, parentId: id, sort: j }).run());
       });
-    })();
+    });
     return c.json(settings());
   });
 
-  const categories = (where: string, ...params: SQLQueryBindings[]) =>
-    (
-      db
-        .query(`SELECT id, name, icon, color, parent_id AS parentId, builtin FROM categories WHERE ${where}`)
-        .all(...params) as { id: number; name: string; parentId: number | null; builtin: number }[]
-    ).map((r) => ({ ...r, builtin: r.builtin === 1 }));
+  const categories = (where?: SQL) =>
+    db.select({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, parentId: cat.parentId, builtin: cat.builtin }).from(cat).where(where);
 
   const filled = (...values: unknown[]) => values.every((v) => typeof v === "string" && v.trim());
 
-  app.get("/api/categories", (c) => c.json(categories("1 ORDER BY parent_id IS NOT NULL, sort")));
+  app.get("/api/categories", (c) => c.json(categories().orderBy(isNotNull(cat.parentId), cat.sort).all()));
 
   app.post("/api/categories", async (c) => {
     const { name, icon, color, parentId = null } = await json(c);
     if (!filled(name, icon, color)) return c.json({ error: "name, icon and colour are required" }, 400);
-    if (parentId !== null && !db.query("SELECT 1 FROM categories WHERE id = ? AND parent_id IS NULL").get(parentId))
+    if (parentId !== null && !db.select().from(cat).where(and(eq(cat.id, parentId), isNull(cat.parentId))).get())
       return c.json({ error: "invalid parent" }, 400);
-    const { id } = db
-      .query(
-        `INSERT INTO categories (name, icon, color, parent_id, sort)
-        VALUES (?1, ?2, ?3, ?4, (SELECT coalesce(max(sort), -1) + 1 FROM categories WHERE parent_id IS ?4)) RETURNING id`,
-      )
-      .get(name.trim(), icon, color, parentId) as { id: number };
-    return c.json(categories("id = ?", id)[0], 201);
+    const sort = sql`(SELECT coalesce(max(sort), -1) + 1 FROM categories WHERE parent_id IS ${parentId})`;
+    const { id } = db.insert(cat).values({ name: name.trim(), icon, color, parentId, sort }).returning({ id: cat.id }).get();
+    return c.json(categories(eq(cat.id, id)).get(), 201);
   });
 
   app.put("/api/categories/order", async (c) => {
     const ids = await json(c);
     if (!Array.isArray(ids) || !ids.every(Number.isInteger)) return c.json({ error: "expected a list of ids" }, 400);
-    db.transaction(() => ids.forEach((id, i) => db.query("UPDATE categories SET sort = ? WHERE id = ?").run(i, id)))();
+    db.transaction(() => ids.forEach((id, i) => db.update(cat).set({ sort: i }).where(eq(cat.id, id)).run()));
     return c.json({});
   });
 
   app.put("/api/categories/:id", async (c) => {
-    const [old] = categories("id = ?", c.req.param("id"));
+    const id = Number(c.req.param("id"));
+    const old = categories(eq(cat.id, id)).get();
     if (!old) return c.json({ error: "not found" }, 404);
     const { name, icon, color } = { ...old, ...(await json(c)) };
     if (!filled(name, icon, color)) return c.json({ error: "name, icon and colour are required" }, 400);
-    db.query("UPDATE categories SET name = ?, icon = ?, color = ? WHERE id = ?").run(name.trim(), icon, color, c.req.param("id"));
-    return c.json(categories("id = ?", c.req.param("id"))[0]);
+    db.update(cat).set({ name: name.trim(), icon, color }).where(eq(cat.id, id)).run();
+    return c.json(categories(eq(cat.id, id)).get());
   });
 
   app.delete("/api/categories/:id", (c) => {
     const id = Number(c.req.param("id"));
-    const [old] = categories("id = ?", id);
+    const old = categories(eq(cat.id, id)).get();
     if (!old) return c.json({ error: "not found" }, 404);
     if (old.builtin) return c.json({ error: "Uncategorised cannot be deleted" }, 400);
     const moveTo = Number(c.req.query("moveTo") ?? uncategorised(db));
-    if (!db.query("SELECT 1 FROM categories WHERE id = ?1 AND id != ?2 AND parent_id IS NOT ?2").get(moveTo, id))
+    if (!db.select().from(cat).where(and(eq(cat.id, moveTo), ne(cat.id, id), sql`${cat.parentId} IS NOT ${id}`)).get())
       return c.json({ error: "invalid moveTo" }, 400);
+    const family = or(eq(cat.id, id), eq(cat.parentId, id));
+    const members = db.select({ id: cat.id }).from(cat).where(family);
     db.transaction(() => {
-      for (const table of ["expenses", "recurring"])
-        db.query(`UPDATE ${table} SET category_id = ?1 WHERE category_id IN (SELECT id FROM categories WHERE ?2 IN (id, parent_id))`).run(
-          moveTo,
-          id,
-        );
-      db.query("DELETE FROM categories WHERE parent_id = ?").run(id);
-      db.query("DELETE FROM categories WHERE id = ?").run(id);
-    })();
+      db.update(e).set({ categoryId: moveTo }).where(inArray(e.categoryId, members)).run();
+      db.update(r).set({ categoryId: moveTo }).where(inArray(r.categoryId, members)).run();
+      db.delete(cat).where(family).run();
+    });
     return c.json({});
   });
 
-  app.get("/api/tags", (c) => c.json(db.query("SELECT id, name FROM tags ORDER BY name").all()));
+  app.get("/api/tags", (c) => c.json(db.select().from(t.tags).orderBy(t.tags.name).all()));
 
   app.put("/api/tags/:id", async (c) => {
     const { name } = await json(c);
+    const id = Number(c.req.param("id"));
     if (!filled(name)) return c.json({ error: "name is required" }, 400);
-    if (db.query("SELECT 1 FROM tags WHERE name = ? AND id != ?").get(name.trim(), c.req.param("id")))
+    if (db.select().from(t.tags).where(and(eq(t.tags.name, name.trim()), ne(t.tags.id, id))).get())
       return c.json({ error: "tag already exists" }, 409);
-    const old = retag(c.req.param("id"), name.trim());
+    const old = retag(id, name.trim());
     return old ? c.json({ id: old.id, name: name.trim() }) : c.json({ error: "not found" }, 404);
   });
 
-  app.delete("/api/tags/:id", (c) => (retag(c.req.param("id"), null) ? c.json({}) : c.json({ error: "not found" }, 404)));
+  app.delete("/api/tags/:id", (c) => (retag(Number(c.req.param("id")), null) ? c.json({}) : c.json({ error: "not found" }, 404)));
 
-  const retag = (id: string, name: string | null) =>
+  const retag = (id: number, name: string | null) =>
     db.transaction(() => {
-      const old = db.query("SELECT id, name FROM tags WHERE id = ?").get(id) as { id: number; name: string } | null;
+      const old = db.select().from(t.tags).where(eq(t.tags.id, id)).get();
       if (!old) return null;
-      db.query(
-        `UPDATE recurring SET tags = (SELECT json_group_array(CASE WHEN value = ?1 THEN ?2 ELSE value END)
-        FROM json_each(recurring.tags) WHERE ?2 IS NOT NULL OR value != ?1)`,
-      ).run(old.name, name);
-      if (name === null) db.query("DELETE FROM tags WHERE id = ?").run(id);
-      else db.query("UPDATE tags SET name = ? WHERE id = ?").run(name, id);
+      db.update(r)
+        .set({
+          tags: sql`(SELECT json_group_array(CASE WHEN value = ${old.name} THEN ${name} ELSE value END)
+          FROM json_each(recurring.tags) WHERE ${name} IS NOT NULL OR value != ${old.name})`,
+        })
+        .run();
+      if (name === null) db.delete(t.tags).where(eq(t.tags.id, id)).run();
+      else db.update(t.tags).set({ name }).where(eq(t.tags.id, id)).run();
       return old;
-    })();
+    });
 
-  app.get("/api/expenses", async (c) => {
-    const { where, params } = expenseFilter(c.req.query());
-    const rows = expenses(db, `${where} ORDER BY date DESC, id DESC`, ...params);
-    return c.json(await value(rows));
-  });
+  app.get("/api/expenses", async (c) => c.json(await value(expenses(db, expenseFilter(db, c.req.query())).orderBy(...newest).all())));
 
   app.get("/api/export", async (c) => {
-    const { where, params } = expenseFilter(c.req.query(), countable);
-    const rows = expenses(db, `${where} ORDER BY date DESC, id DESC`, ...params);
+    const rows = expenses(db, expenseFilter(db, c.req.query(), countable)).orderBy(...newest).all();
     const { baseCurrency } = settings();
-    const cats = new Map(categories("1").map((r) => [r.id, r] as [number, { name: string; parentId: number | null }]));
+    const cats = new Map(categories().all().map((r) => [r.id, r]));
     const cell = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v);
     const lines = (await value(rows)).map((e) => {
-      const cat = cats.get(e.categoryId)!;
+      const cat = cats.get(e.categoryId!)!;
       const [category, sub] = cat.parentId ? [cats.get(cat.parentId)!.name, cat.name] : [cat.name, ""];
       const base = e.baseAmount === null ? "" : formatAmount(e.baseAmount, baseCurrency);
       return [e.date, e.note, formatAmount(e.amount, e.currency), e.currency, base, baseCurrency, category, sub, e.tags.join(", ")];
@@ -249,189 +249,159 @@ export function createApp(deps: Deps) {
     return c.json(await stats(db, value, from, to, group as (typeof groups)[number]));
   });
 
-  app.get("/api/notes", (c) =>
-    c.json(
-      db
-        .query(
-          `SELECT note, categoryId, currency, amount FROM (
-            SELECT note, category_id AS categoryId, currency, amount, date, id,
-              row_number() OVER (PARTITION BY note ORDER BY date DESC, id DESC) AS n
-            FROM expenses WHERE ${visible} AND lower(substr(note, 1, length(?1))) = lower(?1))
-          WHERE n = 1 ORDER BY date DESC, id DESC LIMIT 10`,
-        )
-        .all(c.req.query("prefix") ?? ""),
-    ),
-  );
+  app.get("/api/notes", (c) => {
+    const prefix = c.req.query("prefix") ?? "";
+    const ranked = db
+      .select({
+        note: e.note,
+        categoryId: e.categoryId,
+        currency: e.currency,
+        amount: e.amount,
+        date: e.date,
+        id: e.id,
+        n: sql<number>`row_number() OVER (PARTITION BY ${e.note} ORDER BY ${e.date} DESC, ${e.id} DESC)`.as("n"),
+      })
+      .from(e)
+      .where(and(visible, sql`lower(substr(${e.note}, 1, length(${prefix}))) = lower(${prefix})`))
+      .as("ranked");
+    const { note, categoryId, currency, amount } = ranked;
+    return c.json(
+      db.select({ note, categoryId, currency, amount }).from(ranked).where(eq(ranked.n, 1)).orderBy(desc(ranked.date), desc(ranked.id)).limit(10).all(),
+    );
+  });
 
   app.put("/api/rates", async (c) => {
     const { date, currency, rate } = await json(c);
     if (!isDate(date) || !knownCurrencies.has(currency) || typeof rate !== "string" || !/^\d+(\.\d+)?$/.test(rate) || !Number(rate))
       return c.json({ error: "invalid rate" }, 400);
-    db.query("INSERT OR REPLACE INTO rates (date, currency, rate, source) VALUES (?, ?, ?, 'manual')").run(date, currency, Number(rate));
+    const row = { rate: Number(rate), source: "manual" };
+    db.insert(t.rates).values({ date, currency, ...row }).onConflictDoUpdate({ target: [t.rates.date, t.rates.currency], set: row }).run();
     return c.json({ date, currency, rate: Number(rate) });
   });
 
-  app.get("/api/bin", (c) => c.json(expenses(db, "deleted_at IS NOT NULL ORDER BY deleted_at DESC, id DESC")));
+  app.get("/api/bin", (c) => c.json(expenses(db, isNotNull(e.deletedAt)).orderBy(desc(e.deletedAt), desc(e.id)).all()));
 
   app.post("/api/expenses", async (c) => {
     const now = clock().toISOString();
     const { lastCurrency, currencies } = settings();
-    const e = readExpense(await json(c), db, today(clock), lastCurrency, currencies, uncategorised(db));
-    if ("error" in e) return c.json(e, 400);
-    const { id } = db
-      .query(
-        "INSERT INTO expenses (note, amount, currency, date, category_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id",
-      )
-      .get(e.note, e.amount, e.currency, e.date, e.categoryId, now, now) as { id: number };
-    saveTags(id, e.tags);
-    return c.json(expenses(db, "id = ?", id)[0], 201);
+    const body = readExpense(await json(c), db, today(clock), lastCurrency, currencies, uncategorised(db));
+    if ("error" in body) return c.json(body, 400);
+    const { tags, ...fields } = body;
+    const { id } = db.insert(e).values({ ...fields, createdAt: now, updatedAt: now }).returning({ id: e.id }).get();
+    saveTags(id, tags);
+    return c.json(expenses(db, eq(e.id, id)).get(), 201);
   });
 
   app.put("/api/expenses/:id", async (c) => {
     const now = clock().toISOString();
-    const id = c.req.param("id");
-    const old = db.query("SELECT currency, category_id FROM expenses WHERE id = ? AND deleted_at IS NULL").get(id) as
-      | { currency: string; category_id: number }
-      | null;
+    const id = Number(c.req.param("id"));
+    const old = db.select({ currency: e.currency, categoryId: e.categoryId }).from(e).where(and(eq(e.id, id), visible)).get();
     if (!old) return c.json({ error: "not found" }, 404);
-    const e = readExpense(await json(c), db, today(clock), old.currency, settings().currencies, old.category_id);
-    if ("error" in e) return c.json(e, 400);
-    db.query("UPDATE expenses SET note = ?, amount = ?, currency = ?, date = ?, category_id = ?, updated_at = ? WHERE id = ?").run(
-      e.note,
-      e.amount,
-      e.currency,
-      e.date,
-      e.categoryId,
-      now,
-      id,
-    );
-    saveTags(Number(id), e.tags);
-    return c.json(expenses(db, "id = ?", id)[0]);
+    const body = readExpense(await json(c), db, today(clock), old.currency, settings().currencies, old.categoryId!);
+    if ("error" in body) return c.json(body, 400);
+    const { tags, ...fields } = body;
+    db.update(e).set({ ...fields, updatedAt: now }).where(eq(e.id, id)).run();
+    saveTags(id, tags);
+    return c.json(expenses(db, eq(e.id, id)).get());
   });
 
-  app.delete("/api/expenses/:id", (c) => {
-    const done = db
-      .query("UPDATE expenses SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL RETURNING id")
-      .get(clock().toISOString(), c.req.param("id"));
-    return done ? c.json(expenses(db, "id = ?", c.req.param("id"))[0]) : c.json({ error: "not found" }, 404);
-  });
+  const setExpense = (c: Context, set: Partial<typeof e.$inferInsert>, where: SQL) => {
+    const id = Number(c.req.param("id"));
+    return db.update(e).set(set).where(and(eq(e.id, id), where)).returning({ id: e.id }).get()
+      ? c.json(expenses(db, eq(e.id, id)).get())
+      : c.json({ error: "not found" }, 404);
+  };
 
-  app.post("/api/expenses/:id/confirm", (c) =>
-    db.query("UPDATE expenses SET status = 'normal' WHERE id = ? AND deleted_at IS NULL RETURNING id").get(c.req.param("id"))
-      ? c.json(expenses(db, "id = ?", c.req.param("id"))[0])
-      : c.json({ error: "not found" }, 404),
-  );
-
-  app.post("/api/bin/:id/restore", (c) => {
-    const done = db
-      .query("UPDATE expenses SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL RETURNING id")
-      .get(c.req.param("id"));
-    return done ? c.json(expenses(db, "id = ?", c.req.param("id"))[0]) : c.json({ error: "not found" }, 404);
-  });
+  app.delete("/api/expenses/:id", (c) => setExpense(c, { deletedAt: clock().toISOString() }, visible));
+  app.post("/api/expenses/:id/confirm", (c) => setExpense(c, { status: "normal" }, visible));
+  app.post("/api/bin/:id/restore", (c) => setExpense(c, { deletedAt: null }, isNotNull(e.deletedAt)));
 
   app.delete("/api/bin", (c) => {
-    db.run("DELETE FROM expenses WHERE deleted_at IS NOT NULL");
+    db.delete(e).where(isNotNull(e.deletedAt)).run();
     return c.json({});
   });
 
-  const templates = (where: string, ...params: SQLQueryBindings[]) =>
-    (
-      db
-        .query(
-          `SELECT id, note, amount, currency, category_id AS categoryId, tags, period, every, start_date AS startDate,
-          end_date AS endDate, needs_confirmation AS needsConfirmation, paused, last_date AS lastDate
-          FROM recurring WHERE deleted_at IS NULL AND ${where}`,
-        )
-        .all(...params) as { tags: string; needsConfirmation: number; paused: number; currency: string; categoryId: number }[]
-    ).map((r) => ({ ...r, tags: JSON.parse(r.tags) as string[], needsConfirmation: r.needsConfirmation === 1, paused: r.paused === 1 }));
+  const { deletedAt: _, ...templateColumns } = getTableColumns(r);
+  const templates = (where?: SQL) => db.select(templateColumns).from(r).where(and(isNull(r.deletedAt), where));
 
   const readTemplate = (body: Record<string, any>, fallback: string, category: number) => {
     const e = readExpense({ ...body, date: today(clock) }, db, today(clock), fallback, settings().currencies, category);
-    if (e.error) return { error: e.error };
+    if ("error" in e) return { error: e.error };
     const { period, every, startDate = today(clock), endDate = null, needsConfirmation = false } = body;
     if (!["day", "week", "month", "year"].includes(period) || !Number.isInteger(every) || every < 1) return { error: "invalid schedule" };
     if (!isDate(startDate)) return { error: "invalid date" };
     if (endDate !== null && !isDate(endDate)) return { error: "invalid end date" };
-    return [e.note!, e.amount, e.currency, e.categoryId, JSON.stringify(e.tags), period, every, startDate, endDate, needsConfirmation ? 1 : 0];
+    const { note, amount, currency, categoryId, tags } = e;
+    return { note, amount, currency, categoryId, tags, period, every, startDate, endDate, needsConfirmation: !!needsConfirmation };
   };
 
   function generate(skip?: string) {
     const now = clock().toISOString();
-    const insert = db.query(
-      `INSERT INTO expenses (note, amount, currency, date, category_id, recurring_id, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-    );
-    const rows = (
-      skip
-        ? db.query("SELECT * FROM recurring WHERE id = ?").all(skip)
-        : db.query("SELECT * FROM recurring WHERE deleted_at IS NULL AND paused = 0").all()
-    ) as Record<string, any>[];
+    const rows = db
+      .select()
+      .from(r)
+      .where(skip ? eq(r.id, Number(skip)) : and(isNull(r.deletedAt), eq(r.paused, false)))
+      .all();
     db.transaction(() => {
-      for (const r of rows) {
-        let last = r.last_date;
-        for (let d; (d = last && last >= r.start_date ? next(last, r) : r.start_date) <= today(clock) && (!r.end_date || d <= r.end_date); last = d) {
+      for (const tpl of rows) {
+        let last = tpl.lastDate;
+        for (let d; (d = last && last >= tpl.startDate ? next(last, tpl) : tpl.startDate) <= today(clock) && (!tpl.endDate || d <= tpl.endDate); last = d) {
           if (skip) continue;
-          const status = r.needs_confirmation ? "pending" : "normal";
-          const { id } = insert.get(r.note, r.amount, r.currency, d, r.category_id, r.id, status, now, now) as { id: number };
-          saveTags(id, JSON.parse(r.tags));
+          const status = tpl.needsConfirmation ? "pending" : "normal";
+          const { note, amount, currency, categoryId } = tpl;
+          const values = { note, amount, currency, date: d, categoryId, recurringId: tpl.id, status, createdAt: now, updatedAt: now };
+          const { id } = db.insert(e).values(values).returning({ id: e.id }).get();
+          saveTags(id, tpl.tags);
         }
-        db.query("UPDATE recurring SET last_date = ? WHERE id = ?").run(last, r.id);
+        db.update(r).set({ lastDate: last }).where(eq(r.id, tpl.id)).run();
       }
-    })();
+    });
   }
 
   generate();
 
-  app.get("/api/recurring", (c) => c.json(templates("1 ORDER BY id")));
+  app.get("/api/recurring", (c) => c.json(templates().orderBy(r.id).all()));
 
   app.post("/api/recurring", async (c) => {
     const t = readTemplate(await json(c), settings().lastCurrency, uncategorised(db));
     if ("error" in t) return c.json(t, 400);
-    const { id } = db
-      .query(
-        `INSERT INTO recurring (note, amount, currency, category_id, tags, period, every, start_date, end_date, needs_confirmation)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-      )
-      .get(...t) as { id: number };
+    const { id } = db.insert(r).values(t).returning({ id: r.id }).get();
     generate();
-    return c.json(templates("id = ?", id)[0], 201);
+    return c.json(templates(eq(r.id, id)).get(), 201);
   });
 
   app.put("/api/recurring/:id", async (c) => {
-    const id = c.req.param("id");
-    const [old] = templates("id = ?", id);
+    const id = Number(c.req.param("id"));
+    const old = templates(eq(r.id, id)).get();
     if (!old) return c.json({ error: "not found" }, 404);
     const t = readTemplate(await json(c), old.currency, old.categoryId);
     if ("error" in t) return c.json(t, 400);
-    db.query(
-      `UPDATE recurring SET note = ?, amount = ?, currency = ?, category_id = ?, tags = ?, period = ?, every = ?, start_date = ?,
-      end_date = ?, needs_confirmation = ? WHERE id = ?`,
-    ).run(...t, id);
+    db.update(r).set(t).where(eq(r.id, id)).run();
     generate();
-    return c.json(templates("id = ?", id)[0]);
+    return c.json(templates(eq(r.id, id)).get());
   });
 
-  const setTemplate = (c: Context, set: string, ...params: SQLQueryBindings[]) => {
-    const id = c.req.param("id")!;
-    return db.query(`UPDATE recurring SET ${set} WHERE id = ? AND deleted_at IS NULL RETURNING id`).get(...params, id)
-      ? c.json(templates("id = ?", id)[0] ?? {})
+  const setTemplate = (c: Context, set: Partial<typeof r.$inferInsert>) => {
+    const id = Number(c.req.param("id"));
+    return db.update(r).set(set).where(and(eq(r.id, id), isNull(r.deletedAt))).returning({ id: r.id }).get()
+      ? c.json(templates(eq(r.id, id)).get() ?? {})
       : c.json({ error: "not found" }, 404);
   };
 
-  app.post("/api/recurring/:id/pause", (c) => setTemplate(c, "paused = 1"));
-  app.post("/api/recurring/:id/resume", (c) => (generate(c.req.param("id")), setTemplate(c, "paused = 0")));
-  app.delete("/api/recurring/:id", (c) => setTemplate(c, "deleted_at = ?", clock().toISOString()));
+  app.post("/api/recurring/:id/pause", (c) => setTemplate(c, { paused: true }));
+  app.post("/api/recurring/:id/resume", (c) => (generate(c.req.param("id")), setTemplate(c, { paused: false })));
+  app.delete("/api/recurring/:id", (c) => setTemplate(c, { deletedAt: clock().toISOString() }));
 
-  app.route("/api/chats", chats(deps, value));
+  app.route("/api/chats", chats(ctx, value));
   app.all("/api/*", (c) => c.json({ error: "not found" }, 404));
 
   return Object.assign(app, { generate: () => generate() });
 }
 
-function next(last: string, { period, every, start_date }: Record<string, any>) {
+function next(last: string, { period, every, startDate }: typeof t.recurring.$inferSelect) {
   const [y, m, d] = last.split("-").map(Number);
   const iso = (date: Date) => date.toISOString().slice(0, 10);
   if (period === "day" || period === "week") return iso(new Date(Date.UTC(y, m - 1, d + every * (period === "week" ? 7 : 1))));
   const month = m - 1 + every * (period === "year" ? 12 : 1);
-  return iso(new Date(Date.UTC(y, month, Math.min(Number(start_date.slice(8)), new Date(Date.UTC(y, month + 1, 0)).getUTCDate()))));
+  return iso(new Date(Date.UTC(y, month, Math.min(Number(startDate.slice(8)), new Date(Date.UTC(y, month + 1, 0)).getUTCDate()))));
 }

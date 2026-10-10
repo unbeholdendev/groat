@@ -21,6 +21,7 @@ test("category filter includes its subcategories", async () => {
   await call("POST", "/api/expenses", { note: "bus", amount: "1" });
   expect(await notes(call, `category=${food}`)).toEqual(["milk", "dinner"]);
   expect(await notes(call, `category=${groceries}`)).toEqual(["milk"]);
+  expect(await notes(call, "category=abc")).toEqual([]);
 });
 
 test("tag, currency and note search narrow the list and combine", async () => {

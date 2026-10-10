@@ -1,6 +1,7 @@
-import type { Database } from "bun:sqlite";
-import { countable, settings } from "./db";
+import { and, between } from "drizzle-orm";
+import { countable, type Db, settings } from "./db";
 import type { Valuer } from "./rates";
+import { categories as c, expenses as e } from "./schema";
 
 export const groups = ["day", "week", "month"] as const;
 type Group = (typeof groups)[number];
@@ -25,15 +26,17 @@ const nextBucket = (start: string, group: Group) => {
 
 const byTotal = (a: Total, b: Total) => b.total - a.total;
 
-export async function period(db: Database, value: Valuer, from: string, to: string, group: Group) {
+export async function period(db: Db, value: Valuer, from: string, to: string, group: Group) {
   const rows = db
-    .query(`SELECT amount, currency, date, category_id AS categoryId FROM expenses WHERE ${countable} AND date BETWEEN ? AND ?`)
-    .all(from, to) as { amount: number; currency: string; date: string; categoryId: number }[];
+    .select({ amount: e.amount, currency: e.currency, date: e.date, categoryId: e.categoryId })
+    .from(e)
+    .where(and(countable, between(e.date, from, to)))
+    .all();
   const valued = await value(rows);
   const counted = valued.filter((r): r is (typeof valued)[number] & { baseAmount: number } => r.baseAmount !== null);
   const sum = (rs: { baseAmount: number }[]) => rs.reduce((s, r) => s + r.baseAmount, 0);
 
-  const all = db.query("SELECT id, name, icon, color, parent_id AS parentId FROM categories").all() as Category[];
+  const all: Category[] = db.select({ id: c.id, name: c.name, icon: c.icon, color: c.color, parentId: c.parentId }).from(c).all();
   const categories = all
     .filter((p) => p.parentId === null)
     .map((p) => {
@@ -65,7 +68,7 @@ export async function period(db: Database, value: Valuer, from: string, to: stri
   };
 }
 
-export async function stats(db: Database, value: Valuer, from: string, to: string, group: Group) {
+export async function stats(db: Db, value: Valuer, from: string, to: string, group: Group) {
   const days = (Date.parse(to) - Date.parse(from)) / 864e5 + 1;
   return {
     ...(await period(db, value, from, to, group)),
