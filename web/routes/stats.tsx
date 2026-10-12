@@ -1,201 +1,176 @@
-import { AnimatePresence, motion } from "motion/react";
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useContext, useState } from "react";
-import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { formatAmount } from "../../shared/amount";
+import { change, days, money, span, Total, usePeriod } from "../period";
 import { dated, pick, UnitContext } from "../shared";
 
-type Slice = { id: number; name: string; icon: string; color: string; total: number };
-type Category = Slice & { children: Slice[] };
-type Period = {
-  from: string;
-  to: string;
-  baseCurrency: string;
-  total: number;
-  unconverted: number;
-  categories: Category[];
-  buckets: { start: string; total: number }[];
-};
-type Stats = Period & { previous: Period };
-
-const iso = (d: Date) => d.toLocaleDateString("en-CA");
-
-function presets() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  return {
-    "This month": [iso(new Date(y, m, 1)), iso(now)],
-    "Last month": [iso(new Date(y, m - 1, 1)), iso(new Date(y, m, 0))],
-    "Year to date": [iso(new Date(y, 0, 1)), iso(now)],
-  } as Record<string, [string, string]>;
-}
-
-function Change({ now, before }: { now: number; before: number }) {
-  if (!before) return null;
-  const pct = Math.round(((now - before) / before) * 100);
-  return (
-    <span className={`text-xs ${pct > 0 ? "text-red-600" : "text-green-600"}`}>
-      {pct > 0 ? "▲" : "▼"} {Math.abs(pct)}%
-    </span>
-  );
-}
-
-function ChartTip({ active, payload, label, money }: { active?: boolean; payload?: { value: number; name: string }[]; label?: string; money: (n: number) => string }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg bg-white px-2 py-1 text-sm shadow dark:bg-zinc-800">
-      {label ?? payload[0].name}: {money(payload[0].value)}
-    </div>
-  );
-}
+const presets = ["This month", "Last month", "Year", "Custom"];
 
 export const Route = createFileRoute("/stats")({
-  validateSearch: (s) => pick(s, { from: dated, to: dated, group: /^(day|week|month)$/ }),
+  validateSearch: (s) => pick(s, { from: dated, to: dated }),
   component: StatsPage,
 });
 
 function StatsPage() {
   const [unit] = useContext(UnitContext);
-  const [thisFrom, thisTo] = presets()["This month"];
-  const { from = thisFrom, to = thisTo, group = "day" } = Route.useSearch();
-  const range = [from, to];
+  const { from, to } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const setSearch = (s: { from?: string; to?: string; group?: string }) =>
-    navigate({ search: (prev) => ({ ...prev, ...s }), replace: true });
-  const setRange = ([from, to]: string[]) => setSearch({ from, to });
   const [custom, setCustom] = useState(false);
-  const preset = (!custom && Object.entries(presets()).find(([, r]) => r[0] === from && r[1] === to)?.[0]) || "Custom";
-  const [drill, setDrill] = useState<number | null>(null);
-
-  const { data: stats } = useQuery<Stats>({
-    queryKey: [`/api/stats?from=${range[0]}&to=${range[1]}&group=${group}`],
-    enabled: range[0] <= range[1],
-  });
-
-  if (!stats) return null;
-  const base = stats.baseCurrency;
-  const money = (n: number) => `${formatAmount(n, base, unit)} ${base === "BTC" ? unit : base}`;
-  const parent = stats.categories.find((c) => c.id === drill);
-  const previousOf = (id: number) => {
-    const all = stats.previous.categories;
-    return (parent ? all.find((c) => c.id === parent.id)?.children : all)?.find((c) => c.id === id)?.total ?? 0;
+  const range = from && to ? `${from},${to}` : span("This month").range.join();
+  const preset = (!custom && presets.find((p) => p !== "Custom" && span(p).range.join() === range)) || "Custom";
+  const [open, setOpen] = useState<number | null>(null);
+  const s = span(preset, range.split(",") as [string, string]);
+  const setRange = (from: string, to: string) => navigate({ search: { from, to }, replace: true });
+  const setPreset = (p: string) => {
+    setCustom(p === "Custom");
+    if (p !== "Custom") setRange(...span(p).range);
   };
-  const slices = parent
-    ? parent.children.map((c) => ({ ...c, name: c.id === parent.id ? `${c.name} (general)` : c.name }))
-    : stats.categories;
+  const now = usePeriod(s.range);
+  const ref = usePeriod(s.ref);
+  const full = usePeriod(s.full);
+  const seg = (
+    <div role="tablist" className="mt-4 flex gap-0.5 rounded-[9px] bg-track p-0.5">
+      {presets.map((p) => (
+        <button
+          key={p}
+          role="tab"
+          aria-selected={preset === p}
+          onClick={() => (setPreset(p), setOpen(null))}
+          className={`h-8 flex-1 rounded-[7px] text-[13px] font-medium ${preset === p ? "bg-surface text-ink shadow-[0_1px_2px_rgb(27_28_31/0.12)]" : "text-ink2"}`}
+        >
+          {p}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (!now || !ref || !full)
+    return (
+      <>
+        <h1 className="text-[22px] font-semibold tracking-tight">Stats</h1>
+        {seg}
+      </>
+    );
+
+  const show = (n: number) => money(n, now.baseCurrency, unit);
+  const delta = change(now.total, ref.total);
+  const max = Math.max(full.total, now.total, 1);
+  const pct = (n: number) => `${(n / max) * 100}%`;
+  const top = Math.max(...now.categories.map((c) => c.total), 1);
+  const before = (id: number, list: { id: number; total: number }[] = ref.categories) => list.find((c) => c.id === id)?.total ?? 0;
+  const elapsed = days(s.range[0], s.range[1]);
+  const length = days(s.range[0], s.end);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2 text-sm">
-        {[...Object.keys(presets()), "Custom"].map((p) => (
-          <button
-            key={p}
-            className={`rounded-full px-3 py-1 ${preset === p ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800"}`}
-            onClick={() => {
-              setCustom(p === "Custom");
-              if (p !== "Custom") setRange(presets()[p]);
-            }}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
+    <>
+      <h1 className="text-[22px] font-semibold tracking-tight">Stats</h1>
+      {seg}
       {preset === "Custom" && (
-        <div className="flex gap-2">
-          <input className="input min-w-0 flex-1" type="date" value={range[0]} onChange={(e) => setRange([e.target.value, range[1]])} />
-          <input className="input min-w-0 flex-1" type="date" value={range[1]} onChange={(e) => setRange([range[0], e.target.value])} />
+        <div className="mt-3 flex gap-2">
+          <input className="input min-w-0 flex-1" type="date" aria-label="From" value={s.range[0]} onChange={(e) => setRange(e.target.value, s.range[1])} />
+          <input className="input min-w-0 flex-1" type="date" aria-label="To" value={s.range[1]} onChange={(e) => setRange(s.range[0], e.target.value)} />
         </div>
       )}
 
-      <div>
-        <p className="text-3xl font-semibold tabular-nums">{money(stats.total)}</p>
-        <p className="flex items-center gap-2 text-sm text-zinc-500">
-          vs {money(stats.previous.total)} the previous {Math.round((Date.parse(stats.to) - Date.parse(stats.from)) / 864e5) + 1} days
-          <Change now={stats.total} before={stats.previous.total} />
-        </p>
-        {stats.unconverted > 0 && (
-          <p className="text-sm text-amber-600">{stats.unconverted} expenses have no rate and are left out.</p>
+      <p className="mt-4 flex items-baseline gap-2.5 text-ink2">
+        <Total text={show(now.total)} />
+        {delta && (
+          <span>
+            <span className={`font-medium ${delta.tone}`}>{delta.text}</span> vs {s.name}
+            {length > elapsed && " by now"}
+          </span>
         )}
+      </p>
+      {now.unconverted > 0 && <p className="mt-1 text-sm text-amber">{now.unconverted} expenses have no rate and are left out.</p>}
+
+      <div
+        className={`relative ${length > elapsed ? "mt-12" : "mt-5"}`}
+        role="img"
+        aria-label={`${show(now.total)} so far. ${s.name} was at ${show(ref.total)} by this point and ended at ${show(full.total)}.`}
+      >
+        <div className="h-2 overflow-hidden rounded bg-track">
+          <div className="h-full rounded bg-accent" style={{ width: pct(now.total) }} />
+        </div>
+        {length > elapsed && (
+          <>
+            <span className="absolute -top-1 h-4 w-0.5 rounded bg-ink" style={{ left: pct(ref.total) }} />
+            <Label
+              className="absolute bottom-full mb-2.5 -translate-x-1/2 text-center text-xs text-ink3"
+              style={{ left: `${Math.min(Math.max((ref.total / max) * 100, 14), 86)}%` }}
+              title={`${s.name} by now`}
+              value={show(ref.total)}
+            />
+          </>
+        )}
+        <div className="mt-2.5 flex justify-between text-xs text-ink3">
+          <Label title={length > elapsed ? "So far" : "Total"} value={show(now.total)} />
+          <Label className="text-right" title={`${s.name} total`} value={show(full.total)} />
+        </div>
       </div>
-
-      <section>
-        {parent && (
-          <button className="mb-2 text-sm text-zinc-500" onClick={() => setDrill(null)}>
-            ← All categories
-          </button>
-        )}
-        {slices.length > 0 && (
-          <div className="h-56">
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={slices}
-                  dataKey="total"
-                  nameKey="name"
-                  innerRadius="60%"
-                  outerRadius="90%"
-                  paddingAngle={2}
-                  stroke="none"
-                  onClick={(_, i) => !parent && setDrill(slices[i].id)}
-                >
-                  {slices.map((s, i) => (
-                    <Cell key={s.id} fill={s.color} fillOpacity={parent ? 1 - i * 0.15 : 1} className="cursor-pointer outline-none" />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTip money={money} />} />
-              </PieChart>
-            </ResponsiveContainer>
+      {length > elapsed && (
+        <>
+          <p className="mt-5 text-[13px] text-ink3">
+            Day {elapsed} of {length}
+          </p>
+          <div className="mt-1.5 h-1 overflow-hidden rounded-sm bg-track">
+            <div className="h-full bg-ink3" style={{ width: `${(elapsed / length) * 100}%` }} />
           </div>
-        )}
-        <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-          <AnimatePresence initial={false}>
-            {slices.map((s) => (
-              <motion.li
-                key={`${drill}-${s.id}`}
-                layout
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={`flex items-center justify-between py-2 ${parent ? "" : "cursor-pointer"}`}
-                onClick={() => !parent && setDrill(s.id)}
-              >
-                <span className="flex items-center gap-2">
-                  <span className="rounded-full p-1.5 leading-none" style={{ background: `${s.color}33` }}>
-                    {s.icon}
-                  </span>
-                  {s.name}
-                </span>
-                <span className="flex items-center gap-2 tabular-nums">
-                  <Change now={s.total} before={previousOf(s.id)} />
-                  {money(s.total)}
-                </span>
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </ul>
-        {slices.length === 0 && <p className="text-sm text-zinc-500">No spending in this range.</p>}
-      </section>
+        </>
+      )}
 
-      <section>
-        <div className="mb-2 flex gap-3 text-sm">
-          {(["day", "week", "month"] as const).map((g) => (
-            <button key={g} className={`capitalize ${group === g ? "font-semibold" : "text-zinc-500"}`} onClick={() => setSearch({ group: g })}>
-              {g}
-            </button>
-          ))}
-        </div>
-        <div className="h-48 text-zinc-500">
-          <ResponsiveContainer>
-            <BarChart data={stats.buckets}>
-              <XAxis dataKey="start" tick={{ fill: "currentColor", fontSize: 11 }} tickLine={false} axisLine={false} />
-              <Tooltip cursor={{ fill: "currentColor", fillOpacity: 0.1 }} content={<ChartTip money={money} />} />
-              <Bar dataKey="total" radius={[4, 4, 0, 0]} className="fill-zinc-900 dark:fill-zinc-100" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-    </div>
+      <div className="mt-7 mb-1 flex justify-between text-[13px] font-medium text-ink3">
+        <span className="text-ink2">By category</span>
+        <span>vs {s.name}</span>
+      </div>
+      {now.categories.length === 0 && <p className="py-6 text-ink3">No spending in this period.</p>}
+      <ul>
+        {now.categories.map((c) => {
+          const parent = ref.categories.find((p) => p.id === c.id)?.children;
+          return (
+            <li key={c.id} className="border-b border-line last:border-0">
+              <button
+                className="grid w-full grid-cols-[24px_1fr_auto_48px] items-baseline gap-x-2.5 gap-y-1.5 py-2.5 text-left"
+                aria-expanded={open === c.id}
+                onClick={() => setOpen(open === c.id ? null : c.id)}
+              >
+                <span>{c.icon}</span>
+                <span className="font-medium">{c.name}</span>
+                <span className="font-medium">{show(c.total)}</span>
+                <Delta now={c.total} before={before(c.id)} />
+                <span className="col-span-2 col-start-2 h-1 overflow-hidden rounded-sm bg-track">
+                  <span className="block h-full rounded-sm" style={{ width: `${(c.total / top) * 100}%`, background: c.color }} />
+                </span>
+              </button>
+              {open === c.id && (
+                <ul className="mb-2 ml-[34px] border-l border-line2 pl-3">
+                  {c.children.map((k) => (
+                    <li key={k.id} className="flex justify-between gap-2 py-1.5 text-sm text-ink2">
+                      <span>{k.id === c.id ? `${k.name}, general` : `${k.icon} ${k.name}`}</span>
+                      <span className="flex gap-3">
+                        {show(k.total)}
+                        <Delta now={k.total} before={before(k.id, parent)} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
+}
+
+function Label({ title, value, className = "", style }: { title: string; value: string; className?: string; style?: object }) {
+  return (
+    <span className={`whitespace-nowrap ${className}`} style={style}>
+      {title}
+      <b className="block text-[13px] font-medium text-ink">{value}</b>
+    </span>
+  );
+}
+
+function Delta({ now, before }: { now: number; before: number }) {
+  const d = change(now, before);
+  return <span className={`w-12 text-right text-[13px] ${d?.tone ?? "text-ink3"}`}>{d?.text ?? "new"}</span>;
 }

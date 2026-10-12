@@ -1,11 +1,105 @@
 @import "tailwindcss";
+@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --ink: #1b1c1f;
+  --ink2: #55575e;
+  --ink3: #6e7078;
+  --line: #e9e8e4;
+  --line2: #dedcd7;
+  --track: #f0efeb;
+  --accent: #3b5bdb;
+  --accent-soft: #eef1fc;
+  --on-accent: #ffffff;
+  --amber: #a35a00;
+  --amber-line: #e7cfae;
+  --up: #b4372c;
+  --down: #2f7d4f;
+}
+.dark {
+  --bg: #121214;
+  --surface: #1b1b1f;
+  --ink: #ececee;
+  --ink2: #a9aab1;
+  --ink3: #8b8c93;
+  --line: #26262b;
+  --line2: #34343a;
+  --track: #232328;
+  --accent: #7b93f2;
+  --accent-soft: #1e2442;
+  --on-accent: #0e1330;
+  --amber: #e0a050;
+  --amber-line: #4a3820;
+  --up: #ef8a7e;
+  --down: #6cc495;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Geist Variable", system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-ink3: var(--ink3);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-track: var(--track);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-amber: var(--amber);
+  --color-amber-line: var(--amber-line);
+  --color-up: var(--up);
+  --color-down: var(--down);
+}
+
 @utility input {
-  @apply rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900;
+  @apply h-10 rounded-lg border border-line2 bg-surface px-3 text-[15px] text-ink placeholder:text-ink3 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent-soft;
+}
+@utility primary {
+  @apply h-10 rounded-lg bg-accent px-4 text-sm font-medium text-on-accent disabled:opacity-50;
+}
+@utility quiet {
+  @apply h-10 rounded-lg border border-line2 bg-surface px-3 text-sm font-medium text-ink;
+}
+@utility label {
+  @apply flex flex-col gap-1.5 text-[13px] font-medium text-ink2;
 }
 
 body {
-  @apply bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100;
+  @apply bg-bg font-sans text-[15px] leading-snug text-ink antialiased tabular-nums;
+}
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+}
+@layer components {
+  .rise {
+    transition:
+      translate 360ms cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 360ms cubic-bezier(0.16, 1, 0.3, 1);
+    @starting-style {
+      translate: 0 10px;
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rise {
+      transition: none;
+    }
+  }
 }

@@ -1,5 +1,6 @@
-import { createContext, type FormEvent, Fragment, useState } from "react";
+import { createContext, type FormEvent, Fragment, type ReactNode, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import type { Unit } from "../shared/amount";
 
 export type Expense = {
@@ -25,10 +26,8 @@ export type Settings = {
 };
 export type Draft = { note: string; amount: number; currency: string; date: string; categoryId: number; tags: string[] };
 
-export const button = "rounded-lg bg-zinc-900 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900";
-
 export type Request = [method: string, path: string, body?: unknown];
-async function send(...[method, path, body]: Request) {
+export async function send(...[method, path, body]: Request) {
   const res = await fetch(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error);
@@ -38,6 +37,33 @@ export const useSend = (onSuccess?: () => void) => useMutation({ mutationFn: (r:
 
 export const useSettings = () => useQuery<Settings>({ queryKey: ["/api/settings"] }).data;
 export const UnitContext = createContext<[Unit, (u: Unit) => void]>(["BTC", () => {}]);
+export const FormContext = createContext<(open: boolean) => void>(() => {});
+
+export const today = () => new Date().toLocaleDateString("en-CA");
+
+export function dayLabel(date: string) {
+  const diff = Math.round((Date.parse(today()) - Date.parse(date)) / 864e5);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  const d = new Date(`${date}T00:00`);
+  return d.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    ...(d.getFullYear() !== new Date().getFullYear() && { year: "numeric" }),
+  });
+}
+
+export const Icon = ({ children, className = "size-[21px]" }: { children: ReactNode; className?: string }) => (
+  <svg viewBox="0 0 24 24" aria-hidden className={`${className} fill-none stroke-current stroke-[1.6] [stroke-linecap:round] [stroke-linejoin:round]`}>
+    {children}
+  </svg>
+);
+export const Chevron = ({ className = "size-2.5 text-ink3" }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="m6 9 6 6 6-6" />
+  </Icon>
+);
 
 export function SettingsForm(props: {
   settings: Settings;
@@ -62,18 +88,19 @@ export function SettingsForm(props: {
   }
 
   return (
-    <form onSubmit={save} className={`flex flex-col gap-3 ${onboarding ? "mx-auto max-w-md p-4" : ""}`}>
-      <h1 className="text-xl font-semibold">{props.title}</h1>
-      <label className="flex flex-col gap-1 text-sm">
+    <form onSubmit={save} className="flex flex-col gap-4">
+      <h1 className="text-[22px] font-semibold tracking-tight">{props.title}</h1>
+      {onboarding && <p className="-mt-2 text-ink2">Pick the currency totals are shown in, and the ones you spend in. You can change both later.</p>}
+      <label className="label">
         Base currency
         <input className="input" value={baseCurrency} onChange={(e) => setBase(e.target.value)} />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="label">
         Currencies you use
         <input className="input" placeholder="GBP, EUR, BTC" value={currencies} onChange={(e) => setCurrencies(e.target.value)} />
       </label>
       {!onboarding && (
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="label">
           Theme
           <select className="input" value={theme} onChange={(e) => setTheme(e.target.value as Settings["theme"])}>
             <option value="system">System</option>
@@ -82,8 +109,14 @@ export function SettingsForm(props: {
           </select>
         </label>
       )}
-      {message && <p className="text-sm text-zinc-500">{message}</p>}
-      <button className={button}>{onboarding ? "Start" : "Save"}</button>
+      {message && <p className={`text-sm ${mutation.isError ? "text-up" : "text-ink3"}`}>{message}</p>}
+      <button className="primary">{onboarding ? "Start" : "Save"}</button>
+      {props.settings.ai && !onboarding && (
+        <Link to="/chat" className="mt-4 flex items-center justify-between border-y border-line py-3">
+          Past chats
+          <Chevron className="size-4 -rotate-90 text-ink3" />
+        </Link>
+      )}
     </form>
   );
 }

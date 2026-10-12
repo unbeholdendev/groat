@@ -1,18 +1,23 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
-import { formatAmount } from "../../shared/amount";
-import type { Draft } from "../shared";
+import { money } from "../period";
+import { Chevron, type Draft, pick } from "../shared";
 
 type Message = { role: string; content: string | null };
-type Chat = { id: number; title: string; messages?: Message[] };
+export type Chat = { id: number; title: string; messages?: Message[] };
 
-export const Route = createFileRoute("/chat")({ component: ChatPage });
+export const Route = createFileRoute("/chat")({
+  validateSearch: (s) => pick(s, { id: /^\d+$/ }),
+  component: ChatPage,
+});
 
 function ChatPage() {
   const navigate = useNavigate();
   const onDraft = (draft: Draft) => navigate({ to: "/", state: { draft } });
-  const [openId, setOpenId] = useState<number | null>(null);
+  const search = Route.useSearch();
+  const openId = search.id ? Number(search.id) : null;
+  const setOpenId = (id: number | null) => navigate({ to: "/chat", search: id ? { id: String(id) } : {} });
   const [message, setMessage] = useState("");
   const chats = useQuery<Chat[]>({ queryKey: ["/api/chats"] }).data ?? [];
   const chat = useQuery<Chat>({ queryKey: [`/api/chats/${openId}`], enabled: openId !== null }).data;
@@ -48,58 +53,72 @@ function ChatPage() {
   }
 
   return (
-    <div className="grid gap-4">
-      <ul className="grid gap-1 text-sm">
-        <li>
-          <button onClick={() => setOpenId(null)} className={openId ? "text-zinc-500" : "font-semibold"}>
-            + New chat
+    <div className="grid gap-5">
+      <div className="flex items-center justify-between">
+        <button className="inline-flex items-center gap-1 text-ink2" onClick={() => (openId ? setOpenId(null) : navigate({ to: "/settings" }))}>
+          <Chevron className="size-4 rotate-90 text-ink2" />
+          {openId ? "Chats" : "Settings"}
+        </button>
+        {openId && (
+          <button className="text-sm font-medium text-up" onClick={() => remove(openId)}>
+            Delete
           </button>
-        </li>
-        {chats.map((c) => (
-          <li key={c.id} className="flex justify-between gap-2">
-            <button onClick={() => setOpenId(c.id)} className={`truncate text-left ${openId === c.id ? "font-semibold" : ""}`}>
-              {c.title}
-            </button>
-            <button onClick={() => remove(c.id)} className="text-zinc-500" aria-label="Delete chat">
-              ✕
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="grid gap-2">
+        )}
+      </div>
+      <h1 className="text-[22px] font-semibold tracking-tight">{open?.title ?? "Chats"}</h1>
+      {!openId && (
+        <ul>
+          {chats.length === 0 && <li className="text-ink3">No chats yet. Start one here, or type ? in the bar.</li>}
+          {chats.map((c) => (
+            <li key={c.id} className="border-b border-line last:border-0">
+              <button onClick={() => setOpenId(c.id)} className="w-full truncate py-2.5 text-left">
+                {c.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="grid gap-2.5">
         {open?.messages
           ?.filter((m) => m.content && (m.role !== "tool" || m.content.startsWith('{"draft"')))
           .map((m, i) => {
             if (m.role === "tool") {
               const { draft } = JSON.parse(m.content!) as { draft: Draft };
               return (
-                <button key={i} onClick={() => onDraft(draft)} className="mr-8 rounded-lg border border-zinc-300 px-3 py-2 text-left dark:border-zinc-700">
-                  Review draft: {draft.note}, {formatAmount(draft.amount, draft.currency)} {draft.currency}, {draft.date}
+                <button
+                  key={i}
+                  onClick={() => onDraft(draft)}
+                  className="mr-8 flex justify-between gap-3 rounded-xl border border-line2 bg-surface px-3.5 py-2.5 text-left text-sm"
+                >
+                  <span>
+                    Review draft: <b className="font-medium">{draft.note}</b>, {draft.date}
+                  </span>
+                  {money(draft.amount, draft.currency)}
                 </button>
               );
             }
             return (
               <p
                 key={i}
-                className={`whitespace-pre-wrap rounded-lg px-3 py-2 ${m.role === "user" ? "ml-8 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "mr-8 bg-zinc-100 dark:bg-zinc-800"}`}
+                className={`rounded-xl px-3.5 py-2.5 whitespace-pre-wrap ${m.role === "user" ? "ml-8 bg-accent-soft text-ink" : "mr-8 border border-line bg-surface"}`}
               >
                 {m.content}
               </p>
             );
           })}
-        {asking.isPending && <p className="text-sm text-zinc-500">Thinking…</p>}
-        {asking.error && <p className="text-sm text-red-600">{asking.error.message}</p>}
+        {asking.isPending && <p className="text-sm text-ink3">Looking at your expenses…</p>}
+        {asking.error && <p className="text-sm text-up">{asking.error.message}</p>}
       </div>
       <form onSubmit={ask} className="flex gap-2">
         <input
           className="input flex-1"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Ask about your spending"
+          placeholder={openId ? "Reply" : "Ask about your spending"}
           required
         />
-        <button disabled={asking.isPending} className="rounded-lg bg-zinc-900 px-4 text-white dark:bg-zinc-100 dark:text-zinc-900">
-          Ask
+        <button disabled={asking.isPending} className="primary">
+          {openId ? "Send" : "Ask"}
         </button>
       </form>
     </div>

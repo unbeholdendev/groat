@@ -1,0 +1,497 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-11T17:40:39.286Z",
+  "title": "Design System: Expenses",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "canonical": "#fafaf9",
+        "cssVar": "--bg",
+        "darkToken": "ground-dark",
+        "darkValue": "#121214",
+        "tonalRamp": [
+          "oklch(15% 0.001 106)",
+          "oklch(26% 0.001 106)",
+          "oklch(38% 0.001 106)",
+          "oklch(50% 0.001 106)",
+          "oklch(62% 0.001 106)",
+          "oklch(74% 0.001 106)",
+          "oklch(85% 0.001 106)",
+          "oklch(95% 0.001 106)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Sheet White",
+        "canonical": "#ffffff",
+        "cssVar": "--surface",
+        "darkToken": "surface-dark",
+        "darkValue": "#1b1b1f",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(50% 0.000 90)",
+          "oklch(62% 0.000 90)",
+          "oklch(74% 0.000 90)",
+          "oklch(85% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ledger Ink",
+        "canonical": "#1b1c1f",
+        "cssVar": "--ink",
+        "darkToken": "ink-dark",
+        "darkValue": "#ececee",
+        "tonalRamp": [
+          "oklch(15% 0.006 271)",
+          "oklch(26% 0.006 271)",
+          "oklch(38% 0.006 271)",
+          "oklch(50% 0.006 271)",
+          "oklch(62% 0.006 271)",
+          "oklch(74% 0.006 271)",
+          "oklch(85% 0.006 271)",
+          "oklch(95% 0.006 271)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Second Ink",
+        "canonical": "#55575e",
+        "cssVar": "--ink2",
+        "darkToken": "ink-2-dark",
+        "darkValue": "#a9aab1",
+        "tonalRamp": [
+          "oklch(15% 0.012 273)",
+          "oklch(26% 0.012 273)",
+          "oklch(38% 0.012 273)",
+          "oklch(50% 0.012 273)",
+          "oklch(62% 0.012 273)",
+          "oklch(74% 0.012 273)",
+          "oklch(85% 0.012 273)",
+          "oklch(95% 0.012 273)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Third Ink",
+        "canonical": "#6e7078",
+        "cssVar": "--ink3",
+        "darkToken": "ink-3-dark",
+        "darkValue": "#8b8c93",
+        "tonalRamp": [
+          "oklch(15% 0.013 275)",
+          "oklch(26% 0.013 275)",
+          "oklch(38% 0.013 275)",
+          "oklch(50% 0.013 275)",
+          "oklch(62% 0.013 275)",
+          "oklch(74% 0.013 275)",
+          "oklch(85% 0.013 275)",
+          "oklch(95% 0.013 275)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e9e8e4",
+        "cssVar": "--line",
+        "darkToken": "hairline-dark",
+        "darkValue": "#26262b",
+        "tonalRamp": [
+          "oklch(15% 0.005 95)",
+          "oklch(26% 0.005 95)",
+          "oklch(38% 0.005 95)",
+          "oklch(50% 0.005 95)",
+          "oklch(62% 0.005 95)",
+          "oklch(74% 0.005 95)",
+          "oklch(85% 0.005 95)",
+          "oklch(95% 0.005 95)"
+        ]
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "#dedcd7",
+        "cssVar": "--line2",
+        "darkToken": "hairline-strong-dark",
+        "darkValue": "#34343a",
+        "tonalRamp": [
+          "oklch(15% 0.007 89)",
+          "oklch(26% 0.007 89)",
+          "oklch(38% 0.007 89)",
+          "oklch(50% 0.007 89)",
+          "oklch(62% 0.007 89)",
+          "oklch(74% 0.007 89)",
+          "oklch(85% 0.007 89)",
+          "oklch(95% 0.007 89)"
+        ]
+      },
+      "track": {
+        "role": "neutral",
+        "displayName": "Track",
+        "canonical": "#f0efeb",
+        "cssVar": "--track",
+        "darkToken": "track-dark",
+        "darkValue": "#232328",
+        "tonalRamp": [
+          "oklch(15% 0.005 95)",
+          "oklch(26% 0.005 95)",
+          "oklch(38% 0.005 95)",
+          "oklch(50% 0.005 95)",
+          "oklch(62% 0.005 95)",
+          "oklch(74% 0.005 95)",
+          "oklch(85% 0.005 95)",
+          "oklch(95% 0.005 95)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Ledger Blue",
+        "canonical": "#3b5bdb",
+        "cssVar": "--accent",
+        "darkToken": "accent-dark",
+        "darkValue": "#7b93f2",
+        "tonalRamp": [
+          "oklch(15% 0.199 268)",
+          "oklch(26% 0.199 268)",
+          "oklch(38% 0.199 268)",
+          "oklch(50% 0.199 268)",
+          "oklch(62% 0.199 268)",
+          "oklch(74% 0.199 268)",
+          "oklch(85% 0.199 268)",
+          "oklch(95% 0.199 268)"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Blue Wash",
+        "canonical": "#eef1fc",
+        "cssVar": "--accent-soft",
+        "darkToken": "accent-soft-dark",
+        "darkValue": "#1e2442",
+        "tonalRamp": [
+          "oklch(15% 0.015 274)",
+          "oklch(26% 0.015 274)",
+          "oklch(38% 0.015 274)",
+          "oklch(50% 0.015 274)",
+          "oklch(62% 0.015 274)",
+          "oklch(74% 0.015 274)",
+          "oklch(85% 0.015 274)",
+          "oklch(95% 0.015 274)"
+        ]
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Ledger Amber",
+        "canonical": "#a35a00",
+        "cssVar": "--amber",
+        "darkToken": "amber-dark",
+        "darkValue": "#e0a050",
+        "tonalRamp": [
+          "oklch(15% 0.127 60)",
+          "oklch(26% 0.127 60)",
+          "oklch(38% 0.127 60)",
+          "oklch(50% 0.127 60)",
+          "oklch(62% 0.127 60)",
+          "oklch(74% 0.127 60)",
+          "oklch(85% 0.127 60)",
+          "oklch(95% 0.127 60)"
+        ]
+      },
+      "amber-line": {
+        "role": "tertiary",
+        "displayName": "Amber Line",
+        "canonical": "#e7cfae",
+        "cssVar": "--amber-line",
+        "darkToken": "amber-line-dark",
+        "darkValue": "#4a3820",
+        "tonalRamp": [
+          "oklch(15% 0.051 76)",
+          "oklch(26% 0.051 76)",
+          "oklch(38% 0.051 76)",
+          "oklch(50% 0.051 76)",
+          "oklch(62% 0.051 76)",
+          "oklch(74% 0.051 76)",
+          "oklch(85% 0.051 76)",
+          "oklch(95% 0.051 76)"
+        ]
+      },
+      "up": {
+        "role": "tertiary",
+        "displayName": "Over Red",
+        "canonical": "#b4372c",
+        "cssVar": "--up",
+        "darkToken": "up-dark",
+        "darkValue": "#ef8a7e",
+        "tonalRamp": [
+          "oklch(15% 0.163 29)",
+          "oklch(26% 0.163 29)",
+          "oklch(38% 0.163 29)",
+          "oklch(50% 0.163 29)",
+          "oklch(62% 0.163 29)",
+          "oklch(74% 0.163 29)",
+          "oklch(85% 0.163 29)",
+          "oklch(95% 0.163 29)"
+        ]
+      },
+      "down": {
+        "role": "tertiary",
+        "displayName": "Under Green",
+        "canonical": "#2f7d4f",
+        "cssVar": "--down",
+        "darkToken": "down-dark",
+        "darkValue": "#6cc495",
+        "tonalRamp": [
+          "oklch(15% 0.106 154)",
+          "oklch(26% 0.106 154)",
+          "oklch(38% 0.106 154)",
+          "oklch(50% 0.106 154)",
+          "oklch(62% 0.106 154)",
+          "oklch(74% 0.106 154)",
+          "oklch(85% 0.106 154)",
+          "oklch(95% 0.106 154)"
+        ]
+      },
+      "on-accent": {
+        "role": "primary",
+        "displayName": "On Blue",
+        "canonical": "#ffffff",
+        "cssVar": "--on-accent",
+        "darkToken": "on-accent-dark",
+        "darkValue": "#0e1330",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(50% 0.000 90)",
+          "oklch(62% 0.000 90)",
+          "oklch(74% 0.000 90)",
+          "oklch(85% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Period total only; pence at 17px medium in Third Ink."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "One-line bar input and AI answer text."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Rows, notes and amounts; tabular numerals."
+      },
+      "body-sm": {
+        "displayName": "Body small",
+        "purpose": "Button text and secondary lines."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Day headers, field labels, chips, text buttons, deltas."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Legends, ruler labels, hints under the bar."
+      },
+      "tab": {
+        "displayName": "Tab",
+        "purpose": "Tab bar labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "bar-rest",
+        "value": "0 6px 18px -10px rgb(27 28 31 / 0.22)",
+        "purpose": "Docked one-line bar when idle."
+      },
+      {
+        "name": "bar-active",
+        "value": "0 0 0 3px var(--accent-soft), 0 6px 18px -8px rgb(27 28 31 / 0.18)",
+        "purpose": "Bar while focused or holding text, with an accent border."
+      },
+      {
+        "name": "answer-lift",
+        "value": "0 12px 32px -14px rgb(27 28 31 / 0.28)",
+        "purpose": "AI answer card above the bar."
+      },
+      {
+        "name": "segment-thumb",
+        "value": "0 1px 2px rgb(27 28 31 / 0.12)",
+        "purpose": "Selected period in the segmented control."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline: 2px solid var(--accent); outline-offset: 2px",
+        "purpose": "Global :focus-visible."
+      },
+      {
+        "name": "field-focus",
+        "value": "0 0 0 3px var(--accent-soft)",
+        "purpose": "Input focus halo with accent border."
+      }
+    ],
+    "motion": [
+      {
+        "name": "rise",
+        "value": "translate 360ms cubic-bezier(0.16, 1, 0.3, 1), opacity 360ms cubic-bezier(0.16, 1, 0.3, 1); @starting-style { translate: 0 10px; opacity: 0 }",
+        "purpose": "The only authored motion. Answer card and chip row entering above the bar. Disabled under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one committing action per view.",
+      "html": "<button class=\"ds-btn-primary\">Save</button>",
+      "css": ".ds-btn-primary { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--accent, #3b5bdb); color: var(--on-accent, #fff); font-size: 14px; font-weight: 500; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #3b5bdb); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Secondary actions such as unit toggle, restore, pause.",
+      "html": "<button class=\"ds-btn-quiet\">Pause</button>",
+      "css": ".ds-btn-quiet { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; height: 40px; padding: 0 12px; border: 1px solid var(--line2, #dedcd7); border-radius: 8px; background: var(--surface, #fff); color: var(--ink, #1b1c1f); font-size: 14px; font-weight: 500; } .ds-btn-quiet:focus-visible { outline: 2px solid var(--accent, #3b5bdb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Form and filter fields with a label above.",
+      "html": "<label class=\"ds-label\">Note<input class=\"ds-input\" placeholder=\"Search\"></label>",
+      "css": ".ds-label { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink2, #55575e); } .ds-input { font: inherit; font-size: 15px; font-weight: 400; height: 40px; padding: 0 12px; border: 1px solid var(--line2, #dedcd7); border-radius: 8px; background: var(--surface, #fff); color: var(--ink, #1b1c1f); } .ds-input::placeholder { color: var(--ink3, #6e7078); } .ds-input:focus { outline: none; border-color: var(--accent, #3b5bdb); box-shadow: 0 0 0 3px var(--accent-soft, #eef1fc); }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Category and date pickers that rise above the bar while typing.",
+      "html": "<span class=\"ds-chip\"><i class=\"ds-chip-dot\"></i>🍔 Eating out<svg viewBox=\"0 0 24 24\" width=\"10\" height=\"10\" fill=\"none\" stroke=\"#6e7078\" stroke-width=\"1.6\" stroke-linecap=\"round\"><path d=\"m6 9 6 6 6-6\"/></svg></span>",
+      "css": ".ds-chip { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border: 1px solid var(--line2, #dedcd7); border-radius: 7px; background: var(--surface, #fff); color: var(--ink, #1b1c1f); font-size: 13px; font-weight: 500; } .ds-chip-dot { width: 6px; height: 6px; border-radius: 9999px; background: #f97316; }"
+    },
+    {
+      "name": "One-line Bar",
+      "kind": "custom",
+      "refersTo": "one-line-bar",
+      "description": "Signature entry point: parsed amount in blue wash, tags in track.",
+      "html": "<div class=\"ds-bar\"><span class=\"ds-bar-text\">ramen <span class=\"ds-tok-amt\">24.50</span> <span class=\"ds-tok-tag\">#friends</span></span><button class=\"ds-bar-go\">Add</button></div>",
+      "css": ".ds-bar { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; min-height: 50px; padding: 5px 5px 5px 14px; border: 1px solid var(--accent, #3b5bdb); border-radius: 12px; background: var(--surface, #fff); box-shadow: 0 0 0 3px var(--accent-soft, #eef1fc), 0 6px 18px -8px rgb(27 28 31 / 0.18); } .ds-bar-text { flex: 1; font-size: 17px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink, #1b1c1f); } .ds-tok-amt { border-radius: 3px; background: var(--accent-soft, #eef1fc); color: var(--accent, #3b5bdb); box-shadow: 0 0 0 2px var(--accent-soft, #eef1fc); } .ds-tok-tag { border-radius: 3px; background: var(--track, #f0efeb); color: var(--ink2, #55575e); box-shadow: 0 0 0 2px var(--track, #f0efeb); } .ds-bar-go { font: inherit; height: 38px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--accent, #3b5bdb); color: var(--on-accent, #fff); font-size: 14px; font-weight: 500; } .ds-bar-go:focus-visible { outline: 2px solid var(--accent, #3b5bdb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Answer Card",
+      "kind": "card",
+      "refersTo": "answer-card",
+      "description": "AI answer rising above the bar.",
+      "html": "<section class=\"ds-answer\"><p>You have spent £71.77 on eating out so far this October.</p><div class=\"ds-answer-foot\"><button class=\"ds-text\">Close</button><button class=\"ds-text ds-text-go\">Continue in chat</button></div></section>",
+      "css": ".ds-answer { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; padding: 14px 16px 8px; border: 1px solid var(--line2, #dedcd7); border-radius: 14px; background: var(--surface, #fff); box-shadow: 0 12px 32px -14px rgb(27 28 31 / 0.28); color: var(--ink, #1b1c1f); font-size: 17px; font-weight: 500; line-height: 1.375; transition: translate 360ms cubic-bezier(0.16, 1, 0.3, 1), opacity 360ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-answer p { margin: 6px 0 0; } .ds-answer-foot { display: flex; justify-content: flex-end; gap: 4px; margin-top: 12px; padding-top: 6px; border-top: 1px solid var(--line, #e9e8e4); } .ds-text { font: inherit; font-size: 13px; font-weight: 500; padding: 6px 10px; border: 0; border-radius: 7px; background: none; color: var(--ink2, #55575e); } .ds-text-go { color: var(--accent, #3b5bdb); } .ds-text:focus-visible { outline: 2px solid var(--accent, #3b5bdb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tab Bar",
+      "kind": "nav",
+      "refersTo": "tab-bar",
+      "description": "Four tabs, drawn icons, current in ink.",
+      "html": "<nav class=\"ds-tabs\"><button class=\"ds-tab\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" width=\"21\" height=\"21\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 6h16M4 12h16M4 18h10\"/></svg>Expenses</button><button class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" width=\"21\" height=\"21\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 20V10M12 20V4M19 20v-7\"/></svg>Stats</button><button class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" width=\"21\" height=\"21\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"4\" y=\"4\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"13\" y=\"4\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"4\" y=\"13\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"13\" y=\"13\" width=\"7\" height=\"7\" rx=\"1.5\"/></svg>Categories</button><button class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" width=\"21\" height=\"21\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1\"/></svg>Settings</button></nav>",
+      "css": ".ds-tabs { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 0 10px; border-top: 1px solid var(--line, #e9e8e4); background: var(--surface, #fff); } .ds-tab { font: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; font-size: 11px; font-weight: 500; color: var(--ink3, #6e7078); } .ds-tab[aria-current] { color: var(--ink, #1b1c1f); } .ds-tab:hover { color: var(--ink, #1b1c1f); } .ds-tab:focus-visible { outline: 2px solid var(--accent, #3b5bdb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "custom",
+      "refersTo": "segmented",
+      "description": "Stats period presets.",
+      "html": "<div class=\"ds-seg\"><button class=\"ds-seg-on\">This month</button><button>Last month</button><button>Year</button><button>Custom</button></div>",
+      "css": ".ds-seg { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; padding: 2px; border-radius: 8px; background: var(--track, #f0efeb); } .ds-seg button { font: inherit; flex: 1; height: 32px; border: 0; border-radius: 7px; background: none; font-size: 13px; font-weight: 500; color: var(--ink2, #55575e); } .ds-seg .ds-seg-on { background: var(--surface, #fff); color: var(--ink, #1b1c1f); box-shadow: 0 1px 2px rgb(27 28 31 / 0.12); } .ds-seg button:focus-visible { outline: 2px solid var(--accent, #3b5bdb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ruler",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Stats total against last period by the same day.",
+      "html": "<div class=\"ds-ruler\"><div class=\"ds-ruler-track\"><div class=\"ds-ruler-fill\"></div></div><span class=\"ds-ruler-tick\"></span><div class=\"ds-ruler-labels\"><span>So far<b>£1,209.55</b></span><span>Sept total<b>£1,462.65</b></span></div></div>",
+      "css": ".ds-ruler { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; position: relative; padding-top: 8px; } .ds-ruler-track { height: 8px; overflow: hidden; border-radius: 4px; background: var(--track, #f0efeb); } .ds-ruler-fill { width: 70%; height: 100%; border-radius: 4px; background: var(--accent, #3b5bdb); } .ds-ruler-tick { position: absolute; top: 4px; left: 84%; width: 2px; height: 16px; border-radius: 4px; background: var(--ink, #1b1c1f); } .ds-ruler-labels { display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--ink3, #6e7078); } .ds-ruler-labels b { display: block; font-size: 13px; font-weight: 500; color: var(--ink, #1b1c1f); } .ds-ruler-labels span:last-child { text-align: right; }"
+    },
+    {
+      "name": "Expense Row",
+      "kind": "custom",
+      "refersTo": "expense-row",
+      "description": "Day header and hairline-ruled rows.",
+      "html": "<section class=\"ds-day\"><h2><span>Yesterday</span>£84.27</h2><div class=\"ds-row\"><span>🍔</span><span class=\"ds-note\">Dinner in Lisbon <i>#travel</i></span><span class=\"ds-amt\">€54.00<small>£45.77</small></span></div></section>",
+      "css": ".ds-day { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; font-size: 15px; line-height: 1.375; color: var(--ink, #1b1c1f); } .ds-day h2 { display: flex; justify-content: space-between; margin: 0; padding: 22px 0 6px; font-size: 13px; font-weight: 500; color: var(--ink3, #6e7078); } .ds-day h2 span { color: var(--ink2, #55575e); } .ds-row { display: grid; grid-template-columns: 24px 1fr auto; align-items: baseline; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line, #e9e8e4); } .ds-note { font-weight: 500; } .ds-note i { font-style: normal; font-weight: 400; color: var(--ink3, #6e7078); } .ds-amt { text-align: right; font-weight: 500; } .ds-amt small { display: block; font-size: 12px; font-weight: 400; color: var(--ink3, #6e7078); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Ledger",
+    "overview": "A ledger on warm off-white paper, ruled in hairlines, with one blue pen. Everything at rest is ink and paper; the blue appears only where the user is writing or about to commit. Numbers lead every row and are set in tabular figures so columns of money line up without a table.\n\nDensity is phone-first and calm: one centred column, rows separated by hairlines rather than boxes, and a single docked bar at thumb reach that does the work of a form. Chrome stays small and grey so the user's own content (their notes, amounts and chosen emoji) carries the colour. Dark theme is the same ledger with the lamps down: every token has a lifted dark twin, nothing is restyled.\n\nStatistics are measured, not charted. Spend is a ruler against last period, categories are short share tracks, and the only multi-colour mark on the home screen is a 3px split line.",
+    "keyCharacteristics": [
+      "Warm off-white ground, white surfaces, near-black ink, hairline rules.",
+      "One blue accent, reserved for live input, parsed tokens, primary actions and the ruler fill.",
+      "Category colour only as dots, the 3px split and share tracks.",
+      "Geist Variable throughout, tabular numerals everywhere.",
+      "User emoji for categories; drawn stroke icons for chrome.",
+      "Flat at rest; soft shadow only on the docked bar and the floating answer.",
+      "One authored motion: things rise into place."
+    ],
+    "rules": [
+      {
+        "name": "The One Pen Rule",
+        "body": "The accent marks what is live or what commits: the active bar, parsed tokens, primary actions, focus, and the ruler fill. Never use it for decoration, headings or category data.",
+        "section": "colors"
+      },
+      {
+        "name": "The Category Colour Rule",
+        "body": "User category colours appear only as small dots (6 to 7px), the 3px split line and 4px share tracks. Never fill text, backgrounds or buttons with them.",
+        "section": "colors"
+      },
+      {
+        "name": "The Twin Token Rule",
+        "body": "Every colour is a CSS variable with a light value on `:root` and a dark value on `.dark`. Components reference tokens, never raw hex, so the dark theme needs no component changes.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "All numerals are tabular (`tnum` on body). Money must align down a column without a table.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "Labels and headers are sentence case at normal tracking. No uppercase labels.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two Floaters Rule",
+        "body": "Only the bar and the answer card float. Lists, rows and forms stay flat on the ground.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** reference colour through tokens (`--accent`, `--ink2`, `--line`) so dark theme follows for free.",
+      "**Do** keep the accent to live input, parsed tokens, primary actions, focus and the ruler fill.",
+      "**Do** show category colour only as 6 to 7px dots, the 3px split and 4px share tracks.",
+      "**Do** separate rows with 1px hairlines and keep them flat on the ground.",
+      "**Do** use the user's emoji for categories and 24px-grid stroke icons (1.6px, round caps) for chrome.",
+      "**Do** use Rise for anything that appears in response to the bar, and switch it off for reduced motion.",
+      "**Do** keep every surface inside the centred 448px column with 20px gutters."
+    ],
+    "donts": [
+      "**Don't** add charts (donuts, pies, bar charts) to Stats; measure with the ruler and share tracks.",
+      "**Don't** add a floating action button or a multi-field add form as the primary way in; the bar is the way in.",
+      "**Don't** add shadows to lists, rows or forms; only the bar and the answer card float.",
+      "**Don't** use uppercase or letter-spaced labels, or small labels above headings.",
+      "**Don't** use text glyphs as icons; draw them.",
+      "**Don't** introduce a second typeface or a second accent hue."
+    ]
+  }
+}
