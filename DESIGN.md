@@ -245,7 +245,7 @@ Near-neutral warm greys with one cool blue and three semantic tones; every token
 
 A single column, 448px max, centred, with 20px side gutters, on phone and desktop alike. One breakpoint, at 1024px (`lg`): the column stays the same and only the tab bar moves to a side rail. Lists of money read best narrow. Top padding respects the safe area (at least 20px).
 
-The bottom is a fixed dock on every tab: the one-line bar sits above a four-tab bar (Expenses, Stats, Categories, Settings), both inside the same 448px column, with the tab bar padded for the home indicator. Content keeps 192px bottom padding so the last row clears the dock (144px at `lg`, where the dock is only the bar, 24px off the bottom edge). A gradient from transparent to Warm Paper over 26px sits behind the bar so rows fade under it.
+The bottom is a fixed dock on every tab: the one-line bar sits above a four-tab bar (Expenses, Stats, Categories, Settings), both inside the same 448px column, with the tab bar padded for the home indicator. Content keeps 192px bottom padding so the last row clears the dock. A gradient from transparent to Warm Paper over 26px sits behind the bar so rows fade under it. At `lg` the dock is only the bar, 24px off the bottom edge, and it is sticky: it follows the last row on a short page and pins to the bottom on a long one. The chips and the category row above it rise over the content there, so the input never moves while typing.
 
 Rhythm: rows are 10px top and bottom with 10px gaps; day groups open with 22px above and 6px below their header; small clusters use 6px or 8px gaps. Rows are a three-column grid (24px emoji, flexible note, auto amount) aligned on the baseline.
 

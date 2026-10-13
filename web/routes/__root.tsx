@@ -86,10 +86,10 @@ function App() {
     );
   return (
     <UnitContext value={unitState}>
-      <main className="mx-auto max-w-md px-5 pt-[max(env(safe-area-inset-top),20px)] pb-48 lg:pb-36">
+      <main className="mx-auto max-w-md px-5 pt-[max(env(safe-area-inset-top),20px)] pb-48 lg:pb-0">
         <Outlet />
       </main>
-      <div className="fixed inset-x-0 bottom-0 z-10">
+      <div className="fixed inset-x-0 bottom-0 z-10 lg:sticky">
         {!search.new && !search.edit && (
           <Bar
             settings={settings}
@@ -283,7 +283,7 @@ function Bar(props: {
   return (
     <>
       {card && <div className="fixed inset-0 -z-10 bg-bg/75" onClick={close} />}
-      <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && card && close()} className="mx-auto max-w-md bg-[linear-gradient(transparent,var(--bg)_26px)] px-3 pt-7 pb-2.5 lg:pb-6">
+      <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && card && close()} className="mx-auto max-w-md bg-[linear-gradient(transparent,var(--bg)_26px)] px-3 pt-7 pb-2.5 lg:relative lg:pb-6">
         {card && (
           <section
             ref={cardRef}
@@ -324,50 +324,52 @@ function Bar(props: {
             </div>
           </section>
         )}
-        {fills.length > 0 && !card && (
-          <div className="rise flex gap-1.5 overflow-hidden px-1.5 pb-2" aria-label="Past entries">
-            {fills.map((s) => (
-              <button key={s.note} type="button" className={`${chip} hit min-w-0 shrink!`} onMouseDown={(e) => e.preventDefault()} onClick={() => fill(s)}>
-                <span className="truncate">{s.note}</span>
-                <span className="text-ink3">{money(s.amount, s.currency, unit)}</span>
-              </button>
-            ))}
-          </div>
-        )}
-        {text && !ask && !card && (
-          <div className="rise flex items-center gap-1.5 px-1.5 pb-2 text-[13px] text-ink2">
-            <label className={chip}>
-              {category && <i className="size-1.5 rounded-full" style={{ background: category.color }} />}
-              {category ? `${category.icon} ${category.name}` : "Category"}
-              <Chevron />
-              <select
-                aria-label="Category"
-                className="absolute inset-x-0 -inset-y-2.5 opacity-0"
-                value={category?.id ?? ""}
-                onChange={(e) => setCategoryId(Number(e.target.value) || null)}
-              >
-                <option value="">Category</option>
-                <CategoryOptions categories={categories} />
-              </select>
-            </label>
-            <span className="text-line2">·</span>
-            <label className={chip}>
-              {dayLabel(date)}
-              <input
-                aria-label="Date"
-                type="date"
-                className="absolute inset-x-0 -inset-y-2.5 opacity-0"
-                max={today()}
-                value={date}
-                onClick={(e) => e.currentTarget.showPicker?.()}
-                onChange={(e) => setDate(e.target.value || today())}
-              />
-            </label>
-            <span className="text-line2">·</span>
-            <span>{currency === "BTC" ? (p.unit ?? unit) : currency}</span>
-            {category && !categoryId && <span className="ml-auto min-w-0 truncate text-xs text-ink3">from past notes</span>}
-          </div>
-        )}
+        <div className="lg:absolute lg:inset-x-0 lg:bottom-[calc(100%-1.75rem)] lg:bg-[linear-gradient(transparent,var(--bg)_16px)] lg:px-3 lg:pt-4">
+          {fills.length > 0 && !card && (
+            <div className="rise flex gap-1.5 overflow-hidden px-1.5 pb-2" aria-label="Past entries">
+              {fills.map((s) => (
+                <button key={s.note} type="button" className={`${chip} hit min-w-0 shrink!`} onMouseDown={(e) => e.preventDefault()} onClick={() => fill(s)}>
+                  <span className="truncate">{s.note}</span>
+                  <span className="text-ink3">{money(s.amount, s.currency, unit)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {text && !ask && !card && (
+            <div className="rise flex items-center gap-1.5 px-1.5 pb-2 text-[13px] text-ink2">
+              <label className={chip}>
+                {category && <i className="size-1.5 rounded-full" style={{ background: category.color }} />}
+                {category ? `${category.icon} ${category.name}` : "Category"}
+                <Chevron />
+                <select
+                  aria-label="Category"
+                  className="absolute inset-x-0 -inset-y-2.5 opacity-0"
+                  value={category?.id ?? ""}
+                  onChange={(e) => setCategoryId(Number(e.target.value) || null)}
+                >
+                  <option value="">Category</option>
+                  <CategoryOptions categories={categories} />
+                </select>
+              </label>
+              <span className="text-line2">·</span>
+              <label className={chip}>
+                {dayLabel(date)}
+                <input
+                  aria-label="Date"
+                  type="date"
+                  className="absolute inset-x-0 -inset-y-2.5 opacity-0"
+                  max={today()}
+                  value={date}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  onChange={(e) => setDate(e.target.value || today())}
+                />
+              </label>
+              <span className="text-line2">·</span>
+              <span>{currency === "BTC" ? (p.unit ?? unit) : currency}</span>
+              {category && !categoryId && <span className="ml-auto min-w-0 truncate text-xs text-ink3">from past notes</span>}
+            </div>
+          )}
+        </div>
         <div
           className={`flex min-h-[50px] items-center gap-2 rounded-xl border bg-surface py-[5px] pr-[5px] pl-3.5 ${active ? "border-accent shadow-bar-active" : "border-line2 shadow-bar"}`}
         >
