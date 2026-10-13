@@ -243,9 +243,9 @@ Near-neutral warm greys with one cool blue and three semantic tones; every token
 
 ## Layout
 
-A single column, 448px max, centred, with 20px side gutters, on phone and desktop alike. No breakpoints: desktop shows the same column in the middle of the ground. Top padding respects the safe area (at least 20px).
+A single column, 448px max, centred, with 20px side gutters, on phone and desktop alike. One breakpoint, at 1024px (`lg`): the column stays the same and only the tab bar moves to a side rail. Lists of money read best narrow. Top padding respects the safe area (at least 20px).
 
-The bottom is a fixed dock on every tab: the one-line bar sits above a four-tab bar (Expenses, Stats, Categories, Settings), both inside the same 448px column, with the tab bar padded for the home indicator. Content keeps 192px bottom padding so the last row clears the dock. A gradient from transparent to Warm Paper over 26px sits behind the bar so rows fade under it.
+The bottom is a fixed dock on every tab: the one-line bar sits above a four-tab bar (Expenses, Stats, Categories, Settings), both inside the same 448px column, with the tab bar padded for the home indicator. Content keeps 192px bottom padding so the last row clears the dock (144px at `lg`, where the dock is only the bar, 24px off the bottom edge). A gradient from transparent to Warm Paper over 26px sits behind the bar so rows fade under it.
 
 Rhythm: rows are 10px top and bottom with 10px gaps; day groups open with 22px above and 6px below their header; small clusters use 6px or 8px gaps. Rows are a three-column grid (24px emoji, flexible note, auto amount) aligned on the baseline.
 
@@ -292,7 +292,9 @@ Quiet and compact; one blue button per view at most.
 - **Focus:** border turns Ledger Blue with a 3px Blue Wash ring.
 
 ### Navigation
-Four-tab bar on Sheet White under a Hairline top rule. Each tab is a 21px drawn icon over an 11px medium label; current tab in ink, others in Third Ink. No pill, no underline, no accent. Recurring, Bin and Export are hairline link rows at the foot of Settings.
+Four-tab bar on Sheet White under a Hairline top rule. Each tab is a 21px drawn icon over an 11px medium label; current tab in ink, others in Third Ink. No pill, no underline, no accent.
+
+At `lg` the same four tabs become a 176px rail fixed 32px left of the column, on the ground with no rule: icon beside a 14px label, rows 8px rounded, current tab in ink on Track, others in Second Ink, ink on hover. A `/` key hint shows in the empty bar on fine pointers; `/` focuses the bar from anywhere outside a field. Recurring, Bin and Export are hairline link rows at the foot of Settings.
 
 ### One-line Bar (signature)
 The app's single entry point. Sheet White, 12px radius, 50px minimum, Strong Hairline border with the Bar rest shadow. On focus or text it gains an accent border and Bar active shadow. Input is 17px medium. A mirrored layer colours the text as it is parsed: the amount in a Blue Wash pill with blue text, tags in a Track pill with Second Ink, both 3px radius. A leading "?" turns blue and switches to ask mode. Empty, it shows a Third Ink plus that opens the full form. On Chat it is locked to ask mode: a fixed blue "?" leads, the placeholder reads "Reply", and answers land in the thread instead of the card. Chat has no input of its own. Your messages sit on Track with a Hairline, answers on Sheet White. Hidden only while the full form is open.
@@ -322,7 +324,7 @@ One authored motion, Rise: new content (answer card, chip row, receipt, inline c
 - **Do** separate rows with 1px hairlines and keep them flat on the ground.
 - **Do** use the user's emoji for categories and 24px-grid stroke icons (1.6px, round caps) for chrome.
 - **Do** use Rise for anything that appears in response to the bar, and switch it off for reduced motion.
-- **Do** keep every surface inside the centred 448px column with 20px gutters.
+- **Do** keep every surface inside the centred 448px column with 20px gutters; the `lg` tab rail is the one exception.
 
 ### Don't:
 - **Don't** add charts (donuts, pies, bar charts) to Stats; measure with the ruler and share tracks.

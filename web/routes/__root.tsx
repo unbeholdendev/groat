@@ -86,7 +86,7 @@ function App() {
     );
   return (
     <UnitContext value={unitState}>
-      <main className="mx-auto max-w-md px-5 pt-[max(env(safe-area-inset-top),20px)] pb-48">
+      <main className="mx-auto max-w-md px-5 pt-[max(env(safe-area-inset-top),20px)] pb-48 lg:pb-36">
         <Outlet />
       </main>
       <div className="fixed inset-x-0 bottom-0 z-10">
@@ -102,15 +102,18 @@ function App() {
             onChat={(id) => navigate({ to: "/chat", search: { id: String(id) } })}
           />
         )}
-        <nav aria-label="Main" className="border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]">
-          <div className="mx-auto grid max-w-md grid-cols-4 pt-2 pb-2.5">
+        <nav
+          aria-label="Main"
+          className="border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:fixed lg:top-4 lg:left-[calc(50%-432px)] lg:w-44 lg:border-0 lg:bg-transparent lg:pb-0"
+        >
+          <div className="mx-auto grid max-w-md grid-cols-4 pt-2 pb-2.5 lg:flex lg:flex-col lg:gap-0.5 lg:p-0">
             {tabs.map(([to, label, icon]) => (
               <Link
                 key={to}
                 to={to}
                 activeOptions={{ exact: to === "/" }}
                 aria-current={current === to ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 text-[11px] font-medium ${current === to ? "text-ink" : "text-ink3"}`}
+                className={`flex flex-col items-center gap-1 text-[11px] font-medium lg:flex-row lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-2 lg:text-sm ${current === to ? "text-ink lg:bg-track" : "text-ink3 lg:text-ink2 lg:hover:text-ink"}`}
               >
                 <Icon>{icon}</Icon>
                 {label}
@@ -235,6 +238,16 @@ function Bar(props: {
   const card = !asking.isIdle && !inChat;
   useEffect(() => void (card && cardRef.current?.focus()), [card]);
   useEffect(() => void (props.guide && input.current?.focus()), [props.guide]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      e.preventDefault();
+      input.current?.focus();
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, []);
   const close = () => (asking.reset(), input.current?.focus());
   const error = adding.error ?? (inChat ? asking.error : null);
   const chat = asking.data;
@@ -270,7 +283,7 @@ function Bar(props: {
   return (
     <>
       {card && <div className="fixed inset-0 -z-10 bg-bg/75" onClick={close} />}
-      <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && card && close()} className="mx-auto max-w-md bg-[linear-gradient(transparent,var(--bg)_26px)] px-3 pt-7 pb-2.5">
+      <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && card && close()} className="mx-auto max-w-md bg-[linear-gradient(transparent,var(--bg)_26px)] px-3 pt-7 pb-2.5 lg:pb-6">
         {card && (
           <section
             ref={cardRef}
@@ -404,11 +417,18 @@ function Bar(props: {
               </Icon>
             </button>
           ) : (
-            <button aria-label="Full form" className="hit grid size-[38px] place-items-center rounded-lg text-ink3">
-              <Icon className="size-[18px] stroke-2">
-                <path d="M12 5v14M5 12h14" />
-              </Icon>
-            </button>
+            <>
+              {!focused && (
+                <kbd aria-hidden className="hidden rounded border border-line2 px-1.5 text-[11px] font-medium text-ink3 pointer-fine:inline">
+                  /
+                </kbd>
+              )}
+              <button aria-label="Full form" className="hit grid size-[38px] place-items-center rounded-lg text-ink3">
+                <Icon className="size-[18px] stroke-2">
+                  <path d="M12 5v14M5 12h14" />
+                </Icon>
+              </button>
+            </>
           )}
         </div>
         <span role="status" className="sr-only">
