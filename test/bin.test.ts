@@ -46,3 +46,12 @@ test("emptying the bin removes binned expenses for good and leaves the list alon
   expect((await call("POST", `/api/bin/${a.body.id}/restore`)).status).toBe(404);
   expect((await call("GET", "/api/expenses")).body.map((e: { id: number }) => e.id)).toEqual([keep.body.id]);
 });
+
+test("purging an expense deletes it without a trace in the bin", async () => {
+  const { call } = setup();
+  const { body } = await call("POST", "/api/expenses", { note: "Typo", amount: "2", tags: ["x"] });
+  expect((await call("DELETE", `/api/expenses/${body.id}?purge`)).body).toEqual({ id: body.id });
+  expect((await call("GET", "/api/expenses")).body).toEqual([]);
+  expect((await call("GET", "/api/bin")).body).toEqual([]);
+  expect((await call("DELETE", `/api/expenses/${body.id}?purge`)).status).toBe(404);
+});

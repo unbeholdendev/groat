@@ -37,6 +37,8 @@ test("needs-confirmation creates pending expenses that can be edited and confirm
   await call("POST", "/api/recurring", { note: "Power", amount: "60", period: "month", every: 1, startDate: "2026-10-01", needsConfirmation: true });
   const [pending] = (await call("GET", "/api/expenses")).body;
   expect(pending).toMatchObject({ amount: 6000, status: "pending" });
+  expect((await call("GET", "/api/expenses?status=pending")).body).toEqual([pending]);
+  expect((await call("GET", "/api/expenses?status=normal")).body).toEqual([]);
   const edited = await call("PUT", `/api/expenses/${pending.id}`, { note: "Power", amount: "72.40", date: "2026-10-01" });
   expect(edited.body).toMatchObject({ amount: 7240, status: "pending" });
   expect((await call("POST", `/api/expenses/${pending.id}/confirm`)).body).toMatchObject({ amount: 7240, status: "normal" });

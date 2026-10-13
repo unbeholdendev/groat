@@ -28,16 +28,17 @@ export type Draft = { note: string; amount: number; currency: string; date: stri
 
 export type Request = [method: string, path: string, body?: unknown];
 export async function send(...[method, path, body]: Request) {
-  const res = await fetch(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error);
+  const res = await fetch(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => {
+    throw new Error("Couldn’t reach the server. Check your connection and try again.");
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(json.error ?? `The server answered ${res.status}.`), { status: res.status });
   return json;
 }
-export const useSend = (onSuccess?: () => void) => useMutation({ mutationFn: (r: Request) => send(...r), onSuccess });
+export const useSend = (onSuccess?: () => void) => useMutation<unknown, Error, Request>({ mutationKey: ["send"], onSuccess });
 
 export const useSettings = () => useQuery<Settings>({ queryKey: ["/api/settings"] }).data;
 export const UnitContext = createContext<[Unit, (u: Unit) => void]>(["BTC", () => {}]);
-export const FormContext = createContext<(open: boolean) => void>(() => {});
 
 export const today = () => new Date().toLocaleDateString("en-CA");
 
@@ -65,17 +66,43 @@ export const Chevron = ({ className = "size-2.5 text-ink3" }: { className?: stri
   </Icon>
 );
 
+export const Confirm = (props: { ask: ReactNode; yes: string; onYes: () => void; onNo: () => void }) => (
+  <span className="rise inline-flex items-center gap-1 text-[13px] font-medium">
+    <span className="text-ink2">{props.ask}</span>
+    <button type="button" autoFocus className="hit rounded-chip px-2.5 py-1.5 text-ink2" onClick={props.onNo}>
+      Keep
+    </button>
+    <button type="button" className="hit rounded-chip px-2.5 py-1.5 text-up" onClick={props.onYes}>
+      {props.yes}
+    </button>
+  </span>
+);
+
+export const chip = "relative inline-flex shrink-0 items-center whitespace-nowrap gap-1.5 rounded-chip border border-line2 bg-surface px-2 py-[3px] text-[13px] font-medium text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent";
+
+const currencyNames = new Intl.DisplayNames(["en-GB"], { type: "currency" });
+const allCurrencies = [...Intl.supportedValuesOf("currency"), "BTC"].sort();
+const CurrencyOptions = ({ except = [] }: { except?: string[] }) =>
+  allCurrencies
+    .filter((c) => !except.includes(c))
+    .map((c) => (
+      <option key={c} value={c}>
+        {c} · {c === "BTC" ? "Bitcoin" : currencyNames.of(c)}
+      </option>
+    ));
+
 export function SettingsForm(props: {
   settings: Settings;
   path: string;
   method: string;
   title: string;
+  onSaved?: () => void;
 }) {
   const onboarding = !props.settings.onboarded;
   const [baseCurrency, setBase] = useState(props.settings.baseCurrency);
-  const [currencies, setCurrencies] = useState(props.settings.currencies.join(", "));
+  const [others, setOthers] = useState(props.settings.currencies.filter((c) => c !== props.settings.baseCurrency));
   const [theme, setTheme] = useState(props.settings.theme);
-  const mutation = useSend();
+  const mutation = useSend(props.onSaved);
   const message = mutation.isSuccess ? "Saved" : mutation.error?.message;
 
   function save(e: FormEvent) {
@@ -83,26 +110,49 @@ export function SettingsForm(props: {
     mutation.mutate([
       props.method,
       props.path,
-      { baseCurrency: baseCurrency.trim().toUpperCase(), currencies: currencies.toUpperCase().split(/[\s,]+/).filter(Boolean), theme },
+      { baseCurrency, currencies: others, theme },
     ]);
   }
 
   return (
-    <form onSubmit={save} className="flex flex-col gap-4">
+    <form onSubmit={save} onChangeCapture={() => mutation.reset()} className="flex flex-col gap-4">
       <h1 className="text-[22px] font-semibold tracking-tight">{props.title}</h1>
-      {onboarding && <p className="-mt-2 text-ink2">Pick the currency totals are shown in, and the ones you spend in. You can change both later.</p>}
+      {onboarding && <p className="-mt-2 text-ink2">Pick the currency totals are shown in, and any others you spend in. You can change both later.</p>}
       <label className="label">
         Base currency
-        <input className="input" value={baseCurrency} onChange={(e) => setBase(e.target.value)} />
+        <select className="input" value={baseCurrency} onChange={(e) => (setBase(e.target.value), setOthers(others.filter((c) => c !== e.target.value)))}>
+          <CurrencyOptions />
+        </select>
       </label>
-      <label className="label">
-        Currencies you use
-        <input className="input" placeholder="GBP, EUR, BTC" value={currencies} onChange={(e) => setCurrencies(e.target.value)} />
-      </label>
+      <fieldset className="label">
+        <legend className="mb-1.5">Other currencies you spend in</legend>
+        <div className="flex flex-wrap gap-x-1.5 gap-y-3">
+          {others.map((c) => (
+            <button type="button" key={c} aria-label={`Remove ${c}`} className={`${chip} hit`} onClick={() => (setOthers(others.filter((o) => o !== c)), mutation.reset())}>
+              {c}
+              <Icon className="size-2.5 stroke-2 text-ink3">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </Icon>
+            </button>
+          ))}
+          <label className={`${chip} text-ink2`}>
+            <Icon className="size-2.5 stroke-2">
+              <path d="M12 5v14M5 12h14" />
+            </Icon>
+            Add
+            <select aria-label="Add a currency" className="absolute inset-x-0 -inset-y-2.5 opacity-0" value="" onChange={(e) => setOthers([...others, e.target.value])}>
+              <option value="" disabled>
+                Add a currency
+              </option>
+              <CurrencyOptions except={[baseCurrency, ...others]} />
+            </select>
+          </label>
+        </div>
+      </fieldset>
       {!onboarding && (
         <label className="label">
           Theme
-          <select className="input" value={theme} onChange={(e) => setTheme(e.target.value as Settings["theme"])}>
+          <select className="input" value={theme} onChange={(e) => (setTheme(e.target.value as Settings["theme"]), mutation.mutate([props.method, props.path, { theme: e.target.value }]))}>
             <option value="system">System</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>

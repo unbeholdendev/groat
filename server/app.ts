@@ -69,6 +69,7 @@ export function expenseFilter(db: Db, q: Record<string, string>, base = visible)
       ? inArray(e.id, db.select({ id: t.expenseTags.expenseId }).from(t.expenseTags).innerJoin(t.tags, eq(t.tags.id, t.expenseTags.tagId)).where(eq(t.tags.name, q.tag)))
       : undefined,
     q.currency ? eq(e.currency, q.currency) : undefined,
+    q.status ? eq(e.status, q.status) : undefined,
     q.q ? sql`instr(lower(${e.note}), lower(${q.q}))` : undefined,
   );
 }
@@ -312,7 +313,11 @@ export function createApp(deps: Deps) {
       : c.json({ error: "not found" }, 404);
   };
 
-  app.delete("/api/expenses/:id", (c) => setExpense(c, { deletedAt: clock().toISOString() }, visible));
+  app.delete("/api/expenses/:id", (c) => {
+    if (c.req.query("purge") === undefined) return setExpense(c, { deletedAt: clock().toISOString() }, visible);
+    const row = db.delete(e).where(eq(e.id, Number(c.req.param("id")))).returning({ id: e.id }).get();
+    return row ? c.json(row) : c.json({ error: "not found" }, 404);
+  });
   app.post("/api/expenses/:id/confirm", (c) => setExpense(c, { status: "normal" }, visible));
   app.post("/api/bin/:id/restore", (c) => setExpense(c, { deletedAt: null }, isNotNull(e.deletedAt)));
 

@@ -1,17 +1,19 @@
-import { type FormEvent, useContext, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useLocation } from "@tanstack/react-router";
+import { type FormEvent, Fragment, useContext, useEffect, useRef, useState } from "react";
+import { useMutationState, useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { formatAmount, parseAmount, type Unit } from "../../shared/amount";
-import { change, money, span, Total, usePeriod } from "../period";
+import { change, iso, money, span, Total, usePeriod } from "../period";
 import {
   CategoryOptions,
   Chevron,
+  Confirm,
   dated,
   dayLabel,
+  type Draft,
   type Expense,
-  FormContext,
   Icon,
   pick,
+  type Request,
   today,
   UnitContext,
   useCategories,
@@ -20,7 +22,8 @@ import {
 } from "../shared";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (s) => pick(s, { q: /./, from: dated, to: dated, category: /^\d+$/, currency: /^\w+$/, tag: /./ }),
+  validateSearch: (s) =>
+    pick(s, { q: /./, from: dated, to: dated, category: /^\d+$/, currency: /^\w+$/, tag: /./, new: /^1$/, edit: /^\d+$/, view: /^(bin|recurring)$/, month: /^\d{4}-\d{2}$/ }),
   component: Expenses,
 });
 
@@ -37,12 +40,13 @@ type Suggestion = { note: string; categoryId: number; currency: string; amount: 
 function Expenses() {
   const settings = useSettings()!;
   const [unit, setUnit] = useContext(UnitContext);
-  const onForm = useContext(FormContext);
   const draft = useLocation().state.draft;
-  const [showBin, setShowBin] = useState(false);
+  const { new: adding, edit: editParam, view, month, ...filter } = Route.useSearch();
+  const list = { ...filter, month, view };
+  const showBin = view === "bin";
+  const editing = Number(editParam) || null;
+  const open = !!(adding || editing);
   const [showFilters, setShowFilters] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState(settings.lastCurrency);
@@ -58,29 +62,54 @@ function Expenses() {
     setUnit(next);
   }
   const categories = useCategories();
-  const filter = Route.useSearch();
   const navigate = Route.useNavigate();
   const setFilter = (search: typeof filter) => navigate({ search, replace: true });
+  const edit = (e: Expense) => e.id > 0 && navigate({ search: { ...list, edit: String(e.id) } });
   const noRepeat = { period: "", every: "1", endDate: "", needsConfirmation: false };
   const [repeat, setRepeat] = useState(noRepeat);
   const [template, setTemplate] = useState<number | null>(null);
+  const [asking, setAsking] = useState<string | null>(null);
 
-  const query = new URLSearchParams(Object.entries(filter).filter(([, v]) => v));
-  const expenses = useQuery<Expense[]>({ queryKey: ["/api/expenses?", query.toString()] }).data ?? [];
+  const filtered = Object.values(filter).some(Boolean);
+  const shown = month ?? today().slice(0, 7);
+  const [y, m] = shown.split("-").map(Number);
+  const end = new Date(y, m, 0);
+  const step = (n: number) => iso(new Date(y, m - 1 + n, 1)).slice(0, 7);
+  const label = end.toLocaleDateString("en-GB", { month: "long", ...(y !== new Date().getFullYear() && { year: "numeric" }) });
+  const query = new URLSearchParams(Object.entries(filtered ? filter : { from: `${shown}-01`, to: iso(end) }).filter(([, v]) => v));
+  const listed = useQuery<Expense[]>({ queryKey: ["/api/expenses?", query.toString()] }).data;
+  const expenses = listed ?? [];
+  const pending = useQuery<Expense[]>({ queryKey: ["/api/expenses?", "status=pending"] }).data ?? [];
   const templates = useQuery<Template[]>({ queryKey: ["/api/recurring"] }).data ?? [];
   const bin = useQuery<Expense[]>({ queryKey: ["/api/bin"], enabled: showBin }).data;
   const suggestions =
     useQuery<Suggestion[]>({ queryKey: ["/api/notes?prefix=", encodeURIComponent(note)], enabled: open && !!note }).data ?? [];
+  const queued = useMutationState({
+    filters: { predicate: (m) => m.state.isPaused },
+    select: (m) => m.state.variables as Request,
+  }).flatMap(([method, path, body], i) => {
+    if (method !== "POST" || path !== "/api/expenses") return [];
+    const b = body as Expense & { amount: string; unit: Unit };
+    return [{ ...b, id: -1 - i, amount: parseAmount(b.amount, b.currency, b.unit) || 0 }];
+  });
   const mutation = useSend();
   const saving = useSend(reset);
   const error = saving.error?.message;
+  const editRow = [...expenses, ...pending].find((e) => e.id === editing);
+  const newest = useRef<number>(undefined);
+  if (listed && (newest.current === undefined || open || showBin)) newest.current = Math.max(0, ...listed.map((e) => e.id));
 
   useEffect(() => {
     if (!draft) return;
-    edit({ ...draft, id: 0 }, null);
+    fill(draft);
     navigate({ search: (prev) => prev, state: {}, replace: true });
   }, [draft]);
-  useEffect(() => onForm(open), [open]);
+  useEffect(() => {
+    if (editRow) fill(editRow);
+  }, [editing, !!editRow]);
+  useEffect(() => {
+    if (saving.isPaused) reset();
+  }, [saving.isPaused]);
 
   function typeNote(value: string) {
     setNote(value);
@@ -104,8 +133,7 @@ function Expenses() {
   );
 
   function reset() {
-    setOpen(false);
-    setEditing(null);
+    navigate({ search: list, replace: true });
     setCurrency(settings.lastCurrency);
     saving.reset();
     setNote("");
@@ -118,20 +146,21 @@ function Expenses() {
   }
 
   function editTemplate(t: Template) {
-    edit({ ...t, id: 0, date: t.startDate });
-    setEditing(null);
+    fill({ ...t, date: t.startDate });
     setTemplate(t.id);
     setRepeat({ period: t.period, every: String(t.every), endDate: t.endDate ?? "", needsConfirmation: t.needsConfirmation });
+    navigate({ search: { ...list, new: "1" } });
   }
 
   function templateAction(t: Template, action: string) {
-    if (action === "DELETE" && !confirm("Stop this recurring expense? Expenses it created are kept.")) return;
+    setAsking(null);
     mutation.mutate(action === "DELETE" ? ["DELETE", `/api/recurring/${t.id}`] : ["POST", `/api/recurring/${t.id}/${action}`]);
   }
 
-  function edit(e: Expense, id: number | null = e.id) {
-    setOpen(true);
-    setEditing(id);
+  function fill(e: Draft) {
+    setTemplate(null);
+    setRepeat(noRepeat);
+    saving.reset();
     setNote(e.note);
     setAmount(e.amount ? formatAmount(e.amount, e.currency, unit) : "");
     setCurrency(e.currency);
@@ -166,30 +195,25 @@ function Expenses() {
     );
   }
 
-  function remove() {
-    if (confirm("Move this expense to the bin?")) saving.mutate(["DELETE", `/api/expenses/${editing}`]);
+  async function setRate(ev: FormEvent<HTMLFormElement>, e: Expense) {
+    ev.preventDefault();
+    try {
+      for (const [currency, rate] of new FormData(ev.currentTarget))
+        if (rate) await mutation.mutateAsync(["PUT", "/api/rates", { date: e.date, currency, rate }]);
+      setAsking(null);
+    } catch {}
   }
 
-  function emptyBin() {
-    if (confirm("Permanently delete everything in the bin?")) mutation.mutate(["DELETE", "/api/bin"]);
-  }
-
-  async function setRate(e: Expense) {
-    for (const c of new Set([e.currency, settings.baseCurrency].filter((c) => c !== "USD"))) {
-      const rate = prompt(`1 USD = ? ${c} on ${e.date} (blank to keep)`);
-      if (rate)
-        await mutation
-          .mutateAsync(["PUT", "/api/rates", { date: e.date, currency: c, rate }])
-          .catch((err: Error) => alert(err.message));
-    }
-  }
-
-  const row = (e: Expense) => {
+  const row = (e: Expense, dated?: boolean) => {
     const category = categories.find((c) => c.id === e.categoryId);
+    const Note = dated || e.id < 0 ? "span" : "button";
     return (
       <>
         <span title={category?.name}>{category?.icon}</span>
-        <span className="min-w-0 truncate font-medium">
+        <Note
+          onClick={Note === "button" ? () => edit(e) : undefined}
+          className={`min-w-0 truncate text-left font-medium ${Note === "button" ? "outline-none after:absolute after:inset-0 after:rounded-md focus-visible:after:outline-2 focus-visible:after:outline-accent" : ""}`}
+        >
           {e.note}
           {e.recurringId && (
             <span title={`Recurring: ${templates.find((t) => t.id === e.recurringId)?.note ?? "deleted"}`}>
@@ -203,19 +227,15 @@ function Expenses() {
               #{t}
             </span>
           ))}
-        </span>
-        <span className="text-right font-medium">
+          {dated && <span className="block text-xs font-normal text-ink3">{dayLabel(e.date)}</span>}
+        </Note>
+        <span className="text-right font-medium whitespace-nowrap">
           {show(e.amount, e.currency)}
+          {e.id < 0 && <span className="block text-xs font-normal text-ink3">Will sync</span>}
           {e.currency !== settings.baseCurrency && e.baseAmount !== undefined && (
             <span className="block text-xs font-normal text-ink3">
               {e.baseAmount === null ? (
-                <button
-                  className="text-amber underline underline-offset-2"
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    setRate(e);
-                  }}
-                >
+                <button className="hit text-amber underline underline-offset-2" onClick={() => (setAsking(`rate ${e.id}`), mutation.reset())}>
                   Set rate
                 </button>
               ) : (
@@ -227,22 +247,35 @@ function Expenses() {
       </>
     );
   };
-  const rowClass = "grid grid-cols-[24px_1fr_auto] items-baseline gap-2.5 border-b border-line py-2.5 last:border-0";
+  const rowClass = "grid grid-cols-[24px_minmax(5rem,1fr)_auto] items-baseline gap-2.5 border-b border-line py-2.5 last:border-0";
+
+  const back = (
+    <Link to="/settings" className="hit inline-flex items-center gap-1 text-ink2">
+      <Icon className="size-4 stroke-2">
+        <path d="m15 6-6 6 6 6" />
+      </Icon>
+      Settings
+    </Link>
+  );
 
   if (showBin && bin)
     return (
       <>
         <div className="flex items-center justify-between">
-          <button className="inline-flex items-center gap-1 text-ink2" onClick={() => setShowBin(false)}>
-            <Icon className="size-4 stroke-2">
-              <path d="m15 6-6 6 6 6" />
-            </Icon>
-            Expenses
-          </button>
-          {bin.length > 0 && (
-            <button className="text-sm font-medium text-up" onClick={emptyBin}>
-              Empty bin
-            </button>
+          {back}
+          {asking === "empty" ? (
+            <Confirm
+              ask={`Delete ${bin.length} ${bin.length === 1 ? "expense" : "expenses"} for good?`}
+              yes="Delete"
+              onYes={() => (setAsking(null), mutation.mutate(["DELETE", "/api/bin"]))}
+              onNo={() => setAsking(null)}
+            />
+          ) : (
+            bin.length > 0 && (
+              <button className="hit text-sm font-medium text-up" onClick={() => setAsking("empty")}>
+                Empty bin
+              </button>
+            )
           )}
         </div>
         <h1 className="mt-4 text-[22px] font-semibold tracking-tight">Bin</h1>
@@ -250,8 +283,8 @@ function Expenses() {
         <ul className="mt-3">
           {bin.map((e) => (
             <li key={e.id} className="flex items-center gap-3 border-b border-line last:border-0">
-              <div className={`${rowClass} flex-1 border-0`}>{row(e)}</div>
-              <button className="quiet h-8 text-[13px]" onClick={() => mutation.mutate(["POST", `/api/bin/${e.id}/restore`])}>
+              <div className={`${rowClass} flex-1 border-0`}>{row(e, true)}</div>
+              <button className="quiet hit h-8 text-[13px]" onClick={() => mutation.mutate(["POST", `/api/bin/${e.id}/restore`])}>
                 Restore
               </button>
             </li>
@@ -264,11 +297,11 @@ function Expenses() {
     return (
       <form onSubmit={save} className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <button type="button" className="text-ink2" onClick={reset}>
+          <button type="button" className="hit text-ink2" onClick={reset}>
             Cancel
           </button>
           <h1 className="text-[17px] font-semibold">{editing ? "Edit expense" : template ? "Edit recurring" : "New expense"}</h1>
-          <button className="primary h-9" disabled={saving.isPending}>
+          <button className="primary hit h-9" disabled={saving.isPending}>
             {editing || template ? "Save" : "Add"}
           </button>
         </div>
@@ -363,34 +396,86 @@ function Expenses() {
                   />
                   Confirm each
                 </label>
+                <p className="w-full text-xs text-ink3">
+                  Interval 2 means every second {repeat.period}. With Confirm each, every one waits as pending until you confirm it.
+                </p>
               </>
             )}
           </div>
         )}
         {error && <p className="text-sm text-up">{error}</p>}
         {editing && (
-          <button type="button" className="mt-4 self-start text-sm font-medium text-up" onClick={remove}>
+          <button type="button" className="hit mt-4 self-start text-sm font-medium text-up" onClick={() => saving.mutate(["DELETE", `/api/expenses/${editing}`])}>
             Move to bin
           </button>
         )}
       </form>
     );
 
-  const pending = expenses.filter((e) => e.status === "pending");
+  if (view === "recurring")
+    return (
+      <>
+        {back}
+        <h1 className="mt-4 text-[22px] font-semibold tracking-tight">Recurring</h1>
+        {templates.length === 0 && <p className="mt-4 text-ink3">Nothing repeats yet. Open the full form and set Repeat to add one.</p>}
+        <ul className="mt-3">
+          {templates.map((t) => (
+            <li key={t.id} className="flex items-center justify-between gap-2 border-b border-line py-2.5 last:border-0">
+              <button className="min-w-0 text-left" onClick={() => editTemplate(t)}>
+                <span className="font-medium">{t.note}</span>
+                <span className="block text-xs text-ink3">
+                  {show(t.amount, t.currency)} every {t.every > 1 ? `${t.every} ${t.period}s` : t.period}
+                  {t.paused && " · paused"}
+                </span>
+              </button>
+              {asking === `stop ${t.id}` ? (
+                <Confirm ask="Stop? Past expenses stay." yes="Stop" onYes={() => templateAction(t, "DELETE")} onNo={() => setAsking(null)} />
+              ) : (
+                <span className="flex gap-1">
+                  <button className="quiet hit h-8 text-[13px]" onClick={() => templateAction(t, t.paused ? "resume" : "pause")}>
+                    {t.paused ? "Resume" : "Pause"}
+                  </button>
+                  <button className="hit h-8 px-2 text-[13px] font-medium text-up" onClick={() => setAsking(`stop ${t.id}`)}>
+                    Stop
+                  </button>
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </>
+    );
+
   const days = new Map<string, Expense[]>();
-  for (const e of expenses) if (e.status !== "pending") days.set(e.date, [...(days.get(e.date) ?? []), e]);
-  const filtered = Object.values(filter).some(Boolean);
+  for (const e of [...queued.filter((e) => !filtered && e.date.startsWith(shown)), ...expenses].sort((a, b) => b.date.localeCompare(a.date)))
+    if (e.status !== "pending") days.set(e.date, [...(days.get(e.date) ?? []), e]);
 
   return (
     <>
-      <header className="flex items-baseline justify-between">
-        <h1 className="text-[22px] font-semibold tracking-tight">
-          Expenses <span className="text-sm font-medium text-ink3">{new Date().toLocaleDateString("en-GB", { month: "long" })}</span>
+      <header className="flex items-center justify-between">
+        <h1 className="flex items-center gap-0.5 text-[22px] font-semibold tracking-tight">
+          Expenses
+          {!filtered && (
+            <span className="inline-flex items-center text-sm font-medium text-ink3">
+              <button aria-label="Previous month" className="hit p-2" onClick={() => navigate({ search: { month: step(-1) } })}>
+                <Chevron className="size-3 rotate-90" />
+              </button>
+              {label}
+              <button
+                aria-label="Next month"
+                className="hit p-2 disabled:invisible"
+                disabled={!month}
+                onClick={() => navigate({ search: { month: step(1) === today().slice(0, 7) ? undefined : step(1) } })}
+              >
+                <Chevron className="size-3 -rotate-90" />
+              </button>
+            </span>
+          )}
         </h1>
         <button
           aria-expanded={showFilters}
           onClick={() => setShowFilters(!showFilters)}
-          className={`inline-flex items-center gap-1 text-sm font-medium ${filtered ? "text-accent" : "text-ink2"}`}
+          className={`hit inline-flex items-center gap-1 text-sm font-medium ${filtered ? "text-accent" : "text-ink2"}`}
         >
           Filter{filtered && ` · ${Object.values(filter).filter(Boolean).length}`}
           <Chevron />
@@ -416,19 +501,19 @@ function Expenses() {
           <div className="flex w-full">{filterInput("tag", "Tag")}</div>
           <div className="flex w-full justify-between pt-1 text-[13px]">
             {filtered ? (
-              <button className="text-ink2" onClick={() => setFilter({})}>
+              <button className="hit text-ink2" onClick={() => setFilter({})}>
                 Clear filters
               </button>
             ) : (
               <span />
             )}
-            <a className="text-ink2 underline decoration-line2 underline-offset-3" href={`/api/export?${query}`} download="expenses.csv">
+            <a className="hit text-ink2 underline decoration-line2 underline-offset-3" href={`/api/export?${query}`} download="expenses.csv">
               Export CSV
             </a>
           </div>
         </div>
       ) : (
-        <Summary unit={unit} />
+        <Summary unit={unit} end={month ? end : undefined} label={label} />
       )}
       {pending.length > 0 && (
         <ul className="mt-5 border-y border-line">
@@ -439,7 +524,7 @@ function Expenses() {
                 {e.note} <span className="text-ink3">· {show(e.amount, e.currency)} · due {dayLabel(e.date).replace(/^(Today|Yesterday)$/, (w) => w.toLowerCase())}</span>
               </button>
               <button
-                className="rounded-[7px] border border-amber-line px-2.5 py-1 text-[13px] font-medium text-amber"
+                className="hit rounded-chip border border-amber-line px-2.5 py-1 text-[13px] font-medium text-amber"
                 onClick={() => mutation.mutate(["POST", `/api/expenses/${e.id}/confirm`])}
               >
                 Confirm
@@ -448,98 +533,97 @@ function Expenses() {
           ))}
         </ul>
       )}
-      {expenses.length === 0 && (
+      {expenses.length + queued.length === 0 && (
         <p className="mt-10 text-center text-ink3">
-          {filtered ? "No expenses match these filters." : "Nothing here yet. Type your first one below, like “coffee 3.20”."}
+          {filtered ? "No expenses match these filters." : month ? `No expenses in ${label}.` : "Nothing this month yet. Type one below, like “coffee 3.20”."}
         </p>
       )}
       {[...days].map(([date, rows]) => (
         <section key={date}>
           <h2 className="flex justify-between pt-[22px] pb-1.5 text-[13px] font-medium text-ink3">
             <span className="text-ink2">{dayLabel(date)}</span>
-            {show(
-              rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === settings.baseCurrency ? e.amount : 0)), 0),
-              settings.baseCurrency,
-            )}
+            <span>
+              {show(
+                rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === settings.baseCurrency ? e.amount : 0)), 0),
+                settings.baseCurrency,
+              )}
+              {rows.some((e) => e.baseAmount === null) && ` + ${rows.filter((e) => e.baseAmount === null).length} unconverted`}
+            </span>
           </h2>
           <ul>
             {rows.map((e) => (
-              <li
-                key={e.id}
-                tabIndex={0}
-                className={`${rowClass} cursor-pointer`}
-                onClick={() => edit(e)}
-                onKeyDown={(ev) => ev.key === "Enter" && edit(e)}
-              >
-                {row(e)}
-              </li>
+              <Fragment key={e.id}>
+                <li className={`${rowClass} relative ${e.id > newest.current! || e.id < 0 ? "rise" : ""}`}>
+                  {row(e)}
+                </li>
+                {asking === `rate ${e.id}` && (
+                  <li>
+                    <form onSubmit={(ev) => setRate(ev, e)} className="rise flex flex-wrap items-end gap-2 border-b border-line pb-3">
+                      {[...new Set([e.currency, settings.baseCurrency])]
+                        .filter((c) => c !== "USD")
+                        .map((c) => (
+                          <label key={c} className="label min-w-0 flex-1">
+                            1 USD in {c}
+                            <input name={c} className="input" inputMode="decimal" autoFocus={c === e.currency} />
+                          </label>
+                        ))}
+                      <span className="flex w-full items-center justify-between text-[13px] font-medium">
+                        <span className="text-up">{mutation.error?.message}</span>
+                        <span>
+                          <button type="button" className="hit rounded-chip px-2.5 py-1.5 text-ink2" onClick={() => setAsking(null)}>
+                            Cancel
+                          </button>
+                          <button className="primary hit h-8 px-3 text-[13px]">Save</button>
+                        </span>
+                      </span>
+                    </form>
+                  </li>
+                )}
+              </Fragment>
             ))}
           </ul>
         </section>
       ))}
-      {templates.length > 0 && (
-        <section className="mt-8">
-          <h2 className="pb-1.5 text-[13px] font-medium text-ink2">Recurring</h2>
-          <ul className="text-sm">
-            {templates.map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-2 border-b border-line py-2.5 last:border-0">
-                <button className="min-w-0 text-left" onClick={() => editTemplate(t)}>
-                  <span className="font-medium">{t.note}</span>
-                  <span className="block text-xs text-ink3">
-                    {show(t.amount, t.currency)} every {t.every > 1 ? `${t.every} ${t.period}s` : t.period}
-                    {t.paused && " · paused"}
-                  </span>
-                </button>
-                <span className="flex gap-1">
-                  <button className="quiet h-8 text-[13px]" onClick={() => templateAction(t, t.paused ? "resume" : "pause")}>
-                    {t.paused ? "Resume" : "Pause"}
-                  </button>
-                  <button className="h-8 px-2 text-[13px] font-medium text-up" onClick={() => templateAction(t, "DELETE")}>
-                    Stop
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      <button className="mt-8 text-[13px] text-ink3 underline decoration-line2 underline-offset-3" onClick={() => setShowBin(true)}>
-        Bin
-      </button>
     </>
   );
 }
 
-function Summary({ unit }: { unit: Unit }) {
-  const s = span("This month");
+function Summary({ unit, end, label }: { unit: Unit; end?: Date; label: string }) {
+  const s = span("This month", undefined, end);
   const now = usePeriod(s.range);
-  const ref = usePeriod(s.ref);
+  const ref = usePeriod(end ? s.full : s.ref);
   if (!now) return <div className="h-[86px]" />;
   const d = ref && change(now.total, ref.total);
+  const share = (n: number) => `${Math.round((n / now.total) * 100)}%`;
   return (
     <section className="mt-3.5">
       <p className="flex items-baseline gap-2.5 text-ink2">
         <Total text={money(now.total, now.baseCurrency, unit)} />
         {d ? (
           <span>
-            <span className={`font-medium ${d.tone}`}>{d.text}</span> vs {s.name} by now
+            <span className={`font-medium ${d.tone}`}>{d.text}</span> vs {s.name}
+            {!end && " by now"}
           </span>
         ) : (
-          <span>this month</span>
+          <span>{end ? `in ${label}` : "this month"}</span>
         )}
       </p>
       {now.total > 0 && (
         <>
-          <div className="mt-3 flex h-[3px] gap-0.5" role="img" aria-label="Spending by category">
+          <div
+            className="mt-3 flex h-[3px] gap-0.5"
+            role="img"
+            aria-label={`Spending by category: ${now.categories.map((c) => `${c.name} ${money(c.total, now.baseCurrency, unit)}, ${share(c.total)}`).join("; ")}`}
+          >
             {now.categories.map((c) => (
               <i key={c.id} className="rounded-sm" style={{ flex: c.total, background: c.color }} />
             ))}
           </div>
-          <p className="mt-2 flex gap-3.5 overflow-hidden text-xs whitespace-nowrap text-ink3">
+          <p aria-hidden className="mt-2 flex gap-3.5 overflow-hidden text-xs whitespace-nowrap text-ink3">
             {now.categories.slice(0, 4).map((c) => (
               <span key={c.id} className="inline-flex items-center gap-1.5">
                 <i className="size-1.5 rounded-full" style={{ background: c.color }} />
-                {c.name}
+                {c.name} {share(c.total)}
               </span>
             ))}
           </p>

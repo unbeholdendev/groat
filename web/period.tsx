@@ -13,8 +13,7 @@ const shift = (date: string, n: number) => new Date(Date.parse(date) + n * 864e5
 
 export type Span = { range: [string, string]; ref: [string, string]; full: [string, string]; end: string; name: string };
 
-export function span(preset: string, custom?: [string, string]): Span {
-  const now = new Date();
+export function span(preset: string, custom?: [string, string], now = new Date()): Span {
   const [y, m, d] = [now.getFullYear(), now.getMonth(), now.getDate()];
   const month = (offset: number, day?: number) => {
     const last = new Date(y, m + offset + 1, 0).getDate();
@@ -25,7 +24,7 @@ export function span(preset: string, custom?: [string, string]): Span {
     return { range: [month(0, 1), iso(now)], ref: [month(-1, 1), month(-1, d)], full: [month(-1, 1), month(-1)], end: month(0), name: short(-1) };
   if (preset === "Last month")
     return { range: [month(-1, 1), month(-1)], ref: [month(-2, 1), month(-2)], full: [month(-2, 1), month(-2)], end: month(-1), name: short(-2) };
-  if (preset === "Year")
+  if (preset === "Year to date")
     return {
       range: [iso(new Date(y, 0, 1)), iso(now)],
       ref: [iso(new Date(y - 1, 0, 1)), iso(new Date(y - 1, m, d))],

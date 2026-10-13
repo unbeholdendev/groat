@@ -245,7 +245,7 @@ Near-neutral warm greys with one cool blue and three semantic tones; every token
 
 A single column, 448px max, centred, with 20px side gutters, on phone and desktop alike. No breakpoints: desktop shows the same column in the middle of the ground. Top padding respects the safe area (at least 20px).
 
-The bottom is a fixed dock: the one-line bar sits above a four-tab bar (Expenses, Stats, Categories, Settings), both inside the same 448px column, with the tab bar padded for the home indicator. Content keeps 192px bottom padding so the last row clears the dock. A gradient from transparent to Warm Paper over 26px sits behind the bar so rows fade under it.
+The bottom is a fixed dock on every tab: the one-line bar sits above a four-tab bar (Expenses, Stats, Categories, Settings), both inside the same 448px column, with the tab bar padded for the home indicator. Content keeps 192px bottom padding so the last row clears the dock. A gradient from transparent to Warm Paper over 26px sits behind the bar so rows fade under it.
 
 Rhythm: rows are 10px top and bottom with 10px gaps; day groups open with 22px above and 6px below their header; small clusters use 6px or 8px gaps. Rows are a three-column grid (24px emoji, flexible note, auto amount) aligned on the baseline.
 
@@ -254,6 +254,7 @@ Rhythm: rows are 10px top and bottom with 10px gaps; day groups open with 22px a
 Flat at rest. Hierarchy comes from Sheet White on Warm Paper and hairlines, not shadow. Two things float, and they are the two things the user is talking to: the docked bar and the answer card. Shadows are soft, negative-spread and tinted with ink, never offset.
 
 ### Shadow Vocabulary
+Each is a token with a dark twin (black at higher alpha) so it still reads on the dark ground: `shadow-bar`, `shadow-bar-active`, `shadow-lift`, `shadow-thumb`.
 - **Bar rest** (`box-shadow: 0 6px 18px -10px rgb(27 28 31 / 0.22)`): the docked bar when idle.
 - **Bar active** (`box-shadow: 0 0 0 3px var(--accent-soft), 0 6px 18px -8px rgb(27 28 31 / 0.18)`): the bar while focused or holding text; pairs with an accent border.
 - **Answer lift** (`box-shadow: 0 12px 32px -14px rgb(27 28 31 / 0.28)`): the AI answer card above the bar.
@@ -273,37 +274,44 @@ Chrome icons are drawn on a 24px grid with round caps and joins: 1.6px stroke at
 ### Buttons
 Quiet and compact; one blue button per view at most.
 - **Shape:** gently rounded (8px), 40px tall.
-- **Primary:** Ledger Blue fill, On Blue text, 14px medium, 16px side padding. Disabled at 50% opacity. In the bar it shrinks to 38px tall and carries a small return-key hint.
+- **Primary:** Ledger Blue fill, On Blue text, 14px medium, 16px side padding. Disabled at 50% opacity. In the bar it shrinks to 38px tall and carries a small drawn return-key icon. With text but no amount it reads "Full form".
 - **Quiet:** Sheet White with a Strong Hairline border, ink text. Drops to 32px and 13px inside rows.
 - **Text actions:** 13px medium, no border, 7px radius; Second Ink for dismiss, Ledger Blue for go-on, Over Red for destructive.
 - **Confirm (pending):** amber text with an amber-line border, 7px radius.
-- **Focus:** 2px Ledger Blue outline, 2px offset, everywhere.
+- **Inline confirm:** a destructive action swaps in place for a short question with Keep and a red verb, counting what goes ("Delete 3 expenses for good?"). Undoable actions skip it and leave a receipt. No browser dialogs.
+- **Focus:** 2px Ledger Blue outline, 2px offset, everywhere. A chip over a native select or date input shows it on the chip. An expense row is one button whose ring wraps the whole row.
+- **Hit area:** every control reaches 44px through the `hit` utility, a centred invisible pseudo-element, not padding.
 
 ### Chips
 - **Style:** Sheet White, Strong Hairline border, 7px radius, 13px medium ink, optional 6px category dot and emoji, trailing 10px chevron. A transparent native select or date input sits on top.
 - **State:** appear only while typing in the bar, rising in above it, separated by faint middle dots. "from past notes" in caption marks an inferred category.
+- **Currency chips:** in onboarding and Settings, each extra currency is a chip with a drawn cross to remove it, followed by an "Add" chip over a native select of ISO codes plus BTC.
 
 ### Inputs / Fields
 - **Style:** 40px, Sheet White, 1px Strong Hairline, 8px radius, 15px ink, Third Ink placeholder. Labels sit above in 13px medium Second Ink with a 6px gap.
 - **Focus:** border turns Ledger Blue with a 3px Blue Wash ring.
 
 ### Navigation
-Four-tab bar on Sheet White under a Hairline top rule. Each tab is a 21px drawn icon over an 11px medium label; current tab in ink, others in Third Ink. No pill, no underline, no accent.
+Four-tab bar on Sheet White under a Hairline top rule. Each tab is a 21px drawn icon over an 11px medium label; current tab in ink, others in Third Ink. No pill, no underline, no accent. Recurring, Bin and Export are hairline link rows at the foot of Settings.
 
 ### One-line Bar (signature)
-The app's single entry point. Sheet White, 12px radius, 50px minimum, Strong Hairline border with the Bar rest shadow. On focus or text it gains an accent border and Bar active shadow. Input is 17px medium. A mirrored layer colours the text as it is parsed: the amount in a Blue Wash pill with blue text, tags in a Track pill with Second Ink, both 3px radius. A leading "?" turns blue and switches to ask mode. Empty, it shows a Third Ink plus that opens the full form.
+The app's single entry point. Sheet White, 12px radius, 50px minimum, Strong Hairline border with the Bar rest shadow. On focus or text it gains an accent border and Bar active shadow. Input is 17px medium. A mirrored layer colours the text as it is parsed: the amount in a Blue Wash pill with blue text, tags in a Track pill with Second Ink, both 3px radius. A leading "?" turns blue and switches to ask mode. Empty, it shows a Third Ink plus that opens the full form. On Chat it is locked to ask mode: a fixed blue "?" leads, the placeholder reads "Reply", and answers land in the thread instead of the card. Chat has no input of its own. Your messages sit on Track with a Hairline, answers on Sheet White. Hidden only while the full form is open.
+
+**Teaching.** The placeholder is a live example, "ramen 24.50 #friends". Focused and empty, the hint line shows examples coloured as the parser would ("Try 12 usd · 5000 sats · #work", only for currencies in use) and, with AI on, "Start with ? to ask". Right after onboarding the bar is focused and the hint reads "Start with the last thing you paid for" until the first add.
+
+**Receipt.** After an add or a move to the bin, the hint line under the bar becomes a receipt for 5 seconds, held while hovered or focused: "Added coffee · ☕ Food · £3.20" in Second Ink, with a blue Undo on the right. It shows what was parsed, so a wrong amount is visible at once; offline it ends "will sync" and has no Undo. Typing dismisses it. Undo of an add deletes it for good; undo of a bin restores it.
 
 ### Answer Card
-Rises above the bar in ask mode. Sheet White, 14px radius, Strong Hairline border, Answer lift shadow, up to 55% of the viewport. Text in Title style. Footer actions are right-aligned text actions above a Hairline. The page behind dims under Warm Paper at 75%.
+Rises above the bar in ask mode. Sheet White, 14px radius, Strong Hairline border, Answer lift shadow, up to 55% of the viewport. Text in Title style. Footer actions are right-aligned text actions above a Hairline. The page behind dims under Warm Paper at 75%. Focus moves into the card; Esc, Close or a tap outside closes it and returns focus to the bar.
 
 ### Ruler (Stats)
 An 8px Track bar filled with Ledger Blue to this period's total, an ink tick at last period's same-day total with its label above, and so-far and last-total labels below in caption with 13px ink values. A 4px Third Ink bar shows days elapsed. Category rows follow: emoji, name, amount, delta in Over Red or Under Green, and a 4px share track in the category colour.
 
 ### Expense Rows and Day Groups
-Day header in 13px medium: day name in Second Ink, day total in Third Ink. Rows on Hairline dividers: emoji, note in medium ink with tags in Third Ink, amount right-aligned; foreign amounts show the base amount beneath in caption. Pending recurring rows lead with a 7px amber dot.
+Home lists one month; a small Third Ink stepper beside the title moves between months, and any filter switches to all time. Day header in 13px medium: day name in Second Ink, day total in Third Ink, suffixed "+ 1 unconverted" when a row has no rate. Rows on Hairline dividers: emoji, note in medium ink with tags in Third Ink, amount right-aligned; foreign amounts show the base amount beneath in caption. Pending recurring rows lead with a 7px amber dot.
 
 ### Motion
-One authored motion, Rise: new content (answer card, chip row) enters 10px low and transparent and settles over 360ms on `cubic-bezier(0.16, 1, 0.3, 1)` via `@starting-style`. Off under reduced motion. Nothing else animates.
+One authored motion, Rise: new content (answer card, chip row, receipt, inline confirms, a newly added row) enters 10px low and transparent and settles over 360ms on `cubic-bezier(0.16, 1, 0.3, 1)` via `@starting-style`. Off under reduced motion. Nothing else animates.
 
 ## Do's and Don'ts
 

@@ -11,5 +11,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  server: { host: true, port: 38697, strictPort: true, proxy: { "/api": "http://localhost:3000" } },
+  server: {
+    host: true,
+    port: 38697,
+    strictPort: true,
+    proxy: Object.fromEntries(["/api", "/sw.js", "/manifest.webmanifest"].map((p) => [p, "http://localhost:3000"])),
+  },
 });
