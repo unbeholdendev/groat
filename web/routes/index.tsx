@@ -346,7 +346,7 @@ function Expenses() {
         <div className="flex gap-2">
           <label className="label">
             Date
-            <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <input className="input" type="date" max={today()} value={date} onChange={(e) => setDate(e.target.value)} />
           </label>
           <label className="label min-w-0 flex-1">
             Tags
@@ -533,7 +533,7 @@ function Expenses() {
           ))}
         </ul>
       )}
-      {expenses.length + queued.length === 0 && (
+      {listed && expenses.length + queued.length === 0 && (
         <p className="mt-10 text-center text-ink3">
           {filtered ? "No expenses match these filters." : month ? `No expenses in ${label}.` : "Nothing this month yet. Type one below, like “coffee 3.20”."}
         </p>

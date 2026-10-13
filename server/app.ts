@@ -84,7 +84,9 @@ export function readExpense(body: Record<string, any>, db: Db, today: string, fa
   const tags = body.tags ?? [];
   if (!note) return { error: "note is required" };
   if (amount === null) return { error: "invalid amount" };
-  if (!isDate(date) || date > today) return { error: "invalid date" };
+  if (!isDate(date)) return { error: "invalid date" };
+  // today is UTC; the user's local date can be a day ahead
+  if (date > new Date(Date.parse(today) + 864e5).toISOString().slice(0, 10)) return { error: "date can’t be in the future" };
   if (!db.select().from(t.categories).where(eq(t.categories.id, categoryId)).get()) return { error: "invalid category" };
   if (!Array.isArray(tags) || !tags.every((t) => typeof t === "string" && t.trim())) return { error: "invalid tags" };
   return { note, amount, currency, date, categoryId, tags: [...new Set(tags.map((t: string) => t.trim()))] };

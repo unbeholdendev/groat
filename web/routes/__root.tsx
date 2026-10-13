@@ -1,7 +1,7 @@
 import { type FormEvent, Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 import { useMutation, useMutationState, useQuery } from "@tanstack/react-query";
 import { createRootRoute, Link, Outlet, useLocation, useNavigate, useSearch } from "@tanstack/react-router";
-import { parseAmount, type Unit } from "../../shared/amount";
+import { formatAmount, parseAmount, type Unit } from "../../shared/amount";
 import { money } from "../period";
 import {
   type Category,
@@ -26,7 +26,7 @@ import type { Chat } from "./chat";
 
 export const Route = createRootRoute({ component: App });
 
-type Suggestion = { note: string; categoryId: number; currency: string };
+type Suggestion = { note: string; categoryId: number; currency: string; amount: number };
 
 function useTheme(theme?: Settings["theme"]) {
   useEffect(() => {
@@ -166,10 +166,19 @@ function Bar(props: {
   const ask = inChat || (settings.ai && text.startsWith("?"));
   const question = text.replace(/^\?/, "").trim();
   const p = parse(ask ? "" : text, settings.currencies);
-  const guess = useQuery<Suggestion[]>({
-    queryKey: ["/api/notes?prefix=", encodeURIComponent(p.note)],
-    enabled: p.note.length > 1,
-  }).data?.[0];
+  const guesses =
+    useQuery<Suggestion[]>({
+      queryKey: ["/api/notes?prefix=", encodeURIComponent(p.note)],
+      enabled: p.note.length > 1,
+    }).data ?? [];
+  const guess = guesses[0];
+  const line = (s: Suggestion) =>
+    s.currency === "BTC"
+      ? `${s.note} ${s.amount} sats `
+      : `${s.note} ${formatAmount(s.amount, s.currency)}${s.currency === settings.lastCurrency ? "" : ` ${s.currency.toLowerCase()}`} `;
+  const fills = p.note.length > 1 && !p.amount && !p.currency && !p.tags.length ? guesses.slice(0, 3) : [];
+  const ghost = fills[0] && line(fills[0]).toLowerCase().startsWith(text.toLowerCase()) ? line(fills[0]).slice(text.length) : "";
+  const fill = (s: Suggestion) => (setText(line(s)), sync(), input.current?.focus());
   const category = categories.find((c) => c.id === (categoryId ?? (p.note.length > 1 ? guess?.categoryId : undefined)));
   const currency = p.currency ?? (p.note.length > 1 ? guess?.currency : undefined) ?? settings.lastCurrency;
   const clear = () => (setText(""), setCategoryId(null), setDate(today()), props.onGuided());
@@ -302,6 +311,16 @@ function Bar(props: {
             </div>
           </section>
         )}
+        {fills.length > 0 && !card && (
+          <div className="rise flex gap-1.5 overflow-hidden px-1.5 pb-2" aria-label="Past entries">
+            {fills.map((s) => (
+              <button key={s.note} type="button" className={`${chip} hit min-w-0 shrink!`} onMouseDown={(e) => e.preventDefault()} onClick={() => fill(s)}>
+                <span className="truncate">{s.note}</span>
+                <span className="text-ink3">{money(s.amount, s.currency, unit)}</span>
+              </button>
+            ))}
+          </div>
+        )}
         {text && !ask && !card && (
           <div className="rise flex items-center gap-1.5 px-1.5 pb-2 text-[13px] text-ink2">
             <label className={chip}>
@@ -321,7 +340,15 @@ function Bar(props: {
             <span className="text-line2">·</span>
             <label className={chip}>
               {dayLabel(date)}
-              <input aria-label="Date" type="date" className="absolute inset-x-0 -inset-y-2.5 opacity-0" value={date} onChange={(e) => setDate(e.target.value || today())} />
+              <input
+                aria-label="Date"
+                type="date"
+                className="absolute inset-x-0 -inset-y-2.5 opacity-0"
+                max={today()}
+                value={date}
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                onChange={(e) => setDate(e.target.value || today())}
+              />
             </label>
             <span className="text-line2">·</span>
             <span>{currency === "BTC" ? (p.unit ?? unit) : currency}</span>
@@ -340,11 +367,14 @@ function Bar(props: {
                   {inChat ? text : text.slice(1)}
                 </>
               ) : (
-                p.parts.map(([w, style], i) => (
-                  <span key={i} className={style}>
-                    {w}
-                  </span>
-                ))
+                <>
+                  {p.parts.map(([w, style], i) => (
+                    <span key={i} className={style}>
+                      {w}
+                    </span>
+                  ))}
+                  {focused && <span className="text-ink3">{ghost.trimEnd()}</span>}
+                </>
               )}
             </div>
             <input
@@ -356,6 +386,10 @@ function Bar(props: {
               enterKeyHint={ask ? "send" : "done"}
               value={text}
               onChange={(e) => (setText(e.target.value), adding.reset(), shown && dismiss(shown.id), sync())}
+              onKeyDown={(e) => {
+                const end = e.currentTarget.selectionStart === text.length;
+                if (ghost && (e.key === "Tab" || (e.key === "ArrowRight" && end))) (e.preventDefault(), fill(fills[0]));
+              }}
               onSelect={sync}
               onScroll={sync}
               onFocus={() => setFocused(true)}
