@@ -39,7 +39,7 @@ export function span(preset: string, custom?: [string, string], now = new Date()
 
 type Slice = { id: number; name: string; icon: string; color: string; total: number };
 export type Category = Slice & { children: Slice[] };
-export type Period = { baseCurrency: string; total: number; unconverted: number; categories: Category[] };
+export type Period = { baseCurrency: string; total: number; unconverted: number; categories: Category[]; tags: { name: string; total: number }[] };
 
 export const usePeriod = ([from, to]: [string, string]) =>
   useQuery<Period>({ queryKey: [`/api/stats?from=${from}&to=${to}&group=month`], enabled: from <= to }).data;

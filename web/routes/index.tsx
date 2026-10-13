@@ -449,6 +449,8 @@ function Expenses() {
   const days = new Map<string, Expense[]>();
   for (const e of [...queued.filter((e) => !filtered && e.date.startsWith(shown)), ...expenses].sort((a, b) => b.date.localeCompare(a.date)))
     if (e.status !== "pending") days.set(e.date, [...(days.get(e.date) ?? []), e]);
+  const matching = [...days.values()].flat();
+  const unrated = matching.filter((e) => e.baseAmount === null).length;
 
   return (
     <>
@@ -512,6 +514,17 @@ function Expenses() {
             </a>
           </div>
         </div>
+      ) : filtered ? (
+        <p className="mt-3.5 flex items-baseline gap-2.5 text-ink2">
+          <Total
+            text={money(
+              matching.reduce((s, e) => s + (e.baseAmount ?? (e.currency === settings.baseCurrency ? e.amount : 0)), 0),
+              settings.baseCurrency,
+              unit,
+            )}
+          />
+          <span>matching{unrated > 0 && ` + ${unrated} unconverted`}</span>
+        </p>
       ) : (
         <Summary unit={unit} end={month ? end : undefined} label={label} />
       )}

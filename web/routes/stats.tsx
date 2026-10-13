@@ -185,6 +185,31 @@ function StatsPage() {
           );
         })}
       </ul>
+
+      {now.tags.length > 0 && (
+        <>
+          <div className="mt-7 mb-1 flex justify-between text-[13px] font-medium text-ink3">
+            <span className="text-ink2">By tag</span>
+            <span>vs {s.name}</span>
+          </div>
+          <ul>
+            {now.tags.map((t) => (
+              <li key={t.name} className="border-b border-line last:border-0">
+                <Link
+                  to="/"
+                  search={{ tag: t.name, from: s.range[0], to: s.range[1] }}
+                  className="grid w-full grid-cols-[24px_1fr_auto_48px] items-baseline gap-x-2.5 py-2.5"
+                >
+                  <span className="text-ink3">#</span>
+                  <span className="truncate font-medium">{t.name}</span>
+                  <span className="font-medium">{show(t.total)}</span>
+                  <Delta now={t.total} before={ref.tags.find((r) => r.name === t.name)?.total ?? 0} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </>
   );
 }

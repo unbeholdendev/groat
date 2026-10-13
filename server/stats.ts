@@ -1,7 +1,7 @@
-import { and, between } from "drizzle-orm";
+import { and, between, eq } from "drizzle-orm";
 import { countable, type Db, settings } from "./db";
 import type { Valuer } from "./rates";
-import { categories as c, expenses as e } from "./schema";
+import { categories as c, expenses as e, expenseTags as et, tags as tg } from "./schema";
 
 export const groups = ["day", "week", "month"] as const;
 type Group = (typeof groups)[number];
@@ -28,7 +28,7 @@ const byTotal = (a: Total, b: Total) => b.total - a.total;
 
 export async function period(db: Db, value: Valuer, from: string, to: string, group: Group) {
   const rows = db
-    .select({ amount: e.amount, currency: e.currency, date: e.date, categoryId: e.categoryId })
+    .select({ id: e.id, amount: e.amount, currency: e.currency, date: e.date, categoryId: e.categoryId })
     .from(e)
     .where(and(countable, between(e.date, from, to)))
     .all();
@@ -50,6 +50,18 @@ export async function period(db: Db, value: Valuer, from: string, to: string, gr
     .filter((c) => c.total)
     .sort(byTotal);
 
+  const amounts = new Map(counted.map((r) => [r.id, r.baseAmount]));
+  const tagged = new Map<string, number>();
+  for (const { id, name } of db
+    .select({ id: et.expenseId, name: tg.name })
+    .from(et)
+    .innerJoin(tg, eq(tg.id, et.tagId))
+    .innerJoin(e, eq(e.id, et.expenseId))
+    .where(and(countable, between(e.date, from, to)))
+    .all())
+    if (amounts.has(id)) tagged.set(name, (tagged.get(name) ?? 0) + amounts.get(id)!);
+  const tags = [...tagged].map(([name, total]) => ({ name, total })).sort(byTotal);
+
   const buckets = new Map<string, number>();
   for (let start = bucketOf(from, group); start <= to; start = nextBucket(start, group)) buckets.set(start, 0);
   for (const r of counted) {
@@ -64,6 +76,7 @@ export async function period(db: Db, value: Valuer, from: string, to: string, gr
     total: sum(counted),
     unconverted: valued.length - counted.length,
     categories,
+    tags,
     buckets: [...buckets].map(([start, total]) => ({ start, total })),
   };
 }

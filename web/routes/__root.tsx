@@ -381,7 +381,7 @@ function Bar(props: {
               ref={input}
               aria-label={inChat ? "Ask about your spending" : settings.ai ? "Add an expense, or start with ? to ask" : "Add an expense"}
               className="absolute inset-0 w-full bg-transparent leading-10 text-transparent caret-accent outline-none focus-visible:outline-none placeholder:font-normal placeholder:text-ink3"
-              placeholder={inChat ? (props.chat ? "Reply" : "Ask about your spending") : "ramen 24.50 #friends"}
+              placeholder={inChat ? (props.chat ? "Reply" : "Ask about your spending") : "ramen 24.50"}
               autoComplete="off"
               enterKeyHint={ask ? "send" : "done"}
               value={text}

@@ -98,3 +98,17 @@ test("rejects a bad range or grouping", async () => {
   for (const q of ["", "from=2026-09-30&to=2026-09-01", "from=2026-09-01&to=2026-09-30&group=year"])
     expect((await call("GET", `/api/stats?${q}`)).status).toBe(400);
 });
+
+test("tag totals count each tagged expense in base currency, largest first", async () => {
+  const { call, id } = await onboarded();
+  const spend = (amount: string, currency: string, tags: string[]) =>
+    call("POST", "/api/expenses", { note: "x", amount, currency, date: "2026-09-03", categoryId: id("Food"), tags });
+  await spend("10.00", "GBP", ["holiday", "friends"]);
+  await spend("8.00", "EUR", ["holiday"]);
+  await spend("1.00", "GBP", []);
+  const { body } = await call("GET", "/api/stats?from=2026-09-01&to=2026-09-30");
+  expect(body.tags).toEqual([
+    { name: "holiday", total: 1750 },
+    { name: "friends", total: 1000 },
+  ]);
+});
