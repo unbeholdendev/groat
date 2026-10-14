@@ -20,15 +20,15 @@ export type Deps = {
 export type Ctx = Omit<Deps, "db"> & { db: Db };
 
 const defaultCategories: [string, string, string, [string, string][]?][] = [
-  ["Food", "🍽️", "#f97316", [["Groceries", "🛒"], ["Eating out", "🍔"]]],
-  ["Transport", "🚗", "#3b82f6", [["Fuel", "⛽"], ["Public transport", "🚆"], ["Taxi", "🚕"]]],
-  ["Home", "🏠", "#8b5cf6", [["Rent/Mortgage", "🔑"], ["Utilities", "💡"], ["Maintenance", "🔧"]]],
-  ["Subscriptions", "🔁", "#06b6d4"],
-  ["Health", "💊", "#ef4444"],
-  ["Shopping", "🛍️", "#ec4899"],
-  ["Entertainment", "🎬", "#eab308"],
-  ["Travel", "✈️", "#14b8a6"],
-  ["Gifts", "🎁", "#f43f5e"],
+  ["Food", "🍽️", "#f98942", [["Groceries", "🛒"], ["Eating out", "🍜"]]],
+  ["Transport", "🚗", "#26c0cf", [["Fuel", "⛽"], ["Public transport", "🚆"], ["Taxi", "🚕"]]],
+  ["Home", "🏠", "#3fbe90", [["Rent/Mortgage", "🔑"], ["Utilities", "💡"], ["Maintenance", "🧰"]]],
+  ["Subscriptions", "📺", "#bf73df"],
+  ["Health", "💊", "#f16f7e"],
+  ["Shopping", "🛍️", "#e977bb"],
+  ["Entertainment", "🎬", "#f4bf3f"],
+  ["Travel", "✈️", "#99d352"],
+  ["Gifts", "🎁", "#e977bb"],
 ];
 
 const knownCurrencies = new Set([...Intl.supportedValuesOf("currency"), "BTC"]);

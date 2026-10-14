@@ -1,65 +1,95 @@
 ---
 name: Expenses
-description: A calm, self-hosted expense tracker built around one line at thumb reach.
+description: A bold, self-hosted expense tracker built around one line at thumb reach.
 colors:
-  ground: "#fafaf9"
+  ground: "#f5f7fb"
   surface: "#ffffff"
-  ink: "#1b1c1f"
-  ink-2: "#55575e"
-  ink-3: "#6e7078"
-  hairline: "#e9e8e4"
-  hairline-strong: "#dedcd7"
-  track: "#f0efeb"
-  accent: "#3b5bdb"
-  accent-soft: "#eef1fc"
+  surface-2: "#eef0f6"
+  ink: "#12161f"
+  ink-2: "#4e525e"
+  ink-3: "#676c77"
+  hairline: "#e4e6ec"
+  hairline-strong: "#d3d6dd"
+  track: "#e9ebf1"
+  accent: "#3250f0"
+  accent-soft: "#e0ebff"
   on-accent: "#ffffff"
-  amber: "#a35a00"
-  amber-line: "#e7cfae"
-  up: "#b4372c"
-  down: "#2f7d4f"
-  ground-dark: "#121214"
-  surface-dark: "#1b1b1f"
-  ink-dark: "#ececee"
-  ink-2-dark: "#a9aab1"
-  ink-3-dark: "#8b8c93"
-  hairline-dark: "#26262b"
-  hairline-strong-dark: "#34343a"
-  track-dark: "#232328"
-  accent-dark: "#7b93f2"
-  accent-soft-dark: "#1e2442"
-  on-accent-dark: "#0e1330"
-  amber-dark: "#e0a050"
-  amber-line-dark: "#4a3820"
-  up-dark: "#ef8a7e"
-  down-dark: "#6cc495"
+  hero: "#2e4ae6"
+  on-hero: "#ffffff"
+  on-hero-2: "#d1defd"
+  amber: "#9a5a00"
+  amber-line: "#efca9f"
+  amber-soft: "#fdf0de"
+  up: "#d02b31"
+  down: "#007840"
+  up-soft: "#ffd6d1"
+  up-ink: "#9e141e"
+  down-soft: "#c0f3d0"
+  down-ink: "#005e31"
+  glass: "rgb(255 255 255 / 0.72)"
+  ground-dark: "#0d0f15"
+  surface-dark: "#171920"
+  surface-2-dark: "#21242c"
+  ink-dark: "#f4f5f9"
+  ink-2-dark: "#b7bac3"
+  ink-3-dark: "#91959e"
+  hairline-dark: "#272a31"
+  hairline-strong-dark: "#373a43"
+  track-dark: "#23262e"
+  accent-dark: "#779bff"
+  accent-soft-dark: "#21305b"
+  on-accent-dark: "#070d25"
+  hero-dark: "#2238b8"
+  on-hero-2-dark: "#bccaec"
+  amber-dark: "#eca851"
+  amber-line-dark: "#573c1c"
+  amber-soft-dark: "#2e2214"
+  up-dark: "#fc7a79"
+  down-dark: "#59d38c"
+  glass-dark: "rgb(23 25 32 / 0.7)"
+  cat-rose: "#f16f7e"
+  cat-tangerine: "#f98942"
+  cat-sun: "#f4bf3f"
+  cat-lime: "#99d352"
+  cat-jade: "#3fbe90"
+  cat-aqua: "#26c0cf"
+  cat-orchid: "#bf73df"
+  cat-pink: "#e977bb"
 typography:
+  hero:
+    fontFamily: "Geist Variable, system-ui, sans-serif"
+    fontSize: "60px"
+    fontWeight: 600
+    lineHeight: 1
+    letterSpacing: "-0.04em"
+    fontFeature: "tnum"
+  hero-long:
+    fontFamily: "Geist Variable, system-ui, sans-serif"
+    fontSize: "44px"
+    fontWeight: 600
+    lineHeight: 1
+    letterSpacing: "-0.04em"
   display:
     fontFamily: "Geist Variable, system-ui, sans-serif"
-    fontSize: "28px"
-    fontWeight: 600
-    letterSpacing: "-0.025em"
-    fontFeature: "tnum"
-  headline:
-    fontFamily: "Geist Variable, system-ui, sans-serif"
-    fontSize: "22px"
-    fontWeight: 600
-    letterSpacing: "-0.025em"
+    fontSize: "34px"
+    fontWeight: 700
+    lineHeight: 1.1
+    letterSpacing: "-0.035em"
   title:
+    fontFamily: "Geist Variable, system-ui, sans-serif"
+    fontSize: "20px"
+    fontWeight: 650
+    letterSpacing: "-0.02em"
+  input:
     fontFamily: "Geist Variable, system-ui, sans-serif"
     fontSize: "17px"
     fontWeight: 500
-    lineHeight: 1.375
     letterSpacing: "-0.01em"
   body:
     fontFamily: "Geist Variable, system-ui, sans-serif"
     fontSize: "15px"
-    fontWeight: 400
-    lineHeight: 1.375
-    fontFeature: "tnum"
-  body-sm:
-    fontFamily: "Geist Variable, system-ui, sans-serif"
-    fontSize: "14px"
     fontWeight: 500
+    lineHeight: 1.375
   label:
     fontFamily: "Geist Variable, system-ui, sans-serif"
     fontSize: "13px"
@@ -67,70 +97,112 @@ typography:
   caption:
     fontFamily: "Geist Variable, system-ui, sans-serif"
     fontSize: "12px"
-    fontWeight: 400
+    fontWeight: 500
   tab:
     fontFamily: "Geist Variable, system-ui, sans-serif"
     fontSize: "11px"
+    fontWeight: 600
+  amount:
+    fontFamily: "Geist Mono Variable, ui-monospace, monospace"
+    fontSize: "15px"
     fontWeight: 500
+    letterSpacing: "-0.01em"
+    fontFeature: "tnum"
+  amount-sm:
+    fontFamily: "Geist Mono Variable, ui-monospace, monospace"
+    fontSize: "12px"
+    fontWeight: 500
+    fontFeature: "tnum"
 rounded:
-  token: "3px"
-  sm: "4px"
-  chip: "7px"
-  md: "8px"
-  bar: "12px"
-  card: "14px"
-  full: "9999px"
+  token: "4px"
+  tile-sm: "9px"
+  tile: "11px"
+  field: "14px"
+  panel: "22px"
+  card: "24px"
+  dock: "26px"
+  hero: "32px"
+  chip: "9999px"
 spacing:
-  xs: "6px"
+  xs: "4px"
   sm: "8px"
-  md: "10px"
+  md: "12px"
+  lg: "16px"
   gutter: "20px"
-  group: "22px"
+  section: "28px"
   column: "448px"
 components:
+  hero-field:
+    backgroundColor: "{colors.hero}"
+    textColor: "{colors.on-hero}"
+    rounded: "{rounded.hero}"
+    padding: "16px 20px 24px"
+  hero-numeral:
+    textColor: "{colors.on-hero}"
+    typography: "{typography.hero}"
+  delta-pill-up:
+    backgroundColor: "{colors.up-soft}"
+    textColor: "{colors.up-ink}"
+    typography: "{typography.amount-sm}"
+    rounded: "{rounded.chip}"
+    padding: "3px 9px"
+  delta-pill-down:
+    backgroundColor: "{colors.down-soft}"
+    textColor: "{colors.down-ink}"
+    typography: "{typography.amount-sm}"
+    rounded: "{rounded.chip}"
+    padding: "3px 9px"
+  hero-button:
+    backgroundColor: "rgb(255 255 255 / 0.16)"
+    textColor: "{colors.on-hero}"
+    rounded: "{rounded.chip}"
+    size: "36px"
+  category-tile:
+    backgroundColor: "color-mix(category 16%, surface); 24% in dark"
+    rounded: "{rounded.tile}"
+    size: "36px"
+  panel:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.panel}"
+  expense-row:
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    padding: "12px 16px"
+    height: "62px"
+  dock:
+    backgroundColor: "{colors.glass}"
+    rounded: "{rounded.dock}"
+    padding: "8px"
+  one-line-bar:
+    backgroundColor: "{colors.surface-2}"
+    textColor: "{colors.ink}"
+    typography: "{typography.input}"
+    rounded: "{rounded.field}"
+    height: "48px"
   button-primary:
     backgroundColor: "{colors.accent}"
     textColor: "{colors.on-accent}"
-    typography: "{typography.body-sm}"
-    rounded: "{rounded.md}"
-    padding: "0 16px"
-    height: "40px"
+    rounded: "{rounded.field}"
+    padding: "0 20px"
+    height: "44px"
   button-quiet:
-    backgroundColor: "{colors.surface}"
+    backgroundColor: "{colors.surface-2}"
     textColor: "{colors.ink}"
-    typography: "{typography.body-sm}"
-    rounded: "{rounded.md}"
-    padding: "0 12px"
-    height: "40px"
-  button-text:
-    textColor: "{colors.ink-2}"
-    typography: "{typography.label}"
-    rounded: "{rounded.chip}"
-    padding: "6px 10px"
-  button-confirm:
-    textColor: "{colors.amber}"
-    typography: "{typography.label}"
-    rounded: "{rounded.chip}"
-    padding: "4px 10px"
+    rounded: "{rounded.field}"
+    padding: "0 16px"
+    height: "44px"
   input:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    padding: "0 12px"
-    height: "40px"
+    rounded: "{rounded.field}"
+    padding: "0 14px"
+    height: "44px"
   chip:
-    backgroundColor: "{colors.surface}"
+    backgroundColor: "{colors.glass}"
     textColor: "{colors.ink}"
     typography: "{typography.label}"
     rounded: "{rounded.chip}"
-    padding: "3px 8px"
-  one-line-bar:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
-    typography: "{typography.title}"
-    rounded: "{rounded.bar}"
-    padding: "5px 5px 5px 14px"
-    height: "50px"
+    padding: "6px 12px"
   token-amount:
     backgroundColor: "{colors.accent-soft}"
     textColor: "{colors.accent}"
@@ -139,197 +211,227 @@ components:
     backgroundColor: "{colors.track}"
     textColor: "{colors.ink-2}"
     rounded: "{rounded.token}"
-  answer-card:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
-    typography: "{typography.title}"
-    rounded: "{rounded.card}"
-    padding: "14px 16px 8px"
   segmented:
     backgroundColor: "{colors.track}"
     textColor: "{colors.ink-2}"
     typography: "{typography.label}"
-    rounded: "{rounded.md}"
-    height: "32px"
+    rounded: "{rounded.chip}"
+    height: "40px"
   segmented-selected:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
     rounded: "{rounded.chip}"
-  tab-bar:
+  answer-card:
     backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink-3}"
-    typography: "{typography.tab}"
+    textColor: "{colors.ink}"
+    typography: "{typography.input}"
+    rounded: "{rounded.card}"
+    padding: "18px 20px 10px"
   tab-bar-current:
     textColor: "{colors.ink}"
-  expense-row:
-    textColor: "{colors.ink}"
-    typography: "{typography.body}"
-    padding: "10px 0"
 ---
 
 # Design System: Expenses
 
 ## Overview
 
-**Creative North Star: "The Quiet Ledger"**
+**Creative North Star: "The Denomination"**
 
-A ledger on warm off-white paper, ruled in hairlines, with one blue pen. Everything at rest is ink and paper; the blue appears only where the user is writing or about to commit. Numbers lead every row and are set in tabular figures so columns of money line up without a table.
+A banknote says what it is worth in one huge numeral on a field of confident ink. This app does the same with your month. Each screen opens on a cobalt field with one number set big and sure, and the rest of the screen hands that number its detail: what changed, where it went, and the rows behind it.
 
-Density is phone-first and calm: one centred column, rows separated by hairlines rather than boxes, and a single docked bar at thumb reach that does the work of a form. Chrome stays small and grey so the user's own content (their notes, amounts and chosen emoji) carries the colour. Dark theme is the same ledger with the lamps down: every token has a lifted dark twin, nothing is restyled.
+It is bold consumer fintech held to a precise standard. One committed hue (Cobalt) owns the top of Home and Stats as a field, not a line. Eight curated category hues give every expense an identity in a tinted tile. Figures that line up in a column are set in Geist Mono; the one headline figure is set in Geist at 60px. Things move: totals count up, rows grow in, the spend line draws itself, the dock is frosted glass at thumb reach.
 
-Statistics are measured, not charted. Spend is a ruler against last period, categories are short share tracks, and the only multi-colour mark on the home screen is a 3px split line.
+Dark is the hero theme, the one screenshots and reviews start from: a cool near-black ground, lifted surfaces, a deep cobalt field. Light is its full twin, not an afterthought: cool off-white ground, white panels, a brighter cobalt. Theme follows the system by default.
 
-**Key Characteristics:**
-- Warm off-white ground, white surfaces, near-black ink, hairline rules.
-- One blue accent, reserved for live input, parsed tokens, primary actions and the ruler fill.
-- Category colour only as dots, the 3px split and share tracks.
-- Geist Variable throughout, tabular numerals everywhere.
-- User emoji for categories; drawn stroke icons for chrome.
-- Flat at rest; soft shadow only on the docked bar and the floating answer.
-- One authored motion: things rise into place.
+The one-line bar is still the way in. Nothing about its parsing, ghost completion, chips, receipt or undo changes; only its clothes do.
+
+**Key characteristics:**
+- Cobalt hero field with a 60px total at the top of Home and Stats.
+- Grouped panels on a cool ground; inset hairlines inside a panel, none between panels.
+- Category emoji in tinted tiles; category colour in tiles, the split bar, share tracks and nowhere else.
+- Geist for words and the hero numeral; Geist Mono for every other amount, delta and axis label.
+- One frosted dock: bar and tabs as one surface.
+- Motion with a job: rise, press, count-up, grow-in, draw.
 
 ## Colors
 
-Near-neutral warm greys with one cool blue and three semantic tones; every token has a dark twin under `.dark`.
+Every colour is a CSS variable in `web/index.css` with a light value on `:root` and a dark twin on `.dark`. Tailwind names are in brackets.
 
 ### Primary
-- **Ledger Blue** (accent): the live bar's border and caret, the parsed amount, the leading "?" in ask mode, primary buttons, active filter state, accent text actions ("Continue in chat") and the ruler fill on Stats. Focus outlines use it too.
-- **Blue Wash** (accent-soft): the 3px focus halo around the active bar and inputs, the parsed amount's pill, text selection.
-- **On Blue** (on-accent): text on primary buttons.
+- **Cobalt** (`accent`): live input, parsed amount token, the leading "?", primary buttons, focus outlines, the current-tab icon, links that go on ("Continue in chat", "All Food expenses"), the selected filter state.
+- **Cobalt Field** (`hero`, `on-hero`, `on-hero2`): the hero field behind the total on Home and Stats, and the spend chart inside it. Text on it is `on-hero` (white) for primary, `on-hero2` (pale cobalt) for secondary. Never use grey ink on the field.
+- **Cobalt Wash** (`accent-soft`): focus halo, parsed amount pill, text selection.
 
-### Tertiary
-- **Ledger Amber** (amber, amber-line): pending recurring expenses only. A 7px amber dot, an amber-outlined Confirm button, and the "no rate" warning.
-- **Over Red** (up): spending up versus the previous period, and destructive or error text.
-- **Under Green** (down): spending down versus the previous period.
+### Category palette
+Eight hues at matched OKLCH lightness and chroma, all at least 47° from Cobalt (268°) so no category reads as the accent:
+
+| Name | Hex | OKLCH | Default use |
+|---|---|---|---|
+| Rose | `#f16f7e` | 0.70 0.16 15 | Health |
+| Tangerine | `#f98942` | 0.74 0.16 50 | Food |
+| Sun | `#f4bf3f` | 0.83 0.15 85 | Entertainment |
+| Lime | `#99d352` | 0.80 0.17 130 | Travel |
+| Jade | `#3fbe90` | 0.72 0.13 165 | Home |
+| Aqua | `#26c0cf` | 0.74 0.12 205 | Transport |
+| Orchid | `#bf73df` | 0.68 0.17 315 | Subscriptions |
+| Pink | `#e977bb` | 0.72 0.16 345 | Shopping, Gifts |
+
+Uncategorised is neutral and drawn, not coloured (see Category tile).
+
+### Semantic
+- **Over** (`up`, `up-soft`, `up-ink`): spend up versus the previous period; destructive and error text.
+- **Under** (`down`, `down-soft`, `down-ink`): spend down.
+- On the hero field, change is a **pill**: `up-soft` fill with `up-ink` text, or `down-soft` with `down-ink`. These pill pairs are identical in both themes because the field is cobalt in both. Off the field, change is plain `up`/`down` text.
+- **Amber** (`amber`, `amber-line`, `amber-soft`): pending recurring expenses and the "no rate" warning only.
 
 ### Neutral
-- **Warm Paper** (ground): page background, PWA theme and the fade behind the docked bar.
-- **Sheet White** (surface): bar, answer card, chips, inputs, tab bar, selected segment.
-- **Ledger Ink** (ink): primary text and amounts; the "by now" tick on the ruler.
-- **Second Ink** (ink-2): day labels, field labels, secondary actions.
-- **Third Ink** (ink-3): placeholders, captions, day totals, inactive tabs, legend names, the elapsed-days bar.
-- **Hairline** (hairline): row dividers, tab bar top rule, answer footer rule.
-- **Strong Hairline** (hairline-strong): borders of inputs, chips, quiet buttons, the resting bar and the answer card.
-- **Track** (track): empty part of the ruler and share tracks, segmented control well, tag token pill.
+- **Ground** (`bg`): page background.
+- **Surface** (`surface`): panels, inputs, answer card, segmented thumb.
+- **Surface 2** (`surface2`): the bar's input well, quiet buttons, hover on rows.
+- **Ink, Ink 2, Ink 3** (`ink`, `ink2`, `ink3`): primary, secondary, tertiary text. Ink 3 is at least 4.9:1 on ground in light and 5.2:1 on Surface 2 in dark.
+- **Hairline, Strong hairline** (`line`, `line2`): inset row dividers inside panels; input borders.
+- **Track** (`track`): empty share tracks, segmented well, tag token.
+- **Glass** (`glass`, `glass-line`): the dock and the suggestion chips.
 
-### Named Rules
-**The One Pen Rule.** The accent marks what is live or what commits: the active bar, parsed tokens, primary actions, focus, and the ruler fill. Never use it for decoration, headings or category data.
+### Named rules
+**The Field Rule.** The cobalt field appears once per screen, at the top, behind the headline figure. Never as a card in a list, never twice.
 
-**The Category Colour Rule.** User category colours appear only as small dots (6 to 7px), the 3px split line and 4px share tracks. Never fill text, backgrounds or buttons with them.
+**The Accent Rule.** Off the field, Cobalt marks what is live or what commits. Never category data, never headings.
 
-**The Twin Token Rule.** Every colour is a CSS variable with a light value on `:root` and a dark value on `.dark`. Components reference tokens, never raw hex, so the dark theme needs no component changes.
+**The Category Colour Rule.** Category colour appears as a tinted tile behind the emoji, in the split bar on the hero field, and as share-track fills on Stats. Never as text colour, never as a button.
+
+**The Twin Token Rule.** Components use tokens, never raw hex. A category's own colour reaches CSS through the `--c` custom property on `.tile` or an inline `background`.
 
 ## Typography
 
-**Display Font:** Geist Variable (with system-ui, sans-serif), self-hosted
-**Body Font:** Geist Variable (with system-ui, sans-serif)
+**Words and the hero numeral:** Geist Variable. **Column figures:** Geist Mono Variable (`num` utility). Both self-hosted via `@fontsource-variable`.
 
-**Character:** One neutral grotesk in four weights of attention. Hierarchy comes from size and ink tone, not from a second family.
+The split is a rule, not a mood: the one figure that states the screen's headline is set in Geist; every other amount, delta, percentage and axis label is Geist Mono so columns align and figures read as data.
 
-### Hierarchy
-- **Display** (600, 28px, tight tracking): the period total only. Pence drop to 17px medium in Third Ink so pounds read first.
-- **Headline** (600, 22px, tight tracking): page titles (Expenses, Stats, Categories, Settings, Chats).
-- **Title** (500, 17px, -0.01em): the one-line bar input and the AI answer text.
-- **Body** (400, 15px, 1.375): rows, notes, amounts. Set on `body` with tabular numerals and antialiasing.
-- **Body small** (500, 14px): button text and secondary lines.
-- **Label** (500, 13px): day headers, field labels, chips, text buttons, deltas.
-- **Caption** (400, 12px): legends, ruler labels, hints under the bar.
-- **Tab** (500, 11px): tab bar labels under 21px icons.
+### Scale
+- **Hero** 60px / 1, 600, -0.04em, tabular. Pence at 0.5em, weight 500, 65% opacity. Strings over 9 characters (large totals, BTC) drop to **Hero long** 44px. Implemented as `Total` in `web/period.tsx`; it counts up.
+- **Display** 34px / 1.1, 700, -0.035em (`text-display font-bold`): every page title (the month on Home, "Stats", "Categories", Settings, Bin, Recurring, Chats).
+- **Title** 20px, 650, -0.02em: section heads ("By category", "By tag").
+- **Input** 17px, 500, -0.01em: the bar and AI answer text.
+- **Body** 15px, 500 for notes and names, 400 for prose.
+- **Label** 13px, 500: day headers, chips, field labels, text buttons, segmented options.
+- **Caption** 12px, 500: second lines of rows, legends, hints under the bar.
+- **Tab** 11px, 600: tab labels.
+- Tile emoji (19px, 15px small) is a glyph size set by the tile, not a text step.
+- **Amount** Geist Mono 15px, 500, -0.01em: row amounts, category totals.
+- **Amount small** Geist Mono 12-13px, 500: original-currency line, deltas, shares, day totals, chart labels.
 
-### Named Rules
-**The Tabular Rule.** All numerals are tabular (`tnum` on body). Money must align down a column without a table.
+### Named rules
+**Sentence case.** No uppercase or letter-spaced labels. No eyebrow above a heading or above the hero numeral; context follows the figure, it never precedes it.
 
-**The Sentence Case Rule.** Labels and headers are sentence case at normal tracking. No uppercase labels.
+**Tabular everywhere.** `tabular-nums` is on `body`; `num` adds Geist Mono.
 
 ## Layout
 
-A single column, 448px max, centred, with 20px side gutters, on phone and desktop alike. One breakpoint, at 1024px (`lg`): the column stays the same and only the tab bar moves to a side rail. Lists of money read best narrow. Top padding respects the safe area (at least 20px).
+One centred column, 448px max, 20px gutters, on phone and desktop. At `lg` the tabs become a left rail and the dock is only the bar; desktop beyond that is out of scope for now.
 
-The bottom is a fixed dock on every tab: the one-line bar sits above a four-tab bar (Expenses, Stats, Categories, Settings), both inside the same 448px column, with the tab bar padded for the home indicator. Content keeps 192px bottom padding so the last row clears the dock. A gradient from transparent to Warm Paper over 26px sits behind the bar so rows fade under it. At `lg` the dock is only the bar, 24px off the bottom edge, and it is sticky: it follows the last row on a short page and pins to the bottom on a long one. The chips and the category row above it rise over the content there, so the input never moves while typing.
+### Home
+1. **Hero field**, full-bleed on phones: it cancels `main`'s side and top padding (`-mx-5`), runs under the status bar, pads its top by `max(env(safe-area-inset-top), 16px)`, and rounds only its bottom corners (32px). At `lg` it sits inside the column, 24px from the top, all corners 32px. Background `hero`, shadow `shadow-hero` (soft cobalt glow below).
+   - Row 1: the month as the h1 in Display, white ("October"; "March 2025" outside this year, which wraps to two lines on a phone). Right of it, 36px round hero buttons (white 16% fill, drawn chevrons) step months; next is left out in the current month, so the filter button closes up beside back. Far right, a 36px round hero button with a drawn filter icon; active filters show a small white count badge.
+   - Row 2, 20px below: the hero numeral, counting up.
+   - Row 3, 10px below: the delta pill ("↑ 12%" with a drawn arrow, mono) then "vs Sep by today" in Label, `on-hero2`. No previous data: just "this month" in `on-hero2`.
+   - Row 4, 20px below: the split bar, 8px tall, segments in category colour with 2px gaps and fully rounded ends, segment widths proportional; then a legend of the top three categories (emoji, name, mono share) in Caption, `on-hero2`.
+   - A filtered list replaces the month title with "Filtered" and the numeral with the matching total; the field stays.
+2. **Pending recurring**: one amber panel (`amber-soft` fill, panel radius) above the days: tile, note, "due today" caption, Confirm pill (amber text on surface, `amber-line` border).
+3. **Day groups**: header 13px, 600, Ink 2 ("Today", "Yesterday", "Mon 6 Oct"), 24px above, 8px below; day total right-aligned in mono 13px Ink 3, **hidden when the day has one row** (it would repeat the row). Rows sit in one `surface` panel per day (22px radius, `shadow-panel`).
+4. **Expense row** (62px, one button, 12px 16px padding): 36px tile; text column with the note (Body 500, Ink, one line) over a Caption line in Ink 3 (category name, then tags as "#friends"); amount right in Amount mono Ink, with the original-currency amount beneath in Amount small Ink 3 when foreign. Inset hairline between rows starting at the text column (left 64px). Hover: `surface2`. Press: scale 0.97 on the row.
+5. Bottom padding clears the dock: `pb-40` (160px) on phones, 16px at `lg`, where the dock is sticky.
 
-Rhythm: rows are 10px top and bottom with 10px gaps; day groups open with 22px above and 6px below their header; small clusters use 6px or 8px gaps. Rows are a three-column grid (24px emoji, flexible note, auto amount) aligned on the baseline.
+### Stats
+1. Title row: "Stats" in Display.
+2. Segmented control, 16px below: `track` well, full radius, 40px tall (44px hit), four options; the selected thumb is `surface` with `shadow-thumb` and slides between options (translate, 260ms).
+3. **Hero card**, 16px below: the cobalt field as a card inside the column (32px radius, 20px padding), holding the hero numeral, the delta pill with "vs Sep by today", and the chart.
+4. **Spend chart** inside the card, 112px tall, full card width, drawn in SVG from `/api/stats` buckets (day up to 62 days, then week, then month) as cumulative steps: flat between spends, a day bucket rises straight up at its day, a week or month bucket rises across its span.
+   - This period: a 2.5px white line, round joins, with an area fill below it from white at 18% to 0 at the baseline.
+   - Previous period (`span().full`): a 1.5px `on-hero2` line at 60% opacity, dashed 4 4, across its whole length; it ends with its total as a mono 11px label at the right edge ("Sep £1,840").
+   - Today marker (only while the period is in progress): a 1px white line at 30% from top to baseline at today's x, and an 8px white dot with a 3px cobalt ring at the end of this period's line.
+   - X axis: first and last day of the period as mono 11px `on-hero2` labels under the baseline. No y axis, no gridlines.
+   - Scale: x by day index over the longer of the two periods; y over the larger of this period's total and the previous period's full total, so neither line clips and an empty previous period does not pin anything to zero.
+   - Accessible name on the SVG states both totals, as now.
+   - Replaces the ruler and the "Day N of M" bar entirely.
+5. **By category** (Title, 28px above): one `surface` panel of rows. Row: 36px tile; name (Body 500) and amount (Amount) on line 1, with the delta in mono 12px `up`/`down` beside the amount; line 2 is the share track (6px, `track`, filled in category colour to the category's share of the period total) with the share as mono 12px Ink 3 ("34%") at its right. Categories with no spend last period show no delta; under the panel one Caption line lists them once: "New since Sep: 🎁 Gifts, ✈️ Travel". Drill-down expands inside the panel: child rows 48px, 28px tiles, indented to the text column.
+6. **By tag**: same panel and row, a `track` tile with a drawn hash icon, no share track.
 
 ## Elevation & Depth
 
-Flat at rest. Hierarchy comes from Sheet White on Warm Paper and hairlines, not shadow. Two things float, and they are the two things the user is talking to: the docked bar and the answer card. Shadows are soft, negative-spread and tinted with ink, never offset.
+Three levels, plus the field.
+- **Level 0, Ground** (`bg`).
+- **Level 1, Panel** (`surface`, `shadow-panel`): day groups, category lists, inputs. Light: soft offset shadow. Dark: no shadow, a faint top inner highlight; separation comes from Surface being lighter than Ground.
+- **Level 2, Floating** (`glass` + `shadow-dock`, or `surface` + `shadow-lift`): the dock, suggestion chips, the answer card. Only things the user is talking to float.
+- **Field** (`hero` + `shadow-hero`): a soft cobalt glow below the hero field.
 
-### Shadow Vocabulary
-Each is a token with a dark twin (black at higher alpha) so it still reads on the dark ground: `shadow-bar`, `shadow-bar-active`, `shadow-lift`, `shadow-thumb`.
-- **Bar rest** (`box-shadow: 0 6px 18px -10px rgb(27 28 31 / 0.22)`): the docked bar when idle.
-- **Bar active** (`box-shadow: 0 0 0 3px var(--accent-soft), 0 6px 18px -8px rgb(27 28 31 / 0.18)`): the bar while focused or holding text; pairs with an accent border.
-- **Answer lift** (`box-shadow: 0 12px 32px -14px rgb(27 28 31 / 0.28)`): the AI answer card above the bar.
-- **Segment thumb** (`box-shadow: 0 1px 2px rgb(27 28 31 / 0.12)`): the selected period in the segmented control.
-
-### Named Rules
-**The Two Floaters Rule.** Only the bar and the answer card float. Lists, rows and forms stay flat on the ground.
+All shadows are tokens with dark twins and carry a y-offset and blur; no zero-offset halos except the 3px focus ring.
 
 ## Shapes
 
-Gently rounded, small radii that grow with the size of the object: 3px for parsed tokens, 4px for tracks and the split, 7px for chips, text buttons and segments, 8px for inputs and buttons, 12px for the bar, 14px for the answer card, full circles for dots. Borders are 1px hairlines. Data marks are thin: the split is 3px, share tracks 4px, the ruler 8px with a 2px by 16px tick.
-
-Chrome icons are drawn on a 24px grid with round caps and joins: 1.6px stroke at 21px (tabs, the recurring mark), 2px stroke at 18px and below so small icons hold their weight. Categories use the user's own emoji, never drawn icons.
+Radii grow with size: parsed tokens 4px, small tiles 9px, tiles 11px, fields and buttons 14px, panels 22px, cards 24px, dock 26px, hero 32px, chips and pills and segments fully round. Data marks: split bar 8px, share tracks 6px, chart line 2.5px. Chrome icons are drawn on a 24px grid, round caps and joins, 1.6px stroke at 20px and up, 2px at 18px and below.
 
 ## Components
 
+### Category tile
+`<Tile category={c} />` in `web/shared.tsx`. 36px square, 11px radius, emoji at 19px on the category colour mixed 16% into Surface (24% in dark). `small` gives 28px, 9px radius, 15px emoji, for chips, drill-down children and receipts. A builtin category (Uncategorised) renders a drawn dashed circle in Ink 3 on a neutral tile instead of its emoji. Stats slices lack `builtin`; look it up from `useCategories()` by id.
+
+### Hero numeral
+`<Total amount currency unit className />` in `web/period.tsx`. Counts up over 700ms on exponential ease-out: from 0 the first time per session, from the previous value after that (month step, preset change, add). Reduced motion: no count. The final value is in an `sr-only` span; the animated digits are `aria-hidden`. Pass `className="text-on-hero"` on the field.
+
+### Dock (signature)
+One frosted surface holding the bar and the tabs, floating 8px from the screen sides and 8px above the home indicator (`bottom: max(env(safe-area-inset-bottom), 8px)`), inside the 448px column, `glass` utility (blur 24px, saturate 1.8, `glass-line` border), `rounded-dock`, `shadow-dock`, 8px padding. Total height about 116px plus the safe area. No gradient fade behind it.
+- **Bar row**: the input well is `surface2`, `rounded-field`, 48px; on focus or text it turns `surface` with an `accent` border and `shadow-bar-active`. Input 17px 500. Parsed tokens, ghost completion, the leading "?" and Chat's locked ask mode are unchanged. Empty: a 40px round Ink 3 plus for the full form and the `/` hint on fine pointers. With text: the primary button (40px, round, Cobalt, drawn return icon) reads Add, Ask or Full form.
+- **Tabs row**: four tabs, 52px tall, a 22px drawn icon over an 11px 600 label. Current tab: icon in Cobalt, label in Ink. Others: Ink 3. Icons are redrawn: Expenses is a receipt (not a list), Stats is a rising line, Categories is the 2x2 tile grid, Settings is two sliders (not a sun).
+- **At `lg`**: the dock holds only the bar, and it is sticky: it follows the last row on a short page and pins 24px from the bottom on a long one, with chips and the answer card rising over the content; tabs live in the left rail (current tab on `surface2`, rows `rounded-field`).
+- **Hint line and receipt** sit under the bar inside the dock, Caption, 6px above the tabs. Receipt: small tile, "Added coffee · £3.20" in Ink 2 with mono amount, Undo in Cobalt on the right. Behaviour unchanged.
+- **Chips** float above the dock as separate glass pills (`glass`, full radius, 32px, Label), rising in. Category chip leads with a small tile.
+- **Answer card** rises above the dock: `surface`, `rounded-card`, `shadow-lift`, up to 55% of the viewport; the page behind dims to Ground at 70%.
+
 ### Buttons
-Quiet and compact; one blue button per view at most.
-- **Shape:** gently rounded (8px), 40px tall.
-- **Primary:** Ledger Blue fill, On Blue text, 14px medium, 16px side padding. Disabled at 50% opacity. In the bar it shrinks to 38px tall and carries a small drawn return-key icon. With text but no amount it reads "Full form".
-- **Quiet:** Sheet White with a Strong Hairline border, ink text. Drops to 32px and 13px inside rows.
-- **Text actions:** 13px medium, no border, 7px radius; Second Ink for dismiss, Ledger Blue for go-on, Over Red for destructive.
-- **Confirm (pending):** amber text with an amber-line border, 7px radius.
-- **Inline confirm:** a destructive action swaps in place for a short question with Keep and a red verb, counting what goes ("Delete 3 expenses for good?"). Undoable actions skip it and leave a receipt. No browser dialogs.
-- **Focus:** 2px Ledger Blue outline, 2px offset, everywhere. A chip over a native select or date input shows it on the chip. An expense row is one button whose ring wraps the whole row.
-- **Hit area:** every control reaches 44px through the `hit` utility, a centred invisible pseudo-element, not padding.
+- **Primary** (`primary` utility): 44px, Cobalt fill, 15px 600, `rounded-field`, press scale. One per view.
+- **Quiet** (`quiet` utility): 44px, `surface2` fill, no border, press scale.
+- **Hero button**: 36px round, white 16% fill, white drawn icon, 44px hit.
+- **Text actions**: Label, no fill; Ink 2 to dismiss, Cobalt to go on, `up` to destroy.
+- **Inline confirm** and no browser dialogs: unchanged.
+- **Focus**: 2px Cobalt outline, 2px offset. On the hero field the outline is white.
 
-### Chips
-- **Style:** Sheet White, Strong Hairline border, 7px radius, 13px medium ink, optional 6px category dot and emoji, trailing 10px chevron. A transparent native select or date input sits on top.
-- **State:** appear only while typing in the bar, rising in above it, separated by faint middle dots. "from past notes" in caption marks an inferred category.
-- **Currency chips:** in onboarding and Settings, each extra currency is a chip with a drawn cross to remove it, followed by an "Add" chip over a native select of ISO codes plus BTC.
+### Inputs
+`input` utility: 44px, Surface, Strong hairline border, `rounded-field`, focus Cobalt border plus 3px Cobalt Wash ring. Labels above in Label Ink 2.
 
-### Inputs / Fields
-- **Style:** 40px, Sheet White, 1px Strong Hairline, 8px radius, 15px ink, Third Ink placeholder. Labels sit above in 13px medium Second Ink with a 6px gap.
-- **Focus:** border turns Ledger Blue with a 3px Blue Wash ring.
+## Motion
 
-### Navigation
-Four-tab bar on Sheet White under a Hairline top rule. Each tab is a 21px drawn icon over an 11px medium label; current tab in ink, others in Third Ink. No pill, no underline, no accent.
+One curve, `--ease-out` = `cubic-bezier(0.16, 1, 0.3, 1)`. Durations 90 to 900ms by distance travelled. Every item below is off under `prefers-reduced-motion` (a global guard in `index.css` collapses animations and transitions to 1ms and cancels press scale; `Total` skips counting).
+- **Rise** (`.rise`): new floating content (answer card, chips, receipt, inline confirm) enters 12px low and transparent, 420ms, via `@starting-style`.
+- **Press** (`press` utility, built into `primary` and `quiet`): scale 0.97 on `:active` in 90ms, back in 220ms. Rows, hero buttons, tabs, chips, segments.
+- **Count-up**: the hero numeral, 700ms.
+- **Grow in** (`.grow-in` on a row's wrapper): a newly added row opens its height from 0 and fades in, 420ms, so the list makes room instead of jumping.
+- **Draw** (`draw` utility on an SVG path with `pathLength="1"`): the chart lines draw left to right in 900ms; the area fill uses `animate-fade` with a 200ms delay; the today dot uses `animate-fade` after the line.
+- **Fill** (`animate-fill` with `origin-left`): share tracks and split-bar segments grow from the left, 640ms, staggered 30ms per row through `animation-delay`.
+- **Segment slide**: the segmented thumb translates between options, 260ms.
 
-At `lg` the same four tabs become a 176px rail fixed 32px left of the column, on the ground with no rule: icon beside a 14px label, rows 8px rounded, current tab in ink on Track, others in Second Ink, ink on hover. A `/` key hint shows in the empty bar on fine pointers; `/` focuses the bar from anywhere outside a field. Recurring, Bin and Export are hairline link rows at the foot of Settings.
-
-### One-line Bar (signature)
-The app's single entry point. Sheet White, 12px radius, 50px minimum, Strong Hairline border with the Bar rest shadow. On focus or text it gains an accent border and Bar active shadow. Input is 17px medium. A mirrored layer colours the text as it is parsed: the amount in a Blue Wash pill with blue text, tags in a Track pill with Second Ink, both 3px radius. A leading "?" turns blue and switches to ask mode. Empty, it shows a Third Ink plus that opens the full form. On Chat it is locked to ask mode: a fixed blue "?" leads, the placeholder reads "Reply", and answers land in the thread instead of the card. Chat has no input of its own. Your messages sit on Track with a Hairline, answers on Sheet White. Hidden only while the full form is open.
-
-**Teaching.** The placeholder is a live example, "ramen 24.50". Focused and empty, the hint line shows examples coloured as the parser would ("Try 12 usd · 5000 sats · #work", only for currencies in use) and, with AI on, "Start with ? to ask". Right after onboarding the bar is focused and the hint reads "Start with the last thing you paid for" until the first add.
-
-**Receipt.** After an add or a move to the bin, the hint line under the bar becomes a receipt for 5 seconds, held while hovered or focused: "Added coffee · ☕ Food · £3.20" in Second Ink, with a blue Undo on the right. It shows what was parsed, so a wrong amount is visible at once; offline it ends "will sync" and has no Undo. Typing dismisses it. Undo of an add deletes it for good; undo of a bin restores it.
-
-### Answer Card
-Rises above the bar in ask mode. Sheet White, 14px radius, Strong Hairline border, Answer lift shadow, up to 55% of the viewport. Text in Title style. Footer actions are right-aligned text actions above a Hairline. The page behind dims under Warm Paper at 75%. Focus moves into the card; Esc, Close or a tap outside closes it and returns focus to the bar.
-
-### Ruler (Stats)
-An 8px Track bar filled with Ledger Blue to this period's total, an ink tick at last period's same-day total with its label above, and so-far and last-total labels below in caption with 13px ink values. A 4px Third Ink bar shows days elapsed. Category rows follow: emoji, name, amount, delta in Over Red or Under Green, and a 4px share track in the category colour. "By tag" follows when the period has tagged spend: a Third Ink "#", tag name, amount and delta, no track (an expense can carry several tags, so shares would not add up). Each row opens the list filtered to that tag and period.
-
-### Expense Rows and Day Groups
-Home lists one month; a small Third Ink stepper beside the title moves between months, and any filter switches to all time. Day header in 13px medium: day name in Second Ink, day total in Third Ink, suffixed "+ 1 unconverted" when a row has no rate. Rows on Hairline dividers: emoji, note in medium ink with tags in Third Ink, amount right-aligned; foreign amounts show the base amount beneath in caption. Pending recurring rows lead with a 7px amber dot.
-
-### Motion
-One authored motion, Rise: new content (answer card, chip row, receipt, inline confirms, a newly added row) enters 10px low and transparent and settles over 360ms on `cubic-bezier(0.16, 1, 0.3, 1)` via `@starting-style`. Off under reduced motion. Nothing else animates.
+No page-load choreography beyond these, no scroll-triggered effects, no parallax.
 
 ## Do's and Don'ts
 
-### Do:
-- **Do** reference colour through tokens (`--accent`, `--ink2`, `--line`) so dark theme follows for free.
-- **Do** keep the accent to live input, parsed tokens, primary actions, focus and the ruler fill.
-- **Do** show category colour only as 6 to 7px dots, the 3px split and 4px share tracks.
-- **Do** separate rows with 1px hairlines and keep them flat on the ground.
-- **Do** use the user's emoji for categories and 24px-grid stroke icons (1.6px, round caps) for chrome.
-- **Do** use Rise for anything that appears in response to the bar, and switch it off for reduced motion.
-- **Do** keep every surface inside the centred 448px column with 20px gutters; the `lg` tab rail is the one exception.
+### Do
+- **Do** open Home and Stats on the cobalt field with the 60px numeral; let context follow it.
+- **Do** set every non-hero amount, delta, share and axis label in Geist Mono (`num`).
+- **Do** give every category row a tinted tile; use the eight-hue palette for defaults and swatches.
+- **Do** group rows in Level 1 panels with inset hairlines.
+- **Do** draw the cumulative spend line with the previous period as a ghost, and a today marker while the period runs.
+- **Do** hide a day's total when the day has one row.
+- **Do** show "new" once, as one line under the category panel.
+- **Do** keep the bar, its parsing, ghost, chips, receipt and undo exactly as they behave now.
+- **Do** reference tokens, never raw hex, so the dark twin follows.
 
-### Don't:
-- **Don't** add charts (donuts, pies, bar charts) to Stats; measure with the ruler and share tracks.
-- **Don't** add a floating action button or a multi-field add form as the primary way in; the bar is the way in.
-- **Don't** add shadows to lists, rows or forms; only the bar and the answer card float.
-- **Don't** use uppercase or letter-spaced labels, or small labels above headings.
-- **Don't** use text glyphs as icons; draw them.
-- **Don't** introduce a second typeface or a second accent hue.
+### Don't
+- **Don't** add donuts or pies. Bars, lines, tracks and the split are the chart vocabulary.
+- **Don't** add a floating action button or a multi-field form as the way in.
+- **Don't** put grey ink, category colour or `up`/`down` text directly on the cobalt field; use `on-hero`, `on-hero2` and the delta pills.
+- **Don't** repeat the field lower on a screen or use Cobalt for decoration.
+- **Don't** colour text, buttons or backgrounds with category colours beyond tiles, the split and tracks.
+- **Don't** put an eyebrow label above a heading or the numeral, or use uppercase labels.
+- **Don't** use Unicode glyphs as icons (arrows, hashes, chevrons); draw them. Emoji are category content, not icons.
+- **Don't** use gradient text, glass anywhere but the dock and chips, or zero-offset glows.
+- **Don't** animate without a job, or skip the reduced-motion guard.

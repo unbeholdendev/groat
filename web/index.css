@@ -1,56 +1,85 @@
 @import "tailwindcss";
 @import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg: #fafaf9;
+  --bg: #f5f7fb;
   --surface: #ffffff;
-  --ink: #1b1c1f;
-  --ink2: #55575e;
-  --ink3: #6e7078;
-  --line: #e9e8e4;
-  --line2: #dedcd7;
-  --track: #f0efeb;
-  --accent: #3b5bdb;
-  --accent-soft: #eef1fc;
+  --surface2: #eef0f6;
+  --ink: #12161f;
+  --ink2: #4e525e;
+  --ink3: #676c77;
+  --line: #e4e6ec;
+  --line2: #d3d6dd;
+  --track: #e9ebf1;
+  --accent: #3250f0;
+  --accent-soft: #e0ebff;
   --on-accent: #ffffff;
-  --amber: #a35a00;
-  --amber-line: #e7cfae;
-  --up: #b4372c;
-  --down: #2f7d4f;
-  --bar-rest: 0 6px 18px -10px rgb(27 28 31 / 0.22);
-  --bar-active: 0 0 0 3px var(--accent-soft), 0 6px 18px -8px rgb(27 28 31 / 0.18);
-  --lift: 0 12px 32px -14px rgb(27 28 31 / 0.28);
-  --thumb: 0 1px 2px rgb(27 28 31 / 0.12);
+  --hero: #2e4ae6;
+  --on-hero: #ffffff;
+  --on-hero2: #d1defd;
+  --amber: #9a5a00;
+  --amber-line: #efca9f;
+  --amber-soft: #fdf0de;
+  --up: #d02b31;
+  --down: #007840;
+  --up-soft: #ffd6d1;
+  --up-ink: #9e141e;
+  --down-soft: #c0f3d0;
+  --down-ink: #005e31;
+  --glass: rgb(255 255 255 / 0.72);
+  --glass-line: rgb(18 22 31 / 0.07);
+  --tile-mix: 16%;
+  --panel: 0 1px 2px rgb(18 22 31 / 0.04), 0 4px 16px -6px rgb(18 22 31 / 0.08);
+  --dock: 0 1px 0 rgb(255 255 255 / 0.6) inset, 0 12px 36px -12px rgb(18 22 31 / 0.28);
+  --bar-rest: 0 1px 2px rgb(18 22 31 / 0.06);
+  --bar-active: 0 0 0 3px var(--accent-soft), 0 1px 2px rgb(18 22 31 / 0.06);
+  --lift: 0 18px 48px -16px rgb(18 22 31 / 0.32);
+  --thumb: 0 1px 2px rgb(18 22 31 / 0.1), 0 2px 8px -2px rgb(18 22 31 / 0.12);
+  --hero-glow: 0 24px 48px -24px rgb(46 74 230 / 0.55);
 }
 .dark {
-  --bg: #121214;
-  --surface: #1b1b1f;
-  --ink: #ececee;
-  --ink2: #a9aab1;
-  --ink3: #8b8c93;
-  --line: #26262b;
-  --line2: #34343a;
-  --track: #232328;
-  --accent: #7b93f2;
-  --accent-soft: #1e2442;
-  --on-accent: #0e1330;
-  --amber: #e0a050;
-  --amber-line: #4a3820;
-  --up: #ef8a7e;
-  --down: #6cc495;
-  --bar-rest: 0 6px 18px -10px rgb(0 0 0 / 0.7);
-  --bar-active: 0 0 0 3px var(--accent-soft), 0 6px 18px -8px rgb(0 0 0 / 0.6);
-  --lift: 0 12px 32px -14px rgb(0 0 0 / 0.8);
-  --thumb: 0 1px 2px rgb(0 0 0 / 0.5);
+  --bg: #0d0f15;
+  --surface: #171920;
+  --surface2: #21242c;
+  --ink: #f4f5f9;
+  --ink2: #b7bac3;
+  --ink3: #91959e;
+  --line: #272a31;
+  --line2: #373a43;
+  --track: #23262e;
+  --accent: #779bff;
+  --accent-soft: #21305b;
+  --on-accent: #070d25;
+  --hero: #2238b8;
+  --on-hero: #ffffff;
+  --on-hero2: #bccaec;
+  --amber: #eca851;
+  --amber-line: #573c1c;
+  --amber-soft: #2e2214;
+  --up: #fc7a79;
+  --down: #59d38c;
+  --glass: rgb(23 25 32 / 0.7);
+  --glass-line: rgb(255 255 255 / 0.08);
+  --tile-mix: 24%;
+  --panel: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+  --dock: 0 1px 0 rgb(255 255 255 / 0.07) inset, 0 16px 40px -12px rgb(0 0 0 / 0.7);
+  --bar-rest: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+  --bar-active: 0 0 0 3px var(--accent-soft);
+  --lift: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 18px 48px -16px rgb(0 0 0 / 0.8);
+  --thumb: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 2px 8px -2px rgb(0 0 0 / 0.6);
+  --hero-glow: 0 24px 48px -24px rgb(34 56 184 / 0.7);
   color-scheme: dark;
 }
 
 @theme inline {
   --font-sans: "Geist Variable", system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
   --color-ink: var(--ink);
   --color-ink2: var(--ink2);
   --color-ink3: var(--ink3);
@@ -60,27 +89,114 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-on-accent: var(--on-accent);
+  --color-hero: var(--hero);
+  --color-on-hero: var(--on-hero);
+  --color-on-hero2: var(--on-hero2);
   --color-amber: var(--amber);
   --color-amber-line: var(--amber-line);
+  --color-amber-soft: var(--amber-soft);
   --color-up: var(--up);
   --color-down: var(--down);
+  --color-up-soft: var(--up-soft);
+  --color-up-ink: var(--up-ink);
+  --color-down-soft: var(--down-soft);
+  --color-down-ink: var(--down-ink);
+  --color-glass: var(--glass);
+  --color-glass-line: var(--glass-line);
+  --shadow-panel: var(--panel);
+  --shadow-dock: var(--dock);
   --shadow-bar: var(--bar-rest);
   --shadow-bar-active: var(--bar-active);
   --shadow-lift: var(--lift);
   --shadow-thumb: var(--thumb);
-  --radius-token: 3px;
-  --radius-chip: 7px;
-  --radius-card: 14px;
+  --shadow-hero: var(--hero-glow);
+  --text-display: 34px;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.035em;
+  --radius-token: 4px;
+  --radius-chip: 9999px;
+  --radius-tile: 11px;
+  --radius-field: 14px;
+  --radius-panel: 22px;
+  --radius-card: 24px;
+  --radius-dock: 26px;
+  --radius-hero: 32px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-draw: draw 900ms var(--ease-out) both;
+  --animate-fill: fill 640ms var(--ease-out) both;
+  --animate-fade: fade 480ms var(--ease-out) both;
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fill {
+  from {
+    scale: 0 1;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes grow {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+@keyframes clip {
+  from,
+  to {
+    overflow: clip;
+  }
 }
 
 @utility input {
-  @apply h-10 rounded-lg border border-line2 bg-surface px-3 text-[15px] text-ink placeholder:text-ink3 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent-soft;
+  @apply h-11 rounded-field border border-line2 bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink3 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent-soft;
 }
 @utility primary {
-  @apply h-10 rounded-lg bg-accent px-4 text-sm font-medium text-on-accent disabled:opacity-50;
+  @apply press h-11 rounded-field bg-accent px-5 text-[15px] font-semibold text-on-accent disabled:opacity-50;
 }
 @utility quiet {
-  @apply h-10 rounded-lg border border-line2 bg-surface px-3 text-sm font-medium text-ink;
+  @apply press h-11 rounded-field bg-surface2 px-4 text-[15px] font-medium text-ink;
+}
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+@utility glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
+}
+@utility press {
+  transition: scale 220ms var(--ease-out);
+  &:active:not(:disabled) {
+    scale: 0.97;
+    transition-duration: 90ms;
+  }
+}
+@utility draw {
+  stroke-dasharray: 1;
+  animation: var(--animate-draw);
+}
+@utility tile {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: var(--radius-tile);
+  background: color-mix(in oklab, var(--c, var(--ink3)) var(--tile-mix), var(--surface));
+  line-height: 1;
+  user-select: none;
 }
 @utility hit {
   position: relative;
@@ -117,16 +233,34 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @layer components {
   .rise {
     transition:
-      translate 360ms cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 360ms cubic-bezier(0.16, 1, 0.3, 1);
+      translate 420ms var(--ease-out),
+      opacity 420ms var(--ease-out);
     @starting-style {
-      translate: 0 10px;
+      translate: 0 12px;
       opacity: 0;
     }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .rise {
-      transition: none;
+  .grow-in {
+    display: grid;
+    grid-template-rows: 1fr;
+    animation: grow 420ms var(--ease-out);
+    & > * {
+      min-height: 0;
+      animation: clip 420ms;
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+  :active {
+    scale: none !important;
   }
 }

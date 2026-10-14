@@ -1,4 +1,4 @@
-import { createContext, type FormEvent, Fragment, type ReactNode, useState } from "react";
+import { createContext, type CSSProperties, type FormEvent, Fragment, type ReactNode, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { Unit } from "../shared/amount";
@@ -66,6 +66,22 @@ export const Chevron = ({ className = "size-2.5 text-ink3" }: { className?: stri
   </Icon>
 );
 
+export const Tile = ({ category, small }: { category?: { icon: string; color: string; builtin?: boolean }; small?: boolean }) => (
+  <span
+    aria-hidden
+    className={`tile ${small ? "size-7 rounded-[9px] text-[15px]" : "size-9 text-[19px]"}`}
+    style={{ "--c": category && !category.builtin ? category.color : undefined } as CSSProperties}
+  >
+    {category && !category.builtin ? (
+      category.icon
+    ) : (
+      <Icon className={`${small ? "size-4" : "size-5"} stroke-[1.8] text-ink3`}>
+        <circle cx="12" cy="12" r="7.5" strokeDasharray="3 3.3" />
+      </Icon>
+    )}
+  </span>
+);
+
 export const Confirm = (props: { ask: ReactNode; yes: string; onYes: () => void; onNo: () => void }) => (
   <span className="rise inline-flex items-center gap-1 text-[13px] font-medium">
     <span className="text-ink2">{props.ask}</span>
@@ -79,6 +95,7 @@ export const Confirm = (props: { ask: ReactNode; yes: string; onYes: () => void;
 );
 
 export const chip = "relative inline-flex shrink-0 items-center whitespace-nowrap gap-1.5 rounded-chip border border-line2 bg-surface px-2 py-[3px] text-[13px] font-medium text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent";
+export const divide = "relative not-last:after:absolute not-last:after:inset-x-0 not-last:after:bottom-0 not-last:after:ml-16 not-last:after:h-px not-last:after:bg-line";
 
 const currencyNames = new Intl.DisplayNames(["en-GB"], { type: "currency" });
 const allCurrencies = [...Intl.supportedValuesOf("currency"), "BTC"].sort();
@@ -116,7 +133,7 @@ export function SettingsForm(props: {
 
   return (
     <form onSubmit={save} onChangeCapture={() => mutation.reset()} className="flex flex-col gap-4">
-      <h1 className="text-[22px] font-semibold tracking-tight">{props.title}</h1>
+      <h1 className="text-display font-bold">{props.title}</h1>
       {onboarding && <p className="-mt-2 text-ink2">Pick the currency totals are shown in, and any others you spend in. You can change both later.</p>}
       <label className="label">
         Base currency

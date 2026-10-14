@@ -41,4 +41,4 @@ Two jobs, equal weight:
 ## Brand commitments
 
 - Familiar finance-app conventions, played straight, plus one signature: a one-line add ("ramen 24.50 #friends") at thumb reach that fills category from past notes; starting with "?" asks the AI.
-- Craft bar: Linear and Things. Calm, precise, quiet chrome.
+- Craft bar: bold consumer fintech (Revolut, Monzo, Cash App) held to Linear's precision. Big confident numerals, committed colour, expressive charts and motion. Loud in a good way, never a toy.

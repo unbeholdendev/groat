@@ -7,14 +7,14 @@ related_targets: ["web/routes/__root.tsx","web/routes/index.tsx","web/routes/sta
 
 ## Direction contract
 
-THESIS: One line does the work. A bar at thumb reach takes "ramen 24.50 #friends" and saves it, or takes "?" and answers. It refuses the finance-app default of a FAB opening a multi-field form, and a dashboard of donuts.
+THESIS: One number, stated loud; one line, at thumb reach. Each screen opens on a cobalt field with the month's spend at 60px, like a banknote's denomination, and a frosted dock takes "ramen 24.50 #friends" or "?" questions. It refuses both the grey ledger it replaces and the finance default of a FAB, a form and a donut.
 
-OWN-WORLD: Warm off-white ground (#FAFAF9), white surfaces, ink #1B1C1F, hairline rules, one blue accent #3B5BDB used only for the live bar, parsed tokens and primary actions. Geist, tabular numerals. Category colour appears only as dots, a 3px split line and share tracks. User emoji for categories; drawn 1.6px-stroke icons for chrome. Dark theme lifts the same tokens.
+OWN-WORLD: Cobalt field (#2E4AE6 light, #2238B8 dark) with white Geist numerals and pale-cobalt secondary text. Cool ground (#F5F7FB / #0D0F15), Level 1 panels with inset hairlines, Level 2 frosted glass for the dock and chips. Eight matched OKLCH category hues, clear of cobalt, as tinted emoji tiles, the split bar and share tracks. Geist Mono for every column figure. Dark is the hero theme.
 
-STORY: Open the app, see this month's total against last month by this date, then today's rows. Type one line, Enter, done. Start with "?" to ask; the answer rises above the bar. Stats is a ruler, not a chart.
+STORY: Open the app: the month's total counts up on cobalt, a pill says how it compares with last month by today, the split shows where it went, then today's rows. Type one line, Enter, the new row grows in and a receipt offers Undo. Stats draws this month's cumulative line over last month's ghost, with today marked, then category share tracks.
 
-FIRST VIEWPORT: Title and month top left. Total at 28px with change. 3px category split. Pending recurring row in amber. Day groups with day totals. Bar docked above a four-tab bar (Expenses, Stats, Categories, Settings); guess chips above it while typing.
+FIRST VIEWPORT: Full-bleed cobalt field: "October" at 34px with round month steppers and filter; total at 60px; delta pill and "vs Sep by today"; 8px category split with top-three legend. Below on the ground, day groups as panels of 62px rows (tile, note over category and tags, mono amount). Frosted dock at the bottom: 48px bar over four tabs, one surface.
 
-FORM: E2 one-line add, refined as A Calm dock plus C Ask mode (round4/a-add, a-ask, a-rest-dark); Stats is the Ruler (round5/p3-ruler) with category rows from round4/s2-pace. First on the ordered list after five rounds. Seed key 36b40159.
+FORM: Bold consumer fintech, pinned by the user (no roll, no comps): "The Denomination", code-led. Signature interaction: the hero numeral counts up and the spend line draws itself; rows grow in on add.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

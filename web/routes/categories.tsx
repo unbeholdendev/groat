@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { type Category, CategoryOptions, Confirm, type Expense, Icon, useCategories, useSend } from "../shared";
+import { type Category, CategoryOptions, Confirm, divide, type Expense, Icon, Tile, useCategories, useSend } from "../shared";
 
 export const Route = createFileRoute("/categories")({ component: Categories });
 
@@ -66,7 +66,7 @@ function Categories() {
     .filter((p) => p.parentId === null)
     .flatMap((p) => [p, ...categories.filter((c) => c.parentId === p.id)]);
   const editor = (c?: Category) => (
-    <form onSubmit={save} className="rise flex flex-col gap-3 border-b border-line py-4 last:border-0">
+    <form onSubmit={save} className="rise flex flex-col gap-3 p-4">
       <div className="flex gap-2">
         <label className="label w-14">
           Emoji
@@ -145,7 +145,7 @@ function Categories() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-[22px] font-semibold tracking-tight">Categories</h1>
+        <h1 className="text-display font-bold">Categories</h1>
         <button className={`${text} -mr-2.5 text-ink2`} onClick={() => {
             setReorder(!reorder);
             setEditing(null);
@@ -155,20 +155,21 @@ function Categories() {
       </div>
       {error && <p className="text-sm text-up">{error.message}</p>}
       <div>
-        <ul>
+        <ul className="overflow-hidden rounded-panel bg-surface shadow-panel">
           {tree.map((c) =>
             editing === c.id ? (
-              <li key={c.id}>{editor(c)}</li>
+              <li key={c.id} className={divide}>
+                {editor(c)}
+              </li>
             ) : (
-              <li key={c.id} className={`flex items-center border-b border-line last:border-0 ${c.parentId ? "pl-8" : ""}`}>
+              <li key={c.id} className={`${divide} flex items-center`}>
                 <button
                   disabled={reorder}
-                  className="flex min-h-11 min-w-0 flex-1 items-center gap-3 py-2.5 text-left"
+                  className={`press flex min-w-0 flex-1 items-center gap-3 pr-4 text-left enabled:hover:bg-surface2 ${c.parentId ? "h-12 pl-16" : "h-[62px] pl-4 font-medium"}`}
                   onClick={() => edit(c)}
                 >
-                  <span className="w-6 text-center">{c.icon}</span>
+                  <Tile category={c} small={!!c.parentId} />
                   <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                  <span className="size-[7px] shrink-0 rounded-full" style={{ background: c.color }} />
                 </button>
                 {reorder &&
                   [-1, 1].map((by) => (
@@ -181,17 +182,16 @@ function Categories() {
               </li>
             ),
           )}
+          {editing === "new" && <li>{editor()}</li>}
         </ul>
-        {editing === "new"
-          ? editor()
-          : !reorder && (
-              <button className={`${text} -ml-2.5 flex items-center gap-1.5 text-ink2`} onClick={() => edit()}>
-                <Icon className="size-4 stroke-2">
-                  <path d="M12 5v14M5 12h14" />
-                </Icon>
-                New category
-              </button>
-            )}
+        {editing !== "new" && !reorder && (
+          <button className={`${text} mt-2 ml-1.5 flex items-center gap-1.5 text-ink2`} onClick={() => edit()}>
+            <Icon className="size-4 stroke-2">
+              <path d="M12 5v14M5 12h14" />
+            </Icon>
+            New category
+          </button>
+        )}
       </div>
       <section>
         <h2 className="pb-2 text-[13px] font-medium text-ink2">Tags</h2>

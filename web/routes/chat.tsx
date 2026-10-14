@@ -50,7 +50,7 @@ function ChatPage() {
             </button>
           ))}
       </div>
-      <h1 className="text-[22px] font-semibold tracking-tight">{open?.title ?? "Chats"}</h1>
+      <h1 className="text-display font-bold">{open?.title ?? "Chats"}</h1>
       {!openId && (
         <ul>
           {chats.length === 0 && <li className="text-ink3">No chats yet. Ask below to start one.</li>}

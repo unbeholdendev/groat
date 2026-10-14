@@ -2,18 +2,20 @@ import { type FormEvent, Fragment, useContext, useEffect, useRef, useState } fro
 import { useMutationState, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { formatAmount, parseAmount, type Unit } from "../../shared/amount";
-import { change, iso, money, span, Total, usePeriod } from "../period";
+import { change, iso, money, Pill, span, Total, usePeriod } from "../period";
 import {
   CategoryOptions,
   Chevron,
   Confirm,
   dated,
   dayLabel,
+  divide,
   type Draft,
   type Expense,
   Icon,
   pick,
   type Request,
+  Tile,
   today,
   UnitContext,
   useCategories,
@@ -207,39 +209,39 @@ function Expenses() {
   const row = (e: Expense, dated?: boolean) => {
     const category = categories.find((c) => c.id === e.categoryId);
     const Note = dated || e.id < 0 ? "span" : "button";
+    const foreign = e.currency !== settings.baseCurrency && e.baseAmount !== undefined;
     return (
       <>
-        <span title={category?.name}>{category?.icon}</span>
-        <Note
-          onClick={Note === "button" ? () => edit(e) : undefined}
-          className={`min-w-0 truncate text-left font-medium ${Note === "button" ? "outline-none after:absolute after:inset-0 after:rounded-md focus-visible:after:outline-2 focus-visible:after:outline-accent" : ""}`}
-        >
-          {e.note}
-          {e.recurringId && (
-            <span title={`Recurring: ${templates.find((t) => t.id === e.recurringId)?.note ?? "deleted"}`}>
-              <Icon className="ml-1.5 inline size-3.5 align-[-2px] text-ink3">
-                <path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" />
-              </Icon>
-            </span>
-          )}
-          {e.tags.map((t) => (
-            <span key={t} className="ml-1.5 text-[13px] font-normal text-ink3">
-              #{t}
-            </span>
-          ))}
-          {dated && <span className="block text-xs font-normal text-ink3">{dayLabel(e.date)}</span>}
-        </Note>
-        <span className="text-right font-medium whitespace-nowrap">
-          {show(e.amount, e.currency)}
-          {e.id < 0 && <span className="block text-xs font-normal text-ink3">Will sync</span>}
-          {e.currency !== settings.baseCurrency && e.baseAmount !== undefined && (
-            <span className="block text-xs font-normal text-ink3">
+        <Tile category={category} />
+        <span className="min-w-0 flex-1">
+          <Note
+            onClick={Note === "button" ? () => edit(e) : undefined}
+            className={`block w-full truncate text-left font-medium ${Note === "button" ? "outline-none after:absolute after:inset-0 after:-outline-offset-2 focus-visible:after:outline-2 focus-visible:after:outline-accent" : ""}`}
+          >
+            {e.note}
+            {e.recurringId && (
+              <span title={`Recurring: ${templates.find((t) => t.id === e.recurringId)?.note ?? "deleted"}`}>
+                <Icon className="ml-1.5 inline size-3.5 stroke-2 align-[-2px] text-ink3">
+                  <path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" />
+                </Icon>
+              </span>
+            )}
+          </Note>
+          <span className="mt-0.5 block truncate text-xs font-medium text-ink3">
+            {[dated && dayLabel(e.date), category?.name, ...e.tags.map((t) => `#${t}`)].filter(Boolean).join("  ")}
+          </span>
+        </span>
+        <span className="num text-right text-[15px] font-medium whitespace-nowrap">
+          {foreign && e.baseAmount != null ? show(e.baseAmount, settings.baseCurrency) : show(e.amount, e.currency)}
+          {e.id < 0 && <span className="block font-sans text-xs text-ink3">Will sync</span>}
+          {foreign && (
+            <span className="relative block text-xs text-ink3">
               {e.baseAmount === null ? (
-                <button className="hit text-amber underline underline-offset-2" onClick={() => (setAsking(`rate ${e.id}`), mutation.reset())}>
+                <button className="hit font-sans text-amber underline underline-offset-2" onClick={() => (setAsking(`rate ${e.id}`), mutation.reset())}>
                   Set rate
                 </button>
               ) : (
-                show(e.baseAmount, settings.baseCurrency)
+                show(e.amount, e.currency)
               )}
             </span>
           )}
@@ -247,7 +249,8 @@ function Expenses() {
       </>
     );
   };
-  const rowClass = "grid grid-cols-[24px_minmax(5rem,1fr)_auto] items-baseline gap-2.5 border-b border-line py-2.5 last:border-0";
+  const rowClass = "press relative flex h-[62px] items-center gap-3 px-4";
+  const panel = "overflow-hidden rounded-panel bg-surface shadow-panel";
 
   const back = (
     <Link to="/settings" className="hit inline-flex items-center gap-1 text-ink2">
@@ -278,18 +281,20 @@ function Expenses() {
             )
           )}
         </div>
-        <h1 className="mt-4 text-[22px] font-semibold tracking-tight">Bin</h1>
+        <h1 className="mt-4 text-display font-bold">Bin</h1>
         {bin.length === 0 && <p className="mt-4 text-ink3">The bin is empty.</p>}
-        <ul className="mt-3">
-          {bin.map((e) => (
-            <li key={e.id} className="flex items-center gap-3 border-b border-line last:border-0">
-              <div className={`${rowClass} flex-1 border-0`}>{row(e, true)}</div>
-              <button className="quiet hit h-8 text-[13px]" onClick={() => mutation.mutate(["POST", `/api/bin/${e.id}/restore`])}>
-                Restore
-              </button>
-            </li>
-          ))}
-        </ul>
+        {bin.length > 0 && (
+          <ul className={`mt-4 ${panel}`}>
+            {bin.map((e) => (
+              <li key={e.id} className={`${rowClass} ${divide}`}>
+                {row(e, true)}
+                <button className="quiet hit h-8 px-3 text-[13px]" onClick={() => mutation.mutate(["POST", `/api/bin/${e.id}/restore`])}>
+                  Restore
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </>
     );
 
@@ -416,7 +421,7 @@ function Expenses() {
     return (
       <>
         {back}
-        <h1 className="mt-4 text-[22px] font-semibold tracking-tight">Recurring</h1>
+        <h1 className="mt-4 text-display font-bold">Recurring</h1>
         {templates.length === 0 && <p className="mt-4 text-ink3">Nothing repeats yet. Open the full form and set Repeat to add one.</p>}
         <ul className="mt-3">
           {templates.map((t) => (
@@ -451,57 +456,66 @@ function Expenses() {
     if (e.status !== "pending") days.set(e.date, [...(days.get(e.date) ?? []), e]);
   const matching = [...days.values()].flat();
   const unrated = matching.filter((e) => e.baseAmount === null).length;
+  const inBase = (rows: Expense[]) => rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === settings.baseCurrency ? e.amount : 0)), 0);
+  const count = Object.values(filter).filter(Boolean).length;
+  const heroButton = "press hit grid size-9 shrink-0 place-items-center rounded-chip bg-on-hero/16";
 
   return (
     <>
-      <header className="flex items-center justify-between">
-        <h1 className="flex items-center gap-0.5 text-[22px] font-semibold tracking-tight">
-          Expenses
+      <header className="-mx-5 -mt-[max(env(safe-area-inset-top),20px)] rounded-b-hero bg-hero px-5 pt-[max(env(safe-area-inset-top),16px)] pb-6 text-on-hero shadow-hero lg:mx-0 lg:mt-1 lg:rounded-hero [&_:focus-visible]:outline-on-hero">
+        <div className="flex items-center gap-2">
+          <h1 className="mr-auto min-w-0 text-display font-bold">{filtered ? "Filtered" : label}</h1>
           {!filtered && (
-            <span className="inline-flex items-center text-sm font-medium text-ink3">
-              <button aria-label="Previous month" className="hit p-2" onClick={() => navigate({ search: { month: step(-1) } })}>
-                <Chevron className="size-3 rotate-90" />
+            <>
+              <button aria-label="Previous month" className={heroButton} onClick={() => navigate({ search: { month: step(-1) } })}>
+                <Chevron className="size-[18px] rotate-90 stroke-2" />
               </button>
-              {label}
-              <button
-                aria-label="Next month"
-                className="hit p-2 disabled:invisible"
-                disabled={!month}
-                onClick={() => navigate({ search: { month: step(1) === today().slice(0, 7) ? undefined : step(1) } })}
-              >
-                <Chevron className="size-3 -rotate-90" />
-              </button>
-            </span>
+              {month && (
+                <button aria-label="Next month" className={heroButton} onClick={() => navigate({ search: { month: step(1) === today().slice(0, 7) ? undefined : step(1) } })}>
+                  <Chevron className="size-[18px] -rotate-90 stroke-2" />
+                </button>
+              )}
+            </>
           )}
-        </h1>
-        <button
-          aria-expanded={showFilters}
-          onClick={() => setShowFilters(!showFilters)}
-          className={`hit inline-flex items-center gap-1 text-sm font-medium ${filtered ? "text-accent" : "text-ink2"}`}
-        >
-          Filter{filtered && ` · ${Object.values(filter).filter(Boolean).length}`}
-          <Chevron />
-        </button>
+          <button aria-label={count ? `Filters, ${count} on` : "Filters"} aria-expanded={showFilters} onClick={() => setShowFilters(!showFilters)} className={`${heroButton} relative ml-1.5`}>
+            <Icon className="size-[18px] stroke-2">
+              <path d="M4 7h16M7 12h10M10 17h4" />
+            </Icon>
+            {count > 0 && (
+              <b className="num absolute -top-1 -right-1 grid size-[18px] place-items-center rounded-chip bg-on-hero text-[11px] font-semibold text-hero">{count}</b>
+            )}
+          </button>
+        </div>
+        {filtered ? (
+          <>
+            <p className="mt-5">
+              <Total amount={inBase(matching)} currency={settings.baseCurrency} unit={unit} className="text-on-hero" />
+            </p>
+            <p className="mt-2.5 text-[13px] font-medium text-on-hero2">
+              {matching.length} matching{unrated > 0 && ` + ${unrated} unconverted`}
+            </p>
+          </>
+        ) : (
+          <Summary unit={unit} end={month ? end : undefined} />
+        )}
       </header>
-      {showFilters ? (
-        <div className="mt-3 flex flex-wrap gap-2 text-sm">
-          {filterInput("q", "Search")}
-          <div className="flex w-full gap-2">
-            {filterInput("from", "From", "date")}
-            {filterInput("to", "To", "date")}
-          </div>
-          <select className="input min-w-0 flex-1" aria-label="Category" value={filter.category ?? ""} onChange={(e) => setFilter({ ...filter, category: e.target.value })}>
+      {showFilters && (
+        <div className={`rise mt-4 grid grid-cols-2 gap-2 p-3 ${panel}`}>
+          <div className="col-span-2 flex">{filterInput("q", "Search")}</div>
+          {filterInput("from", "From", "date")}
+          {filterInput("to", "To", "date")}
+          <select className="input col-span-2 min-w-0" aria-label="Category" value={filter.category ?? ""} onChange={(e) => setFilter({ ...filter, category: e.target.value })}>
             <option value="">All categories</option>
             <CategoryOptions categories={categories} />
           </select>
-          <select className="input" aria-label="Currency" value={filter.currency ?? ""} onChange={(e) => setFilter({ ...filter, currency: e.target.value })}>
+          <select className="input min-w-0" aria-label="Currency" value={filter.currency ?? ""} onChange={(e) => setFilter({ ...filter, currency: e.target.value })}>
             <option value="">All currencies</option>
             {settings.currencies.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
-          <div className="flex w-full">{filterInput("tag", "Tag")}</div>
-          <div className="flex w-full justify-between pt-1 text-[13px]">
+          {filterInput("tag", "Tag")}
+          <div className="col-span-2 flex justify-between px-1 pt-1 text-[13px] font-medium">
             {filtered ? (
               <button className="hit text-ink2" onClick={() => setFilter({})}>
                 Clear filters
@@ -509,35 +523,25 @@ function Expenses() {
             ) : (
               <span />
             )}
-            <a className="hit text-ink2 underline decoration-line2 underline-offset-3" href={`/api/export?${query}`} download="expenses.csv">
+            <a className="hit text-accent" href={`/api/export?${query}`} download="expenses.csv">
               Export CSV
             </a>
           </div>
         </div>
-      ) : filtered ? (
-        <p className="mt-3.5 flex items-baseline gap-2.5 text-ink2">
-          <Total
-            text={money(
-              matching.reduce((s, e) => s + (e.baseAmount ?? (e.currency === settings.baseCurrency ? e.amount : 0)), 0),
-              settings.baseCurrency,
-              unit,
-            )}
-          />
-          <span>matching{unrated > 0 && ` + ${unrated} unconverted`}</span>
-        </p>
-      ) : (
-        <Summary unit={unit} end={month ? end : undefined} label={label} />
       )}
       {pending.length > 0 && (
-        <ul className="mt-5 border-y border-line">
+        <ul className="mt-5 overflow-hidden rounded-panel bg-amber-soft">
           {pending.map((e) => (
-            <li key={e.id} className="flex items-center gap-2.5 border-b border-line py-2.5 last:border-0">
-              <span className="size-[7px] shrink-0 rounded-full bg-amber" />
-              <button className="min-w-0 flex-1 truncate text-left text-sm" onClick={() => edit(e)}>
-                {e.note} <span className="text-ink3">· {show(e.amount, e.currency)} · due {dayLabel(e.date).replace(/^(Today|Yesterday)$/, (w) => w.toLowerCase())}</span>
+            <li key={e.id} className={`relative flex h-[62px] items-center gap-3 px-4 ${divide} not-last:after:bg-amber-line!`}>
+              <Tile category={categories.find((c) => c.id === e.categoryId)} />
+              <button className="press min-w-0 flex-1 text-left" onClick={() => edit(e)}>
+                <span className="block truncate font-medium">{e.note}</span>
+                <span className="mt-0.5 block truncate text-xs font-medium text-amber">
+                  <span className="num">{show(e.amount, e.currency)}</span> · due {dayLabel(e.date).replace(/^(Today|Yesterday)$/, (w) => w.toLowerCase())}
+                </span>
               </button>
               <button
-                className="hit rounded-chip border border-amber-line px-2.5 py-1 text-[13px] font-medium text-amber"
+                className="press hit rounded-chip border border-amber-line bg-surface px-3 py-1.5 text-[13px] font-semibold text-amber"
                 onClick={() => mutation.mutate(["POST", `/api/expenses/${e.id}/confirm`])}
               >
                 Confirm
@@ -547,31 +551,41 @@ function Expenses() {
         </ul>
       )}
       {listed && expenses.length + queued.length === 0 && (
-        <p className="mt-10 text-center text-ink3">
-          {filtered ? "No expenses match these filters." : month ? `No expenses in ${label}.` : "Nothing this month yet. Type one below, like “coffee 3.20”."}
-        </p>
+        <div className={`mt-6 px-6 py-9 text-center ${panel}`}>
+          <p className="font-semibold">{filtered ? "Nothing matches" : month ? `Nothing in ${label}` : "Nothing this month yet"}</p>
+          <p className="mt-1 text-[13px] text-ink3">
+            {filtered ? (
+              <button className="hit font-medium text-accent" onClick={() => setFilter({})}>
+                Clear filters
+              </button>
+            ) : month ? (
+              "Step back a month, or add one below with a date."
+            ) : (
+              "Type one below, like “coffee 3.20”."
+            )}
+          </p>
+        </div>
       )}
       {[...days].map(([date, rows]) => (
         <section key={date}>
-          <h2 className="flex justify-between pt-[22px] pb-1.5 text-[13px] font-medium text-ink3">
-            <span className="text-ink2">{dayLabel(date)}</span>
-            <span>
-              {show(
-                rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === settings.baseCurrency ? e.amount : 0)), 0),
-                settings.baseCurrency,
-              )}
-              {rows.some((e) => e.baseAmount === null) && ` + ${rows.filter((e) => e.baseAmount === null).length} unconverted`}
-            </span>
+          <h2 className="flex justify-between px-1 pt-6 pb-2 text-[13px] font-semibold text-ink2">
+            {dayLabel(date)}
+            {rows.length > 1 && (
+              <span className="num font-medium text-ink3">
+                {show(inBase(rows), settings.baseCurrency)}
+                {rows.some((e) => e.baseAmount === null) && <span className="font-sans"> + {rows.filter((e) => e.baseAmount === null).length} unconverted</span>}
+              </span>
+            )}
           </h2>
-          <ul>
+          <ul className={panel}>
             {rows.map((e) => (
               <Fragment key={e.id}>
-                <li className={`${rowClass} relative ${e.id > newest.current! || e.id < 0 ? "rise" : ""}`}>
-                  {row(e)}
+                <li className={`relative hover:bg-surface2 ${divide} ${e.id > newest.current! || e.id < 0 ? "grow-in" : ""}`}>
+                  <div className={rowClass}>{row(e)}</div>
                 </li>
                 {asking === `rate ${e.id}` && (
                   <li>
-                    <form onSubmit={(ev) => setRate(ev, e)} className="rise flex flex-wrap items-end gap-2 border-b border-line pb-3">
+                    <form onSubmit={(ev) => setRate(ev, e)} className="rise flex flex-wrap items-end gap-2 px-4 pb-4">
                       {[...new Set([e.currency, settings.baseCurrency])]
                         .filter((c) => c !== "USD")
                         .map((c) => (
@@ -601,47 +615,63 @@ function Expenses() {
   );
 }
 
-function Summary({ unit, end, label }: { unit: Unit; end?: Date; label: string }) {
+function Summary({ unit, end }: { unit: Unit; end?: Date }) {
   const s = span("This month", undefined, end);
   const now = usePeriod(s.range);
   const ref = usePeriod(end ? s.full : s.ref);
-  if (!now) return <div className="h-[86px]" />;
+  const categories = useCategories();
+  if (!now) return <div className="h-[92px]" />;
   const d = ref && change(now.total, ref.total);
   const share = (n: number) => `${Math.round((n / now.total) * 100)}%`;
+  const builtin = (id: number) => categories.find((c) => c.id === id)?.builtin;
   return (
-    <section className="mt-3.5">
-      <p className="flex items-baseline gap-2.5 text-ink2">
-        <Total text={money(now.total, now.baseCurrency, unit)} />
+    <>
+      <p className="mt-5">
+        <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="text-on-hero" />
+      </p>
+      <p className="mt-2.5 flex items-center gap-2 text-[13px] font-medium text-on-hero2">
         {d ? (
-          <span>
-            <span className={`font-medium ${d.tone}`}>{d.text}</span> vs {s.name}
-            {!end && " by now"}
-          </span>
+          <>
+            <Pill d={d} />
+            vs {s.name}
+            {!end && " by today"}
+          </>
         ) : (
-          <span>{end ? `in ${label}` : "this month"}</span>
+          (end ? "all month" : "this month")
         )}
       </p>
       {now.total > 0 && (
         <>
           <div
-            className="mt-3 flex h-[3px] gap-0.5"
+            className="mt-5 flex h-2 gap-0.5"
             role="img"
             aria-label={`Spending by category: ${now.categories.map((c) => `${c.name} ${money(c.total, now.baseCurrency, unit)}, ${share(c.total)}`).join("; ")}`}
           >
-            {now.categories.map((c) => (
-              <i key={c.id} className="rounded-sm" style={{ flex: c.total, background: c.color }} />
+            {now.categories.map((c, i) => (
+              <i
+                key={c.id}
+                className={`min-w-1 origin-left animate-fill rounded-chip ${builtin(c.id) ? "bg-on-hero2/45" : ""}`}
+                style={{ flex: c.total, background: builtin(c.id) ? undefined : c.color, animationDelay: `${i * 30}ms` }}
+              />
             ))}
           </div>
-          <p aria-hidden className="mt-2 flex gap-3.5 overflow-hidden text-xs whitespace-nowrap text-ink3">
-            {now.categories.slice(0, 4).map((c) => (
+          <p aria-hidden className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-on-hero2">
+            {now.categories.slice(0, 3).map((c) => (
               <span key={c.id} className="inline-flex items-center gap-1.5">
-                <i className="size-1.5 rounded-full" style={{ background: c.color }} />
-                {c.name} {share(c.total)}
+                {builtin(c.id) ? (
+                  <Icon className="size-3.5 stroke-2">
+                    <circle cx="12" cy="12" r="7.5" strokeDasharray="3 3.3" />
+                  </Icon>
+                ) : (
+                  c.icon
+                )}
+                <span className="text-on-hero">{c.name}</span>
+                <span className="num">{share(c.total)}</span>
               </span>
             ))}
           </p>
         </>
       )}
-    </section>
+    </>
   );
 }

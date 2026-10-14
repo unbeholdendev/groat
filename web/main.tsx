@@ -86,7 +86,7 @@ const router = createRouter({
   routeTree,
   defaultErrorComponent: ({ error }) => (
     <div className="py-10">
-      <h1 className="text-[22px] font-semibold tracking-tight">This didn’t load</h1>
+      <h1 className="text-display font-bold">This didn’t load</h1>
       <p className="mt-2 text-ink2">{(error as Error).message}</p>
       <button className="quiet mt-5" onClick={() => location.reload()}>
         Try again

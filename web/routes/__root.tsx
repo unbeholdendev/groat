@@ -7,7 +7,6 @@ import {
   type Category,
   CategoryOptions,
   Chevron,
-  chip,
   dayLabel,
   type Draft,
   type Expense,
@@ -16,6 +15,7 @@ import {
   send,
   type Settings,
   SettingsForm,
+  Tile,
   today,
   UnitContext,
   useCategories,
@@ -25,6 +25,8 @@ import {
 import type { Chat } from "./chat";
 
 export const Route = createRootRoute({ component: App });
+
+const pill = "glass relative inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip px-3 text-[13px] font-medium text-ink shadow-dock has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent";
 
 type Suggestion = { note: string; categoryId: number; currency: string; amount: number };
 
@@ -44,8 +46,8 @@ function useTheme(theme?: Settings["theme"]) {
 }
 
 const tabs: [string, string, ReactNode][] = [
-  ["/", "Expenses", <path d="M4 6h16M4 12h16M4 18h10" />],
-  ["/stats", "Stats", <path d="M5 20V10M12 20V4M19 20v-7" />],
+  ["/", "Expenses", <path d="M6 3.5h12v17l-2.5-1.5-2 1.5-1.5-1-1.5 1-2-1.5L6 20.5zM9.5 8.5h5M9.5 12h5M9.5 15.5h3" />],
+  ["/stats", "Stats", <path d="m4 17 5-5 3.5 3L20 7.5M15 7.5h5v5" />],
   [
     "/categories",
     "Categories",
@@ -60,8 +62,9 @@ const tabs: [string, string, ReactNode][] = [
     "/settings",
     "Settings",
     <>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" />
+      <path d="M4 8h9M19 8h1M4 16h1M11 16h9" />
+      <circle cx="16" cy="8" r="3" />
+      <circle cx="8" cy="16" r="3" />
     </>,
   ],
 ];
@@ -75,6 +78,7 @@ function App() {
   const navigate = useNavigate();
   const categories = useCategories();
   const [guide, setGuide] = useState(false);
+  const bar = !search.new && !search.edit;
   useTheme(settings?.theme);
 
   if (!settings) return null;
@@ -86,11 +90,12 @@ function App() {
     );
   return (
     <UnitContext value={unitState}>
-      <main className="mx-auto max-w-md px-5 pt-[max(env(safe-area-inset-top),20px)] pb-48 lg:pb-0">
+      <main className="mx-auto max-w-md px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[calc(10rem+env(safe-area-inset-bottom))] lg:pb-4">
         <Outlet />
       </main>
-      <div className="fixed inset-x-0 bottom-0 z-10 lg:sticky">
-        {!search.new && !search.edit && (
+      <div className="fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),8px)] z-10 mx-auto max-w-md p-2 lg:sticky lg:bottom-6">
+        <div aria-hidden className={`glass absolute inset-0 -z-10 rounded-dock shadow-dock ${bar ? "" : "lg:hidden"}`} />
+        {bar && (
           <Bar
             settings={settings}
             unit={unitState[0]}
@@ -102,24 +107,19 @@ function App() {
             onChat={(id) => navigate({ to: "/chat", search: { id: String(id) } })}
           />
         )}
-        <nav
-          aria-label="Main"
-          className="border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:fixed lg:top-4 lg:left-[calc(50%-432px)] lg:w-44 lg:border-0 lg:bg-transparent lg:pb-0"
-        >
-          <div className="mx-auto grid max-w-md grid-cols-4 pt-2 pb-2.5 lg:flex lg:flex-col lg:gap-0.5 lg:p-0">
-            {tabs.map(([to, label, icon]) => (
-              <Link
-                key={to}
-                to={to}
-                activeOptions={{ exact: to === "/" }}
-                aria-current={current === to ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 text-[11px] font-medium lg:flex-row lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-2 lg:text-sm ${current === to ? "text-ink lg:bg-track" : "text-ink3 lg:text-ink2 lg:hover:text-ink"}`}
-              >
-                <Icon>{icon}</Icon>
-                {label}
-              </Link>
-            ))}
-          </div>
+        <nav aria-label="Main" className="grid grid-cols-4 lg:fixed lg:top-6 lg:left-[calc(50%-432px)] lg:flex lg:w-44 lg:flex-col lg:gap-1">
+          {tabs.map(([to, label, icon]) => (
+            <Link
+              key={to}
+              to={to}
+              activeOptions={{ exact: to === "/" }}
+              aria-current={current === to ? "page" : undefined}
+              className={`press flex h-[52px] flex-col items-center justify-center gap-1 rounded-field text-[11px] font-semibold lg:h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-[15px] lg:font-medium ${current === to ? "text-ink lg:bg-surface2" : "text-ink3 lg:text-ink2 lg:hover:bg-surface2 lg:hover:text-ink"}`}
+            >
+              <Icon className={`size-[22px] ${current === to ? "text-accent" : ""}`}>{icon}</Icon>
+              {label}
+            </Link>
+          ))}
         </nav>
       </div>
     </UnitContext>
@@ -280,70 +280,78 @@ function Bar(props: {
     ]);
   }
 
+  const key = ask ? "Ask" : text.trim() && p.amount ? "Add" : "Full form";
+  const glyph = key === "Ask" ? "M12 19V5M6 11l6-6 6 6" : key === "Add" ? "M20 5v7a3 3 0 0 1-3 3H5M9 11l-4 4 4 4" : "M12 5v14M5 12h14";
+  const tag = (w: string, style: string, i: number) => (
+    <span key={i} className={style}>
+      {w}
+    </span>
+  );
+
   return (
     <>
-      {card && <div className="fixed inset-0 -z-10 bg-bg/75" onClick={close} />}
-      <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && card && close()} className="mx-auto max-w-md bg-[linear-gradient(transparent,var(--bg)_26px)] px-3 pt-7 pb-2.5 lg:relative lg:pb-6">
-        {card && (
-          <section
-            ref={cardRef}
-            tabIndex={-1}
-            aria-live="polite"
-            className="rise mb-2.5 outline-none max-h-[55dvh] overflow-y-auto rounded-card border border-line2 bg-surface px-4 pt-3.5 pb-2 shadow-lift"
-          >
-            <p className={`mt-1.5 text-[17px] leading-snug font-medium whitespace-pre-wrap ${asking.isPending ? "text-ink3" : ""}`}>
-              {(asking.error && "Couldn’t reach the AI service. Check its settings on the server, then try again.") ?? answer ?? (asking.isPending ? "Looking at your expenses…" : "No answer came back.")}
-            </p>
-            {drafts.map((d, i) => (
-              <button
-                type="button"
-                key={i}
-                onClick={() => (props.onForm(d), asking.reset())}
-                className="mt-3 flex w-full justify-between rounded-lg border border-line2 px-3 py-2 text-left text-sm"
-              >
-                <span>
-                  Review draft: <b className="font-medium">{d.note}</b>, {dayLabel(d.date)}
-                </span>
-                <span className="whitespace-nowrap">{money(d.amount, d.currency, unit)}</span>
-              </button>
-            ))}
-            <div className="mt-3 flex justify-end gap-1 border-t border-line pt-1.5">
-              <button type="button" onClick={close} className="hit rounded-chip px-2.5 py-1.5 text-[13px] font-medium text-ink2">
-                Close
-              </button>
-              {asking.error && (
-                <button type="button" onClick={() => asking.mutate(asking.variables!)} className="hit rounded-chip px-2.5 py-1.5 text-[13px] font-medium text-accent">
-                  Try again
+      {card && <div className="fixed inset-0 -z-20 bg-bg/70" onClick={close} />}
+      <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && card && close()}>
+        <div className="absolute inset-x-0 bottom-full grid gap-2 pb-2">
+          {card && (
+            <section
+              ref={cardRef}
+              tabIndex={-1}
+              aria-live="polite"
+              className="rise max-h-[55dvh] overflow-y-auto rounded-card bg-surface px-5 pt-[18px] pb-2.5 shadow-lift outline-none"
+            >
+              <p className={`text-[17px] leading-snug font-medium whitespace-pre-wrap ${asking.isPending ? "text-ink3" : ""}`}>
+                {(asking.error && "Couldn’t reach the AI service. Check its settings on the server, then try again.") ?? answer ?? (asking.isPending ? "Looking at your expenses…" : "No answer came back.")}
+              </p>
+              {drafts.map((d, i) => (
+                <button
+                  type="button"
+                  key={i}
+                  onClick={() => (props.onForm(d), asking.reset())}
+                  className="press mt-3 flex w-full justify-between gap-3 rounded-field bg-surface2 px-3.5 py-2.5 text-left"
+                >
+                  <span>
+                    Review draft: <b className="font-medium">{d.note}</b>, {dayLabel(d.date)}
+                  </span>
+                  <span className="num whitespace-nowrap">{money(d.amount, d.currency, unit)}</span>
                 </button>
-              )}
-              {chat && (
-                <button type="button" onClick={() => (clear(), props.onChat(chat.id))} className="hit rounded-chip px-2.5 py-1.5 text-[13px] font-medium text-accent">
-                  Continue in chat
+              ))}
+              <div className="mt-3 flex justify-end gap-1 border-t border-line pt-1.5">
+                <button type="button" onClick={close} className="press hit rounded-chip px-2.5 py-1.5 text-[13px] font-medium text-ink2">
+                  Close
                 </button>
-              )}
-            </div>
-          </section>
-        )}
-        <div className="lg:absolute lg:inset-x-0 lg:bottom-[calc(100%-1.75rem)] lg:bg-[linear-gradient(transparent,var(--bg)_16px)] lg:px-3 lg:pt-4">
+                {asking.error && (
+                  <button type="button" onClick={() => asking.mutate(asking.variables!)} className="press hit rounded-chip px-2.5 py-1.5 text-[13px] font-medium text-accent">
+                    Try again
+                  </button>
+                )}
+                {chat && (
+                  <button type="button" onClick={() => (clear(), props.onChat(chat.id))} className="press hit rounded-chip px-2.5 py-1.5 text-[13px] font-medium text-accent">
+                    Continue in chat
+                  </button>
+                )}
+              </div>
+            </section>
+          )}
           {fills.length > 0 && !card && (
-            <div className="rise flex gap-1.5 overflow-hidden px-1.5 pb-2" aria-label="Past entries">
+            <div className="rise flex gap-1.5" aria-label="Past entries">
               {fills.map((s) => (
-                <button key={s.note} type="button" className={`${chip} hit min-w-0 shrink!`} onMouseDown={(e) => e.preventDefault()} onClick={() => fill(s)}>
+                <button key={s.note} type="button" className={`${pill} press hit min-w-0 shrink`} onMouseDown={(e) => e.preventDefault()} onClick={() => fill(s)}>
                   <span className="truncate">{s.note}</span>
-                  <span className="text-ink3">{money(s.amount, s.currency, unit)}</span>
+                  <span className="num text-ink3">{money(s.amount, s.currency, unit)}</span>
                 </button>
               ))}
             </div>
           )}
           {text && !ask && !card && (
-            <div className="rise flex items-center gap-1.5 px-1.5 pb-2 text-[13px] text-ink2">
-              <label className={chip}>
-                {category && <i className="size-1.5 rounded-full" style={{ background: category.color }} />}
-                {category ? `${category.icon} ${category.name}` : "Category"}
+            <div className="rise flex gap-1.5">
+              <label className={`${pill} press ${category ? "pl-1" : ""}`}>
+                {category && <Tile category={category} small />}
+                {category ? category.name : "Category"}
                 <Chevron />
                 <select
                   aria-label="Category"
-                  className="absolute inset-x-0 -inset-y-2.5 opacity-0"
+                  className="absolute inset-x-0 -inset-y-1.5 opacity-0"
                   value={category?.id ?? ""}
                   onChange={(e) => setCategoryId(Number(e.target.value) || null)}
                 >
@@ -351,30 +359,28 @@ function Bar(props: {
                   <CategoryOptions categories={categories} />
                 </select>
               </label>
-              <span className="text-line2">·</span>
-              <label className={chip}>
+              <label className={`${pill} press`}>
                 {dayLabel(date)}
+                <Chevron />
                 <input
                   aria-label="Date"
                   type="date"
-                  className="absolute inset-x-0 -inset-y-2.5 opacity-0"
+                  className="absolute inset-x-0 -inset-y-1.5 opacity-0"
                   max={today()}
                   value={date}
                   onClick={(e) => e.currentTarget.showPicker?.()}
                   onChange={(e) => setDate(e.target.value || today())}
                 />
               </label>
-              <span className="text-line2">·</span>
-              <span>{currency === "BTC" ? (p.unit ?? unit) : currency}</span>
-              {category && !categoryId && <span className="ml-auto min-w-0 truncate text-xs text-ink3">from past notes</span>}
+              <span className={`${pill} num text-ink2`}>{currency === "BTC" ? (p.unit ?? unit) : currency}</span>
             </div>
           )}
         </div>
         <div
-          className={`flex min-h-[50px] items-center gap-2 rounded-xl border bg-surface py-[5px] pr-[5px] pl-3.5 ${active ? "border-accent shadow-bar-active" : "border-line2 shadow-bar"}`}
+          className={`flex h-12 items-center gap-2 rounded-field border pr-[3px] pl-3.5 transition-[background-color,border-color,box-shadow] duration-200 ${active ? "border-accent bg-surface shadow-bar-active" : "border-transparent bg-surface2"}`}
         >
           {inChat && <span aria-hidden className="-mr-1 text-[17px] font-medium text-accent">?</span>}
-          <div className="relative h-10 min-w-0 flex-1 text-[17px] font-medium tracking-[-0.01em]">
+          <div className="relative h-10 min-w-0 flex-1 text-[17px] font-medium tracking-[-0.01em] [word-spacing:0.25em]">
             <div ref={mirror} aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden leading-10 whitespace-pre">
               {ask ? (
                 <>
@@ -383,11 +389,7 @@ function Bar(props: {
                 </>
               ) : (
                 <>
-                  {p.parts.map(([w, style], i) => (
-                    <span key={i} className={style}>
-                      {w}
-                    </span>
-                  ))}
+                  {p.parts.map(([w, style], i) => tag(w, style, i))}
                   {focused && <span className="text-ink3">{ghost.trimEnd()}</span>}
                 </>
               )}
@@ -395,7 +397,7 @@ function Bar(props: {
             <input
               ref={input}
               aria-label={inChat ? "Ask about your spending" : settings.ai ? "Add an expense, or start with ? to ask" : "Add an expense"}
-              className="absolute inset-0 w-full bg-transparent leading-10 text-transparent caret-accent outline-none focus-visible:outline-none placeholder:font-normal placeholder:text-ink3"
+              className="absolute inset-0 w-full bg-transparent leading-10 text-transparent caret-accent outline-none [word-spacing:inherit] focus-visible:outline-none placeholder:font-normal placeholder:text-ink3"
               placeholder={inChat ? (props.chat ? "Reply" : "Ask about your spending") : "ramen 24.50"}
               autoComplete="off"
               enterKeyHint={ask ? "send" : "done"}
@@ -411,27 +413,20 @@ function Bar(props: {
               onBlur={() => setFocused(false)}
             />
           </div>
-          {text.trim() || inChat ? (
-            <button disabled={adding.isPending || asking.isPending || (inChat && !question)} className="primary hit inline-flex h-[38px] items-center gap-1.5 px-3.5">
-              {ask ? "Ask" : p.amount ? "Add" : "Full form"}
-              <Icon className="size-3.5 stroke-2 opacity-75">
-                <path d="M20 5v7a3 3 0 0 1-3 3H5M9 11l-4 4 4 4" />
-              </Icon>
-            </button>
-          ) : (
-            <>
-              {!focused && (
-                <kbd aria-hidden className="hidden rounded border border-line2 px-1.5 text-[11px] font-medium text-ink3 pointer-fine:inline">
-                  /
-                </kbd>
-              )}
-              <button aria-label="Full form" className="hit grid size-[38px] place-items-center rounded-lg text-ink3">
-                <Icon className="size-[18px] stroke-2">
-                  <path d="M12 5v14M5 12h14" />
-                </Icon>
-              </button>
-            </>
+          {!focused && !text && !inChat && (
+            <kbd aria-hidden className="hidden rounded-token border border-line2 px-1.5 text-[11px] font-medium text-ink3 pointer-fine:inline">
+              /
+            </kbd>
           )}
+          <button
+            aria-label={key}
+            disabled={adding.isPending || asking.isPending || (inChat && !question)}
+            className={`press hit grid size-10 shrink-0 place-items-center rounded-chip transition-[scale,background-color,color] duration-200 disabled:opacity-50 ${!text.trim() && !inChat ? "text-ink3" : key === "Full form" ? "bg-accent-soft text-accent" : "bg-accent text-on-accent"}`}
+          >
+            <Icon key={glyph} className="size-[18px] stroke-2 transition-[scale,opacity] duration-300 ease-out starting:scale-50 starting:opacity-0">
+              <path d={glyph} />
+            </Icon>
+          </button>
         </div>
         <span role="status" className="sr-only">
           {receiptText}
@@ -442,7 +437,7 @@ function Bar(props: {
             onMouseLeave={() => setHold(false)}
             onFocus={() => setHold(true)}
             onBlur={() => setHold(false)}
-            className="flex justify-between gap-3 px-1.5 pt-[7px] text-xs text-ink3"
+            className="flex min-h-7 items-center justify-between gap-3 px-1.5 pt-1.5 text-xs text-ink3"
           >
             {error ? (
               <span className="text-up">{error.message}</span>
@@ -450,32 +445,37 @@ function Bar(props: {
               <span>Answers come from your own data. Expenses are only added once you review them.</span>
             ) : text && !p.amount ? (
               <span>Add an amount, like 24.50, or press Enter for the full form.</span>
+            ) : text ? (
+              <span className="flex min-w-0 gap-1 text-ink2">
+                <span className="truncate">{p.note || "No note"}</span>·<span className="num shrink-0 text-ink">{money(seed().amount, currency, p.unit ?? unit)}</span>
+                {p.tags.length > 0 && <span className="truncate">· {p.tags.map((t) => `#${t}`).join(" ")}</span>}
+                {category && !categoryId && <span className="shrink-0 text-ink3">· category guessed</span>}
+              </span>
             ) : shown ? (
-              <span key={shown.id} className="rise min-w-0 truncate text-ink2">
-                {receiptText}
+              <span key={shown.id} className="rise flex min-w-0 items-center gap-2 text-ink2">
+                <Tile category={receiptCategory} small />
+                <span className="truncate">{`${shown.binned ? "Binned" : "Added"} ${shown.row.note}`.trim()}</span>·
+                <span className="num shrink-0 text-ink">{money(shown.row.amount, shown.row.currency, unit)}</span>
+                {!shown.row.id && <span className="shrink-0 text-ink3">· will sync</span>}
               </span>
             ) : queued > 0 ? (
               <span>Offline. Saved here, will sync.</span>
             ) : props.guide ? (
               <span className="text-ink2">Start with the last thing you paid for</span>
             ) : (
-              <span className="min-w-0">
+              <span className="min-w-0 [word-spacing:0.15em]">
                 Try{" "}
                 {examples.map((e, i) => (
                   <Fragment key={e}>
                     {i > 0 && " · "}
-                    {parse(e, settings.currencies).parts.map(([w, style], j) => (
-                      <span key={j} className={style}>
-                        {w}
-                      </span>
-                    ))}
+                    {parse(e, settings.currencies).parts.map(([w, style], j) => tag(w, style, j))}
                   </Fragment>
                 ))}
                 {settings.ai && (
                   <>
                     {" · "}
                     <span className="whitespace-nowrap">
-                      Start with <kbd className="rounded border border-line2 bg-surface px-1 text-[11px] font-medium text-ink2">?</kbd> to ask
+                      Start with <kbd className="rounded-token border border-line2 bg-surface px-1 text-[11px] font-medium text-ink2">?</kbd> to ask
                     </span>
                   </>
                 )}
@@ -483,17 +483,12 @@ function Bar(props: {
             )}
             {shown && !ask && !text ? (
               shown.row.id > 0 && (
-                <button type="button" onClick={() => undo(shown)} className="hit shrink-0 font-medium text-accent">
+                <button type="button" onClick={() => undo(shown)} className="press hit shrink-0 font-medium text-accent">
                   Undo
                 </button>
               )
             ) : !ask && (!text || p.amount) && (
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => props.onForm(seed())}
-                className="hit shrink-0 text-ink2 underline decoration-line2 underline-offset-3"
-              >
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => props.onForm(seed())} className="press hit shrink-0 font-medium text-ink2">
                 Full form
               </button>
             )}
