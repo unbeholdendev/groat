@@ -54,6 +54,9 @@ export type Chat = z.infer<typeof chat>;
 
 export const tag = z.object({ id: z.number(), name: z.string() });
 
+export const apiToken = z.object({ id: z.number(), name: z.string(), createdAt: z.string(), lastUsedAt: z.string().nullable() });
+export type ApiToken = z.infer<typeof apiToken>;
+
 export const template = expense.omit({ date: true }).extend({
   period: z.string(),
   every: z.number(),

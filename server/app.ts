@@ -13,6 +13,7 @@ import { rateRoutes, valuer } from "./rates";
 import { recurringRoutes } from "./recurring";
 import { settingsRoutes } from "./settings";
 import { statsRoutes } from "./stats";
+import { captureRoutes, tokenRoutes } from "./tokens";
 
 export type Deps = {
   db: Database;
@@ -41,8 +42,10 @@ export function createApp(deps: Deps) {
     c.header("cache-control", "no-store");
   });
 
+  app.route("/", captureRoutes(ctx));
   app.route("/", auth(db, deps.clock));
   app.route("/", memberRoutes(db, deps.clock));
+  app.route("/", tokenRoutes(ctx));
   app.route("/", settingsRoutes(db, deps.config));
   app.route("/", categoryRoutes(db));
   app.route("/", expenseRoutes(ctx, value));

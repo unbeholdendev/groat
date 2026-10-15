@@ -3,7 +3,7 @@ import { dehydrate, hydrate, keepPreviousData, MutationCache, onlineManager, Que
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import "./index.css";
 import { routeTree } from "./routeTree.gen";
-import { type Category, type Chat, category, chat, type Draft, type Expense, expense, request, type Request, send } from "./api";
+import { type ApiToken, apiToken, type Category, type Chat, category, chat, type Draft, type Expense, expense, request, type Request, send } from "./api";
 import { z } from "zod";
 
 const queryClient: QueryClient = new QueryClient({
@@ -60,6 +60,10 @@ function saved(data: unknown, variables: unknown) {
     return queryClient.setQueryData<Category[]>(["/api/categories"], (rows = []) =>
       rows.some((c) => c.id === row.id) ? rows.map((c) => (c.id === row.id ? row : c)) : [...rows, row],
     );
+  }
+  if (path.startsWith("/api/tokens")) {
+    const row = apiToken.parse(data);
+    return queryClient.setQueryData<ApiToken[]>(["/api/tokens"], (rows = []) => (method === "DELETE" ? rows.filter((r) => r.id !== row.id) : [row, ...rows]));
   }
   if (path === "/api/settings" && !z.object({ baseCurrency: z.string() }).safeParse(body).success) return queryClient.setQueryData(["/api/settings"], data);
   if (path.startsWith("/api/users")) return refresh("/api/users");

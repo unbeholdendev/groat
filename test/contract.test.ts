@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { z } from "zod";
-import { category, chat, expense, member, period, session, settings, suggestion, tag, template } from "../web/api";
+import { apiToken, category, chat, expense, member, period, session, settings, suggestion, tag, template } from "../web/api";
 import { setup } from "./harness";
 
 test("web schemas accept what the server sends", async () => {
@@ -29,6 +29,8 @@ test("web schemas accept what the server sends", async () => {
     [z.array(tag), (await call("GET", "/api/tags")).body],
     [z.array(suggestion), (await call("GET", "/api/notes?prefix=r")).body],
     [period, (await call("GET", "/api/stats?from=2026-10-01&to=2026-10-10")).body],
+    [apiToken, (await call("POST", "/api/tokens", { name: "Phone" })).body],
+    [z.array(apiToken), (await call("GET", "/api/tokens")).body],
   ];
   for (const [schema, body] of checks) expect(schema.safeParse(body).error).toBeUndefined();
 });

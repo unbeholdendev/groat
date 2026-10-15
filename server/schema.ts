@@ -102,6 +102,17 @@ export const sessions = sqliteTable("sessions", {
   expiresAt: text().notNull(),
 });
 
+export const apiTokens = sqliteTable("api_tokens", {
+  id: integer().primaryKey(),
+  userId: integer()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text().notNull(),
+  hash: text().notNull().unique(),
+  createdAt: text().notNull(),
+  lastUsedAt: text(),
+});
+
 export const chats = sqliteTable("chats", {
   id: integer().primaryKey(),
   title: text().notNull(),

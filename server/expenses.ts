@@ -58,17 +58,43 @@ export function expenseFilter(db: Db, q: z.infer<typeof expenseQuery>, base = vi
   );
 }
 
-export function readExpense(raw: unknown, db: Db, today: string, fallback: string, currencies: string[], category: number) {
+export function readExpense(raw: unknown, db: Db, today: string, fallback: string, currencies: string[], category: number, pending = false) {
   const parsed = valid(expenseInput, raw);
   if ("error" in parsed) return parsed;
   const { note, currency = fallback, date = today, categoryId = category, tags = [], unit } = parsed.data;
   if (currency !== fallback && !currencies.includes(currency)) return { error: "currency not enabled" };
-  const amount = parseAmount(parsed.data.amount, currency, unit);
+  const amount = pending && parsed.data.amount === "0" ? 0 : parseAmount(parsed.data.amount, currency, unit);
   if (amount === null) return { error: "invalid amount" };
   // today is UTC; the user's local date can be a day ahead
   if (date > new Date(Date.parse(today) + 864e5).toISOString().slice(0, 10)) return { error: "date can’t be in the future" };
   if (!db.select().from(t.categories).where(eq(t.categories.id, categoryId)).get()) return { error: "invalid category" };
   return { note, amount, currency, date, categoryId, tags: [...new Set(tags)] };
+}
+
+type ExpenseFields = Exclude<ReturnType<typeof readExpense>, { error: string }>;
+
+export function addExpense(db: Db, now: string, { tags, ...fields }: ExpenseFields, createdBy: number, status = "normal") {
+  const { id } = db.insert(e).values({ ...fields, status, createdBy, createdAt: now, updatedAt: now }).returning({ id: e.id }).get();
+  saveTags(db, id, tags);
+  return expenses(db, eq(e.id, id)).get();
+}
+
+export function suggestions(db: Db, prefix: string) {
+  const ranked = db
+    .select({
+      note: e.note,
+      categoryId: e.categoryId,
+      currency: e.currency,
+      amount: e.amount,
+      date: e.date,
+      id: e.id,
+      n: sql<number>`row_number() OVER (PARTITION BY ${e.note} ORDER BY ${e.date} DESC, ${e.id} DESC)`.as("n"),
+    })
+    .from(e)
+    .where(and(visible, sql`lower(substr(${e.note}, 1, length(${prefix}))) = lower(${prefix})`))
+    .as("ranked");
+  const { note, categoryId, currency, amount } = ranked;
+  return db.select({ note, categoryId, currency, amount }).from(ranked).where(eq(ranked.n, 1)).orderBy(desc(ranked.date), desc(ranked.id)).limit(10).all();
 }
 
 export function saveTags(db: Db, id: number, tags: string[]) {
@@ -88,26 +114,7 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     return c.json(await value(expenses(db, expenseFilter(db, q.data)).orderBy(...newest).all()));
   });
 
-  app.get("/api/notes", (c) => {
-    const prefix = c.req.query("prefix") ?? "";
-    const ranked = db
-      .select({
-        note: e.note,
-        categoryId: e.categoryId,
-        currency: e.currency,
-        amount: e.amount,
-        date: e.date,
-        id: e.id,
-        n: sql<number>`row_number() OVER (PARTITION BY ${e.note} ORDER BY ${e.date} DESC, ${e.id} DESC)`.as("n"),
-      })
-      .from(e)
-      .where(and(visible, sql`lower(substr(${e.note}, 1, length(${prefix}))) = lower(${prefix})`))
-      .as("ranked");
-    const { note, categoryId, currency, amount } = ranked;
-    return c.json(
-      db.select({ note, categoryId, currency, amount }).from(ranked).where(eq(ranked.n, 1)).orderBy(desc(ranked.date), desc(ranked.id)).limit(10).all(),
-    );
-  });
+  app.get("/api/notes", (c) => c.json(suggestions(db, c.req.query("prefix") ?? "")));
 
   app.get("/api/bin", (c) => c.json(expenses(db, isNotNull(e.deletedAt)).orderBy(desc(e.deletedAt), desc(e.id)).all()));
 
@@ -116,10 +123,7 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     const { lastCurrency, currencies } = settings(db);
     const body = readExpense(await json(c), db, today(clock), lastCurrency, currencies, uncategorised(db));
     if ("error" in body) return c.json(body, 400);
-    const { tags, ...fields } = body;
-    const { id } = db.insert(e).values({ ...fields, createdAt: now, updatedAt: now, createdBy: c.get("user").id }).returning({ id: e.id }).get();
-    saveTags(db, id, tags);
-    return c.json(expenses(db, eq(e.id, id)).get(), 201);
+    return c.json(addExpense(db, now, body, c.get("user").id), 201);
   });
 
   app.put("/api/expenses/:id", async (c) => {

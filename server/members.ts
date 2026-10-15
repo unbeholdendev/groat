@@ -5,7 +5,7 @@ import { z } from "zod";
 import { active, credentials, type Env } from "./auth";
 import type { Db } from "./db";
 import { body } from "./request";
-import { sessions, users } from "./schema";
+import { apiTokens, sessions, users } from "./schema";
 
 const password = z.object({ password: credentials.shape.password });
 
@@ -47,6 +47,7 @@ export function memberRoutes(db: Db, clock: () => Date) {
     if (user.role === "admin" && db.select({ n: count() }).from(users).where(and(eq(users.role, "admin"), active)).get()?.n === 1) return c.json({ error: "the last admin can’t be removed" }, 409);
     db.update(users).set({ deletedAt: clock().toISOString() }).where(eq(users.id, user.id)).run();
     db.delete(sessions).where(eq(sessions.userId, user.id)).run();
+    db.delete(apiTokens).where(eq(apiTokens.userId, user.id)).run();
     return c.json({});
   });
 

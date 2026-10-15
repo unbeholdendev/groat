@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSend, useSession, useSettings } from "../api";
 import { Household } from "../household";
 import { SettingsForm } from "../settings-form";
+import { Tokens } from "../tokens";
 import { Chevron } from "../ui";
 
 const rowClass = "flex items-center justify-between border-b border-line py-3";
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/settings")({
         </a>
         <SignOut />
       </nav>
+      <Tokens />
     </>
   ),
 });
