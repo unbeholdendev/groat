@@ -2,6 +2,7 @@ import { type FormEvent, Fragment, type ReactNode, useEffect, useRef, useState }
 import { useMutation, useMutationState, useQuery } from "@tanstack/react-query";
 import { createRootRoute, Link, Outlet, useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { formatAmount, parseAmount, type Unit } from "../../shared/amount";
+import { parse, type Part } from "../../shared/parse";
 import { money } from "../period";
 import {
   type Category,
@@ -136,26 +137,12 @@ function App() {
   );
 }
 
-function parse(text: string, currencies: string[]) {
-  let amount: string | null = null;
-  let currency: string | null = null;
-  let unit: Unit | null = null;
-  const tags: string[] = [];
-  const words: string[] = [];
-  const parts = text.split(/(\s+)/).map((w) => {
-    const code = w.toUpperCase();
-    if (/^#\S+$/.test(w)) return tags.push(w.slice(1)), [w, "rounded-token bg-track text-ink2 shadow-[0_0_0_2px_var(--track)]"];
-    if (!amount && /^\d+([.,]\d+)?$/.test(w)) return (amount = w.replace(",", ".")), [w, "rounded-token bg-accent-soft text-accent shadow-[0_0_0_2px_var(--accent-soft)]"];
-    if (!currency && (currencies.includes(code) || code === "SATS")) {
-      currency = code === "SATS" ? "BTC" : code;
-      if (code === "SATS") unit = "sats";
-      return [w, "text-accent"];
-    }
-    if (w.trim()) words.push(w);
-    return [w, ""];
-  });
-  return { parts, amount: amount as string | null, currency: currency as string | null, unit: unit as Unit | null, tags, note: words.join(" ") };
-}
+const styles = {
+  tag: "rounded-token bg-track text-ink2 shadow-[0_0_0_2px_var(--track)]",
+  amount: "rounded-token bg-accent-soft text-accent shadow-[0_0_0_2px_var(--accent-soft)]",
+  currency: "text-accent",
+  "": "",
+};
 
 function Bar(props: {
   settings: Settings;
@@ -292,8 +279,8 @@ function Bar(props: {
 
   const key = ask ? "Ask" : text.trim() && p.amount ? "Add" : "Full form";
   const glyph = key === "Ask" ? "M12 19V5M6 11l6-6 6 6" : key === "Add" ? "M20 5v7a3 3 0 0 1-3 3H5M9 11l-4 4 4 4" : "M12 5v14M5 12h14";
-  const tag = (w: string, style: string, i: number) => (
-    <span key={i} className={style}>
+  const tag = (w: string, kind: Part[1], i: number) => (
+    <span key={i} className={styles[kind]}>
       {w}
     </span>
   );
@@ -399,7 +386,7 @@ function Bar(props: {
                 </>
               ) : (
                 <>
-                  {p.parts.map(([w, style], i) => tag(w, style, i))}
+                  {p.parts.map(([w, kind], i) => tag(w, kind, i))}
                   {focused && <span className="text-ink3">{ghost.trimEnd()}</span>}
                 </>
               )}
@@ -478,7 +465,7 @@ function Bar(props: {
                 {examples.map((e, i) => (
                   <Fragment key={e}>
                     {i > 0 && " · "}
-                    {parse(e, settings.currencies).parts.map(([w, style], j) => tag(w, style, j))}
+                    {parse(e, settings.currencies).parts.map(([w, kind], j) => tag(w, kind, j))}
                   </Fragment>
                 ))}
                 {settings.ai && (
