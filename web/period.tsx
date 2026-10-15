@@ -1,6 +1,6 @@
 import { formatAmount, type Unit } from "../shared/amount";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { period, useApi } from "./api";
 import { Icon } from "./ui";
 
 export function money(amount: number, currency: string, unit?: Unit) {
@@ -34,17 +34,13 @@ export function span(preset: string, custom?: [string, string], now = new Date()
       end: iso(new Date(y, 11, 31)),
       name: String(y - 1),
     };
-  const [from, to] = custom!;
+  const [from, to] = custom ?? [iso(now), iso(now)];
   const ref: [string, string] = [shift(from, -days(from, to)), shift(from, -1)];
   return { range: [from, to], ref, full: ref, end: to, name: "Before" };
 }
 
-type Slice = { id: number; name: string; icon: string; color: string; total: number };
-export type Category = Slice & { children: Slice[] };
-export type Period = { baseCurrency: string; total: number; unconverted: number; categories: Category[]; tags: { name: string; total: number }[] };
-
 export const usePeriod = ([from, to]: [string, string]) =>
-  useQuery<Period>({ queryKey: [`/api/stats?from=${from}&to=${to}&group=month`], enabled: from <= to }).data;
+  useApi(period, [`/api/stats?from=${from}&to=${to}&group=month`], { enabled: from <= to }).data;
 
 export function change(now: number, before: number) {
   if (!before) return null;

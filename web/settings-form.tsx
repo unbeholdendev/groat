@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { type Settings, useSend } from "./api";
+import { type Settings, theme as themes, useSend } from "./api";
 import { Chevron, chip, Icon } from "./ui";
 
 const currencyNames = new Intl.DisplayNames(["en-GB"], { type: "currency" });
@@ -75,7 +75,7 @@ export function SettingsForm(props: {
       {!onboarding && (
         <label className="label">
           Theme
-          <select className="input" value={theme} onChange={(e) => (setTheme(e.target.value as Settings["theme"]), mutation.mutate([props.method, props.path, { theme: e.target.value }]))}>
+          <select className="input" value={theme} onChange={(e) => (setTheme(themes.parse(e.target.value)), mutation.mutate([props.method, props.path, { theme: e.target.value }]))}>
             <option value="system">System</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>

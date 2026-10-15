@@ -1,22 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { useContext, useId, useState } from "react";
-import { change, days, money, type Period, Pill, span, Total, usePeriod } from "../period";
-import { useCategories } from "../api";
+import { change, days, money, Pill, span, Total, usePeriod } from "../period";
+import { period, useApi, useCategories } from "../api";
 import { Tile } from "../category";
 import { dated, pick } from "../dates";
 import { Chevron, divide, Icon, UnitContext } from "../ui";
 
 const presets = ["This month", "Last month", "Year to date", "Custom"];
 
-type Series = Period & { buckets: { start: string; total: number }[] };
 
 const group = (from: string, to: string) => {
   const n = days(from, to);
   return n <= 62 ? "day" : n <= 366 ? "week" : "month";
 };
 const useSeries = ([from, to]: [string, string]) =>
-  useQuery<Series>({ queryKey: [`/api/stats?from=${from}&to=${to}&group=${group(from, to)}`], enabled: from <= to }).data;
+  useApi(period, [`/api/stats?from=${from}&to=${to}&group=${group(from, to)}`], { enabled: from <= to }).data;
 
 export const Route = createFileRoute("/stats")({
   validateSearch: (s) => pick(s, { from: dated, to: dated }),
@@ -32,7 +30,8 @@ function StatsPage() {
   const range = from && to ? `${from},${to}` : span("This month").range.join();
   const preset = (!custom && presets.find((p) => p !== "Custom" && span(p).range.join() === range)) || "Custom";
   const [open, setOpen] = useState<number | null>(null);
-  const s = span(preset, range.split(",") as [string, string]);
+  const [rangeFrom = "", rangeTo = ""] = range.split(",");
+  const s = span(preset, [rangeFrom, rangeTo]);
   const setRange = (from: string, to: string) => navigate({ search: { from, to }, replace: true });
   const setPreset = (p: string) => {
     setCustom(p === "Custom");

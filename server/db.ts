@@ -10,14 +10,16 @@ export const countable = and(visible, eq(t.expenses.status, "normal"));
 
 export const today = (clock: () => Date) => clock().toISOString().slice(0, 10);
 
-export const isDate = (s: unknown) =>
-  typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && new Date(Date.parse(s) || 0).toISOString().slice(0, 10) === s;
+const seeded = <T>(row: T | undefined) => {
+  if (!row) throw new Error("database is missing its seeded rows");
+  return row;
+};
 
 export const uncategorised = (db: Db) =>
-  db.select({ id: t.categories.id }).from(t.categories).where(eq(t.categories.builtin, true)).get()!.id;
+  seeded(db.select({ id: t.categories.id }).from(t.categories).where(eq(t.categories.builtin, true)).get()).id;
 
 export function settings(db: Db) {
-  const { baseCurrency, currencies, theme, onboarded } = db.select().from(t.settings).get()!;
+  const { baseCurrency, currencies, theme, onboarded } = seeded(db.select().from(t.settings).get());
   const last = db
     .select({ currency: t.expenses.currency })
     .from(t.expenses)

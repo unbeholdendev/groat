@@ -1,11 +1,16 @@
 import { and, between, eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { countable, type Db, isDate, settings } from "./db";
+import { z } from "zod";
+import { isoDate } from "../shared/schema";
+import { countable, type Db, settings } from "./db";
 import type { Valuer } from "./rates";
+import { query } from "./request";
 import { categories as c, expenses as e, expenseTags as et, tags as tg } from "./schema";
 
-export const groups = ["day", "week", "month"] as const;
-type Group = (typeof groups)[number];
+const range = z
+  .object({ from: isoDate, to: isoDate, group: z.enum(["day", "week", "month"]).default("day") })
+  .refine((r) => r.from <= r.to);
+type Group = z.infer<typeof range>["group"];
 type Category = { id: number; name: string; icon: string; color: string; parentId: number | null };
 type Total = { total: number };
 
@@ -59,15 +64,17 @@ export async function period(db: Db, value: Valuer, from: string, to: string, gr
     .innerJoin(tg, eq(tg.id, et.tagId))
     .innerJoin(e, eq(e.id, et.expenseId))
     .where(and(countable, between(e.date, from, to)))
-    .all())
-    if (amounts.has(id)) tagged.set(name, (tagged.get(name) ?? 0) + amounts.get(id)!);
+    .all()) {
+    const amount = amounts.get(id);
+    if (amount !== undefined) tagged.set(name, (tagged.get(name) ?? 0) + amount);
+  }
   const tags = [...tagged].map(([name, total]) => ({ name, total })).sort(byTotal);
 
   const buckets = new Map<string, number>();
   for (let start = bucketOf(from, group); start <= to; start = nextBucket(start, group)) buckets.set(start, 0);
   for (const r of counted) {
     const start = bucketOf(r.date, group);
-    buckets.set(start, buckets.get(start)! + r.baseAmount);
+    buckets.set(start, (buckets.get(start) ?? 0) + r.baseAmount);
   }
 
   return {
@@ -94,10 +101,10 @@ export function statsRoutes(db: Db, value: Valuer) {
   const app = new Hono();
 
   app.get("/api/stats", async (c) => {
-    const { from = "", to = "", group = "day" } = c.req.query();
-    if (!isDate(from) || !isDate(to) || from > to || !groups.includes(group as never))
-      return c.json({ error: "invalid range" }, 400);
-    return c.json(await stats(db, value, from, to, group as Group));
+    const q = query(c, range);
+    if ("error" in q) return c.json({ error: "invalid range" }, 400);
+    const { from, to, group } = q.data;
+    return c.json(await stats(db, value, from, to, group));
   });
 
   return app;

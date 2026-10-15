@@ -1,17 +1,16 @@
 import { type FormEvent, Fragment, useEffect, useRef, useState } from "react";
-import { useMutation, useMutationState, useQuery } from "@tanstack/react-query";
+import { useMutation, useMutationState } from "@tanstack/react-query";
 import { formatAmount, parseAmount, type Unit } from "../shared/amount";
 import { parse, type Part } from "../shared/parse";
-import { type Category, type Draft, type Expense, type Request, send, type Settings, useSend } from "./api";
+import { type Category, chat as chatSchema, type Draft, draftIn, expense, request, send, type Settings, type Suggestion, suggestion, unsent, useApi, useSend } from "./api";
+import { z } from "zod";
 import { CategoryOptions, Tile } from "./category";
 import { dayLabel, today } from "./dates";
 import { money } from "./period";
-import type { Chat } from "./routes/chat";
 import { Chevron, Icon } from "./ui";
 
 const pill = "glass relative inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip px-3 text-[13px] font-medium text-ink shadow-dock has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent";
 
-type Suggestion = { note: string; categoryId: number; currency: string; amount: number };
 
 const styles = {
   tag: "rounded-token bg-track text-ink2 shadow-[0_0_0_2px_var(--track)]",
@@ -43,10 +42,7 @@ export function Bar(props: {
   const question = text.replace(/^\?/, "").trim();
   const p = parse(ask ? "" : text, settings.currencies);
   const guesses =
-    useQuery<Suggestion[]>({
-      queryKey: ["/api/notes?prefix=", encodeURIComponent(p.note)],
-      enabled: p.note.length > 1,
-    }).data ?? [];
+    useApi(z.array(suggestion), ["/api/notes?prefix=", encodeURIComponent(p.note)], { enabled: p.note.length > 1 }).data ?? [];
   const guess = guesses[0];
   const line = (s: Suggestion) =>
     s.currency === "BTC"
@@ -65,18 +61,19 @@ export function Bar(props: {
       mutationKey: ["send"],
       predicate: ({ state }) => {
         if ((state.status !== "success" && !state.isPaused) || Date.now() - state.submittedAt > 5000) return false;
-        const [method, path] = state.variables as Request;
+        const [method, path] = request.parse(state.variables);
         if (method === "POST") return path === "/api/expenses";
         return method === "DELETE" && /^\/api\/expenses\/\d+$/.test(path) && !state.isPaused;
       },
     },
     select: ({ mutationId, state }) => {
-      const [method, , body] = state.variables as Request;
-      const b = body as Expense & { amount: string; unit: Unit };
-      const row = (state.data as Expense | undefined) ?? { ...b, id: 0, amount: parseAmount(b.amount, b.currency, b.unit) || 0 };
-      return { id: mutationId, binned: method === "DELETE", row };
+      const [method, , body] = request.parse(state.variables);
+      const row = expense.safeParse(state.data).data ?? unsent(body, 0);
+      return row && { id: mutationId, binned: method === "DELETE", row };
     },
-  }).at(-1);
+  })
+    .filter((r) => r !== undefined)
+    .at(-1);
   const [dismissed, dismiss] = useState(0);
   const [hold, setHold] = useState(false);
   const shown = receipt && receipt.id > dismissed ? receipt : undefined;
@@ -105,7 +102,7 @@ export function Bar(props: {
   }, [adding.isPaused]);
   const asking = useMutation({
     mutationKey: ["ask", props.chat || null],
-    mutationFn: (message: string) => send("POST", props.chat ? `/api/chats/${props.chat}/messages` : "/api/chats", { message }) as Promise<Chat>,
+    mutationFn: async (message: string) => chatSchema.parse(await send("POST", props.chat ? `/api/chats/${props.chat}/messages` : "/api/chats", { message })),
   });
   useEffect(() => asking.reset(), [props.chat]);
   const card = !asking.isIdle && !inChat;
@@ -113,8 +110,8 @@ export function Bar(props: {
   useEffect(() => void (props.guide && input.current?.focus()), [props.guide]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement;
-      if (e.key !== "/" || e.metaKey || e.ctrlKey || t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      const t = e.target;
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || !(t instanceof HTMLElement) || t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
       e.preventDefault();
       input.current?.focus();
     };
@@ -127,11 +124,11 @@ export function Bar(props: {
   const answer = chat?.messages?.findLast((m) => m.role === "assistant" && m.content)?.content;
   const drafts = (chat?.messages ?? [])
     .filter((m) => m.role === "tool" && m.content?.startsWith('{"draft"'))
-    .map((m) => (JSON.parse(m.content!) as { draft: Draft }).draft);
+    .flatMap((m) => draftIn(m.content) ?? []);
   const active = focused || !!text;
   const other = settings.currencies.find((c) => c !== "BTC" && c !== settings.lastCurrency);
-  const examples = [other && `12 ${other.toLowerCase()}`, settings.currencies.includes("BTC") && "5000 sats", "#work"].filter(Boolean) as string[];
-  const sync = () => requestAnimationFrame(() => mirror.current && (mirror.current.scrollLeft = mirror.current.nextElementSibling!.scrollLeft));
+  const examples = [other && `12 ${other.toLowerCase()}`, settings.currencies.includes("BTC") && "5000 sats", "#work"].filter((e) => typeof e === "string");
+  const sync = () => requestAnimationFrame(() => mirror.current && (mirror.current.scrollLeft = (mirror.current.nextElementSibling?.scrollLeft ?? 0)));
 
   const seed = (): Draft => ({
     note: p.note,
@@ -194,7 +191,7 @@ export function Bar(props: {
                   Close
                 </button>
                 {asking.error && (
-                  <button type="button" onClick={() => asking.mutate(asking.variables!)} className="press hit rounded-chip px-2.5 py-1.5 text-[13px] font-medium text-accent">
+                  <button type="button" onClick={() => asking.variables && asking.mutate(asking.variables)} className="press hit rounded-chip px-2.5 py-1.5 text-[13px] font-medium text-accent">
                     Try again
                   </button>
                 )}

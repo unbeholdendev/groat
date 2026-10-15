@@ -1,13 +1,13 @@
 import { type FormEvent, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { type Category, type Expense, useCategories, useSend } from "../api";
+import { type Category, expense, tag as tagSchema, useApi, useCategories, useSend } from "../api";
+import { z } from "zod";
 import { CategoryOptions, Tile } from "../category";
 import { Confirm, divide, Icon } from "../ui";
 
 export const Route = createFileRoute("/categories")({ component: Categories });
 
-type Tag = { id: number; name: string };
+type Tag = z.infer<typeof tagSchema>;
 type Form = { name: string; icon: string; color: string; parentId: string };
 
 const blank: Form = { name: "", icon: "📁", color: "#71717a", parentId: "" };
@@ -15,7 +15,7 @@ const text = "h-11 rounded-chip px-2.5 text-[13px] font-medium";
 
 function Categories() {
   const categories = useCategories();
-  const tags = useQuery<Tag[]>({ queryKey: ["/api/tags"] }).data ?? [];
+  const tags = useApi(z.array(tagSchema), ["/api/tags"]).data ?? [];
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [form, setForm] = useState(blank);
   const [reorder, setReorder] = useState(false);
@@ -23,10 +23,7 @@ function Categories() {
   const [moveTo, setMoveTo] = useState("");
   const [tag, setTag] = useState<Tag & { deleting?: boolean }>();
   const { mutate: call, error, reset } = useSend();
-  const affected = useQuery<Expense[]>({
-    queryKey: ["/api/expenses?", `category=${editing}`],
-    enabled: deleting && typeof editing === "number",
-  }).data;
+  const affected = useApi(z.array(expense), ["/api/expenses?", `category=${editing}`], { enabled: deleting && typeof editing === "number" }).data;
 
   function edit(c?: Category) {
     setForm(c ? { name: c.name, icon: c.icon, color: c.color, parentId: "" } : blank);
@@ -61,7 +58,7 @@ function Categories() {
 
   function renameTag(e: FormEvent) {
     e.preventDefault();
-    call(["PUT", `/api/tags/${tag!.id}`, { name: tag!.name }], { onSuccess: () => setTag(undefined) });
+    if (tag) call(["PUT", `/api/tags/${tag.id}`, { name: tag.name }], { onSuccess: () => setTag(undefined) });
   }
 
   const tree = categories

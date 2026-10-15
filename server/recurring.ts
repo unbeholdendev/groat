@@ -1,13 +1,23 @@
 import { and, eq, getTableColumns, isNull, type SQL } from "drizzle-orm";
 import { type Context, Hono } from "hono";
+import { z } from "zod";
+import { expenseInput, isoDate } from "../shared/schema";
 import type { Ctx } from "./app";
-import { isDate, settings, today, uncategorised } from "./db";
+import { settings, today, uncategorised } from "./db";
 import { readExpense, saveTags } from "./expenses";
-import { json } from "./request";
+import { json, valid } from "./request";
 import * as t from "./schema";
 
 const e = t.expenses;
 const r = t.recurring;
+
+const schedule = expenseInput.omit({ date: true }).extend({
+  period: z.enum(["day", "week", "month", "year"], "invalid schedule"),
+  every: z.number("invalid schedule").int("invalid schedule").min(1, "invalid schedule"),
+  startDate: isoDate.optional(),
+  endDate: isoDate.nullable().default(null),
+  needsConfirmation: z.boolean().default(false),
+});
 
 export function recurringRoutes({ db, clock }: Ctx) {
   const app = new Hono();
@@ -15,15 +25,14 @@ export function recurringRoutes({ db, clock }: Ctx) {
   const { deletedAt: _, ...templateColumns } = getTableColumns(r);
   const templates = (where?: SQL) => db.select(templateColumns).from(r).where(and(isNull(r.deletedAt), where));
 
-  const readTemplate = (body: Record<string, any>, fallback: string, category: number) => {
-    const e = readExpense({ ...body, date: today(clock) }, db, today(clock), fallback, settings(db).currencies, category);
-    if ("error" in e) return { error: e.error };
-    const { period, every, startDate = today(clock), endDate = null, needsConfirmation = false } = body;
-    if (!["day", "week", "month", "year"].includes(period) || !Number.isInteger(every) || every < 1) return { error: "invalid schedule" };
-    if (!isDate(startDate)) return { error: "invalid date" };
-    if (endDate !== null && !isDate(endDate)) return { error: "invalid end date" };
+  const readTemplate = (raw: unknown, fallback: string, category: number) => {
+    const input = valid(schedule, raw);
+    if ("error" in input) return input;
+    const e = readExpense({ ...input.data, date: today(clock) }, db, today(clock), fallback, settings(db).currencies, category);
+    if ("error" in e) return e;
+    const { period, every, startDate = today(clock), endDate, needsConfirmation } = input.data;
     const { note, amount, currency, categoryId, tags } = e;
-    return { note, amount, currency, categoryId, tags, period, every, startDate, endDate, needsConfirmation: !!needsConfirmation };
+    return { note, amount, currency, categoryId, tags, period, every, startDate, endDate, needsConfirmation };
   };
 
   function generate(skip?: string) {

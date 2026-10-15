@@ -45,7 +45,7 @@ test("rejects invalid amounts and missing notes", async () => {
   expect((await call("POST", "/api/expenses", { note: "ahead of UTC", amount: "5", date: "2026-10-11" })).status).toBe(201);
   for (const currency of ["", "nope", 7])
     expect((await call("POST", "/api/expenses", { note: "x", amount: "5", currency })).status).toBe(400);
-  expect((await call("GET", "/api/expenses")).body).toEqual([]);
+  expect((await call("GET", "/api/expenses")).body.map((e: { note: string }) => e.note)).toEqual(["ahead of UTC"]);
 });
 
 test("unknown API routes are a JSON 404", async () => {

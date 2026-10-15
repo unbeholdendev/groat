@@ -2,20 +2,24 @@ import { Hono } from "hono";
 import { formatAmount } from "../shared/amount";
 import { categories } from "./categories";
 import { countable, type Db, settings } from "./db";
-import { expenseFilter, expenses, newest } from "./expenses";
+import { expenseFilter, expenseQuery, expenses, newest } from "./expenses";
 import type { Valuer } from "./rates";
+import { query } from "./request";
 
 export function exportRoutes(db: Db, value: Valuer) {
   const app = new Hono();
 
   app.get("/api/export", async (c) => {
-    const rows = expenses(db, expenseFilter(db, c.req.query(), countable)).orderBy(...newest).all();
+    const q = query(c, expenseQuery);
+    if ("error" in q) return c.json(q, 400);
+    const rows = expenses(db, expenseFilter(db, q.data, countable)).orderBy(...newest).all();
     const { baseCurrency } = settings(db);
     const cats = new Map(categories(db).all().map((r) => [r.id, r]));
     const cell = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v);
     const lines = (await value(rows)).map((e) => {
-      const cat = cats.get(e.categoryId!)!;
-      const [category, sub] = cat.parentId ? [cats.get(cat.parentId)!.name, cat.name] : [cat.name, ""];
+      const cat = e.categoryId === null ? undefined : cats.get(e.categoryId);
+      const parent = cat?.parentId ? cats.get(cat.parentId) : undefined;
+      const [category, sub] = cat && parent ? [parent.name, cat.name] : [cat?.name ?? "", ""];
       const base = e.baseAmount === null ? "" : formatAmount(e.baseAmount, baseCurrency);
       return [e.date, e.note, formatAmount(e.amount, e.currency), e.currency, base, baseCurrency, category, sub, e.tags.join(", ")];
     });

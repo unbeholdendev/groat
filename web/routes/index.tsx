@@ -1,9 +1,10 @@
 import { type FormEvent, Fragment, useContext, useEffect, useRef, useState } from "react";
-import { useMutationState, useQuery } from "@tanstack/react-query";
+import { useMutationState } from "@tanstack/react-query";
 import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { formatAmount, parseAmount, type Unit } from "../../shared/amount";
 import { change, iso, money, Pill, span, Total, usePeriod } from "../period";
-import { type Draft, type Expense, type Request, useCategories, useSend, useSettings } from "../api";
+import { type Draft, type Expense, expense, request, suggestion, template as templateSchema, type Template, unsent, useApi, useCategories, useSend, useSettings } from "../api";
+import { z } from "zod";
 import { CategoryOptions, Tile } from "../category";
 import { dated, dayLabel, pick, today } from "../dates";
 import { Chevron, Confirm, divide, Icon, UnitContext } from "../ui";
@@ -14,15 +15,6 @@ export const Route = createFileRoute("/")({
   component: Expenses,
 });
 
-type Template = Omit<Expense, "date"> & {
-  period: string;
-  every: number;
-  startDate: string;
-  endDate: string | null;
-  needsConfirmation: boolean;
-  paused: boolean;
-};
-type Suggestion = { note: string; categoryId: number; currency: string; amount: number };
 
 function Expenses() {
   const settings = useSettings()!;
@@ -64,21 +56,16 @@ function Expenses() {
   const step = (n: number) => iso(new Date(y, m - 1 + n, 1)).slice(0, 7);
   const label = end.toLocaleDateString("en-GB", { month: "long", ...(y !== new Date().getFullYear() && { year: "numeric" }) });
   const query = new URLSearchParams(Object.entries(filtered ? filter : { from: `${shown}-01`, to: iso(end) }).filter(([, v]) => v));
-  const listed = useQuery<Expense[]>({ queryKey: ["/api/expenses?", query.toString()] }).data;
+  const listed = useApi(z.array(expense), ["/api/expenses?", query.toString()]).data;
   const expenses = listed ?? [];
-  const pending = useQuery<Expense[]>({ queryKey: ["/api/expenses?", "status=pending"] }).data ?? [];
-  const templates = useQuery<Template[]>({ queryKey: ["/api/recurring"] }).data ?? [];
-  const bin = useQuery<Expense[]>({ queryKey: ["/api/bin"], enabled: showBin }).data;
-  const suggestions =
-    useQuery<Suggestion[]>({ queryKey: ["/api/notes?prefix=", encodeURIComponent(note)], enabled: open && !!note }).data ?? [];
+  const pending = useApi(z.array(expense), ["/api/expenses?", "status=pending"]).data ?? [];
+  const templates = useApi(z.array(templateSchema), ["/api/recurring"]).data ?? [];
+  const bin = useApi(z.array(expense), ["/api/bin"], { enabled: showBin }).data;
+  const suggestions = useApi(z.array(suggestion), ["/api/notes?prefix=", encodeURIComponent(note)], { enabled: open && !!note }).data ?? [];
   const queued = useMutationState({
     filters: { predicate: (m) => m.state.isPaused },
-    select: (m) => m.state.variables as Request,
-  }).flatMap(([method, path, body], i) => {
-    if (method !== "POST" || path !== "/api/expenses") return [];
-    const b = body as Expense & { amount: string; unit: Unit };
-    return [{ ...b, id: -1 - i, amount: parseAmount(b.amount, b.currency, b.unit) || 0 }];
-  });
+    select: (m) => request.safeParse(m.state.variables).data,
+  }).flatMap((r, i) => (r?.[0] === "POST" && r[1] === "/api/expenses" ? (unsent(r[2], -1 - i) ?? []) : []));
   const mutation = useSend();
   const saving = useSend(reset);
   const error = saving.error?.message;
@@ -104,7 +91,7 @@ function Expenses() {
     if (match && !editing) {
       setAmount(formatAmount(match.amount, match.currency, unit));
       setCurrency(match.currency);
-      setCategoryId(match.categoryId);
+      setCategoryId(match.categoryId ?? "");
     }
   }
 
@@ -565,7 +552,7 @@ function Expenses() {
           <ul className={panel}>
             {rows.map((e) => (
               <Fragment key={e.id}>
-                <li className={`relative hover:bg-surface2 ${divide} ${e.id > newest.current! || e.id < 0 ? "grow-in" : ""}`}>
+                <li className={`relative hover:bg-surface2 ${divide} ${e.id > (newest.current ?? 0) || e.id < 0 ? "grow-in" : ""}`}>
                   <div className={rowClass}>{row(e)}</div>
                 </li>
                 {asking === `rate ${e.id}` && (

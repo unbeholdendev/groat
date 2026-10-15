@@ -1,13 +1,12 @@
-import { useMutation, useMutationState, useQuery } from "@tanstack/react-query";
+import { useMutation, useMutationState } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useContext, useEffect, useState } from "react";
 import { money } from "../period";
-import type { Draft } from "../api";
+import { chat as chatSchema, type Draft, draftIn, useApi } from "../api";
+import { z } from "zod";
 import { dayLabel, pick } from "../dates";
 import { Chevron, Confirm, UnitContext } from "../ui";
 
-type Message = { role: string; content: string | null };
-export type Chat = { id: number; title: string; messages?: Message[] };
 
 export const Route = createFileRoute("/chat")({
   validateSearch: (s) => pick(s, { id: /^\d+$/ }),
@@ -21,10 +20,10 @@ function ChatPage() {
   const search = Route.useSearch();
   const openId = search.id ? Number(search.id) : null;
   const setOpenId = (id: number | null) => navigate({ to: "/chat", search: id ? { id: String(id) } : {} });
-  const chats = useQuery<Chat[]>({ queryKey: ["/api/chats"], throwOnError: true }).data ?? [];
-  const chat = useQuery<Chat>({ queryKey: [`/api/chats/${openId}`], enabled: openId !== null }).data;
+  const chats = useApi(z.array(chatSchema), ["/api/chats"], { throwOnError: true }).data ?? [];
+  const chat = useApi(chatSchema, [`/api/chats/${openId}`], { enabled: openId !== null }).data;
   const open = openId === null ? null : chat;
-  const asking = useMutationState({ filters: { mutationKey: ["ask", openId], status: "pending" }, select: (m) => m.state.variables as string })[0];
+  const asking = useMutationState({ filters: { mutationKey: ["ask", openId], status: "pending" }, select: (m) => (typeof m.state.variables === "string" ? m.state.variables : undefined) })[0];
   const messages = [...(open?.messages ?? []), ...(asking ? [{ role: "user", content: asking }] : [])];
   useEffect(() => void (openId && scrollTo(0, document.body.scrollHeight)), [messages.length]);
   const deleting = useMutation({ mutationFn: (id: number) => fetch(`/api/chats/${id}`, { method: "DELETE" }) });
@@ -70,7 +69,8 @@ function ChatPage() {
           .filter((m) => m.content && (m.role !== "tool" || m.content.startsWith('{"draft"')))
           .map((m, i) => {
             if (m.role === "tool") {
-              const { draft } = JSON.parse(m.content!) as { draft: Draft };
+              const draft = draftIn(m.content);
+              if (!draft) return null;
               return (
                 <button
                   key={i}
