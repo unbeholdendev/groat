@@ -3,25 +3,10 @@ import { useMutationState, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { formatAmount, parseAmount, type Unit } from "../../shared/amount";
 import { change, iso, money, Pill, span, Total, usePeriod } from "../period";
-import {
-  CategoryOptions,
-  Chevron,
-  Confirm,
-  dated,
-  dayLabel,
-  divide,
-  type Draft,
-  type Expense,
-  Icon,
-  pick,
-  type Request,
-  Tile,
-  today,
-  UnitContext,
-  useCategories,
-  useSend,
-  useSettings,
-} from "../shared";
+import { type Draft, type Expense, type Request, useCategories, useSend, useSettings } from "../api";
+import { CategoryOptions, Tile } from "../category";
+import { dated, dayLabel, pick, today } from "../dates";
+import { Chevron, Confirm, divide, Icon, UnitContext } from "../ui";
 
 export const Route = createFileRoute("/")({
   validateSearch: (s) =>

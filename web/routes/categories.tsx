@@ -1,7 +1,9 @@
 import { type FormEvent, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { type Category, CategoryOptions, Confirm, divide, type Expense, Icon, Tile, useCategories, useSend } from "../shared";
+import { type Category, type Expense, useCategories, useSend } from "../api";
+import { CategoryOptions, Tile } from "../category";
+import { Confirm, divide, Icon } from "../ui";
 
 export const Route = createFileRoute("/categories")({ component: Categories });
 

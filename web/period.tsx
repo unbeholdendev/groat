@@ -1,7 +1,7 @@
 import { formatAmount, type Unit } from "../shared/amount";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "./shared";
+import { Icon } from "./ui";
 
 export function money(amount: number, currency: string, unit?: Unit) {
   const text = formatAmount(amount, currency, unit);

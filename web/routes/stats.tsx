@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useId, useState } from "react";
 import { change, days, money, type Period, Pill, span, Total, usePeriod } from "../period";
-import { Chevron, dated, divide, Icon, pick, Tile, UnitContext, useCategories } from "../shared";
+import { useCategories } from "../api";
+import { Tile } from "../category";
+import { dated, pick } from "../dates";
+import { Chevron, divide, Icon, UnitContext } from "../ui";
 
 const presets = ["This month", "Last month", "Year to date", "Custom"];
 

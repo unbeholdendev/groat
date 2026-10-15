@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Chevron, SettingsForm, useSend, useSettings } from "../shared";
+import { useSend, useSettings } from "../api";
+import { SettingsForm } from "../settings-form";
+import { Chevron } from "../ui";
 
 const rowClass = "flex items-center justify-between border-b border-line py-3";
 const more = <Chevron className="size-4 -rotate-90 text-ink3" />;

@@ -374,7 +374,7 @@ Radii grow with size: parsed tokens 4px, small tiles 9px, tiles 11px, fields and
 ## Components
 
 ### Category tile
-`<Tile category={c} />` in `web/shared.tsx`. 36px square, 11px radius, emoji at 19px on the category colour mixed 16% into Surface (24% in dark). `small` gives 28px, 9px radius, 15px emoji, for chips, drill-down children and receipts. A builtin category (Uncategorised) renders a drawn dashed circle in Ink 3 on a neutral tile instead of its emoji. Stats slices lack `builtin`; look it up from `useCategories()` by id.
+`<Tile category={c} />` in `web/category.tsx`. 36px square, 11px radius, emoji at 19px on the category colour mixed 16% into Surface (24% in dark). `small` gives 28px, 9px radius, 15px emoji, for chips, drill-down children and receipts. A builtin category (Uncategorised) renders a drawn dashed circle in Ink 3 on a neutral tile instead of its emoji. Stats slices lack `builtin`; look it up from `useCategories()` by id.
 
 ### Hero numeral
 `<Total amount currency unit className />` in `web/period.tsx`. Counts up over 700ms on exponential ease-out: from 0 the first time per session, from the previous value after that (month step, preset change, add). Reduced motion: no count. The final value is in an `sr-only` span; the animated digits are `aria-hidden`. Pass `className="text-on-hero"` on the field.

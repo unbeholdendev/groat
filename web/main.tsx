@@ -4,7 +4,7 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import "./index.css";
 import { routeTree } from "./routeTree.gen";
 import type { Chat } from "./routes/chat";
-import { type Category, type Draft, type Expense, type Request, send } from "./shared";
+import { type Category, type Draft, type Expense, type Request, send } from "./api";
 
 const queryClient: QueryClient = new QueryClient({
   defaultOptions: {

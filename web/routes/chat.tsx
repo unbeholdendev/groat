@@ -2,7 +2,9 @@ import { useMutation, useMutationState, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useContext, useEffect, useState } from "react";
 import { money } from "../period";
-import { Chevron, Confirm, dayLabel, type Draft, pick, UnitContext } from "../shared";
+import type { Draft } from "../api";
+import { dayLabel, pick } from "../dates";
+import { Chevron, Confirm, UnitContext } from "../ui";
 
 type Message = { role: string; content: string | null };
 export type Chat = { id: number; title: string; messages?: Message[] };

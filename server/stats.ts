@@ -1,5 +1,6 @@
 import { and, between, eq } from "drizzle-orm";
-import { countable, type Db, settings } from "./db";
+import { Hono } from "hono";
+import { countable, type Db, isDate, settings } from "./db";
 import type { Valuer } from "./rates";
 import { categories as c, expenses as e, expenseTags as et, tags as tg } from "./schema";
 
@@ -87,4 +88,17 @@ export async function stats(db: Db, value: Valuer, from: string, to: string, gro
     ...(await period(db, value, from, to, group)),
     previous: await period(db, value, shift(from, -days), shift(from, -1), group),
   };
+}
+
+export function statsRoutes(db: Db, value: Valuer) {
+  const app = new Hono();
+
+  app.get("/api/stats", async (c) => {
+    const { from = "", to = "", group = "day" } = c.req.query();
+    if (!isDate(from) || !isDate(to) || from > to || !groups.includes(group as never))
+      return c.json({ error: "invalid range" }, 400);
+    return c.json(await stats(db, value, from, to, group as Group));
+  });
+
+  return app;
 }

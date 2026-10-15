@@ -1,7 +1,9 @@
 import { decimals } from "../shared/amount";
 import { eq } from "drizzle-orm";
+import { Hono } from "hono";
 import type { Ctx, Deps } from "./app";
-import { settings, today } from "./db";
+import { type Db, isDate, settings, today } from "./db";
+import { json } from "./request";
 import * as t from "./schema";
 
 type Row = { amount: number; currency: string; date: string };
@@ -70,4 +72,21 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
       return { ...r, baseAmount: Math.round((r.amount * to * 10 ** decimals(base)) / (from * 10 ** decimals(r.currency))) };
     });
   };
+}
+
+export const knownCurrencies = new Set([...Intl.supportedValuesOf("currency"), "BTC"]);
+
+export function rateRoutes(db: Db) {
+  const app = new Hono();
+
+  app.put("/api/rates", async (c) => {
+    const { date, currency, rate } = await json(c);
+    if (!isDate(date) || !knownCurrencies.has(currency) || typeof rate !== "string" || !/^\d+(\.\d+)?$/.test(rate) || !Number(rate))
+      return c.json({ error: "invalid rate" }, 400);
+    const row = { rate: Number(rate), source: "manual" };
+    db.insert(t.rates).values({ date, currency, ...row }).onConflictDoUpdate({ target: [t.rates.date, t.rates.currency], set: row }).run();
+    return c.json({ date, currency, rate: Number(rate) });
+  });
+
+  return app;
 }
