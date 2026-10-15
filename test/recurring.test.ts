@@ -56,9 +56,9 @@ test("pending expenses stay out of stats until confirmed", async () => {
 });
 
 test("pending expenses stay out of export until confirmed", async () => {
-  const { app, call } = setup("2026-10-10T12:00:00Z");
+  const { request, call } = setup("2026-10-10T12:00:00Z");
   await call("POST", "/api/recurring", { note: "Power", amount: "60", period: "month", every: 1, startDate: "2026-10-01", needsConfirmation: true });
-  const csv = async () => (await app.request("/api/export")).text();
+  const csv = async () => (await request("/api/export")).text();
   expect(await csv()).not.toContain("Power");
   const [pending] = (await call("GET", "/api/expenses")).body;
   await call("POST", `/api/expenses/${pending.id}/confirm`);

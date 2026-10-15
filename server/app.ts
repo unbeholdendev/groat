@@ -6,6 +6,7 @@ import { type Context, Hono } from "hono";
 import { formatAmount, parseAmount } from "../shared/amount";
 import { countable, type Db, isDate, settings as stored, today, uncategorised, visible } from "./db";
 import { aiEnabled, chats } from "./ai";
+import { auth } from "./auth";
 import { valuer } from "./rates";
 import * as t from "./schema";
 import { groups, stats } from "./stats";
@@ -110,6 +111,8 @@ export function createApp(deps: Deps) {
     await next();
     c.header("cache-control", "no-store");
   });
+
+  app.route("/", auth(db, clock));
 
   const settings = () => ({ ...stored(db), ai: aiEnabled(config) });
 

@@ -13,8 +13,10 @@ import {
   Icon,
   type Request,
   send,
+  type Session,
   type Settings,
   SettingsForm,
+  SignIn,
   Tile,
   today,
   UnitContext,
@@ -70,6 +72,7 @@ const tabs: [string, string, ReactNode][] = [
 ];
 
 function App() {
+  const session = useQuery<Session>({ queryKey: ["/api/session"] }).data;
   const settings = useSettings();
   const unitState = useState<Unit>("BTC");
   const search = useSearch({ strict: false });
@@ -81,6 +84,13 @@ function App() {
   const bar = !search.new && !search.edit;
   useTheme(settings?.theme);
 
+  if (!session) return null;
+  if (!session.user)
+    return (
+      <main className="mx-auto max-w-md px-5 pt-12 pb-10">
+        <SignIn setup={session.setup} />
+      </main>
+    );
   if (!settings) return null;
   if (!settings.onboarded)
     return (

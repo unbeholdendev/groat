@@ -1,8 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Chevron, SettingsForm, useSettings } from "../shared";
+import { Chevron, SettingsForm, useSend, useSettings } from "../shared";
 
 const rowClass = "flex items-center justify-between border-b border-line py-3";
 const more = <Chevron className="size-4 -rotate-90 text-ink3" />;
+
+function SignOut() {
+  const mutation = useSend();
+  return (
+    <button className={`${rowClass} w-full text-up`} onClick={() => mutation.mutate(["POST", "/api/logout"])}>
+      Sign out
+    </button>
+  );
+}
 
 export const Route = createFileRoute("/settings")({
   component: () => (
@@ -21,6 +30,7 @@ export const Route = createFileRoute("/settings")({
           Export all as CSV
           {more}
         </a>
+        <SignOut />
       </nav>
     </>
   ),

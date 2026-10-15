@@ -85,6 +85,21 @@ export const recurring = sqliteTable("recurring", {
   deletedAt: text(),
 });
 
+export const users = sqliteTable("users", {
+  id: integer().primaryKey(),
+  username: text().notNull().unique(),
+  passwordHash: text().notNull(),
+  role: text().notNull(),
+});
+
+export const sessions = sqliteTable("sessions", {
+  id: text().primaryKey(),
+  userId: integer()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: text().notNull(),
+});
+
 export const chats = sqliteTable("chats", {
   id: integer().primaryKey(),
   title: text().notNull(),

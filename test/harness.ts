@@ -42,14 +42,19 @@ export function setup(now = "2026-10-10T12:00:00Z", handler: Handler = () => und
       config,
     });
   let app = build();
+  db.run("INSERT INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')", [Bun.password.hashSync("secret")]);
   const restart = () => (app = build());
+  const request = (path: string, init: RequestInit = {}) => {
+    db.run("INSERT OR REPLACE INTO sessions (id, user_id, expires_at) VALUES ('admin', 1, '9999')");
+    return app.request(path, { ...init, headers: { cookie: "session=admin", ...init.headers } });
+  };
   const call = async (method: string, path: string, body?: unknown) => {
-    const res = await app.request(path, {
+    const res = await request(path, {
       method,
       headers: body ? { "content-type": "application/json" } : {},
       body: body ? JSON.stringify(body) : undefined,
     });
     return { status: res.status, body: await res.json() };
   };
-  return { app, clock, fetches, call, restart };
+  return { app, db, clock, fetches, call, request, restart };
 }

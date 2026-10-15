@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { dehydrate, hydrate, keepPreviousData, MutationCache, onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { dehydrate, hydrate, keepPreviousData, MutationCache, onlineManager, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import "./index.css";
 import { routeTree } from "./routeTree.gen";
@@ -15,8 +15,12 @@ const queryClient: QueryClient = new QueryClient({
       retry: (n, e: Error & { status?: number }) => n < 3 && !(e.status && e.status < 500),
     },
   },
-  mutationCache: new MutationCache({ onSuccess: saved }),
+  queryCache: new QueryCache({ onError: signedOut }),
+  mutationCache: new MutationCache({ onSuccess: saved, onError: signedOut }),
 });
+function signedOut(e: Error & { status?: number }) {
+  if (e.status === 401) queryClient.invalidateQueries({ queryKey: ["/api/session"] });
+}
 queryClient.setMutationDefaults(["send"], { mutationFn: (r: Request) => send(...r) });
 
 try {
