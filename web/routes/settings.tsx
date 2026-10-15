@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSend, useSettings } from "../api";
+import { useSend, useSession, useSettings } from "../api";
+import { Household } from "../household";
 import { SettingsForm } from "../settings-form";
 import { Chevron } from "../ui";
 
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/settings")({
   component: () => (
     <>
       <SettingsForm settings={useSettings()!} path="/api/settings" method="PUT" title="Settings" />
+      {useSession()?.user?.role === "admin" && <Household />}
       <nav className="mt-6 border-t border-line">
         <Link to="/" search={{ view: "recurring" }} className={rowClass}>
           Recurring

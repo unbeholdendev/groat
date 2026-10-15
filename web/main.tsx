@@ -62,6 +62,7 @@ function saved(data: unknown, variables: unknown) {
     );
   }
   if (path === "/api/settings" && !z.object({ baseCurrency: z.string() }).safeParse(body).success) return queryClient.setQueryData(["/api/settings"], data);
+  if (path.startsWith("/api/users")) return refresh("/api/users");
   if (!/^\/api\/(expenses|bin)\/\d+/.test(path) && !(method === "POST" && path === "/api/expenses"))
     return queryClient.invalidateQueries();
   const gone = method === "DELETE";

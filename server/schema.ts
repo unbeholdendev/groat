@@ -13,6 +13,7 @@ export const expenses = sqliteTable("expenses", {
   categoryId: integer().references(() => categories.id),
   recurringId: integer().references(() => recurring.id),
   status: text().notNull().default("normal"),
+  createdBy: integer().references((): AnySQLiteColumn => users.id),
 });
 
 export const settings = sqliteTable(
@@ -90,6 +91,7 @@ export const users = sqliteTable("users", {
   username: text().notNull().unique(),
   passwordHash: text().notNull(),
   role: text().notNull(),
+  deletedAt: text(),
 });
 
 export const sessions = sqliteTable("sessions", {

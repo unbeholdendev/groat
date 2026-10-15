@@ -7,6 +7,7 @@ import { auth } from "./auth";
 import { categoryRoutes } from "./categories";
 import type { Db } from "./db";
 import { expenseRoutes } from "./expenses";
+import { memberRoutes } from "./members";
 import { exportRoutes } from "./export";
 import { rateRoutes, valuer } from "./rates";
 import { recurringRoutes } from "./recurring";
@@ -41,6 +42,7 @@ export function createApp(deps: Deps) {
   });
 
   app.route("/", auth(db, deps.clock));
+  app.route("/", memberRoutes(db, deps.clock));
   app.route("/", settingsRoutes(db, deps.config));
   app.route("/", categoryRoutes(db));
   app.route("/", expenseRoutes(ctx, value));

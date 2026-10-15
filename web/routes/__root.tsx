@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { createRootRoute, Link, Outlet, useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import type { Unit } from "../../shared/amount";
-import { session as sessionSchema, type Settings, useApi, useCategories, useSettings } from "../api";
+import { type Settings, useCategories, useSession, useSettings } from "../api";
 import { Bar } from "../bar";
 import { SettingsForm } from "../settings-form";
 import { SignIn } from "../sign-in";
@@ -49,7 +49,7 @@ const tabs: [string, string, ReactNode][] = [
 ];
 
 function App() {
-  const session = useApi(sessionSchema, ["/api/session"]).data;
+  const session = useSession();
   const settings = useSettings();
   const unitState = useState<Unit>("BTC");
   const search = useSearch({ strict: false });

@@ -4,13 +4,14 @@ import { z } from "zod";
 import { parseAmount } from "../shared/amount";
 import { expenseInput, isoDate } from "../shared/schema";
 import type { Ctx } from "./app";
+import type { Env } from "./auth";
 import { type Db, settings, today, uncategorised, visible } from "./db";
 import type { Valuer } from "./rates";
 import { json, query, valid } from "./request";
 import * as t from "./schema";
 
 const e = t.expenses;
-const { createdAt, updatedAt, deletedAt, ...expenseColumns } = getTableColumns(e);
+const { createdAt, updatedAt, deletedAt, createdBy, ...expenseColumns } = getTableColumns(e);
 
 export const newest = [desc(e.date), desc(e.id)];
 
@@ -22,6 +23,7 @@ export const expenses = (db: Db, where?: SQL) =>
       ...expenseColumns,
       tags: sql`(SELECT json_group_array(name) FROM (SELECT name FROM expense_tags JOIN tags ON tags.id = tag_id
         WHERE expense_id = expenses.id ORDER BY name))`.mapWith((v: string) => tagList.parse(JSON.parse(v))),
+      addedBy: sql<string | null>`(SELECT username FROM users WHERE users.id = expenses.created_by)`,
     })
     .from(e)
     .where(where);
@@ -78,7 +80,7 @@ export function saveTags(db: Db, id: number, tags: string[]) {
 }
 
 export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
-  const app = new Hono();
+  const app = new Hono<Env>();
 
   app.get("/api/expenses", async (c) => {
     const q = query(c, expenseQuery);
@@ -115,7 +117,7 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     const body = readExpense(await json(c), db, today(clock), lastCurrency, currencies, uncategorised(db));
     if ("error" in body) return c.json(body, 400);
     const { tags, ...fields } = body;
-    const { id } = db.insert(e).values({ ...fields, createdAt: now, updatedAt: now }).returning({ id: e.id }).get();
+    const { id } = db.insert(e).values({ ...fields, createdAt: now, updatedAt: now, createdBy: c.get("user").id }).returning({ id: e.id }).get();
     saveTags(db, id, tags);
     return c.json(expenses(db, eq(e.id, id)).get(), 201);
   });

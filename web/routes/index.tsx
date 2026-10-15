@@ -3,7 +3,7 @@ import { useMutationState } from "@tanstack/react-query";
 import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { formatAmount, parseAmount, type Unit } from "../../shared/amount";
 import { change, iso, money, Pill, span, Total, usePeriod } from "../period";
-import { type Draft, type Expense, expense, request, suggestion, template as templateSchema, type Template, unsent, useApi, useCategories, useSend, useSettings } from "../api";
+import { type Draft, type Expense, expense, request, suggestion, template as templateSchema, type Template, unsent, useApi, useCategories, useSend, useSession, useSettings } from "../api";
 import { z } from "zod";
 import { CategoryOptions, Tile } from "../category";
 import { dated, dayLabel, pick, today } from "../dates";
@@ -41,6 +41,7 @@ function Expenses() {
     setUnit(next);
   }
   const categories = useCategories();
+  const me = useSession()?.user?.username;
   const navigate = Route.useNavigate();
   const setFilter = (search: typeof filter) => navigate({ search, replace: true });
   const edit = (e: Expense) => e.id > 0 && navigate({ search: { ...list, edit: String(e.id) } });
@@ -200,7 +201,7 @@ function Expenses() {
             )}
           </Note>
           <span className="mt-0.5 block truncate text-xs font-medium text-ink3">
-            {[dated && dayLabel(e.date), category?.name, ...e.tags.map((t) => `#${t}`)].filter(Boolean).join("  ")}
+            {[dated && dayLabel(e.date), category?.name, ...e.tags.map((t) => `#${t}`), e.addedBy && e.addedBy !== me && `by ${e.addedBy}`].filter(Boolean).join("  ")}
           </span>
         </span>
         <span className="num text-right text-[15px] font-medium whitespace-nowrap">

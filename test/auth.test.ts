@@ -27,13 +27,16 @@ test("a fresh install asks for setup, which creates the admin and signs them in,
   expect((await post("/api/setup", { username: "bob", password: "x" })).status).toBe(409);
 });
 
-test("an upgraded install keeps its data after setup", async () => {
+test("an upgraded install keeps its data after setup, added by the admin", async () => {
   const { db, call, post, get, session } = anonymous();
   await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP"] });
   await call("POST", "/api/expenses", { note: "Coffee", amount: "3" });
+  db.run("UPDATE expenses SET created_by = NULL");
+  db.run("DELETE FROM sessions");
   db.run("DELETE FROM users");
   const res = await post("/api/setup", { username: "ann", password: "hunter22" });
-  expect((await (await get("/api/expenses", session(res))).json()).map((e: { note: string }) => e.note)).toEqual(["Coffee"]);
+  const rows: { note: string; addedBy: string }[] = await (await get("/api/expenses", session(res))).json();
+  expect(rows.map((e) => [e.note, e.addedBy])).toEqual([["Coffee", "ann"]]);
 });
 
 test("login takes a good password and refuses a bad one", async () => {

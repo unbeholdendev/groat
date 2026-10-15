@@ -1,22 +1,25 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
 import type { Db } from "./db";
-import { sessions, users } from "./schema";
+import { expenses, sessions, users } from "./schema";
 
-const credentials = z.object({ username: z.string().trim().min(1), password: z.string().min(1) });
+export const credentials = z.object({ username: z.string().trim().min(1), password: z.string().min(1) });
 const days = 30;
+export const active = isNull(users.deletedAt);
+
+export type Env = { Variables: { user: { id: number; role: string } } };
 
 export function auth(db: Db, clock: () => Date) {
-  const app = new Hono();
+  const app = new Hono<Env>();
 
   const session = (c: Context) =>
     db
       .select({ id: sessions.id, userId: users.id, username: users.username, role: users.role })
       .from(sessions)
       .innerJoin(users, eq(users.id, sessions.userId))
-      .where(and(eq(sessions.id, getCookie(c, "session") ?? ""), gt(sessions.expiresAt, clock().toISOString())))
+      .where(and(eq(sessions.id, getCookie(c, "session") ?? ""), gt(sessions.expiresAt, clock().toISOString()), active))
       .get();
 
   const signIn = (c: Context, id: string, userId: number) => {
@@ -40,13 +43,14 @@ export function auth(db: Db, clock: () => Date) {
     const passwordHash = await Bun.password.hash(password);
     if (db.select().from(users).get()) return c.json({ error: "already set up" }, 409);
     const { id } = db.insert(users).values({ username, passwordHash, role: "admin" }).returning({ id: users.id }).get();
+    db.update(expenses).set({ createdBy: id }).where(isNull(expenses.createdBy)).run();
     signIn(c, crypto.randomUUID(), id);
     return c.json({ username, role: "admin" }, 201);
   });
 
   app.post("/api/login", async (c) => {
     const parsed = await body(c);
-    const user = parsed.success ? db.select().from(users).where(eq(users.username, parsed.data.username)).get() : undefined;
+    const user = parsed.success ? db.select().from(users).where(and(eq(users.username, parsed.data.username), active)).get() : undefined;
     if (!parsed.success || !user || !(await Bun.password.verify(parsed.data.password, user.passwordHash)))
       return c.json({ error: "wrong username or password" }, 401);
     signIn(c, crypto.randomUUID(), user.id);
@@ -57,6 +61,7 @@ export function auth(db: Db, clock: () => Date) {
     const current = session(c);
     if (!current) return c.json({ error: "sign in first" }, 401);
     signIn(c, current.id, current.userId);
+    c.set("user", { id: current.userId, role: current.role });
     await next();
   });
 
