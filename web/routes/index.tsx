@@ -1,4 +1,4 @@
-import { type FormEvent, Fragment, useContext, useEffect, useRef, useState } from "react";
+import { type FormEvent, Fragment, type PointerEvent, useContext, useEffect, useRef, useState } from "react";
 import { useMutationState } from "@tanstack/react-query";
 import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { formatAmount, parseAmount, type Unit } from "../../shared/amount";
@@ -72,6 +72,7 @@ function Expenses() {
   const error = saving.error?.message;
   const editRow = [...expenses, ...pending].find((e) => e.id === editing);
   const newest = useRef<number>(undefined);
+  const swipeFrom = useRef<[number, number]>(undefined);
   if (listed && (newest.current === undefined || open || showBin)) newest.current = Math.max(0, ...listed.map((e) => e.id));
 
   useEffect(() => {
@@ -201,7 +202,7 @@ function Expenses() {
             )}
           </Note>
           <span className="mt-0.5 block truncate text-xs font-medium text-ink3">
-            {[dated && dayLabel(e.date), category?.name, ...e.tags.map((t) => `#${t}`), e.addedBy && e.addedBy !== me && `by ${e.addedBy}`].filter(Boolean).join("  ")}
+            {[dated && `${dayLabel(e.date)} ·`, category?.name, ...e.tags.map((t) => `#${t}`), e.addedBy && e.addedBy !== me && `by ${e.addedBy}`].filter(Boolean).join("  ")}
           </span>
         </span>
         <span className="num text-right text-[15px] font-medium whitespace-nowrap">
@@ -439,19 +440,32 @@ function Expenses() {
   const inBase = (rows: Expense[]) => rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === settings.baseCurrency ? e.amount : 0)), 0);
   const count = Object.values(filter).filter(Boolean).length;
   const heroButton = "press hit grid size-9 shrink-0 place-items-center rounded-chip bg-on-hero/16";
+  const go = (n: number) => navigate({ search: { month: step(n) === today().slice(0, 7) ? undefined : step(n) }, viewTransition: { types: [n < 0 ? "back" : "forward"] } });
+  const swipe = (e: PointerEvent<HTMLElement>) => {
+    const [x, y] = swipeFrom.current ?? [e.clientX, e.clientY];
+    const dx = e.clientX - x;
+    swipeFrom.current = undefined;
+    if (filtered || Math.abs(dx) < 60 || Math.abs(dx) < 2 * Math.abs(e.clientY - y)) return;
+    if (dx > 0) go(-1);
+    else if (month) go(1);
+  };
 
   return (
     <>
-      <header className="-mx-5 -mt-[max(env(safe-area-inset-top),20px)] rounded-b-hero bg-hero px-5 pt-[max(env(safe-area-inset-top),16px)] pb-6 text-on-hero shadow-hero lg:mx-0 lg:mt-1 lg:rounded-hero [&_:focus-visible]:outline-on-hero">
+      <header
+        onPointerDown={(e) => e.isPrimary && (swipeFrom.current = [e.clientX, e.clientY])}
+        onPointerUp={(e) => e.isPrimary && swipe(e)}
+        onPointerCancel={() => (swipeFrom.current = undefined)}
+        className="touch-pan-y -mx-5 -mt-[max(env(safe-area-inset-top),20px)] rounded-b-hero bg-hero px-5 pt-[max(env(safe-area-inset-top),16px)] pb-6 text-on-hero shadow-hero lg:mx-0 lg:mt-1 lg:rounded-hero [&_:focus-visible]:outline-on-hero">
         <div className="flex items-center gap-2">
           <h1 className="mr-auto min-w-0 text-display font-bold">{filtered ? "Filtered" : label}</h1>
           {!filtered && (
             <>
-              <button aria-label="Previous month" className={heroButton} onClick={() => navigate({ search: { month: step(-1) }, viewTransition: { types: ["back"] } })}>
+              <button aria-label="Previous month" className={heroButton} onClick={() => go(-1)}>
                 <Chevron className="size-[18px] rotate-90 stroke-2" />
               </button>
               {month && (
-                <button aria-label="Next month" className={heroButton} onClick={() => navigate({ search: { month: step(1) === today().slice(0, 7) ? undefined : step(1) }, viewTransition: { types: ["forward"] } })}>
+                <button aria-label="Next month" className={heroButton} onClick={() => go(1)}>
                   <Chevron className="size-[18px] -rotate-90 stroke-2" />
                 </button>
               )}

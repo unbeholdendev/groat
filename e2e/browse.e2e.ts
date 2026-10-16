@@ -59,3 +59,19 @@ test("a bitcoin total fits the Stats card", async ({ app: page }) => {
   await expect(total).toContainText("BTC");
   expect(await total.evaluate((b) => b.scrollWidth <= b.clientWidth)).toBe(true);
 });
+
+test("swiping the hero steps months", async ({ app: page }) => {
+  const hero = page.locator("header").first();
+  const box = (await hero.boundingBox())!;
+  const drag = async (from: number, to: number) => {
+    await hero.dispatchEvent("pointerdown", { clientX: box.x + from, clientY: box.y + 100, pointerId: 1, isPrimary: true });
+    await hero.dispatchEvent("pointerup", { clientX: box.x + to, clientY: box.y + 110, pointerId: 1, isPrimary: true });
+  };
+  const month = (n: number) => new Date(new Date().getFullYear(), new Date().getMonth() + n, 1).toLocaleDateString("en-GB", { month: "long" });
+  await drag(40, 260);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(month(-1));
+  await drag(260, 40);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(month(0));
+  await drag(260, 40);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(month(0));
+});
