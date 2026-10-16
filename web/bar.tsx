@@ -7,6 +7,7 @@ import { z } from "zod";
 import { CategoryOptions, Tile } from "./category";
 import { dayLabel, today } from "./dates";
 import { money } from "./period";
+import { shrink } from "./photo";
 import { type Fields, fields, payload, Review } from "./review";
 import { Mic, recording, useOnline } from "./mic";
 import { Chevron, Icon } from "./ui";
@@ -56,18 +57,27 @@ export function Bar(props: {
   const category = categories.find((c) => c.id === (categoryId ?? (p.note.length > 1 ? guess?.categoryId : undefined)));
   const currency = p.currency ?? (p.note.length > 1 ? guess?.currency : undefined) ?? settings.lastCurrency;
   const [review, setReview] = useState<Fields | null>(null);
-  const [micError, setMicError] = useState<Error | null>(null);
+  const [captureError, setCaptureError] = useState<Error | null>(null);
+  const [image, setImage] = useState<string>();
+  const picker = useRef<HTMLInputElement>(null);
   const online = useOnline();
   const drafting = useMutation({
-    mutationFn: async (t: string | Blob) =>
-      draftSchema.parse(await (typeof t === "string" ? send("POST", "/api/drafts", { text: t }) : send("POST", "/api/voice", recording(t)))),
+    mutationFn: async (input: string | { audio: Blob } | { photo: Blob }) => {
+      if (typeof input === "string") return draftSchema.parse(await send("POST", "/api/drafts", { text: input }));
+      if ("audio" in input) return draftSchema.parse(await send("POST", "/api/voice", recording(input.audio)));
+      const body = new FormData();
+      body.set("image", await shrink(input.photo), "receipt.jpg");
+      return draftSchema.parse(await send("POST", "/api/drafts/photo", body));
+    },
     networkMode: "always",
     onSuccess: (d) => setReview(fields(d, unit)),
-    onError: (e, t) => (typeof t === "string" ? props.onForm({ ...seed(), note: t }) : setMicError(e)),
+    onError: (e, input) => (typeof input === "string" ? props.onForm({ ...seed(), note: input }) : (setCaptureError(e), drop())),
   });
   const reviewing = drafting.isPending || !!review;
-  const unreview = () => (setReview(null), drafting.reset());
-  const save = () => review && adding.mutate(["POST", "/api/expenses", payload(review, unit)]);
+  const drop = () => (image && URL.revokeObjectURL(image), setImage(undefined));
+  const unreview = () => (setReview(null), drafting.reset(), drop());
+  const save = () => review && adding.mutate(["POST", "/api/expenses", { ...payload(review, unit), attachmentId: drafting.data?.attachmentId }]);
+  const photo = (file: File) => (unreview(), setCaptureError(null), setImage(URL.createObjectURL(file)), drafting.mutate({ photo: file }));
   const clear = () => (setText(""), setCategoryId(null), setDate(today()), unreview(), props.onGuided());
   const adding = useSend(clear);
   const queued = useMutationState({ filters: { predicate: (m) => m.state.isPaused } }).length;
@@ -134,7 +144,7 @@ export function Bar(props: {
     return () => removeEventListener("keydown", onKey);
   }, []);
   const close = () => (asking.reset(), input.current?.focus());
-  const error = adding.error ?? (inChat ? asking.error : null) ?? micError;
+  const error = adding.error ?? (inChat ? asking.error : null) ?? captureError;
   const chat = asking.data;
   const answer = chat?.messages?.findLast((m) => m.role === "assistant" && m.content)?.content;
   const drafts = (chat?.messages ?? [])
@@ -227,6 +237,7 @@ export function Bar(props: {
               categories={categories}
               currencies={settings.currencies}
               unit={unit}
+              image={image}
               saving={adding.isPending}
               onSave={save}
               onDismiss={unreview}
@@ -301,7 +312,7 @@ export function Bar(props: {
               autoComplete="off"
               enterKeyHint={ask ? "send" : "done"}
               value={text}
-              onChange={(e) => (setText(e.target.value), adding.reset(), setMicError(null), shown && dismiss(shown.id), sync())}
+              onChange={(e) => (setText(e.target.value), adding.reset(), setCaptureError(null), shown && dismiss(shown.id), sync())}
               onKeyDown={(e) => {
                 const end = e.currentTarget.selectionStart === text.length;
                 if (ghost && (e.key === "Tab" || (e.key === "ArrowRight" && end))) (e.preventDefault(), fill(fills[0]));
@@ -317,8 +328,36 @@ export function Bar(props: {
               /
             </kbd>
           )}
+          {!text && !inChat && !reviewing && settings.vision && (
+            <>
+              <input
+                ref={picker}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) photo(file);
+                }}
+              />
+              <button
+                type="button"
+                aria-label="Add from a photo"
+                title={online ? "Add from a photo" : "Photos need a connection"}
+                disabled={!online}
+                onClick={() => picker.current?.click()}
+                className="press hit grid size-10 shrink-0 place-items-center rounded-chip text-ink2 disabled:opacity-50"
+              >
+                <Icon className="size-[18px] stroke-2">
+                  <path d="M3 8.5h4l2-3h6l2 3h4V19H3z" />
+                  <circle cx="12" cy="13" r="3.5" />
+                </Icon>
+              </button>
+            </>
+          )}
           {!text && !inChat && !reviewing && settings.voice && online ? (
-            <Mic onAudio={(a) => (setMicError(null), drafting.mutate(a))} onError={setMicError} />
+            <Mic onAudio={(audio) => (setCaptureError(null), drafting.mutate({ audio }))} onError={setCaptureError} />
           ) : (
             <button
               aria-label={key}

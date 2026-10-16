@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { aiEnabled } from "./ai";
+import { aiEnabled, visionModel } from "./ai";
 import type { Deps } from "./app";
 import { type Db, settings as stored } from "./db";
 import { knownCurrencies } from "./rates";
@@ -28,7 +28,7 @@ const shortlist = (base: string, list: string[]) => [...new Set([base, ...list])
 export function settingsRoutes(db: Db, config: Deps["config"]) {
   const app = new Hono();
   const cat = t.categories;
-  const settings = () => ({ ...stored(db), ai: aiEnabled(config), voice: voiceEnabled(config) });
+  const settings = () => ({ ...stored(db), ai: aiEnabled(config), vision: !!visionModel(config), voice: voiceEnabled(config) });
 
   app.get("/api/settings", (c) => c.json(settings()));
 

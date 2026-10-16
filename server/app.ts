@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { Hono } from "hono";
 import { chats } from "./ai";
+import { attachmentRoutes } from "./attachments";
 import { auth } from "./auth";
 import { categoryRoutes } from "./categories";
 import type { Db } from "./db";
@@ -21,7 +22,7 @@ export type Deps = {
   db: Database;
   clock: () => Date;
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-  config: { aiBaseUrl?: string; aiApiKey?: string; aiModel?: string; sttBaseUrl?: string; sttKey?: string; sttModel?: string };
+  config: { aiBaseUrl?: string; aiApiKey?: string; aiModel?: string; aiVisionModel?: string; sttBaseUrl?: string; sttKey?: string; sttModel?: string };
 };
 
 export type Ctx = Omit<Deps, "db"> & { db: Db };
@@ -53,6 +54,7 @@ export function createApp(deps: Deps) {
   app.route("/", expenseRoutes(ctx, value));
   app.route("/", draftRoutes(ctx));
   app.route("/", voiceRoutes(ctx));
+  app.route("/", attachmentRoutes(ctx));
   app.route("/", exportRoutes(db, value));
   app.route("/", statsRoutes(db, value));
   app.route("/", rateRoutes(db));

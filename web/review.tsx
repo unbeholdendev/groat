@@ -45,6 +45,7 @@ export function Review(props: {
   categories: Category[];
   currencies: string[];
   unit: Unit;
+  image?: string;
   saving: boolean;
   onSave: () => void;
   onDismiss: () => void;
@@ -56,10 +57,11 @@ export function Review(props: {
   return (
     <section aria-live="polite" aria-label="Review expense" className="rise rounded-card bg-surface px-5 pt-[18px] pb-2.5 shadow-lift">
       {!f ? (
-        <p className="text-[17px] leading-snug font-medium text-ink3">Reading your expense…</p>
+        <p className="text-[17px] leading-snug font-medium text-ink3">{props.image ? "Reading your receipt…" : "Reading your expense…"}</p>
       ) : (
         <>
           <div className="flex items-center gap-3">
+            {props.image && <img src={props.image} alt="Receipt" className="size-10 shrink-0 rounded-token object-cover" />}
             <Tile category={category} />
             <input aria-label="Note" className={`${field} flex-1 text-[17px] font-medium`} value={f.note} onChange={(e) => set({ note: e.target.value })} />
             <input

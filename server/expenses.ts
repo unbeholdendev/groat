@@ -1,4 +1,4 @@
-import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, lte, or, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, or, type SQL, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { parseAmount } from "../shared/amount";
@@ -24,6 +24,7 @@ export const expenses = (db: Db, where?: SQL) =>
       tags: sql`(SELECT json_group_array(name) FROM (SELECT name FROM expense_tags JOIN tags ON tags.id = tag_id
         WHERE expense_id = expenses.id ORDER BY name))`.mapWith((v: string) => tagList.parse(JSON.parse(v))),
       addedBy: sql<string | null>`(SELECT username FROM users WHERE users.id = expenses.created_by)`,
+      attachmentId: sql<number | null>`(SELECT id FROM attachments WHERE expense_id = expenses.id)`,
     })
     .from(e)
     .where(where);
@@ -73,9 +74,12 @@ export function readExpense(raw: unknown, db: Db, today: string, fallback: strin
 
 type ExpenseFields = Exclude<ReturnType<typeof readExpense>, { error: string }>;
 
-export function addExpense(db: Db, now: string, { tags, ...fields }: ExpenseFields, createdBy: number, status = "normal") {
+const attachment = z.object({ attachmentId: z.number().int().optional() });
+
+export function addExpense(db: Db, now: string, { tags, ...fields }: ExpenseFields, createdBy: number, status = "normal", attachmentId?: number) {
   const { id } = db.insert(e).values({ ...fields, status, createdBy, createdAt: now, updatedAt: now }).returning({ id: e.id }).get();
   saveTags(db, id, tags);
+  if (attachmentId) db.update(t.attachments).set({ expenseId: id }).where(and(eq(t.attachments.id, attachmentId), isNull(t.attachments.expenseId))).run();
   return expenses(db, eq(e.id, id)).get();
 }
 
@@ -121,9 +125,12 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
   app.post("/api/expenses", async (c) => {
     const now = clock().toISOString();
     const { lastCurrency, currencies } = settings(db);
-    const body = readExpense(await json(c), db, today(clock), lastCurrency, currencies, uncategorised(db));
+    const raw = await json(c);
+    const body = readExpense(raw, db, today(clock), lastCurrency, currencies, uncategorised(db));
     if ("error" in body) return c.json(body, 400);
-    return c.json(addExpense(db, now, body, c.get("user").id), 201);
+    const link = valid(attachment, raw);
+    if ("error" in link) return c.json(link, 400);
+    return c.json(addExpense(db, now, body, c.get("user").id, "normal", link.data.attachmentId), 201);
   });
 
   app.put("/api/expenses/:id", async (c) => {

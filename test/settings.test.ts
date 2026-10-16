@@ -26,6 +26,7 @@ test("settings changes persist and base currency joins the shortlist", async () 
     lastCurrency: "BTC",
     theme: "dark",
     ai: false,
+    vision: false,
     voice: false,
   });
   await call("PUT", "/api/settings", { theme: "light" });

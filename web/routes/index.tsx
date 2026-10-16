@@ -331,6 +331,11 @@ function Expenses() {
             <input className="input" placeholder="Comma separated" value={tags} onChange={(e) => setTags(e.target.value)} />
           </label>
         </div>
+        {editRow?.attachmentId != null && (
+          <a href={`/api/attachments/${editRow.attachmentId}`} target="_blank" rel="noreferrer" className="self-start">
+            <img src={`/api/attachments/${editRow.attachmentId}`} alt="Receipt" className="max-h-40 rounded-field border border-line object-contain" />
+          </a>
+        )}
         {!editing && (
           <div className="flex flex-wrap items-end gap-2">
             <label className="label">

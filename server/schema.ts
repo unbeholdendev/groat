@@ -1,4 +1,4 @@
-import { type AnySQLiteColumn, check, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { type AnySQLiteColumn, blob, check, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const expenses = sqliteTable("expenses", {
@@ -111,6 +111,14 @@ export const apiTokens = sqliteTable("api_tokens", {
   hash: text().notNull().unique(),
   createdAt: text().notNull(),
   lastUsedAt: text(),
+});
+
+export const attachments = sqliteTable("attachments", {
+  id: integer().primaryKey(),
+  expenseId: integer().references(() => expenses.id, { onDelete: "cascade" }),
+  mime: text().notNull(),
+  bytes: blob({ mode: "buffer" }).notNull(),
+  createdAt: text().notNull(),
 });
 
 export const chats = sqliteTable("chats", {

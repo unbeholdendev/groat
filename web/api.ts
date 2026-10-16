@@ -15,6 +15,7 @@ export const expense = z.object({
   status: z.enum(["normal", "pending"]).optional(),
   recurringId: z.number().nullish(),
   addedBy: z.string().nullish(),
+  attachmentId: z.number().nullish(),
 });
 export type Expense = z.infer<typeof expense>;
 
@@ -29,6 +30,7 @@ export const settings = z.object({
   theme,
   onboarded: z.boolean(),
   ai: z.boolean(),
+  vision: z.boolean(),
   voice: z.boolean(),
 });
 export type Settings = z.infer<typeof settings>;
@@ -38,7 +40,7 @@ export const session = z.object({ setup: z.boolean(), user: z.object({ username:
 export const member = z.object({ id: z.number(), username: z.string(), role });
 export const useSession = () => useApi(session, ["/api/session"]).data;
 
-export const draft = z.object({ note: z.string(), amount: z.number(), currency: z.string(), date: z.string(), categoryId: z.number().nullable(), tags: z.array(z.string()) });
+export const draft = z.object({ note: z.string(), amount: z.number(), currency: z.string(), date: z.string(), categoryId: z.number().nullable(), tags: z.array(z.string()), attachmentId: z.number().nullish() });
 export type Draft = z.infer<typeof draft>;
 const drafted = z.object({ draft });
 

@@ -29,6 +29,8 @@ const tool = <T extends z.ZodType>(description: string, input: T, run: (args: z.
 
 export const aiEnabled = ({ aiApiKey, aiBaseUrl, aiModel }: Deps["config"]) => !!(aiApiKey && aiBaseUrl && aiModel);
 
+export const visionModel = (config: Deps["config"]) => (aiEnabled(config) && (config.aiVisionModel ?? config.aiModel)) || undefined;
+
 export async function complete({ fetch, config }: Pick<Ctx, "fetch" | "config">, request: object) {
   const res = await fetch(`${config.aiBaseUrl}/chat/completions`, {
     method: "POST",

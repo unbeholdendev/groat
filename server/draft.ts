@@ -29,8 +29,11 @@ const reply = z.string().transform((s, ctx) => {
 
 export const textInput = z.object({ text: z.string("text is required").trim().min(1, "text is required") });
 
-export async function extract(ctx: Ctx, input: string) {
+type Photo = { image: string; model: string };
+
+export async function extract(ctx: Ctx, input: string | Photo) {
   const { db, clock } = ctx;
+  const text = typeof input === "string" ? input : "";
   const { lastCurrency, currencies } = settings(db);
   const day = today(clock);
   const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).all();
@@ -39,15 +42,16 @@ export async function extract(ctx: Ctx, input: string) {
       {
         role: "system",
         content: [
-          "Read one expense from the user's text.",
+          "Read one expense from the user's text, or from a receipt photo: its total, with the merchant as the note.",
           `Today is ${day}. Enabled currencies: ${currencies.join(", ")}.`,
           `Categories: ${JSON.stringify(cats)}`,
         ].join("\n"),
       },
-      { role: "user", content: input },
+      { role: "user", content: typeof input === "string" ? input : [{ type: "image_url", image_url: { url: input.image } }] },
     ],
     tools: [{ type: "function", function: { name: "expense", parameters: z.toJSONSchema(fields, { io: "input", target: "openapi-3.0" }) } }],
     tool_choice: { type: "function", function: { name: "expense" } },
+    ...(typeof input === "string" ? {} : { model: input.model }),
   });
   const read = reply.safeParse(message.tool_calls?.[0]?.function.arguments);
   if (!read.success) throw new Error("AI provider sent an unexpected reply");
@@ -55,12 +59,12 @@ export async function extract(ctx: Ctx, input: string) {
   const code = currency?.toUpperCase();
   const draft = readExpense(
     {
-      note: note.trim() || input,
+      note: note.trim() || text || "Receipt",
       amount: amount ?? "0",
       currency: code && currencies.includes(code) ? code : undefined,
       date: isoDate.safeParse(date).success && date && date <= day ? date : undefined,
       categoryId: cats.some((c) => c.id === categoryId) ? categoryId : undefined,
-      tags: [...parse(input, currencies).tags, ...tags],
+      tags: [...parse(text, currencies).tags, ...tags],
     },
     db,
     day,
