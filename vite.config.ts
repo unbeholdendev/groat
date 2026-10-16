@@ -15,6 +15,6 @@ export default defineConfig({
     host: true,
     port: 38697,
     strictPort: true,
-    proxy: Object.fromEntries(["/api", "/sw.js", "/manifest.webmanifest"].map((p) => [p, "http://localhost:3000"])),
+    proxy: Object.fromEntries(["/api/", "/sw.js", "/manifest.webmanifest"].map((p) => [p, "http://localhost:3000"])),
   },
 });
