@@ -72,7 +72,7 @@ export function Bar(props: {
     },
     networkMode: "always",
     onSuccess: (d) => setReview(fields(d, unit)),
-    onError: (e, input) => (typeof input === "string" ? props.onForm({ ...seed(), note: input }) : (setCaptureError(e), drop())),
+    onError: (e, input) => (typeof input === "string" ? props.onForm(seed()) : (setCaptureError(e), drop())),
   });
   const reviewing = drafting.isPending || !!review;
   const drop = () => (image && URL.revokeObjectURL(image), setImage(undefined));

@@ -110,6 +110,7 @@ export function saveTags(db: Db, id: number, tags: string[]) {
 }
 
 export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
+  const valued = async (id: number) => (await value([expenses(db, eq(e.id, id)).get()!]))[0];
   const app = new Hono<Env>();
 
   app.get("/api/expenses", async (c) => {
@@ -130,7 +131,7 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     if ("error" in body) return c.json(body, 400);
     const link = valid(attachment, raw);
     if ("error" in link) return c.json(link, 400);
-    return c.json(addExpense(db, now, body, c.get("user").id, "normal", link.data.attachmentId), 201);
+    return c.json(await valued(addExpense(db, now, body, c.get("user").id, "normal", link.data.attachmentId)!.id), 201);
   });
 
   app.put("/api/expenses/:id", async (c) => {
@@ -143,13 +144,13 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     const { tags, ...fields } = body;
     db.update(e).set({ ...fields, updatedAt: now }).where(eq(e.id, id)).run();
     saveTags(db, id, tags);
-    return c.json(expenses(db, eq(e.id, id)).get());
+    return c.json(await valued(id));
   });
 
-  const setExpense = (c: Context, set: Partial<typeof e.$inferInsert>, where: SQL) => {
+  const setExpense = async (c: Context, set: Partial<typeof e.$inferInsert>, where: SQL) => {
     const id = Number(c.req.param("id"));
     return db.update(e).set(set).where(and(eq(e.id, id), where)).returning({ id: e.id }).get()
-      ? c.json(expenses(db, eq(e.id, id)).get())
+      ? c.json(await valued(id))
       : c.json({ error: "not found" }, 404);
   };
 

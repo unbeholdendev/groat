@@ -1,0 +1,68 @@
+import { add, bar, expect, seed, test } from "./fixtures";
+
+test("one line adds a row, updates the total and can be undone", async ({ app: page }) => {
+  await add(page, "coffee 3.20");
+  const row = page.getByRole("button", { name: "coffee" });
+  await expect(row).toBeVisible();
+  await expect(page.locator("header").getByText("£3.20")).toBeVisible();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(row).toBeHidden();
+  await expect(page.getByText("Nothing this month yet")).toBeVisible();
+});
+
+test("tags, currencies and sats parse from the line", async ({ app: page }) => {
+  await add(page, "ramen 24.50 #friends");
+  await expect(page.getByText("#friends")).toBeVisible();
+  await add(page, "beer 10 eur");
+  await expect(page.getByRole("listitem").filter({ hasText: "beer" })).toContainText("€10.00");
+  await expect(page.getByRole("listitem").filter({ hasText: "beer" })).toContainText("£8.89");
+  await add(page, "tip 5000 sats");
+  await expect(page.getByRole("listitem").filter({ hasText: "tip" })).toContainText("0.00005000 BTC");
+});
+
+test("past notes fill amount and category", async ({ app: page }) => {
+  await seed(page, [{ note: "ramen", amount: "12.00", categoryId: 3, date: "2026-01-05" }]);
+  await page.reload();
+  await bar(page).fill("ra");
+  await expect(page.getByRole("button", { name: /ramen/ })).toBeVisible();
+  await bar(page).press("Tab");
+  await expect(bar(page)).toHaveValue("ramen 12.00 ");
+  await expect(page.getByLabel("Category")).toHaveValue("3");
+  await bar(page).press("Enter");
+  await expect(page.getByRole("listitem").filter({ hasText: "ramen" })).toContainText("Groceries");
+});
+
+test("a line without an amount opens the full form", async ({ app: page }) => {
+  await bar(page).fill("#nope");
+  await bar(page).press("Enter");
+  await expect(page.getByRole("heading", { name: "New expense" })).toBeVisible();
+});
+
+test("full form adds, edits, bins and restores", async ({ app: page }) => {
+  await page.getByRole("button", { name: "Full form" }).click();
+  await page.getByLabel("Note").fill("Train");
+  await page.getByLabel("Amount").fill("42");
+  await page.getByLabel("Category").selectOption("7");
+  await page.getByLabel("Tags").fill("work, trip");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  const row = page.getByRole("listitem").filter({ hasText: "Train" });
+  await expect(row).toContainText("£42.00");
+  await expect(row).toContainText("#work");
+
+  await page.getByRole("button", { name: "Train" }).click();
+  await expect(page.getByRole("heading", { name: "Edit expense" })).toBeVisible();
+  await page.getByLabel("Amount").fill("40");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(row).toContainText("£40.00");
+
+  await page.getByRole("button", { name: "Train" }).click();
+  await page.getByRole("button", { name: "Move to bin" }).click();
+  await expect(row).toBeHidden();
+
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Bin" }).click();
+  await page.getByRole("button", { name: "Restore" }).click();
+  await expect(page.getByText("The bin is empty.")).toBeVisible();
+  await page.getByRole("link", { name: "Expenses" }).click();
+  await expect(row).toBeVisible();
+});

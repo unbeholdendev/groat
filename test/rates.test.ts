@@ -81,7 +81,7 @@ test("today's rates are used but not cached", async () => {
   await call("POST", "/api/expenses", { note: "b", amount: "0.001", currency: "BTC", date: "2026-10-10" });
   expect((await call("GET", "/api/expenses")).body.map((e: { baseAmount: number }) => e.baseAmount)).toEqual([3800, 950]);
   await call("GET", "/api/expenses");
-  expect(fetches.length).toBe(4);
+  expect(fetches.length).toBe(8);
 });
 
 test("a failed fetch is not retried until restart", async () => {
@@ -93,4 +93,12 @@ test("a failed fetch is not retried until restart", async () => {
   restart();
   await call("GET", "/api/expenses");
   expect(fetches.length).toBe(2);
+});
+
+test("adding or editing a foreign expense answers with its base value", async () => {
+  const { call } = await onboarded(["GBP", "EUR"]);
+  const added = await call("POST", "/api/expenses", { note: "Lunch", amount: "10.00", currency: "EUR", date: "2026-10-02" });
+  expect(added.body.baseAmount).toBe(950);
+  const edited = await call("PUT", `/api/expenses/${added.body.id}`, { note: "Lunch", amount: "20.00", currency: "EUR", date: "2026-10-02" });
+  expect(edited.body.baseAmount).toBe(1900);
 });

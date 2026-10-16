@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { dehydrate, hydrate, keepPreviousData, MutationCache, onlineManager, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { dehydrate, hydrate, keepPreviousData, type Mutation, MutationCache, onlineManager, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import "./index.css";
 import { routeTree } from "./routeTree.gen";
@@ -39,13 +39,14 @@ const persist = () => {
 queryClient.getQueryCache().subscribe(persist);
 queryClient.getMutationCache().subscribe(persist);
 
-function saved(data: unknown, variables: unknown) {
+function saved(data: unknown, variables: unknown, _: unknown, mutation: Mutation<unknown, unknown, unknown>) {
   if (typeof variables === "number") return queryClient.setQueryData<Chat[]>(["/api/chats"], (rows) => rows?.filter((c) => c.id !== variables));
-  if (!Array.isArray(variables)) {
+  if (mutation.options.mutationKey?.[0] === "ask") {
     const c = chat.parse(data);
     queryClient.setQueryData([`/api/chats/${c.id}`], c);
     return queryClient.setQueryData<Chat[]>(["/api/chats"], (rows) => rows && (rows.some((r) => r.id === c.id) ? rows : [{ id: c.id, title: c.title }, ...rows]));
   }
+  if (!Array.isArray(variables)) return;
   const [method, path, body] = request.parse(variables);
   if (method === "PUT" && path === "/api/categories/order") {
     const ids = z.array(z.number()).parse(body);

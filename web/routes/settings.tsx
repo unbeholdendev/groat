@@ -17,10 +17,13 @@ function SignOut() {
   );
 }
 
-export const Route = createFileRoute("/settings")({
-  component: () => (
+export const Route = createFileRoute("/settings")({ component: SettingsPage });
+
+function SettingsPage() {
+  const settings = useSettings()!;
+  return (
     <>
-      <SettingsForm settings={useSettings()!} path="/api/settings" method="PUT" title="Settings" />
+      <SettingsForm key={`${settings.baseCurrency} ${settings.currencies}`} settings={settings} path="/api/settings" method="PUT" title="Settings" />
       {useSession()?.user?.role === "admin" && <Household />}
       <nav className="mt-6 border-t border-line">
         <Link to="/" search={{ view: "recurring" }} className={rowClass}>
@@ -39,5 +42,5 @@ export const Route = createFileRoute("/settings")({
       </nav>
       <Tokens />
     </>
-  ),
-});
+  );
+}
