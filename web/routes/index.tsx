@@ -447,11 +447,11 @@ function Expenses() {
           <h1 className="mr-auto min-w-0 text-display font-bold">{filtered ? "Filtered" : label}</h1>
           {!filtered && (
             <>
-              <button aria-label="Previous month" className={heroButton} onClick={() => navigate({ search: { month: step(-1) } })}>
+              <button aria-label="Previous month" className={heroButton} onClick={() => navigate({ search: { month: step(-1) }, viewTransition: { types: ["back"] } })}>
                 <Chevron className="size-[18px] rotate-90 stroke-2" />
               </button>
               {month && (
-                <button aria-label="Next month" className={heroButton} onClick={() => navigate({ search: { month: step(1) === today().slice(0, 7) ? undefined : step(1) } })}>
+                <button aria-label="Next month" className={heroButton} onClick={() => navigate({ search: { month: step(1) === today().slice(0, 7) ? undefined : step(1) }, viewTransition: { types: ["forward"] } })}>
                   <Chevron className="size-[18px] -rotate-90 stroke-2" />
                 </button>
               )}

@@ -125,4 +125,4 @@ createRoot(document.getElementById("root")!).render(
     <RouterProvider router={router} />
   </QueryClientProvider>,
 );
-navigator.serviceWorker?.register("/sw.js");
+navigator.serviceWorker?.register("/sw.js").catch(() => {});

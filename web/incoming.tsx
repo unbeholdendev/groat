@@ -12,7 +12,7 @@ export function useShared(onImage: (file: Blob) => void) {
       if (!shared) return;
       await cache.delete("/shared-image");
       onImage(await shared.blob());
-    });
+    }).catch(() => {});
   }, []);
 }
 

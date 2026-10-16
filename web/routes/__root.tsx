@@ -82,7 +82,7 @@ function App() {
       <main className="mx-auto max-w-md px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[calc(10rem+env(safe-area-inset-bottom))] lg:pb-4">
         <Outlet />
       </main>
-      <div className="fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),8px)] z-10 mx-auto max-w-md p-2 lg:sticky lg:bottom-6">
+      <div className="fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),8px)] z-10 mx-auto max-w-md p-2 max-lg:[view-transition-name:dock] lg:sticky lg:bottom-6">
         <div aria-hidden className={`glass absolute inset-0 -z-10 rounded-dock shadow-dock ${bar ? "" : "lg:hidden"}`} />
         {bar && (
           <Bar
@@ -96,10 +96,11 @@ function App() {
             onChat={(id) => navigate({ to: "/chat", search: { id: String(id) } })}
           />
         )}
-        <nav aria-label="Main" className="grid grid-cols-4 lg:fixed lg:top-6 lg:left-[calc(50%-432px)] lg:flex lg:w-44 lg:flex-col lg:gap-1">
+        <nav aria-label="Main" className="grid grid-cols-4 lg:[view-transition-name:tabs] lg:fixed lg:top-6 lg:left-[calc(50%-432px)] lg:flex lg:w-44 lg:flex-col lg:gap-1">
           {tabs.map(([to, label, icon]) => (
             <Link
               key={to}
+              viewTransition
               to={to}
               activeOptions={{ exact: to === "/" }}
               aria-current={current === to ? "page" : undefined}

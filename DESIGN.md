@@ -412,6 +412,7 @@ One curve, `--ease-out` = `cubic-bezier(0.16, 1, 0.3, 1)`. Durations 90 to 900ms
 - **Draw** (`draw` utility on an SVG path with `pathLength="1"`): the chart lines draw left to right in 900ms; the area fill uses `animate-fade` with a 200ms delay; the today dot uses `animate-fade` after the line.
 - **Fill** (`animate-fill` with `origin-left`): share tracks and split-bar segments grow from the left, 640ms, staggered 30ms per row through `animation-delay`.
 - **Segment slide**: the segmented thumb translates between options, 260ms.
+- **Navigate**: tab links cross-fade the page in 200ms; the month steppers slide it 24px the way they go (out 200ms, in 320ms). Both are view transitions; the dock has its own `view-transition-name` and stays put. Filters and Stats ranges change in place, without a transition.
 
 No page-load choreography beyond these, no scroll-triggered effects, no parallax.
 

@@ -153,6 +153,18 @@
     opacity: 0;
   }
 }
+@keyframes slide {
+  to {
+    translate: var(--to) 0;
+    opacity: 0;
+  }
+}
+@keyframes enter {
+  from {
+    translate: var(--from) 0;
+    opacity: 0;
+  }
+}
 @keyframes clip {
   from,
   to {
@@ -263,10 +275,35 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: var(--ease-out);
+}
+html:active-view-transition-type(forward, back) {
+  &::view-transition-old(root) {
+    animation: slide 200ms var(--ease-out) both;
+  }
+  &::view-transition-new(root) {
+    animation: enter 320ms var(--ease-out) both;
+  }
+}
+html:active-view-transition-type(forward) {
+  --to: -24px;
+  --from: 24px;
+}
+html:active-view-transition-type(back) {
+  --to: 24px;
+  --from: -24px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
-  ::after {
+  ::after,
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
     transition-duration: 1ms !important;
