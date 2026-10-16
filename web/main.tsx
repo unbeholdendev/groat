@@ -28,16 +28,18 @@ try {
 onlineManager.setOnline(navigator.onLine);
 queryClient.resumePausedMutations();
 let persisting: ReturnType<typeof setTimeout>;
-const persist = () => {
+const save = () => {
   clearTimeout(persisting);
-  persisting = setTimeout(() => {
-    try {
-      localStorage.setItem("cache", JSON.stringify(dehydrate(queryClient)));
-    } catch {}
-  }, 300);
+  try {
+    localStorage.setItem("cache", JSON.stringify(dehydrate(queryClient)));
+  } catch {}
 };
-queryClient.getQueryCache().subscribe(persist);
-queryClient.getMutationCache().subscribe(persist);
+queryClient.getQueryCache().subscribe(() => {
+  clearTimeout(persisting);
+  persisting = setTimeout(save, 300);
+});
+// A resumed add must stop being stored as paused at once, or a reload replays it.
+queryClient.getMutationCache().subscribe(save);
 
 function saved(data: unknown, variables: unknown, _: unknown, mutation: Mutation<unknown, unknown, unknown>) {
   if (typeof variables === "number") return queryClient.setQueryData<Chat[]>(["/api/chats"], (rows) => rows?.filter((c) => c.id !== variables));
