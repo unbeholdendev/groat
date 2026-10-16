@@ -5,6 +5,7 @@ import type { Deps } from "./app";
 import { type Db, settings as stored } from "./db";
 import { knownCurrencies } from "./rates";
 import { body } from "./request";
+import { voiceEnabled } from "./voice";
 import * as t from "./schema";
 
 const defaultCategories: [string, string, string, [string, string][]?][] = [
@@ -27,7 +28,7 @@ const shortlist = (base: string, list: string[]) => [...new Set([base, ...list])
 export function settingsRoutes(db: Db, config: Deps["config"]) {
   const app = new Hono();
   const cat = t.categories;
-  const settings = () => ({ ...stored(db), ai: aiEnabled(config) });
+  const settings = () => ({ ...stored(db), ai: aiEnabled(config), voice: voiceEnabled(config) });
 
   app.get("/api/settings", (c) => c.json(settings()));
 

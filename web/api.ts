@@ -29,6 +29,7 @@ export const settings = z.object({
   theme,
   onboarded: z.boolean(),
   ai: z.boolean(),
+  voice: z.boolean(),
 });
 export type Settings = z.infer<typeof settings>;
 
@@ -93,7 +94,8 @@ export type Request = [method: string, path: string, body?: unknown];
 const failure = z.object({ error: z.string() }).partial();
 
 export async function send(...[method, path, body]: Request): Promise<unknown> {
-  const res = await fetch(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => {
+  const init = body instanceof FormData ? { body } : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+  const res = await fetch(path, { method, ...init }).catch(() => {
     throw new Error("Couldn’t reach the server. Check your connection and try again.");
   });
   const json: unknown = await res.json().catch(() => ({}));

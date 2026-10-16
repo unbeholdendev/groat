@@ -8,6 +8,7 @@ import { CategoryOptions, Tile } from "./category";
 import { dayLabel, today } from "./dates";
 import { money } from "./period";
 import { type Fields, fields, payload, Review } from "./review";
+import { Mic, recording, useOnline } from "./mic";
 import { Chevron, Icon } from "./ui";
 
 const pill = "glass relative inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip px-3 text-[13px] font-medium text-ink shadow-dock has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent";
@@ -55,11 +56,14 @@ export function Bar(props: {
   const category = categories.find((c) => c.id === (categoryId ?? (p.note.length > 1 ? guess?.categoryId : undefined)));
   const currency = p.currency ?? (p.note.length > 1 ? guess?.currency : undefined) ?? settings.lastCurrency;
   const [review, setReview] = useState<Fields | null>(null);
+  const [micError, setMicError] = useState<Error | null>(null);
+  const online = useOnline();
   const drafting = useMutation({
-    mutationFn: async (t: string) => draftSchema.parse(await send("POST", "/api/drafts", { text: t })),
+    mutationFn: async (t: string | Blob) =>
+      draftSchema.parse(await (typeof t === "string" ? send("POST", "/api/drafts", { text: t }) : send("POST", "/api/voice", recording(t)))),
     networkMode: "always",
     onSuccess: (d) => setReview(fields(d, unit)),
-    onError: (_e, t) => props.onForm({ ...seed(), note: t }),
+    onError: (e, t) => (typeof t === "string" ? props.onForm({ ...seed(), note: t }) : setMicError(e)),
   });
   const reviewing = drafting.isPending || !!review;
   const unreview = () => (setReview(null), drafting.reset());
@@ -130,7 +134,7 @@ export function Bar(props: {
     return () => removeEventListener("keydown", onKey);
   }, []);
   const close = () => (asking.reset(), input.current?.focus());
-  const error = adding.error ?? (inChat ? asking.error : null);
+  const error = adding.error ?? (inChat ? asking.error : null) ?? micError;
   const chat = asking.data;
   const answer = chat?.messages?.findLast((m) => m.role === "assistant" && m.content)?.content;
   const drafts = (chat?.messages ?? [])
@@ -297,7 +301,7 @@ export function Bar(props: {
               autoComplete="off"
               enterKeyHint={ask ? "send" : "done"}
               value={text}
-              onChange={(e) => (setText(e.target.value), adding.reset(), shown && dismiss(shown.id), sync())}
+              onChange={(e) => (setText(e.target.value), adding.reset(), setMicError(null), shown && dismiss(shown.id), sync())}
               onKeyDown={(e) => {
                 const end = e.currentTarget.selectionStart === text.length;
                 if (ghost && (e.key === "Tab" || (e.key === "ArrowRight" && end))) (e.preventDefault(), fill(fills[0]));
@@ -313,15 +317,19 @@ export function Bar(props: {
               /
             </kbd>
           )}
-          <button
-            aria-label={key}
-            disabled={adding.isPending || asking.isPending || (inChat && !question)}
-            className={`press hit grid size-10 shrink-0 place-items-center rounded-chip transition-[scale,background-color,color] duration-200 disabled:opacity-50 ${!text.trim() && !inChat ? "text-ink3" : key === "Full form" ? "bg-accent-soft text-accent" : "bg-accent text-on-accent"}`}
-          >
-            <Icon key={glyph} className="size-[18px] stroke-2 transition-[scale,opacity] duration-300 ease-out starting:scale-50 starting:opacity-0">
-              <path d={glyph} />
-            </Icon>
-          </button>
+          {!text && !inChat && !reviewing && settings.voice && online ? (
+            <Mic onAudio={(a) => (setMicError(null), drafting.mutate(a))} onError={setMicError} />
+          ) : (
+            <button
+              aria-label={key}
+              disabled={adding.isPending || asking.isPending || drafting.isPending || (inChat && !question)}
+              className={`press hit grid size-10 shrink-0 place-items-center rounded-chip transition-[scale,background-color,color] duration-200 disabled:opacity-50 ${!text.trim() && !inChat ? "text-ink3" : key === "Full form" ? "bg-accent-soft text-accent" : "bg-accent text-on-accent"}`}
+            >
+              <Icon key={glyph} className="size-[18px] stroke-2 transition-[scale,opacity] duration-300 ease-out starting:scale-50 starting:opacity-0">
+                <path d={glyph} />
+              </Icon>
+            </button>
+          )}
         </div>
         <span role="status" className="sr-only">
           {receiptText}

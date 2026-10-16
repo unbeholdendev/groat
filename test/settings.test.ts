@@ -26,6 +26,7 @@ test("settings changes persist and base currency joins the shortlist", async () 
     lastCurrency: "BTC",
     theme: "dark",
     ai: false,
+    voice: false,
   });
   await call("PUT", "/api/settings", { theme: "light" });
   expect((await call("GET", "/api/settings")).body).toMatchObject({ baseCurrency: "BTC", theme: "light" });

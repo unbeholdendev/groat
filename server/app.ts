@@ -15,12 +15,13 @@ import { recurringRoutes } from "./recurring";
 import { settingsRoutes } from "./settings";
 import { statsRoutes } from "./stats";
 import { captureRoutes, tokenRoutes } from "./tokens";
+import { voiceRoutes } from "./voice";
 
 export type Deps = {
   db: Database;
   clock: () => Date;
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-  config: { aiBaseUrl?: string; aiApiKey?: string; aiModel?: string };
+  config: { aiBaseUrl?: string; aiApiKey?: string; aiModel?: string; sttBaseUrl?: string; sttKey?: string; sttModel?: string };
 };
 
 export type Ctx = Omit<Deps, "db"> & { db: Db };
@@ -51,6 +52,7 @@ export function createApp(deps: Deps) {
   app.route("/", categoryRoutes(db));
   app.route("/", expenseRoutes(ctx, value));
   app.route("/", draftRoutes(ctx));
+  app.route("/", voiceRoutes(ctx));
   app.route("/", exportRoutes(db, value));
   app.route("/", statsRoutes(db, value));
   app.route("/", rateRoutes(db));
