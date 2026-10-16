@@ -4,9 +4,9 @@ import { change, days, money, Pill, span, Total, usePeriod } from "../period";
 import { period, useApi, useCategories } from "../api";
 import { Tile } from "../category";
 import { dated, pick } from "../dates";
-import { Chevron, divide, Icon, UnitContext } from "../ui";
+import { Chevron, divide, Icon, Segmented, UnitContext } from "../ui";
 
-const presets = ["This month", "Last month", "Year to date", "Custom"];
+const presets = ["This month", "Last month", "Year to date", "Custom"] as const;
 
 
 const group = (from: string, to: string) => {
@@ -43,23 +43,8 @@ function StatsPage() {
   const head = (
     <>
       <h1 className="text-display font-bold">Stats</h1>
-      <div role="tablist" className="relative mt-4 flex h-10 rounded-chip bg-track p-1">
-        <span
-          aria-hidden
-          className="absolute inset-y-1 left-1 w-[calc((100%-8px)/4)] rounded-chip bg-surface shadow-thumb transition-transform duration-[260ms] ease-out"
-          style={{ transform: `translateX(${presets.indexOf(preset) * 100}%)` }}
-        />
-        {presets.map((p) => (
-          <button
-            key={p}
-            role="tab"
-            aria-selected={preset === p}
-            onClick={() => (setPreset(p), setOpen(null))}
-            className={`hit press relative flex-1 rounded-chip text-[13px] font-medium whitespace-nowrap transition-colors ${preset === p ? "text-ink" : "text-ink2"}`}
-          >
-            {p}
-          </button>
-        ))}
+      <div className="mt-4">
+        <Segmented label="Period" options={presets} value={preset} onChange={(p) => (setPreset(p), setOpen(null))} />
       </div>
       {preset === "Custom" && (
         <div className="mt-3 flex gap-2">
@@ -115,7 +100,7 @@ function StatsPage() {
           max={Math.max(now.total, full.total)}
           label={`${s.name} ${show(full.total)}`}
           ghost={full.total > 0}
-          aria={`${show(now.total)} ${running ? "so far" : "in total"}. ${s.name} was at ${show(ref.total)} by this point and ended at ${show(full.total)}.`}
+          aria={`${show(now.total)} ${running ? "so far" : "in total"}. ${preset === "Custom" ? "The period before" : s.name} was at ${show(ref.total)} by this point and ended at ${show(full.total)}.`}
         />
       </section>
       {now.unconverted > 0 && <p className="mt-3 text-[13px] text-amber">{now.unconverted === 1 ? "1 expense has no rate and is left out." : `${now.unconverted} expenses have no rate and are left out.`}</p>}

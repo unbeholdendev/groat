@@ -13,12 +13,12 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   ]);
   await page.reload();
   const header = page.locator("header");
-  await expect(header.getByText("£42.00")).toBeVisible();
+  await expect(header.getByText("£42.00").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Next month" })).toBeHidden();
 
   await page.getByRole("button", { name: "Previous month" }).click();
   await expect(page.getByRole("button", { name: "Old lunch" })).toBeVisible();
-  await expect(header.getByText("£8.00")).toBeVisible();
+  await expect(header.getByText("£8.00").first()).toBeVisible();
   await page.getByRole("button", { name: "Next month" }).click();
   await expect(page.getByRole("button", { name: "Cinema" })).toBeVisible();
 
@@ -41,9 +41,9 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   await expect(page.getByRole("button", { name: "Cinema" })).toBeHidden();
 
   await page.getByRole("link", { name: "Stats" }).click();
-  await page.getByRole("tab", { name: "Last month" }).click();
+  await page.getByRole("radio", { name: "Last month" }).click();
   await expect(page.locator("section").first()).toContainText("£8.00");
-  await page.getByRole("tab", { name: "Custom" }).click();
+  await page.getByRole("radio", { name: "Custom" }).click();
   await page.getByLabel("From", { exact: true }).fill(lastMonth());
   await page.getByLabel("To", { exact: true }).fill(today());
   await expect(page.locator("section").first()).toContainText("£50.00");

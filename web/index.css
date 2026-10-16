@@ -39,6 +39,7 @@
   --lift: 0 18px 48px -16px rgb(18 22 31 / 0.32);
   --thumb: 0 1px 2px rgb(18 22 31 / 0.1), 0 2px 8px -2px rgb(18 22 31 / 0.12);
   --hero-glow: 0 24px 48px -24px rgb(46 74 230 / 0.55);
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23676c77' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 .dark {
   --bg: #0d0f15;
@@ -71,6 +72,7 @@
   --lift: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 18px 48px -16px rgb(0 0 0 / 0.8);
   --thumb: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 2px 8px -2px rgb(0 0 0 / 0.6);
   --hero-glow: 0 24px 48px -24px rgb(34 56 184 / 0.7);
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2391959e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
 
@@ -159,7 +161,11 @@
 }
 
 @utility input {
-  @apply h-11 rounded-field border border-line2 bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink3 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent-soft;
+  @apply h-11 appearance-none rounded-field border border-line2 bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink3 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent-soft;
+  &:is(select) {
+    padding-right: 36px;
+    background: var(--chevron) no-repeat right 12px center / 16px var(--surface);
+  }
 }
 @utility primary {
   @apply press h-11 rounded-field bg-accent px-5 text-[15px] font-semibold text-on-accent disabled:opacity-50;
@@ -214,8 +220,13 @@
   @apply flex flex-col gap-1.5 text-[13px] font-medium text-ink2;
 }
 
+html {
+  scrollbar-color: var(--line2) transparent;
+}
 body {
   @apply bg-bg font-sans text-[15px] leading-snug text-ink antialiased tabular-nums;
+  caret-color: var(--accent);
+  -webkit-tap-highlight-color: transparent;
 }
 ::selection {
   background: var(--accent-soft);

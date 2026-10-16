@@ -7,7 +7,7 @@ import { type Draft, type Expense, expense, request, suggestion, template as tem
 import { z } from "zod";
 import { CategoryOptions, Tile } from "../category";
 import { dated, dayLabel, pick, today } from "../dates";
-import { Chevron, Confirm, divide, Icon, UnitContext } from "../ui";
+import { Chevron, Confirm, divide, Icon, panel, UnitContext } from "../ui";
 
 export const Route = createFileRoute("/")({
   validateSearch: (s) =>
@@ -223,7 +223,6 @@ function Expenses() {
     );
   };
   const rowClass = "press relative flex h-[62px] items-center gap-3 px-4";
-  const panel = "overflow-hidden rounded-panel bg-surface shadow-panel";
 
   const back = (
     <Link to="/settings" className="hit inline-flex items-center gap-1 text-ink2">
@@ -401,31 +400,34 @@ function Expenses() {
         {back}
         <h1 className="mt-4 text-display font-bold">Recurring</h1>
         {templates.length === 0 && <p className="mt-4 text-ink3">Nothing repeats yet. Open the full form and set Repeat to add one.</p>}
-        <ul className="mt-3">
-          {templates.map((t) => (
-            <li key={t.id} className="flex items-center justify-between gap-2 border-b border-line py-2.5 last:border-0">
-              <button className="min-w-0 text-left" onClick={() => editTemplate(t)}>
-                <span className="font-medium">{t.note}</span>
-                <span className="block text-xs text-ink3">
-                  {show(t.amount, t.currency)} every {t.every > 1 ? `${t.every} ${t.period}s` : t.period}
-                  {t.paused && " · paused"}
-                </span>
-              </button>
-              {asking === `stop ${t.id}` ? (
-                <Confirm ask="Stop? Past expenses stay." yes="Stop" onYes={() => templateAction(t, "DELETE")} onNo={() => setAsking(null)} />
-              ) : (
-                <span className="flex gap-1">
-                  <button className="quiet hit h-8 text-[13px]" onClick={() => templateAction(t, t.paused ? "resume" : "pause")}>
-                    {t.paused ? "Resume" : "Pause"}
-                  </button>
-                  <button className="hit h-8 px-2 text-[13px] font-medium text-up" onClick={() => setAsking(`stop ${t.id}`)}>
-                    Stop
-                  </button>
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
+        {templates.length > 0 && (
+          <ul className={`mt-4 ${panel}`}>
+            {templates.map((t) => (
+              <li key={t.id} className={`${rowClass} ${divide} ${t.paused ? "[&>.tile]:opacity-50" : ""}`}>
+                <Tile category={categories.find((c) => c.id === t.categoryId)} />
+                <button className="min-w-0 flex-1 text-left" onClick={() => editTemplate(t)}>
+                  <span className="block truncate font-medium">{t.note}</span>
+                  <span className="mt-0.5 block truncate text-xs font-medium text-ink3">
+                    <span className="num">{show(t.amount, t.currency)}</span> every {t.every > 1 ? `${t.every} ${t.period}s` : t.period}
+                    {t.paused && " · paused"}
+                  </span>
+                </button>
+                {asking === `stop ${t.id}` ? (
+                  <Confirm ask="Stop? Past expenses stay." yes="Stop" onYes={() => templateAction(t, "DELETE")} onNo={() => setAsking(null)} />
+                ) : (
+                  <span className="flex gap-1 text-[13px] font-medium">
+                    <button className="press hit rounded-chip px-2.5 py-1.5 text-ink2" onClick={() => templateAction(t, t.paused ? "resume" : "pause")}>
+                      {t.paused ? "Resume" : "Pause"}
+                    </button>
+                    <button className="press hit rounded-chip px-2.5 py-1.5 text-up" onClick={() => setAsking(`stop ${t.id}`)}>
+                      Stop
+                    </button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </>
     );
 

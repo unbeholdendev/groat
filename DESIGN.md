@@ -357,6 +357,9 @@ One centred column, 448px max, 20px gutters, on phone and desktop. At `lg` the t
 5. **By category** (Title, 28px above): one `surface` panel of rows. Row: 36px tile; name (Body 500) and amount (Amount) on line 1, with the delta in mono 12px `up`/`down` beside the amount; line 2 is the share track (6px, `track`, filled in category colour to the category's share of the period total) with the share as mono 12px Ink 3 ("34%") at its right. Categories with no spend last period show no delta; under the panel one Caption line lists them once: "New since Sep: 🎁 Gifts, ✈️ Travel". Drill-down expands inside the panel: child rows 48px, 28px tiles, indented to the text column.
 6. **By tag**: same panel and row, a `track` tile with a drawn hash icon, no share track.
 
+### Settings and secondary screens
+Same grammar as Home: Title section heads ("Currencies", "Theme", "Household", "More", "API tokens"), each over one Level 1 panel of 62px rows. A row leads with a 36px `track` tile holding a drawn icon (or the member's initial on `accent-soft`), ends with a drawn chevron when it navigates, and destructive or secondary actions are Label text buttons. Settings save as they change; there is no Save button outside onboarding. Theme is the shared segmented control. Sign out is its own panel, `up` text. Recurring, Bin and Chats lists use the same panels and category tiles.
+
 ## Elevation & Depth
 
 Three levels, plus the field.
@@ -397,7 +400,7 @@ One frosted surface holding the bar and the tabs, floating 8px from the screen s
 - **Focus**: 2px Cobalt outline, 2px offset. On the hero field the outline is white.
 
 ### Inputs
-`input` utility: 44px, Surface, Strong hairline border, `rounded-field`, focus Cobalt border plus 3px Cobalt Wash ring. Labels above in Label Ink 2.
+`input` utility: 44px, Surface, Strong hairline border, `rounded-field`, focus Cobalt border plus 3px Cobalt Wash ring. Labels above in Label Ink 2. Native appearance is off; a select carries a drawn Ink 3 chevron (`--chevron`, twinned per theme). Category colour is picked from the eight palette swatches, with one custom swatch.
 
 ## Motion
 

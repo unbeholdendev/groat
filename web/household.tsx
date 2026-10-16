@@ -2,7 +2,7 @@ import { type FormEvent, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { member, type Request, useApi } from "./api";
-import { Confirm } from "./ui";
+import { Confirm, divide, Icon, panel, sectionHead } from "./ui";
 
 export function Household() {
   const members = useApi(z.array(member), ["/api/users"]).data ?? [];
@@ -16,25 +16,28 @@ export function Household() {
   }
 
   return (
-    <section className="mt-6">
-      <h2 className="mb-1.5 text-[13px] font-medium text-ink2">Household</h2>
-      <ul className="border-t border-line">
+    <section>
+      <h2 className={sectionHead}>Household</h2>
+      <ul className={panel}>
         {members.map((m) => (
-          <li key={m.id} className="border-b border-line py-3">
-            <div className="flex items-center justify-between gap-2">
-              <span>
-                {m.username}
-                {m.role === "admin" && <span className="ml-2 text-xs text-ink3">Admin</span>}
+          <li key={m.id} className={`px-4 ${divide}`}>
+            <div className="flex h-[62px] items-center gap-3">
+              <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-chip bg-accent-soft font-semibold text-accent uppercase">
+                {m.username[0]}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{m.username}</span>
+                <span className="block text-xs font-medium text-ink3">{m.role === "admin" ? "Admin" : "Member"}</span>
               </span>
               {open === `remove ${m.id}` ? (
-                <Confirm ask={`Remove ${m.username}?`} yes="Remove" onYes={() => mutation.mutate(["DELETE", `/api/users/${m.id}`], { onSuccess: () => setOpen(null) })} onNo={() => setOpen(null)} />
+                <Confirm ask="Remove?" yes="Remove" onYes={() => mutation.mutate(["DELETE", `/api/users/${m.id}`], { onSuccess: () => setOpen(null) })} onNo={() => setOpen(null)} />
               ) : (
-                <span className="flex gap-3 text-sm text-ink2">
-                  <button className="hit" onClick={() => (mutation.reset(), setOpen(`password ${m.id}`))}>
+                <span className="flex gap-1 text-[13px] font-medium">
+                  <button className="press hit rounded-chip px-2.5 py-1.5 text-ink2" onClick={() => (mutation.reset(), setOpen(open === `password ${m.id}` ? null : `password ${m.id}`))}>
                     Reset password
                   </button>
                   {m.role !== "admin" && (
-                    <button className="hit text-up" onClick={() => (mutation.reset(), setOpen(`remove ${m.id}`))}>
+                    <button className="press hit rounded-chip px-2.5 py-1.5 text-up" onClick={() => (mutation.reset(), setOpen(`remove ${m.id}`))}>
                       Remove
                     </button>
                   )}
@@ -42,8 +45,8 @@ export function Household() {
               )}
             </div>
             {open === `password ${m.id}` && (
-              <form onSubmit={(e) => submit(e, `/api/users/${m.id}/password`, "PUT")} className="mt-3 flex gap-2">
-                <input name="password" type="password" className="input flex-1" placeholder="New password" autoComplete="new-password" autoFocus required />
+              <form onSubmit={(e) => submit(e, `/api/users/${m.id}/password`, "PUT")} className="rise flex gap-2 pb-4">
+                <input name="password" type="password" aria-label={`New password for ${m.username}`} className="input min-w-0 flex-1" placeholder="New password" autoComplete="new-password" autoFocus required />
                 <button className="primary" disabled={mutation.isPending}>
                   Save
                 </button>
@@ -51,21 +54,33 @@ export function Household() {
             )}
           </li>
         ))}
+        <li>
+          {open === "add" ? (
+            <form onSubmit={(e) => submit(e, "/api/users")} className="rise flex flex-col gap-2 p-4">
+              <input name="username" aria-label="Username" className="input" placeholder="Username" autoComplete="off" autoCapitalize="none" autoFocus required />
+              <input name="password" aria-label="Password" type="password" className="input" placeholder="Password" autoComplete="new-password" required />
+              <div className="flex justify-end gap-1">
+                <button type="button" className="press hit rounded-chip px-3 text-[13px] font-medium text-ink2" onClick={() => setOpen(null)}>
+                  Cancel
+                </button>
+                <button className="primary" disabled={mutation.isPending}>
+                  Add member
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button className="press flex h-[52px] w-full items-center gap-3 px-4 font-medium text-accent hover:bg-surface2" onClick={() => (mutation.reset(), setOpen("add"))}>
+              <span aria-hidden className="grid size-9 place-items-center">
+                <Icon className="size-[18px] stroke-2">
+                  <path d="M12 5v14M5 12h14" />
+                </Icon>
+              </span>
+              Add member
+            </button>
+          )}
+        </li>
       </ul>
-      {open === "add" ? (
-        <form onSubmit={(e) => submit(e, "/api/users")} className="mt-3 flex flex-col gap-3">
-          <input name="username" className="input" placeholder="Username" autoComplete="off" autoCapitalize="none" autoFocus required />
-          <input name="password" type="password" className="input" placeholder="Password" autoComplete="new-password" required />
-          <button className="primary" disabled={mutation.isPending}>
-            Add member
-          </button>
-        </form>
-      ) : (
-        <button className="hit mt-3 text-accent" onClick={() => (mutation.reset(), setOpen("add"))}>
-          Add member
-        </button>
-      )}
-      {mutation.error && <p className="mt-2 text-sm text-up">{mutation.error.message}</p>}
+      {mutation.error && <p className="mt-2 px-1 text-sm text-up">{mutation.error.message}</p>}
     </section>
   );
 }

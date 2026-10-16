@@ -4,7 +4,7 @@ test("one line adds a row, updates the total and can be undone", async ({ app: p
   await add(page, "coffee 3.20");
   const row = page.getByRole("button", { name: "coffee" });
   await expect(row).toBeVisible();
-  await expect(page.locator("header").getByText("£3.20")).toBeVisible();
+  await expect(page.locator("header").getByText("£3.20").first()).toBeVisible();
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(row).toBeHidden();
   await expect(page.getByText("Nothing this month yet")).toBeVisible();

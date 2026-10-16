@@ -3,14 +3,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { type Category, expense, tag as tagSchema, useApi, useCategories, useSend } from "../api";
 import { z } from "zod";
 import { CategoryOptions, Tile } from "../category";
-import { Confirm, divide, Icon } from "../ui";
+import { Confirm, divide, Icon, sectionHead } from "../ui";
 
 export const Route = createFileRoute("/categories")({ component: Categories });
 
 type Tag = z.infer<typeof tagSchema>;
 type Form = { name: string; icon: string; color: string; parentId: string };
 
-const blank: Form = { name: "", icon: "📁", color: "#71717a", parentId: "" };
+const palette = { Rose: "#f16f7e", Tangerine: "#f98942", Sun: "#f4bf3f", Lime: "#99d352", Jade: "#3fbe90", Aqua: "#26c0cf", Orchid: "#bf73df", Pink: "#e977bb" };
+const swatches = Object.values(palette);
+const blank: Form = { name: "", icon: "📁", color: palette.Rose, parentId: "" };
+const swatch = "relative grid size-8 shrink-0 place-items-center rounded-chip has-checked:ring-2 has-checked:ring-ink has-checked:ring-offset-2 has-checked:ring-offset-surface has-focus-visible:outline-2 has-focus-visible:outline-offset-4 has-focus-visible:outline-accent";
 const text = "h-11 rounded-chip px-2.5 text-[13px] font-medium";
 
 function Categories() {
@@ -76,36 +79,37 @@ function Categories() {
           <input className="input" autoFocus value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </label>
       </div>
-      <div className="flex gap-2">
-        <label className="label w-32">
-          Colour
-          <span className="input relative flex items-center gap-2">
-            <span className="size-[7px] rounded-full" style={{ background: form.color }} />
-            {form.color}
-            <input
-              type="color"
-              className="absolute inset-0 size-full cursor-pointer opacity-0"
-              value={form.color}
-              onChange={(e) => setForm({ ...form, color: e.target.value })}
-            />
-          </span>
-        </label>
-        {!c && (
-          <label className="label min-w-0 flex-1">
-            Inside
-            <select className="input" value={form.parentId} onChange={(e) => setForm({ ...form, parentId: e.target.value })}>
-              <option value="">Nothing (top level)</option>
-              {categories
-                .filter((p) => p.parentId === null)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.icon} {p.name}
-                  </option>
-                ))}
-            </select>
+      <fieldset className="label">
+        <legend className="mb-1.5">Colour</legend>
+        <div className="flex flex-wrap gap-2.5 px-0.5">
+          {Object.entries(palette).map(([name, color]) => (
+            <label key={color} className={swatch} style={{ background: color }}>
+              <input type="radio" name="colour" aria-label={name} className="sr-only" checked={form.color === color} onChange={() => setForm({ ...form, color })} />
+            </label>
+          ))}
+          <label className={`${swatch} border border-line2 ${swatches.includes(form.color) ? "" : "ring-2 ring-ink ring-offset-2 ring-offset-surface"}`} style={{ background: swatches.includes(form.color) ? undefined : form.color }}>
+            <Icon className={`size-4 stroke-2 ${swatches.includes(form.color) ? "text-ink3" : "text-white"}`}>
+              <path d="M12 5v14M5 12h14" />
+            </Icon>
+            <input type="color" aria-label="Custom colour" className="absolute inset-0 size-full cursor-pointer opacity-0" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
           </label>
-        )}
-      </div>
+        </div>
+      </fieldset>
+      {!c && (
+        <label className="label">
+          Inside
+          <select className="input" value={form.parentId} onChange={(e) => setForm({ ...form, parentId: e.target.value })}>
+            <option value="">Nothing (top level)</option>
+            {categories
+              .filter((p) => p.parentId === null)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.icon} {p.name}
+                </option>
+              ))}
+          </select>
+        </label>
+      )}
       {deleting && c ? (
         <div className="flex flex-col gap-2 text-sm text-ink2">
           <label className="label">
@@ -193,7 +197,7 @@ function Categories() {
         )}
       </div>
       <section>
-        <h2 className="pb-2 text-[13px] font-medium text-ink2">Tags</h2>
+        <h2 className={`${sectionHead} mt-0!`}>Tags</h2>
         {tags.length === 0 && <p className="text-sm text-ink3">No tags yet. Add one to an expense with #name.</p>}
         <ul className="flex flex-wrap gap-2 text-sm">
           {tags.map((t) =>

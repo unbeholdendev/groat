@@ -5,7 +5,7 @@ import { money } from "../period";
 import { chat as chatSchema, type Draft, draftIn, useApi } from "../api";
 import { z } from "zod";
 import { dayLabel, pick } from "../dates";
-import { Chevron, Confirm, UnitContext } from "../ui";
+import { Chevron, Confirm, divide, panel, UnitContext } from "../ui";
 
 
 export const Route = createFileRoute("/chat")({
@@ -51,18 +51,22 @@ function ChatPage() {
             </button>
           ))}
       </div>
-      <h1 className="text-display font-bold">{open?.title ?? "Chats"}</h1>
+      <h1 className="text-display font-bold text-balance">{open?.title ?? "Chats"}</h1>
       {!openId && (
-        <ul>
-          {chats.length === 0 && <li className="text-ink3">No chats yet. Ask below to start one.</li>}
-          {chats.map((c) => (
-            <li key={c.id} className="border-b border-line last:border-0">
-              <button onClick={() => setOpenId(c.id)} className="w-full truncate py-2.5 text-left">
-                {c.title}
-              </button>
-            </li>
-          ))}
-        </ul>
+        chats.length === 0 ? (
+          <p className="text-ink3">No chats yet. Ask below to start one.</p>
+        ) : (
+          <ul className={panel}>
+            {chats.map((c) => (
+              <li key={c.id} className={divide}>
+                <button onClick={() => setOpenId(c.id)} className="press flex h-[52px] w-full items-center gap-3 px-4 text-left font-medium hover:bg-surface2">
+                  <span className="min-w-0 flex-1 truncate">{c.title}</span>
+                  <Chevron className="size-4 -rotate-90 text-ink3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
       )}
       <div className="grid gap-2.5">
         {messages
@@ -75,25 +79,25 @@ function ChatPage() {
                 <button
                   key={i}
                   onClick={() => onDraft(draft)}
-                  className="mr-8 flex justify-between gap-3 rounded-xl border border-line2 bg-surface px-3.5 py-2.5 text-left text-sm"
+                  className="press mr-8 flex justify-between gap-3 rounded-field bg-surface px-3.5 py-2.5 text-left text-sm shadow-panel"
                 >
                   <span>
                     Review draft: <b className="font-medium">{draft.note}</b>, {dayLabel(draft.date)}
                   </span>
-                  <span className="whitespace-nowrap">{money(draft.amount, draft.currency, unit)}</span>
+                  <span className="num whitespace-nowrap">{money(draft.amount, draft.currency, unit)}</span>
                 </button>
               );
             }
             return (
               <p
                 key={i}
-                className={`rounded-xl px-3.5 py-2.5 whitespace-pre-wrap ${m.role === "user" ? "ml-8 border border-line bg-track" : "mr-8 border border-line bg-surface"}`}
+                className={`rise px-4 py-2.5 whitespace-pre-wrap ${m.role === "user" ? "ml-10 justify-self-end rounded-[20px] rounded-br-md bg-surface2" : "mr-10 justify-self-start rounded-[20px] rounded-bl-md bg-surface shadow-panel"}`}
               >
                 {m.content}
               </p>
             );
           })}
-        {asking && <p className="text-sm text-ink3">Looking at your expenses…</p>}
+        {asking && <p className="mr-10 justify-self-start rounded-[20px] rounded-bl-md bg-surface px-4 py-2.5 text-ink3 shadow-panel">Looking at your expenses…</p>}
       </div>
     </div>
   );
