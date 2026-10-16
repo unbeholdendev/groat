@@ -29,6 +29,18 @@ const tool = <T extends z.ZodType>(description: string, input: T, run: (args: z.
 
 export const aiEnabled = ({ aiApiKey, aiBaseUrl, aiModel }: Deps["config"]) => !!(aiApiKey && aiBaseUrl && aiModel);
 
+export async function complete({ fetch, config }: Pick<Ctx, "fetch" | "config">, request: object) {
+  const res = await fetch(`${config.aiBaseUrl}/chat/completions`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${config.aiApiKey}`, "content-type": "application/json" },
+    body: JSON.stringify({ model: config.aiModel, ...request }),
+  });
+  if (!res.ok) throw new Error(`AI provider returned ${res.status}`);
+  const reply = completion.safeParse(await res.json().catch(() => undefined));
+  if (!reply.success) throw new Error("AI provider sent an unexpected reply");
+  return reply.data.choices[0].message;
+}
+
 export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
   const app = new Hono();
   app.use("*", async (c, next) => (aiEnabled(config) ? next() : c.json({ error: "AI is not configured" }, 403)));
@@ -101,27 +113,17 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
     ].join("\n");
   };
 
-  const complete = async (messages: Message[]) => {
-    const res = await fetch(`${config.aiBaseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${config.aiApiKey}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        model: config.aiModel,
-        messages: [{ role: "system", content: system() }, ...messages],
-        tools: Object.entries(tools).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),
-      }),
-    });
-    if (!res.ok) throw new Error(`AI provider returned ${res.status}`);
-    const reply = completion.safeParse(await res.json().catch(() => undefined));
-    if (!reply.success) throw new Error("AI provider sent an unexpected reply");
-    return reply.data.choices[0].message;
-  };
-
   const ask = async (chatId: number | null, message: string) => {
     const history = (chatId && chat(chatId)?.messages) || [];
     const added: Message[] = [{ role: "user", content: message }];
     for (let turn = 0; turn < 10; turn++) {
-      const reply = await complete([...history, ...added]);
+      const reply = await complete(
+        { fetch, config },
+        {
+          messages: [{ role: "system", content: system() }, ...history, ...added],
+          tools: Object.entries(tools).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),
+        },
+      );
       added.push(reply);
       if (!reply.tool_calls?.length) break;
       for (const { id: callId, function: f } of reply.tool_calls) {

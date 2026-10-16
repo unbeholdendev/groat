@@ -1,12 +1,13 @@
 import { type FormEvent, Fragment, useEffect, useRef, useState } from "react";
 import { useMutation, useMutationState } from "@tanstack/react-query";
 import { formatAmount, parseAmount, type Unit } from "../shared/amount";
-import { parse, type Part } from "../shared/parse";
-import { type Category, chat as chatSchema, type Draft, draftIn, expense, request, send, type Settings, type Suggestion, suggestion, unsent, useApi, useSend } from "./api";
+import { confident, parse, type Part } from "../shared/parse";
+import { type Category, chat as chatSchema, type Draft, draft as draftSchema, draftIn, expense, request, send, type Settings, type Suggestion, suggestion, unsent, useApi, useSend } from "./api";
 import { z } from "zod";
 import { CategoryOptions, Tile } from "./category";
 import { dayLabel, today } from "./dates";
 import { money } from "./period";
+import { type Fields, fields, payload, Review } from "./review";
 import { Chevron, Icon } from "./ui";
 
 const pill = "glass relative inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip px-3 text-[13px] font-medium text-ink shadow-dock has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent";
@@ -53,7 +54,17 @@ export function Bar(props: {
   const fill = (s: Suggestion) => (setText(line(s)), sync(), input.current?.focus());
   const category = categories.find((c) => c.id === (categoryId ?? (p.note.length > 1 ? guess?.categoryId : undefined)));
   const currency = p.currency ?? (p.note.length > 1 ? guess?.currency : undefined) ?? settings.lastCurrency;
-  const clear = () => (setText(""), setCategoryId(null), setDate(today()), props.onGuided());
+  const [review, setReview] = useState<Fields | null>(null);
+  const drafting = useMutation({
+    mutationFn: async (t: string) => draftSchema.parse(await send("POST", "/api/drafts", { text: t })),
+    networkMode: "always",
+    onSuccess: (d) => setReview(fields(d, unit)),
+    onError: (_e, t) => props.onForm({ ...seed(), note: t }),
+  });
+  const reviewing = drafting.isPending || !!review;
+  const unreview = () => (setReview(null), drafting.reset());
+  const save = () => review && adding.mutate(["POST", "/api/expenses", payload(review, unit)]);
+  const clear = () => (setText(""), setCategoryId(null), setDate(today()), unreview(), props.onGuided());
   const adding = useSend(clear);
   const queued = useMutationState({ filters: { predicate: (m) => m.state.isPaused } }).length;
   const receipt = useMutationState({
@@ -142,6 +153,8 @@ export function Bar(props: {
   function submit(e: FormEvent) {
     e.preventDefault();
     if (ask) return question && asking.mutate(question, { onSuccess: (c) => inChat && (clear(), props.onChat(c.id)) });
+    if (reviewing) return save();
+    if (settings.ai && !confident(p, category?.id)) return drafting.mutate(text.trim());
     if (!p.amount) return props.onForm(seed());
     adding.mutate([
       "POST",
@@ -150,7 +163,7 @@ export function Bar(props: {
     ]);
   }
 
-  const key = ask ? "Ask" : text.trim() && p.amount ? "Add" : "Full form";
+  const key = ask ? "Ask" : text.trim() && (p.amount || settings.ai) ? "Add" : "Full form";
   const glyph = key === "Ask" ? "M12 19V5M6 11l6-6 6 6" : key === "Add" ? "M20 5v7a3 3 0 0 1-3 3H5M9 11l-4 4 4 4" : "M12 5v14M5 12h14";
   const tag = (w: string, kind: Part[1], i: number) => (
     <span key={i} className={styles[kind]}>
@@ -161,7 +174,7 @@ export function Bar(props: {
   return (
     <>
       {card && <div className="fixed inset-0 -z-20 bg-bg/70" onClick={close} />}
-      <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && card && close()}>
+      <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && (card ? close() : unreview())}>
         <div className="absolute inset-x-0 bottom-full grid gap-2 pb-2">
           {card && (
             <section
@@ -203,7 +216,19 @@ export function Bar(props: {
               </div>
             </section>
           )}
-          {fills.length > 0 && !card && (
+          {reviewing && !card && (
+            <Review
+              value={review}
+              onChange={setReview}
+              categories={categories}
+              currencies={settings.currencies}
+              unit={unit}
+              saving={adding.isPending}
+              onSave={save}
+              onDismiss={unreview}
+            />
+          )}
+          {fills.length > 0 && !card && !reviewing && (
             <div className="rise flex gap-1.5" aria-label="Past entries">
               {fills.map((s) => (
                 <button key={s.note} type="button" className={`${pill} press hit min-w-0 shrink`} onMouseDown={(e) => e.preventDefault()} onClick={() => fill(s)}>
@@ -213,7 +238,7 @@ export function Bar(props: {
               ))}
             </div>
           )}
-          {text && !ask && !card && (
+          {text && !ask && !card && !reviewing && (
             <div className="rise flex gap-1.5">
               <label className={`${pill} press ${category ? "pl-1" : ""}`}>
                 {category && <Tile category={category} small />}
@@ -313,6 +338,8 @@ export function Bar(props: {
               <span className="text-up">{error.message}</span>
             ) : ask ? (
               <span>Answers come from your own data. Expenses are only added once you review them.</span>
+            ) : text && settings.ai && !confident(p, category?.id) ? (
+              <span>Press Enter and AI reads it for you to check.</span>
             ) : text && !p.amount ? (
               <span>Add an amount, like 24.50, or press Enter for the full form.</span>
             ) : text ? (

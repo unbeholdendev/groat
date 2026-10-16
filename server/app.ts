@@ -6,6 +6,7 @@ import { chats } from "./ai";
 import { auth } from "./auth";
 import { categoryRoutes } from "./categories";
 import type { Db } from "./db";
+import { draftRoutes } from "./draft";
 import { expenseRoutes } from "./expenses";
 import { memberRoutes } from "./members";
 import { exportRoutes } from "./export";
@@ -49,6 +50,7 @@ export function createApp(deps: Deps) {
   app.route("/", settingsRoutes(db, deps.config));
   app.route("/", categoryRoutes(db));
   app.route("/", expenseRoutes(ctx, value));
+  app.route("/", draftRoutes(ctx));
   app.route("/", exportRoutes(db, value));
   app.route("/", statsRoutes(db, value));
   app.route("/", rateRoutes(db));
