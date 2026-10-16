@@ -50,3 +50,12 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   await page.getByRole("link", { name: "home" }).click();
   await expect(page.getByRole("button", { name: "Groceries run" })).toBeVisible();
 });
+
+test("a bitcoin total fits the Stats card", async ({ app: page }) => {
+  await page.request.put("/api/settings", { data: { baseCurrency: "BTC", currencies: ["GBP"] } });
+  await page.request.post("/api/expenses", { data: { note: "Coffee", amount: "1375", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
+  await page.goto("/stats");
+  const total = page.locator("section").first().locator("b").first();
+  await expect(total).toContainText("BTC");
+  expect(await total.evaluate((b) => b.scrollWidth <= b.clientWidth)).toBe(true);
+});
