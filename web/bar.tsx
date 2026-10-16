@@ -191,7 +191,7 @@ export function Bar(props: {
     <>
       <Incoming enabled={settings.vision && online && !inChat} onImage={photo} />
       {card && <div className="fixed inset-0 -z-20 bg-bg/70" onClick={close} />}
-      <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && (card ? close() : unreview())}>
+      <form aria-label="Quick add" onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && (card ? close() : unreview())}>
         <div className="absolute inset-x-0 bottom-full grid gap-2 pb-2">
           {card && (
             <section
