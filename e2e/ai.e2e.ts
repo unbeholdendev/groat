@@ -8,6 +8,7 @@ test("a new line goes to AI and saves from the review card", async ({ app: page 
   await bar(page).press("Enter");
   const card = page.getByRole("region", { name: "Review expense" });
   await expect(card.getByLabel("Amount")).toHaveValue("9.99");
+  await expect(card.getByRole("button", { name: "Save" })).toBeInViewport({ ratio: 1 });
   await card.getByLabel("Note").fill("Corner shop");
   await card.getByRole("button", { name: "Save" }).click();
   await expect(card).toBeHidden();
