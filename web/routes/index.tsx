@@ -482,8 +482,14 @@ function Expenses() {
       {showFilters && (
         <div className={`rise mt-4 grid grid-cols-2 gap-2 p-3 ${panel}`}>
           <div className="col-span-2 flex">{filterInput("q", "Search")}</div>
-          {filterInput("from", "From", "date")}
-          {filterInput("to", "To", "date")}
+          <label className="label min-w-0">
+            From
+            {filterInput("from", "From", "date")}
+          </label>
+          <label className="label min-w-0">
+            To
+            {filterInput("to", "To", "date")}
+          </label>
           <select className="input col-span-2 min-w-0" aria-label="Category" value={filter.category ?? ""} onChange={(e) => setFilter({ ...filter, category: e.target.value })}>
             <option value="">All categories</option>
             <CategoryOptions categories={categories} />

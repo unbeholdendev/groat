@@ -48,8 +48,14 @@ function StatsPage() {
       </div>
       {preset === "Custom" && (
         <div className="mt-3 flex gap-2">
-          <input className="input min-w-0 flex-1" type="date" aria-label="From" value={s.range[0]} onChange={(e) => setRange(e.target.value, s.range[1])} />
-          <input className="input min-w-0 flex-1" type="date" aria-label="To" value={s.range[1]} onChange={(e) => setRange(s.range[0], e.target.value)} />
+          <label className="label min-w-0 flex-1">
+            From
+            <input className="input" type="date" value={s.range[0]} onChange={(e) => setRange(e.target.value, s.range[1])} />
+          </label>
+          <label className="label min-w-0 flex-1">
+            To
+            <input className="input" type="date" value={s.range[1]} onChange={(e) => setRange(s.range[0], e.target.value)} />
+          </label>
         </div>
       )}
     </>
