@@ -66,3 +66,15 @@ test("full form adds, edits, bins and restores", async ({ app: page }) => {
   await page.getByRole("link", { name: "Expenses" }).click();
   await expect(row).toBeVisible();
 });
+
+test("the total counts up through real amounts", async ({ app: page }) => {
+  await seed(page, [{ note: "Rent", amount: "900" }]);
+  await page.reload();
+  const shown = page.locator("header b [aria-hidden]").first();
+  const seen: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    seen.push((await shown.textContent()) ?? "");
+    await page.waitForTimeout(80);
+  }
+  expect(seen.filter((t) => !/^£[\d,]+\.\d\d$/.test(t))).toEqual([]);
+});
