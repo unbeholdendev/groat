@@ -16,8 +16,10 @@ function useTheme(theme?: Settings["theme"]) {
       localStorage.setItem("theme", theme);
     } catch {}
     const media = matchMedia("(prefers-color-scheme: dark)");
-    const apply = () =>
+    const apply = () => {
       document.documentElement.classList.toggle("dark", theme === "dark" || (theme !== "light" && media.matches));
+      document.querySelector("meta[name=theme-color]")?.setAttribute("content", getComputedStyle(document.body).backgroundColor);
+    };
     apply();
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);

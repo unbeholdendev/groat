@@ -60,3 +60,12 @@ test("household members and API tokens", async ({ app: page }) => {
   await expect(bar(page)).toBeVisible();
   await expect(page.getByText("milk")).toBeVisible();
 });
+test("browser chrome colour follows the chosen theme", async ({ app: page }) => {
+  const color = () => page.locator("meta[name=theme-color]").getAttribute("content");
+  await page.request.put("/api/settings", { data: { theme: "dark" } });
+  await page.reload();
+  await expect.poll(color).toBe("rgb(13, 15, 21)");
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("radio", { name: "Light" }).click();
+  await expect.poll(color).toBe("rgb(245, 247, 251)");
+});
