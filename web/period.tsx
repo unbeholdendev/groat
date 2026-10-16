@@ -75,7 +75,7 @@ function useCountUp(to: number) {
     const t0 = performance.now();
     let frame = 0;
     const tick = (t: number) => {
-      const k = Math.min((t - t0) / 700, 1);
+      const k = Math.min(Math.max((t - t0) / 700, 0), 1);
       from.current = k < 1 ? start + (to - start) * (1 - 2 ** (-10 * k)) : to;
       setShown(Math.round(from.current));
       if (k < 1) frame = requestAnimationFrame(tick);
