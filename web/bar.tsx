@@ -7,6 +7,7 @@ import { z } from "zod";
 import { CategoryOptions, Tile } from "./category";
 import { dayLabel, today } from "./dates";
 import { money } from "./period";
+import { Incoming, useShared } from "./incoming";
 import { shrink } from "./photo";
 import { type Fields, fields, payload, Review } from "./review";
 import { Mic, recording, useOnline } from "./mic";
@@ -77,7 +78,8 @@ export function Bar(props: {
   const drop = () => (image && URL.revokeObjectURL(image), setImage(undefined));
   const unreview = () => (setReview(null), drafting.reset(), drop());
   const save = () => review && adding.mutate(["POST", "/api/expenses", { ...payload(review, unit), attachmentId: drafting.data?.attachmentId }]);
-  const photo = (file: File) => (unreview(), setCaptureError(null), setImage(URL.createObjectURL(file)), drafting.mutate({ photo: file }));
+  const photo = (file: Blob) => (unreview(), setCaptureError(null), setImage(URL.createObjectURL(file)), drafting.mutate({ photo: file }));
+  useShared((file) => (online ? photo(file) : setCaptureError(new Error("Photos need a connection"))));
   const clear = () => (setText(""), setCategoryId(null), setDate(today()), unreview(), props.onGuided());
   const adding = useSend(clear);
   const queued = useMutationState({ filters: { predicate: (m) => m.state.isPaused } }).length;
@@ -187,6 +189,7 @@ export function Bar(props: {
 
   return (
     <>
+      <Incoming enabled={settings.vision && online && !inChat} onImage={photo} />
       {card && <div className="fixed inset-0 -z-20 bg-bg/70" onClick={close} />}
       <form onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && (card ? close() : unreview())}>
         <div className="absolute inset-x-0 bottom-full grid gap-2 pb-2">
