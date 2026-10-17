@@ -26,3 +26,14 @@ The text is read like the add bar. If it has an amount and the note matches a pa
 3. Add it to the Home Screen or run it with "Hey Siri".
 
 On Android, Tasker's **HTTP Request** action does the same.
+
+## Development
+
+```sh
+bun install
+bun run dev    # API on :3000, the app on :38697
+bun test       # server tests
+bun run e2e    # browser tests (Playwright, phone and desktop)
+```
+
+The first `bun run e2e` needs the browsers: `bunx playwright install --with-deps chromium webkit`.
