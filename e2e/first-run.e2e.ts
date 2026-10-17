@@ -30,3 +30,18 @@ test("sign out and back in", async ({ app: page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
 });
+
+test.describe(() => {
+  test.use({ serviceWorkers: "block" });
+
+  test("an unreachable server says so and can be retried", async ({ fresh: page }) => {
+    test.setTimeout(60_000);
+    await page.route("**/api/session", (route) => route.abort());
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Can’t load Expenses" })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("Couldn’t reach the server.")).toBeVisible();
+    await page.unroute("**/api/session");
+    await page.getByRole("button", { name: "Try again" }).click();
+    await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+  });
+});

@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { createRootRoute, Link, Outlet, useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import type { Unit } from "../../shared/amount";
-import { type Settings, useCategories, useSession, useSettings } from "../api";
+import { session as sessionSchema, type Settings, useApi, useCategories, useSettings } from "../api";
 import { Bar } from "../bar";
 import { SettingsForm } from "../settings-form";
 import { SignIn } from "../sign-in";
@@ -51,7 +51,7 @@ const tabs: [string, string, ReactNode][] = [
 ];
 
 function App() {
-  const session = useSession();
+  const { data: session, error, refetch } = useApi(sessionSchema, ["/api/session"]);
   const settings = useSettings();
   const unitState = useState<Unit>("BTC");
   const search = useSearch({ strict: false });
@@ -63,7 +63,18 @@ function App() {
   const bar = !search.new && !search.edit;
   useTheme(settings?.theme);
 
-  if (!session) return null;
+  if (!session)
+    return (
+      error && (
+        <main className="mx-auto max-w-md px-5 pt-12">
+          <h1 className="text-display font-bold">Can’t load Expenses</h1>
+          <p className="mt-2 text-ink2">{error.message}</p>
+          <button className="quiet mt-5" onClick={() => refetch()}>
+            Try again
+          </button>
+        </main>
+      )
+    );
   if (!session.user)
     return (
       <main className="mx-auto max-w-md px-5 pt-12 pb-10">
