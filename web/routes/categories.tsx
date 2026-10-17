@@ -13,7 +13,7 @@ type Form = { name: string; icon: string; color: string; parentId: string };
 const palette = { Rose: "#f16f7e", Tangerine: "#f98942", Sun: "#f4bf3f", Lime: "#99d352", Jade: "#3fbe90", Aqua: "#26c0cf", Orchid: "#bf73df", Pink: "#e977bb" };
 const swatches = Object.values(palette);
 const blank: Form = { name: "", icon: "📁", color: palette.Rose, parentId: "" };
-const swatch = "relative grid size-8 shrink-0 place-items-center rounded-chip has-checked:ring-2 has-checked:ring-ink has-checked:ring-offset-2 has-checked:ring-offset-surface has-focus-visible:outline-2 has-focus-visible:outline-offset-4 has-focus-visible:outline-accent";
+const swatch = "relative grid aspect-square w-full max-w-8 place-items-center rounded-chip has-checked:ring-2 has-checked:ring-ink has-checked:ring-offset-2 has-checked:ring-offset-surface has-focus-visible:outline-2 has-focus-visible:outline-offset-4 has-focus-visible:outline-accent";
 const text = "h-11 rounded-chip px-2.5 text-[13px] font-medium";
 
 function Categories() {
@@ -81,7 +81,7 @@ function Categories() {
       </div>
       <fieldset className="label">
         <legend className="mb-1.5">Colour</legend>
-        <div className="flex flex-wrap gap-2.5 px-0.5">
+        <div className="grid grid-cols-9 gap-1.5 px-0.5">
           {Object.entries(palette).map(([name, color]) => (
             <label key={color} className={swatch} style={{ background: color }}>
               <input type="radio" name="colour" aria-label={name} className="sr-only" checked={form.color === color} onChange={() => setForm({ ...form, color })} />
