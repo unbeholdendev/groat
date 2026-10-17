@@ -75,3 +75,26 @@ test("swiping the hero steps months", async ({ app: page }) => {
   await drag(260, 40);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(month(0));
 });
+
+test("scrubbing the spend line reads out a day", async ({ app: page }) => {
+  await page.request.post("/api/expenses", { data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
+  await page.goto("/stats");
+  const chart = page.getByRole("img", { name: /so far/ }).locator("..");
+  const b = (await chart.boundingBox())!;
+  await chart.dispatchEvent("pointerdown", { clientX: b.x + b.width - 2, clientY: b.y + 50, pointerType: "touch" });
+  await expect(page.locator("section").first()).toContainText("· £3.20");
+  await chart.dispatchEvent("pointerup", { pointerType: "touch" });
+  await expect(page.locator("section").first()).not.toContainText("· £3.20");
+});
+
+test("changing period clears a scrub readout", async ({ app: page }) => {
+  await page.request.post("/api/expenses", { data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
+  await page.goto("/stats");
+  const chart = page.getByRole("img", { name: /so far/ }).locator("..");
+  const b = (await chart.boundingBox())!;
+  await chart.dispatchEvent("pointermove", { clientX: b.x + b.width - 2, clientY: b.y + 50, pointerType: "mouse" });
+  await expect(page.locator("section").first()).toContainText("· £3.20");
+  await page.getByRole("radio", { name: "Last month" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("section").first()).not.toContainText("· £3.20");
+});

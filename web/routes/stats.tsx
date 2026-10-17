@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useContext, useId, useState } from "react";
+import { type PointerEvent, type ReactNode, useContext, useEffect, useId, useState } from "react";
 import { change, days, money, Pill, span, Total, usePeriod } from "../period";
 import { period, useApi, useCategories } from "../api";
 import { Tile } from "../category";
@@ -30,6 +30,7 @@ function StatsPage() {
   const range = from && to ? `${from},${to}` : span("This month").range.join();
   const preset = (!custom && presets.find((p) => p !== "Custom" && span(p).range.join() === range)) || "Custom";
   const [open, setOpen] = useState<number | null>(null);
+  const [scrubbed, setScrubbed] = useState<ReactNode>(null);
   const [rangeFrom = "", rangeTo = ""] = range.split(",");
   const s = span(preset, [rangeFrom, rangeTo]);
   const setRange = (from: string, to: string) => navigate({ search: { from, to }, replace: true });
@@ -85,8 +86,8 @@ function StatsPage() {
       {head}
       <section className="mt-4 rounded-hero bg-hero p-5 text-on-hero shadow-hero">
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="block text-on-hero" />
-        <p className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-on-hero2">
-          {d ? (
+        <p className="mt-2.5 flex min-h-[26px] flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-on-hero2">
+          {scrubbed ?? (d ? (
             <>
               <Pill d={d} />
               vs {vs}
@@ -94,7 +95,7 @@ function StatsPage() {
             </>
           ) : (
             `Nothing in ${vs}${running ? " by today" : ""}`
-          )}
+          ))}
         </p>
         <Chart
           key={range}
@@ -106,6 +107,9 @@ function StatsPage() {
           max={Math.max(now.total, full.total)}
           label={`${s.name} ${show(full.total)}`}
           ghost={full.total > 0}
+          show={show}
+          name={s.name}
+          onScrub={setScrubbed}
           aria={`${show(now.total)} ${running ? "so far" : "in total"}. ${preset === "Custom" ? "The period before" : s.name} was at ${show(ref.total)} by this point and ended at ${show(full.total)}.`}
         />
       </section>
@@ -253,6 +257,9 @@ function Chart(props: {
   label: string;
   ghost: boolean;
   aria: string;
+  show: (n: number) => string;
+  name: string;
+  onScrub: (readout: ReactNode) => void;
 }) {
   const id = `g${useId().replace(/\W/g, "")}`;
   const [w, setW] = useState(0);
@@ -272,10 +279,35 @@ function Chart(props: {
   const running = props.end > props.range[1];
   const clash = x(ex) > w - 110 && Math.abs(y(ey) - y(py)) < 22;
   const above = !(clash && ey > py);
+  const [at, setAt] = useState<number | null>(null);
+  const valueAt = (pts: number[][], n: number) => pts.reduce((v, [a, b]) => (a <= n ? b : v), 0);
+  const [fy, fm, fd] = props.range[0].split("-").map(Number);
+  const scrub = (e: PointerEvent<HTMLDivElement>) => {
+    const n = Math.min(ex, Math.max(0, Math.round(((e.clientX - e.currentTarget.getBoundingClientRect().left) / w) * extent)));
+    setAt(n);
+    props.onScrub(
+      <>
+        <span className="num text-on-hero">
+          {new Date(fy, fm - 1, fd + n).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {props.show(valueAt(now, n))}
+        </span>
+        {props.ghost && <span className="num">vs {props.name} {props.show(valueAt(prev, n))}</span>}
+      </>,
+    );
+  };
+  const unscrub = () => (setAt(null), props.onScrub(null));
+  useEffect(() => unscrub, []);
 
   return (
     <div className="mt-5">
-      <div ref={measure} className="relative h-[112px]">
+      <div
+        ref={measure}
+        onPointerDown={scrub}
+        onPointerMove={scrub}
+        onPointerLeave={unscrub}
+        onPointerUp={(e) => e.pointerType !== "mouse" && unscrub()}
+        onPointerCancel={unscrub}
+        className="relative h-[112px] touch-pan-y select-none"
+      >
         {w > 0 && (
           <svg role="img" aria-label={props.aria} viewBox={`0 0 ${w} ${H}`} className="size-full overflow-visible">
             <defs>
@@ -290,9 +322,16 @@ function Chart(props: {
             <path d={`${path(now)}L${x(ex)},${H}L0,${H}Z`} fill={`url(#${id})`} className="animate-fade [animation-delay:200ms]" />
             <path d={path(now)} pathLength={1} fill="none" className="draw stroke-white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             {running && <circle cx={x(ex)} cy={y(ey)} r="5.5" strokeWidth="3" className="animate-fade fill-white stroke-hero [animation-delay:700ms]" />}
+            {at !== null && (
+              <>
+                <line x1={x(at)} x2={x(at)} y1="0" y2={H} className="stroke-white/60" />
+                {props.ghost && <circle cx={x(at)} cy={y(valueAt(prev, at))} r="3.5" className="fill-on-hero2" />}
+                <circle cx={x(at)} cy={y(valueAt(now, at))} r="5.5" strokeWidth="3" className="fill-white stroke-hero" />
+              </>
+            )}
           </svg>
         )}
-        {props.ghost && (
+        {props.ghost && at === null && (
           <span
             aria-hidden
             className={`num absolute right-0 text-[11px] whitespace-nowrap text-on-hero2 ${above ? "-translate-y-[calc(100%+6px)]" : "translate-y-1.5"}`}

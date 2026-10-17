@@ -353,6 +353,7 @@ One centred column, 448px max, 20px gutters, on phone and desktop. At `lg` the t
    - X axis: first and last day of the period as mono 11px `on-hero2` labels under the baseline. No y axis, no gridlines.
    - Scale: x by day index over the longer of the two periods; y over the larger of this period's total and the previous period's full total, so neither line clips and an empty previous period does not pin anything to zero.
    - Accessible name on the SVG states both totals, as now.
+   - Scrub: hover or drag along the chart (touch-action pan-y, so vertical scroll still works) to drop a white 60% rule at that day with a ringed dot on this period's line and a small on-hero2 dot on the ghost. While scrubbing, the delta row reads "10 Oct · £52.00  vs Sept £25.00" instead; it returns on release.
    - Replaces the ruler and the "Day N of M" bar entirely.
 5. **By category** (Title, 28px above): one `surface` panel of rows. Row: 36px tile; name (Body 500) and amount (Amount) on line 1, with the delta in mono 12px `up`/`down` beside the amount; line 2 is the share track (6px, `track`, filled in category colour to the category's share of the period total) with the share as mono 12px Ink 3 ("34%") at its right. Categories with no spend last period show no delta; under the panel one Caption line lists them once: "New since Sep: 🎁 Gifts, ✈️ Travel". Drill-down expands inside the panel: child rows 48px, 28px tiles, indented to the text column.
 6. **By tag**: same panel and row, a `track` tile with a drawn hash icon, no share track.
