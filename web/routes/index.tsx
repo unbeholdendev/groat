@@ -73,6 +73,9 @@ function Expenses() {
   const editRow = [...expenses, ...pending].find((e) => e.id === editing);
   const newest = useRef<number>(undefined);
   const swipeFrom = useRef<[number, number]>(undefined);
+  const [swiped, setSwiped] = useState<{ id: number; x: number; dx: number } | null>(null);
+  const dragged = useRef(false);
+  const sliding = (e: Expense) => swiped?.id === e.id && swiped.dx < -8;
   if (listed && (newest.current === undefined || open || showBin)) newest.current = Math.max(0, ...listed.map((e) => e.id));
 
   useEffect(() => {
@@ -580,8 +583,30 @@ function Expenses() {
           <ul className={panel}>
             {rows.map((e) => (
               <Fragment key={e.id}>
-                <li className={`relative hover:bg-surface2 ${divide} ${e.id > (newest.current ?? 0) || e.id < 0 ? "grow-in" : ""}`}>
-                  <div className={rowClass}>{row(e)}</div>
+                <li
+                  className={`relative ${sliding(e) ? "bg-up" : "hover:bg-surface2"} ${divide} ${e.id > (newest.current ?? 0) || e.id < 0 ? "grow-in" : ""}`}
+                  onClickCapture={(ev) => dragged.current && (ev.stopPropagation(), (dragged.current = false))}
+                >
+                  {sliding(e) && (
+                    <Icon className="absolute top-1/2 right-6 size-5 -translate-y-1/2 stroke-2 text-surface">
+                      <path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" />
+                    </Icon>
+                  )}
+                  <div
+                    className={`${rowClass} touch-pan-y ${sliding(e) ? "bg-surface" : "transition-transform"}`}
+                    style={{ translate: swiped?.id === e.id ? `${swiped.dx}px` : undefined }}
+                    onPointerDown={(p) => p.isPrimary && p.pointerType !== "mouse" && e.id > 0 && setSwiped({ id: e.id, x: p.clientX, dx: 0 })}
+                    onPointerMove={(p) => swiped?.id === e.id && setSwiped({ ...swiped, dx: Math.min(0, p.clientX - swiped.x) })}
+                    onPointerUp={() => {
+                      if (swiped?.id !== e.id) return;
+                      dragged.current = swiped.dx < -8;
+                      if (swiped.dx < -96) mutation.mutate(["DELETE", `/api/expenses/${e.id}`]);
+                      setSwiped(null);
+                    }}
+                    onPointerCancel={() => setSwiped(null)}
+                  >
+                    {row(e)}
+                  </div>
                 </li>
                 {asking === `rate ${e.id}` && (
                   <li>

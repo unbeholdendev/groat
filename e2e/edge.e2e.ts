@@ -103,3 +103,21 @@ test("a long note truncates and keeps the amount in view", async ({ app: page })
   const [r, a] = await Promise.all([row.boundingBox(), amount.boundingBox()]);
   expect(a!.x + a!.width).toBeLessThanOrEqual(r!.x + r!.width);
 });
+
+test("swiping a row left bins it, and Undo brings it back", async ({ app: page }) => {
+  await seed(page, [{ note: "Mistake", amount: "1" }]);
+  await page.reload();
+  const row = page.getByRole("listitem").filter({ hasText: "Mistake" }).locator("div").first();
+  const b = (await row.boundingBox())!;
+  const at = (dx: number) => ({ clientX: b.x + b.width - 20 + dx, clientY: b.y + 30, pointerType: "touch", isPrimary: true });
+  await row.dispatchEvent("pointerdown", at(0));
+  await row.dispatchEvent("pointermove", at(-60));
+  await row.dispatchEvent("pointerup", at(-60));
+  await expect(page.getByRole("button", { name: "Mistake" })).toBeVisible();
+  await row.dispatchEvent("pointerdown", at(0));
+  await row.dispatchEvent("pointermove", at(-140));
+  await row.dispatchEvent("pointerup", at(-140));
+  await expect(page.getByRole("button", { name: "Mistake" })).toBeHidden();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByRole("button", { name: "Mistake" })).toBeVisible();
+});
