@@ -569,73 +569,77 @@ function Expenses() {
           </p>
         </div>
       )}
-      {[...days].map(([date, rows]) => (
-        <section key={date}>
-          <h2 className="flex justify-between px-1 pt-6 pb-2 text-[13px] font-semibold text-ink2">
-            {dayLabel(date)}
-            {rows.length > 1 && (
-              <span className="num font-medium text-ink3">
-                {show(inBase(rows), settings.baseCurrency)}
-                {rows.some((e) => e.baseAmount === null) && <span className="font-sans"> + {rows.filter((e) => e.baseAmount === null).length} unconverted</span>}
-              </span>
-            )}
-          </h2>
-          <ul className={panel}>
-            {rows.map((e) => (
-              <Fragment key={e.id}>
-                <li
-                  className={`relative ${sliding(e) ? "bg-up" : "hover:bg-surface2"} ${divide} ${e.id > (newest.current ?? 0) || e.id < 0 ? "grow-in" : ""}`}
-                  onClickCapture={(ev) => dragged.current && (ev.stopPropagation(), (dragged.current = false))}
-                >
-                  {sliding(e) && (
-                    <Icon className="absolute top-1/2 right-6 size-5 -translate-y-1/2 stroke-2 text-surface">
-                      <path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" />
-                    </Icon>
-                  )}
-                  <div
-                    className={`${rowClass} touch-pan-y ${sliding(e) ? "bg-surface" : "transition-transform"}`}
-                    style={{ translate: swiped?.id === e.id ? `${swiped.dx}px` : undefined }}
-                    onPointerDown={(p) => p.isPrimary && p.pointerType !== "mouse" && e.id > 0 && setSwiped({ id: e.id, x: p.clientX, dx: 0 })}
-                    onPointerMove={(p) => swiped?.id === e.id && setSwiped({ ...swiped, dx: Math.min(0, p.clientX - swiped.x) })}
-                    onPointerUp={() => {
-                      if (swiped?.id !== e.id) return;
-                      dragged.current = swiped.dx < -8;
-                      if (swiped.dx < -96) mutation.mutate(["DELETE", `/api/expenses/${e.id}`]);
-                      setSwiped(null);
-                    }}
-                    onPointerCancel={() => setSwiped(null)}
-                  >
-                    {row(e)}
-                  </div>
-                </li>
-                {asking === `rate ${e.id}` && (
-                  <li>
-                    <form onSubmit={(ev) => setRate(ev, e)} className="rise flex flex-wrap items-end gap-2 px-4 pb-4">
-                      {[...new Set([e.currency, settings.baseCurrency])]
-                        .filter((c) => c !== "USD")
-                        .map((c) => (
-                          <label key={c} className="label min-w-0 flex-1">
-                            1 USD in {c}
-                            <input name={c} className="input" inputMode="decimal" autoFocus={c === e.currency} />
-                          </label>
-                        ))}
-                      <span className="flex w-full items-center justify-between text-[13px] font-medium">
-                        <span className="text-up">{mutation.error?.message}</span>
-                        <span>
-                          <button type="button" className="hit rounded-chip px-2.5 py-1.5 text-ink2" onClick={() => setAsking(null)}>
-                            Cancel
-                          </button>
-                          <button className="primary hit h-8 px-3 text-[13px]">Save</button>
-                        </span>
-                      </span>
-                    </form>
-                  </li>
+      {days.size > 0 && (
+        <div className={`mt-6 ${panel}`}>
+          {[...days].map(([date, rows]) => (
+            <section key={date} className="not-first:border-t not-first:border-line">
+              <h2 className="flex justify-between px-4 pt-3.5 pb-0.5 text-[13px] font-semibold text-ink2">
+                {dayLabel(date)}
+                {rows.length > 1 && (
+                  <span className="num font-medium text-ink3">
+                    {show(inBase(rows), settings.baseCurrency)}
+                    {rows.some((e) => e.baseAmount === null) && <span className="font-sans"> + {rows.filter((e) => e.baseAmount === null).length} unconverted</span>}
+                  </span>
                 )}
-              </Fragment>
-            ))}
-          </ul>
-        </section>
-      ))}
+              </h2>
+              <ul>
+                {rows.map((e) => (
+                  <Fragment key={e.id}>
+                    <li
+                      className={`relative ${sliding(e) ? "bg-up" : "hover:bg-surface2"} ${divide} ${e.id > (newest.current ?? 0) || e.id < 0 ? "grow-in" : ""}`}
+                      onClickCapture={(ev) => dragged.current && (ev.stopPropagation(), (dragged.current = false))}
+                    >
+                      {sliding(e) && (
+                        <Icon className="absolute top-1/2 right-6 size-5 -translate-y-1/2 stroke-2 text-surface">
+                          <path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" />
+                        </Icon>
+                      )}
+                      <div
+                        className={`${rowClass} touch-pan-y ${sliding(e) ? "bg-surface" : "transition-transform"}`}
+                        style={{ translate: swiped?.id === e.id ? `${swiped.dx}px` : undefined }}
+                        onPointerDown={(p) => p.isPrimary && p.pointerType !== "mouse" && e.id > 0 && setSwiped({ id: e.id, x: p.clientX, dx: 0 })}
+                        onPointerMove={(p) => swiped?.id === e.id && setSwiped({ ...swiped, dx: Math.min(0, p.clientX - swiped.x) })}
+                        onPointerUp={() => {
+                          if (swiped?.id !== e.id) return;
+                          dragged.current = swiped.dx < -8;
+                          if (swiped.dx < -96) mutation.mutate(["DELETE", `/api/expenses/${e.id}`]);
+                          setSwiped(null);
+                        }}
+                        onPointerCancel={() => setSwiped(null)}
+                      >
+                        {row(e)}
+                      </div>
+                    </li>
+                    {asking === `rate ${e.id}` && (
+                      <li>
+                        <form onSubmit={(ev) => setRate(ev, e)} className="rise flex flex-wrap items-end gap-2 px-4 pb-4">
+                          {[...new Set([e.currency, settings.baseCurrency])]
+                            .filter((c) => c !== "USD")
+                            .map((c) => (
+                              <label key={c} className="label min-w-0 flex-1">
+                                1 USD in {c}
+                                <input name={c} className="input" inputMode="decimal" autoFocus={c === e.currency} />
+                              </label>
+                            ))}
+                          <span className="flex w-full items-center justify-between text-[13px] font-medium">
+                            <span className="text-up">{mutation.error?.message}</span>
+                            <span>
+                              <button type="button" className="hit rounded-chip px-2.5 py-1.5 text-ink2" onClick={() => setAsking(null)}>
+                                Cancel
+                              </button>
+                              <button className="primary hit h-8 px-3 text-[13px]">Save</button>
+                            </span>
+                          </span>
+                        </form>
+                      </li>
+                    )}
+                  </Fragment>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
     </>
   );
 }
