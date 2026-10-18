@@ -42,7 +42,8 @@ test("full form adds, edits, bins and restores", async ({ app: page }) => {
   await page.getByRole("button", { name: "Full form" }).click();
   await page.getByLabel("Note").fill("Train");
   await page.getByLabel("Amount").fill("42");
-  await page.getByLabel("Category").selectOption("7");
+  await page.getByRole("button", { name: "Transport", exact: true }).click();
+  await page.getByRole("button", { name: "Public transport" }).click();
   await page.getByLabel("Tags").fill("work, trip");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   const row = page.getByRole("listitem").filter({ hasText: "Train" });

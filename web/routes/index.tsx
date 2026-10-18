@@ -3,7 +3,7 @@ import { useMutationState } from "@tanstack/react-query";
 import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { formatAmount, parseAmount, type Unit } from "../../shared/amount";
 import { change, iso, money, Pill, span, Total, usePeriod } from "../period";
-import { type Draft, type Expense, expense, request, suggestion, template as templateSchema, type Template, unsent, useApi, useCategories, useSend, useSession, useSettings } from "../api";
+import { type Category, type Draft, type Expense, expense, request, suggestion, template as templateSchema, type Template, unsent, useApi, useCategories, useSend, useSession, useSettings } from "../api";
 import { z } from "zod";
 import { CategoryOptions, Tile } from "../category";
 import { dated, dayLabel, pick, today } from "../dates";
@@ -274,73 +274,120 @@ function Expenses() {
       </>
     );
 
-  if (open)
+  if (open) {
+    const picked = categories.find((c) => c.id === categoryId);
+    const branch = picked?.parentId ?? picked?.id;
+    const kids = categories.filter((c) => c.parentId !== null && c.parentId === branch);
+    const yesterday = iso(new Date(Date.now() - 864e5));
+    const symbol = currency === "BTC" ? "" : new Intl.NumberFormat("en-GB", { style: "currency", currency }).formatToParts(0).find((p) => p.type === "currency")?.value;
+    const choice = (on: boolean) =>
+      `press relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-chip border text-[13px] font-medium transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent ${on ? "border-accent bg-accent-soft text-ink" : "border-line2 bg-surface text-ink2"}`;
+    const categoryChip = (c: Category) => (
+      <button type="button" key={c.id} aria-pressed={categoryId === c.id} onClick={() => setCategoryId(categoryId === c.id ? "" : c.id)} className={`${choice(c.id === categoryId || c.id === branch)} pr-3 pl-px`}>
+        <Tile category={c} small />
+        {c.name}
+      </button>
+    );
+    const onField = "press hit inline-flex h-9 items-center rounded-chip px-3.5 text-[15px]";
     return (
-      <form onSubmit={save} className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <button type="button" className="hit text-ink2" onClick={reset}>
-            Cancel
-          </button>
-          <h1 className="text-[17px] font-semibold">{editing ? "Edit expense" : template ? "Edit recurring" : "New expense"}</h1>
-          <button className="primary hit h-9" disabled={saving.isPending}>
-            {editing || template ? "Save" : "Add"}
-          </button>
-        </div>
-        <label className="label">
-          Note
-          <input className="input" value={note} onChange={(e) => typeNote(e.target.value)} list="notes" autoFocus={!note} />
-        </label>
-        <datalist id="notes">
-          {suggestions.map((s) => (
-            <option key={s.note} value={s.note} />
-          ))}
-        </datalist>
-        <div className="flex gap-2">
-          <label className="label min-w-0 flex-1">
-            Amount
-            <input className="input" placeholder="0.00" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          </label>
-          <label className="label">
-            Currency
-            <select className="input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              {settings.currencies.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </label>
-          {(currency === "BTC" || settings.baseCurrency === "BTC") && (
-            <label className="label">
-              Unit
-              <button type="button" className="quiet" onClick={toggleUnit}>
+      <form onSubmit={save} className="flex flex-col">
+        <header className="-mx-5 -mt-[max(env(safe-area-inset-top),20px)] rounded-b-hero bg-hero px-5 pt-[max(env(safe-area-inset-top),16px)] pb-5 text-on-hero shadow-hero lg:mx-0 lg:mt-1 lg:rounded-hero [&_:focus-visible]:outline-on-hero">
+          <div className="flex items-center justify-between gap-2">
+            <button type="button" className={`${onField} bg-on-hero/16 font-medium`} onClick={reset}>
+              Cancel
+            </button>
+            <h1 className="truncate text-[17px] font-semibold">{editing ? "Edit expense" : template ? "Edit recurring" : "New expense"}</h1>
+            <button className={`${onField} bg-on-hero font-semibold text-hero disabled:opacity-50`} disabled={saving.isPending}>
+              {editing || template ? "Save" : "Add"}
+            </button>
+          </div>
+          <div className="mt-6 flex items-center gap-2">
+            {symbol && (
+              <span aria-hidden className="-mr-2 text-[60px] leading-none font-semibold tracking-[-0.04em] text-on-hero2">
+                {symbol}
+              </span>
+            )}
+            <input
+              aria-label="Amount"
+              className="w-0 min-w-0 flex-1 bg-transparent text-[60px] leading-none font-semibold tracking-[-0.04em] text-on-hero outline-none placeholder:text-on-hero/35"
+              placeholder="0.00"
+              inputMode="decimal"
+              autoFocus={!!note && !amount}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+            {(currency === "BTC" || settings.baseCurrency === "BTC") && (
+              <button type="button" aria-label="Unit" className={`${onField} num bg-on-hero/16 text-[13px] font-medium`} onClick={toggleUnit}>
                 {unit}
               </button>
+            )}
+            <label className={`${onField} num relative gap-1 bg-on-hero/16 text-[13px] font-medium`}>
+              {currency}
+              <Chevron className="size-3.5 stroke-2 text-on-hero2" />
+              <select aria-label="Currency" className="absolute inset-0 opacity-0" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                {settings.currencies.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
             </label>
-          )}
+          </div>
+          <input
+            aria-label="Note"
+            placeholder="What was it for?"
+            className="mt-5 h-12 w-full rounded-field bg-on-hero/12 px-4 text-[17px] font-medium text-on-hero outline-none placeholder:text-on-hero2/70 focus:bg-on-hero/20"
+            value={note}
+            onChange={(e) => typeNote(e.target.value)}
+            list="notes"
+            autoFocus={!note}
+          />
+          <datalist id="notes">
+            {suggestions.map((s) => (
+              <option key={s.note} value={s.note} />
+            ))}
+          </datalist>
+        </header>
+        <div role="group" aria-label="Category" className="mt-5 flex flex-wrap gap-1.5">
+          {categories.filter((c) => c.parentId === null && !c.builtin).map(categoryChip)}
         </div>
-        <label className="label">
-          Category
-          <select className="input" value={categoryId} onChange={(e) => setCategoryId(Number(e.target.value) || "")}>
-            <option value="">Category</option>
-            <CategoryOptions categories={categories} />
-          </select>
+        {kids.length > 0 && (
+          <div key={branch} role="group" aria-label="Subcategory" className="rise mt-2 flex flex-wrap gap-1.5">
+            {kids.map(categoryChip)}
+          </div>
+        )}
+        <div role="group" aria-label="Date" className="mt-5 flex flex-wrap gap-1.5">
+          {[
+            [today(), "Today"],
+            [yesterday, "Yesterday"],
+          ].map(([d, name]) => (
+            <button type="button" key={d} aria-pressed={date === d} onClick={() => setDate(d)} className={`${choice(date === d)} px-3.5`}>
+              {name}
+            </button>
+          ))}
+          <label className={`${choice(date !== today() && date !== yesterday)} px-3.5`}>
+            {date !== today() && date !== yesterday ? dayLabel(date) : "Another day"}
+            <Chevron className="size-3.5 stroke-2" />
+            <input
+              aria-label="Date"
+              type="date"
+              className="absolute inset-0 opacity-0"
+              max={today()}
+              value={date}
+              onClick={(e) => e.currentTarget.showPicker?.()}
+              onChange={(e) => setDate(e.target.value || today())}
+            />
+          </label>
+        </div>
+        <label className="label mt-6">
+          Tags
+          <input className="input" placeholder="work, trip" value={tags} onChange={(e) => setTags(e.target.value)} />
         </label>
-        <div className="flex gap-2">
-          <label className="label">
-            Date
-            <input className="input" type="date" max={today()} value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
-          <label className="label min-w-0 flex-1">
-            Tags
-            <input className="input" placeholder="Comma separated" value={tags} onChange={(e) => setTags(e.target.value)} />
-          </label>
-        </div>
         {editRow?.attachmentId != null && (
-          <a href={`/api/attachments/${editRow.attachmentId}`} target="_blank" rel="noreferrer" className="self-start">
+          <a href={`/api/attachments/${editRow.attachmentId}`} target="_blank" rel="noreferrer" className="mt-6 self-start">
             <img src={`/api/attachments/${editRow.attachmentId}`} alt="Receipt" className="max-h-40 rounded-field border border-line object-contain" />
           </a>
         )}
         {!editing && (
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="mt-6 flex flex-wrap items-end gap-2">
             <label className="label">
               Repeat
               <select className="input" value={repeat.period} onChange={(e) => setRepeat({ ...repeat, period: e.target.value })}>
@@ -389,14 +436,15 @@ function Expenses() {
             )}
           </div>
         )}
-        {error && <p className="text-sm text-up">{error}</p>}
+        {error && <p className="mt-4 text-sm text-up">{error}</p>}
         {editing && (
-          <button type="button" className="hit mt-4 self-start text-sm font-medium text-up" onClick={() => saving.mutate(["DELETE", `/api/expenses/${editing}`])}>
+          <button type="button" className="hit mt-6 self-start text-sm font-medium text-up" onClick={() => saving.mutate(["DELETE", `/api/expenses/${editing}`])}>
             Move to bin
           </button>
         )}
       </form>
     );
+  }
 
   if (view === "recurring")
     return (
