@@ -28,7 +28,7 @@ export function Tokens() {
           <TokenForm create={create} />
         </li>
       </ul>
-      <FormError error={create.error} className="mt-2 px-1" />
+      <FormError error={create.error ?? revoke.error} className="mt-2 px-1" />
     </section>
   );
 }

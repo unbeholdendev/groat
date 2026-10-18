@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Icon, paths } from "../../components/icon";
+import { FormError } from "../../components/form";
 import { divide } from "../../components/styles";
 import { useSend } from "../../lib/api";
 import type { Expense } from "../../lib/schemas";
@@ -31,6 +32,7 @@ export function SwipeRow({ expense: e, fresh, onSetRate }: { expense: Expense; f
       >
         <ExpenseRow expense={e} onSetRate={onSetRate} />
       </div>
+      <FormError error={mutation.error} className="px-4 pb-2" />
     </li>
   );
 }

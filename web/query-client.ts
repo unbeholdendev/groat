@@ -1,5 +1,5 @@
 import { dehydrate, hydrate, keepPreviousData, MutationCache, onlineManager, QueryCache, QueryClient } from "@tanstack/react-query";
-import { send } from "./lib/api";
+import { refresh, send } from "./lib/api";
 import type { Request } from "./lib/schemas";
 import { syncCategory } from "./features/categories/queries";
 import { syncExpense } from "./features/expenses/queries";
@@ -29,6 +29,7 @@ const sync = (key: string[], patch: (client: QueryClient, data: unknown, request
     },
   });
 sync(["send"], (client) => client.invalidateQueries());
+sync(["send", "bin"], (client) => refresh(client, "/api/bin"));
 sync(["send", "expense"], syncExpense);
 sync(["send", "category"], syncCategory);
 sync(["send", "settings"], syncSettings);

@@ -3,6 +3,7 @@ import { BackToSettings } from "../../components/back-link";
 import { Button } from "../../components/button";
 import { Tile } from "../../components/category";
 import { Confirm } from "../../components/confirm";
+import { FormError } from "../../components/form";
 import { divide, panel } from "../../components/styles";
 import { useCategories, useSend } from "../../lib/api";
 import { money } from "../../lib/money";
@@ -25,6 +26,7 @@ export function Recurring({ onEdit }: { onEdit: (t: Template) => void }) {
     <>
       <BackToSettings />
       <h1 className="mt-4 text-display font-bold">Recurring</h1>
+      <FormError error={mutation.error} className="mt-4" />
       {templates.length === 0 && <p className="mt-4 text-ink3">Nothing repeats yet. Open the full form and set Repeat to add one.</p>}
       {templates.length > 0 && (
         <ul className={`mt-4 ${panel}`}>

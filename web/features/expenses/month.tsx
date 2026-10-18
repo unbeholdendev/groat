@@ -28,7 +28,7 @@ export function Month({ newest }: { newest: number }) {
       {!filtered && <Breakdown unit={unit} end={month ? end : undefined} />}
       {showFilters && <Filters />}
       <PendingList />
-      {listed && expenses.length + queued.length === 0 && (
+      {listed && days.size === 0 && (
         <div className={`mt-6 px-6 py-9 text-center ${panel}`}>
           <p className="font-semibold">{filtered ? "Nothing matches" : month ? `Nothing in ${label}` : "Nothing this month yet"}</p>
           <p className="mt-1 text-[13px] text-ink3">

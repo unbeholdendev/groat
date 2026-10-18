@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { useMutation, useMutationState } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { useApi } from "../../lib/api";
+import { FormError } from "../../components/form";
+import { send, useApi } from "../../lib/api";
 import { type Chat, chat as chatSchema } from "../../lib/schemas";
 import { ChatHeader } from "./chat-header";
 import { ChatList } from "./chat-list";
@@ -18,7 +19,7 @@ export function ChatPage({ openId }: { openId: number | null }) {
   const messages = [...(open?.messages ?? []), ...(asking ? [{ role: "user", content: asking }] : [])];
   useEffect(() => void (openId && scrollTo(0, document.body.scrollHeight)), [messages.length]);
   const deleting = useMutation({
-    mutationFn: (id: number) => fetch(`/api/chats/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => send("DELETE", `/api/chats/${id}`),
     onSuccess: (_, id, __, { client }) => client.setQueryData<Chat[]>(["/api/chats"], (rows) => rows?.filter((c) => c.id !== id)),
   });
 
@@ -29,6 +30,7 @@ export function ChatPage({ openId }: { openId: number | null }) {
         onBack={() => (openId ? setOpenId(null) : navigate({ to: "/settings" }))}
         onDelete={() => openId && (setOpenId(null), deleting.mutate(openId))}
       />
+      <FormError error={deleting.error} />
       <h1 className="text-display font-bold text-balance">{open?.title ?? "Chats"}</h1>
       {!openId && <ChatList chats={chats} onOpen={setOpenId} />}
       <Messages messages={messages} asking={asking} onDraft={(draft) => navigate({ to: "/", search: { new: "1" }, state: { draft } })} />

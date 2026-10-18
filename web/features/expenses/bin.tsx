@@ -3,6 +3,7 @@ import { z } from "zod";
 import { BackToSettings } from "../../components/back-link";
 import { Button } from "../../components/button";
 import { Confirm } from "../../components/confirm";
+import { FormError } from "../../components/form";
 import { divide, panel } from "../../components/styles";
 import { useApi, useSend } from "../../lib/api";
 import { expense } from "../../lib/schemas";
@@ -11,7 +12,7 @@ import { ExpenseRow, rowClass } from "./expense-row";
 export function Bin() {
   const bin = useApi(z.array(expense), ["/api/bin"]).data;
   const [asking, setAsking] = useState(false);
-  const empty = useSend();
+  const empty = useSend("bin");
   const restore = useSend("expense");
   if (!bin) return null;
   return (
@@ -34,6 +35,7 @@ export function Bin() {
         )}
       </div>
       <h1 className="mt-4 text-display font-bold">Bin</h1>
+      <FormError error={empty.error ?? restore.error} className="mt-4" />
       {bin.length === 0 && <p className="mt-4 text-ink3">The bin is empty.</p>}
       {bin.length > 0 && (
         <ul className={`mt-4 ${panel}`}>

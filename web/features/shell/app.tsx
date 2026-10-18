@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Outlet } from "@tanstack/react-router";
 import type { Unit } from "../../../shared/amount";
-import { useApi, useSettings } from "../../lib/api";
-import { session as sessionSchema } from "../../lib/schemas";
+import { useApi } from "../../lib/api";
+import { session as sessionSchema, settings as settingsSchema } from "../../lib/schemas";
 import { useTheme } from "../../lib/theme";
 import { UnitContext } from "../../lib/unit";
 import { SignIn } from "../auth/sign-in";
@@ -12,7 +12,8 @@ import { Gate, LoadError } from "./gates";
 
 export function App() {
   const { data: session, error, refetch } = useApi(sessionSchema, ["/api/session"]);
-  const settings = useSettings();
+  const config = useApi(settingsSchema, ["/api/settings"]);
+  const settings = config.data;
   const unitState = useState<Unit>("BTC");
   const [guide, setGuide] = useState(false);
   useTheme(settings?.theme);
@@ -24,7 +25,7 @@ export function App() {
         <SignIn setup={session.setup} />
       </Gate>
     );
-  if (!settings) return null;
+  if (!settings) return config.isError && !config.isFetching && <LoadError error={config.error} onRetry={() => config.refetch()} />;
   if (!settings.onboarded)
     return (
       <Gate>
