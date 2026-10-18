@@ -29,14 +29,16 @@ export const Confirm = (props: { ask: ReactNode; yes: string; onYes: () => void;
 export const chip = "relative inline-flex shrink-0 items-center whitespace-nowrap gap-1.5 rounded-chip border border-line2 bg-surface px-2 py-[3px] text-[13px] font-medium text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent";
 export const divide = "relative not-last:after:absolute not-last:after:inset-x-0 not-last:after:bottom-0 not-last:after:ml-16 not-last:after:h-px not-last:after:bg-line";
 
+export const field = "-mx-5 -mt-[max(env(safe-area-inset-top),20px)] rounded-b-hero bg-hero px-5 pt-[max(env(safe-area-inset-top),16px)] pb-6 text-on-hero shadow-hero lg:mx-0 lg:mt-1 lg:rounded-hero [&_:focus-visible]:outline-on-hero";
+
 export const panel = "overflow-hidden rounded-panel bg-surface shadow-panel";
 
-export function Segmented<T extends string>(props: { label: string; options: readonly T[]; names?: Record<T, string>; value: T; onChange: (v: T) => void }) {
+export function Segmented<T extends string>(props: { label: string; options: readonly T[]; names?: Record<T, string>; value: T; onChange: (v: T) => void; field?: boolean }) {
   return (
-    <div role="radiogroup" aria-label={props.label} className="relative flex h-10 rounded-chip bg-track p-1">
+    <div role="radiogroup" aria-label={props.label} className={`relative flex h-10 rounded-chip p-1 ${props.field ? "bg-on-hero/12" : "bg-track"}`}>
       <span
         aria-hidden
-        className="absolute inset-y-1 left-1 rounded-chip bg-surface shadow-thumb dark:bg-line2 transition-transform duration-[260ms] ease-out"
+        className={`absolute inset-y-1 left-1 rounded-chip shadow-thumb transition-transform duration-[260ms] ease-out ${props.field ? "bg-on-hero" : "bg-surface dark:bg-line2"}`}
         style={{ width: `calc((100% - 8px) / ${props.options.length})`, transform: `translateX(${props.options.indexOf(props.value) * 100}%)` }}
       />
       {props.options.map((o) => (
@@ -46,7 +48,7 @@ export function Segmented<T extends string>(props: { label: string; options: rea
           role="radio"
           aria-checked={props.value === o}
           onClick={() => props.onChange(o)}
-          className={`hit press relative flex-1 rounded-chip text-[13px] font-medium whitespace-nowrap transition-colors ${props.value === o ? "text-ink" : "text-ink2"}`}
+          className={`hit press relative flex-1 rounded-chip text-[13px] font-medium whitespace-nowrap transition-colors ${props.value === o ? (props.field ? "text-hero" : "text-ink") : props.field ? "text-on-hero" : "text-ink2"}`}
         >
           {props.names?.[o] ?? o}
         </button>

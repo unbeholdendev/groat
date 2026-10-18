@@ -4,7 +4,7 @@ import { change, days, money, Pill, span, Total, usePeriod } from "../period";
 import { period, useApi, useCategories } from "../api";
 import { Tile } from "../category";
 import { dated, pick } from "../dates";
-import { Chevron, divide, Icon, Segmented, UnitContext } from "../ui";
+import { Chevron, divide, field, Icon, Segmented, UnitContext } from "../ui";
 
 const presets = ["This month", "Last month", "Year to date", "Custom"] as const;
 
@@ -45,15 +45,15 @@ function StatsPage() {
     <>
       <h1 className="text-display font-bold">Stats</h1>
       <div className="mt-4">
-        <Segmented label="Period" options={presets} value={preset} onChange={(p) => (setPreset(p), setOpen(null))} />
+        <Segmented field label="Period" options={presets} value={preset} onChange={(p) => (setPreset(p), setOpen(null))} />
       </div>
       {preset === "Custom" && (
         <div className="mt-3 flex gap-2">
-          <label className="label min-w-0 flex-1">
+          <label className="label min-w-0 flex-1 text-on-hero2!">
             From
             <input className="input" type="date" value={s.range[0]} onChange={(e) => setRange(e.target.value, s.range[1])} />
           </label>
-          <label className="label min-w-0 flex-1">
+          <label className="label min-w-0 flex-1 text-on-hero2!">
             To
             <input className="input" type="date" value={s.range[1]} onChange={(e) => setRange(s.range[0], e.target.value)} />
           </label>
@@ -64,10 +64,10 @@ function StatsPage() {
 
   if (!now || !ref || !full)
     return (
-      <>
+      <section className={field}>
         {head}
-        <div className="mt-4 h-[302px] rounded-hero bg-hero shadow-hero" />
-      </>
+        <div className="mt-7 h-[262px]" />
+      </section>
     );
 
   const show = (n: number) => money(n, now.baseCurrency, unit);
@@ -83,9 +83,9 @@ function StatsPage() {
 
   return (
     <>
-      {head}
-      <section className="mt-4 rounded-hero bg-hero p-5 text-on-hero shadow-hero">
-        <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="block text-on-hero" />
+      <section className={field}>
+        {head}
+        <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="mt-7 block text-on-hero" />
         <p className="mt-2.5 flex min-h-[26px] flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-on-hero2">
           {scrubbed ?? (d ? (
             <>

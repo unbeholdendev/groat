@@ -343,10 +343,9 @@ One centred column, 448px max, 20px gutters, on phone and desktop. At `lg` the t
 5. Bottom padding clears the dock: `pb-40` (160px) on phones, 16px at `lg`, where the dock is sticky.
 
 ### Stats
-1. Title row: "Stats" in Display.
-2. Segmented control, 16px below: `track` well, full radius, 40px tall (44px hit), four options; the selected thumb is `surface` with `shadow-thumb` and slides between options (translate, 260ms).
-3. **Hero card**, 16px below: the cobalt field as a card inside the column (32px radius, 20px padding), holding the hero numeral, the delta pill with "vs Sep by today", and the chart.
-4. **Spend chart** inside the card, 112px tall, full card width, drawn in SVG from `/api/stats` buckets (day up to 62 days, then week, then month) as cumulative steps: flat between spends, a day bucket rises straight up at its day, a week or month bucket rises across its span.
+1. **Hero field**: the cobalt field bleeds full width under the status bar, as on Home (bottom corners 32px, `shadow-hero`; a 32px card at `lg`). It holds "Stats" in Display, the period control, the hero numeral 28px below, the delta pill with "vs Sep by today", and the chart.
+2. Segmented control, 16px below the title, in its field form: an `on-hero` 12% well, full radius, 40px tall (44px hit), four options; the selected thumb is `on-hero` with Cobalt text, the rest `on-hero`, sliding between options (translate, 260ms). Custom dates sit below it with `on-hero2` labels.
+3. **Spend chart** inside the field, 112px tall, full card width, drawn in SVG from `/api/stats` buckets (day up to 62 days, then week, then month) as cumulative steps: flat between spends, a day bucket rises straight up at its day, a week or month bucket rises across its span.
    - This period: a 2.5px white line, round joins, with an area fill below it from white at 18% to 0 at the baseline.
    - Previous period (`span().full`): a 1.5px `on-hero2` line at 60% opacity, dashed 4 4, across its whole length; it ends with its total as a mono 11px label at the right edge ("Sep £1,840").
    - Today marker (only while the period is in progress): a 1px white line at 30% from top to baseline at today's x, and an 8px white dot with a 3px cobalt ring at the end of this period's line.
@@ -355,8 +354,8 @@ One centred column, 448px max, 20px gutters, on phone and desktop. At `lg` the t
    - Accessible name on the SVG states both totals, as now.
    - Scrub: hover or drag along the chart (touch-action pan-y, so vertical scroll still works) to drop a white 60% rule at that day with a ringed dot on this period's line and a small on-hero2 dot on the ghost. While scrubbing, the delta row reads "10 Oct · £52.00  vs Sept £25.00" instead; it returns on release.
    - Replaces the ruler and the "Day N of M" bar entirely.
-5. **By category** (Title, 28px above): one `surface` panel of rows. Row: 36px tile; name (Body 500) and amount (Amount) on line 1, with the delta in mono 12px `up`/`down` beside the amount; line 2 is the share track (6px, `track`, filled in category colour to the category's share of the period total) with the share as mono 12px Ink 3 ("34%") at its right. Categories with no spend last period show no delta; under the panel one Caption line lists them once: "New since Sep: 🎁 Gifts, ✈️ Travel". Drill-down expands inside the panel: child rows 48px, 28px tiles, indented to the text column.
-6. **By tag**: same panel and row, a `track` tile with a drawn hash icon, no share track.
+4. **By category** (Title, 28px above): one `surface` panel of rows. Row: 36px tile; name (Body 500) and amount (Amount) on line 1, with the delta in mono 12px `up`/`down` beside the amount; line 2 is the share track (6px, `track`, filled in category colour to the category's share of the period total) with the share as mono 12px Ink 3 ("34%") at its right. Categories with no spend last period show no delta; under the panel one Caption line lists them once: "New since Sep: 🎁 Gifts, ✈️ Travel". Drill-down expands inside the panel: child rows 48px, 28px tiles, indented to the text column.
+5. **By tag**: same panel and row, a `track` tile with a drawn hash icon, no share track.
 
 ### Settings and secondary screens
 Same grammar as Home: Title section heads ("Currencies", "Theme", "Household", "More", "API tokens"), each over one Level 1 panel of 62px rows. A row leads with a 36px `track` tile holding a drawn icon (or the member's initial on `accent-soft`), ends with a drawn chevron when it navigates, and destructive or secondary actions are Label text buttons. Settings save as they change; there is no Save button outside onboarding. Theme is the shared segmented control. Sign out is its own panel, `up` text. Recurring, Bin and Chats lists use the same panels and category tiles.

@@ -7,7 +7,7 @@ import { type Draft, type Expense, expense, request, suggestion, template as tem
 import { z } from "zod";
 import { CategoryOptions, Tile } from "../category";
 import { dated, dayLabel, pick, today } from "../dates";
-import { Chevron, Confirm, divide, Icon, panel, Segmented, UnitContext } from "../ui";
+import { Chevron, Confirm, divide, field, Icon, panel, Segmented, UnitContext } from "../ui";
 
 export const Route = createFileRoute("/")({
   validateSearch: (s) =>
@@ -459,7 +459,7 @@ function Expenses() {
         onPointerDown={(e) => e.isPrimary && (swipeFrom.current = [e.clientX, e.clientY])}
         onPointerUp={(e) => e.isPrimary && swipe(e)}
         onPointerCancel={() => (swipeFrom.current = undefined)}
-        className="touch-pan-y -mx-5 -mt-[max(env(safe-area-inset-top),20px)] rounded-b-hero bg-hero px-5 pt-[max(env(safe-area-inset-top),16px)] pb-6 text-on-hero shadow-hero lg:mx-0 lg:mt-1 lg:rounded-hero [&_:focus-visible]:outline-on-hero">
+        className={`touch-pan-y ${field}`}>
         <div className="flex items-center gap-2">
           <h1 className="mr-auto min-w-0 text-display font-bold">{filtered ? "Filtered" : label}</h1>
           {!filtered && (
