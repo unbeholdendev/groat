@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { draft, expense, settings } from "../web/api";
+import { draft, expense, settings } from "../web/lib/schemas";
 import type { Deps } from "../server/app";
 import { setup } from "./harness";
 

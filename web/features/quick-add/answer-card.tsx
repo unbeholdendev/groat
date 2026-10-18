@@ -1,0 +1,43 @@
+import { useEffect, useRef } from "react";
+import type { Unit } from "../../../shared/amount";
+import { Button } from "../../components/button";
+import { DraftCard } from "../../components/draft-card";
+import { type Draft, draftIn } from "../../lib/schemas";
+import type { Asking } from "./use-ask";
+
+export function AnswerCard({ asking, unit, onClose, onForm, onChat }: {
+  asking: Asking;
+  unit: Unit;
+  onClose: () => void;
+  onForm: (d: Draft) => void;
+  onChat: (id: number) => void;
+}) {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => ref.current?.focus(), []);
+  const chat = asking.data;
+  const answer = chat?.messages?.findLast((m) => m.role === "assistant" && m.content)?.content;
+  const drafts = (chat?.messages ?? []).filter((m) => m.role === "tool" && m.content?.startsWith('{"draft"')).flatMap((m) => draftIn(m.content) ?? []);
+  return (
+    <section ref={ref} tabIndex={-1} aria-live="polite" className="rise max-h-[55dvh] overflow-y-auto rounded-card bg-surface px-5 pt-[18px] pb-2.5 shadow-lift outline-none">
+      <p className={`text-[17px] leading-snug font-medium whitespace-pre-wrap ${asking.isPending ? "text-ink3" : ""}`}>
+        {(asking.error && "Couldn’t reach the AI service. Check its settings on the server, then try again.") ?? answer ?? (asking.isPending ? "Looking at your expenses…" : "No answer came back.")}
+      </p>
+      {drafts.map((d, i) => (
+        <DraftCard key={i} draft={d} unit={unit} className="mt-3 w-full bg-surface2" onClick={() => (onForm(d), asking.reset())} />
+      ))}
+      <div className="mt-3 flex justify-end gap-1 border-t border-line pt-1.5">
+        <Button onClick={onClose}>Close</Button>
+        {asking.error && (
+          <Button tone="accent" onClick={() => asking.variables && asking.mutate(asking.variables)}>
+            Try again
+          </Button>
+        )}
+        {chat && (
+          <Button tone="accent" onClick={() => onChat(chat.id)}>
+            Continue in chat
+          </Button>
+        )}
+      </div>
+    </section>
+  );
+}

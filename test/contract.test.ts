@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { z } from "zod";
-import { apiToken, category, chat, expense, member, period, session, settings, suggestion, tag, template } from "../web/api";
+import { apiToken, category, chat, expense, member, period, session, settings, suggestion, tag, template } from "../web/lib/schemas";
 import { setup } from "./harness";
 
 test("web schemas accept what the server sends", async () => {

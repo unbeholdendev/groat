@@ -173,7 +173,7 @@
 }
 
 @utility input {
-  @apply h-11 appearance-none rounded-field border border-line2 bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink3 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent-soft;
+  @apply h-11 appearance-none rounded-field border border-line2 bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink3 aria-invalid:border-up focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent-soft;
   &:is(select) {
     padding-right: 36px;
     background: var(--chevron) no-repeat right 12px center / 16px var(--surface);

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { draft } from "../web/api";
+import { draft } from "../web/lib/schemas";
 import { setup } from "./harness";
 
 const config = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test", aiModel: "test-model" };

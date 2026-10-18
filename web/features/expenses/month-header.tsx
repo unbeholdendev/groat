@@ -1,0 +1,73 @@
+import { type PointerEvent, useContext, useRef } from "react";
+import { Chevron, Icon } from "../../components/icon";
+import { field } from "../../components/styles";
+import { Total } from "../../components/total";
+import { useSettings } from "../../lib/api";
+import { today } from "../../lib/dates";
+import type { Expense } from "../../lib/schemas";
+import { UnitContext } from "../../lib/unit";
+import { inBase } from "./queries";
+import { Summary } from "./summary";
+import { route, useMonth } from "./use-month";
+
+const heroButton = "press hit grid size-9 shrink-0 place-items-center rounded-chip bg-on-hero/16";
+
+export function MonthHeader({ rows, showFilters, onFilters }: { rows: Expense[]; showFilters: boolean; onFilters: () => void }) {
+  const { month, filter, filtered, end, step, label } = useMonth();
+  const base = useSettings()!.baseCurrency;
+  const [unit] = useContext(UnitContext);
+  const navigate = route.useNavigate();
+  const swipeFrom = useRef<[number, number]>(undefined);
+  const count = Object.values(filter).filter(Boolean).length;
+  const unrated = rows.filter((e) => e.baseAmount === null).length;
+  const go = (n: number) => navigate({ search: { month: step(n) === today().slice(0, 7) ? undefined : step(n) }, viewTransition: { types: [n < 0 ? "back" : "forward"] } });
+  const swipe = (e: PointerEvent<HTMLElement>) => {
+    const [x, y] = swipeFrom.current ?? [e.clientX, e.clientY];
+    const dx = e.clientX - x;
+    swipeFrom.current = undefined;
+    if (filtered || Math.abs(dx) < 60 || Math.abs(dx) < 2 * Math.abs(e.clientY - y)) return;
+    if (dx > 0) go(-1);
+    else if (month) go(1);
+  };
+
+  return (
+    <header
+      onPointerDown={(e) => e.isPrimary && (swipeFrom.current = [e.clientX, e.clientY])}
+      onPointerUp={(e) => e.isPrimary && swipe(e)}
+      onPointerCancel={() => (swipeFrom.current = undefined)}
+      className={`touch-pan-y ${field}`}
+    >
+      <div className="flex items-center gap-2">
+        <h1 className="mr-auto min-w-0 text-display font-bold">{filtered ? "Filtered" : label}</h1>
+        {!filtered && (
+          <>
+            <button aria-label="Previous month" className={heroButton} onClick={() => go(-1)}>
+              <Chevron className="size-[18px] rotate-90 stroke-2" />
+            </button>
+            {month && (
+              <button aria-label="Next month" className={heroButton} onClick={() => go(1)}>
+                <Chevron className="size-[18px] -rotate-90 stroke-2" />
+              </button>
+            )}
+          </>
+        )}
+        <button aria-label={count ? `Filters, ${count} on` : "Filters"} aria-expanded={showFilters} onClick={onFilters} className={`${heroButton} relative ml-1.5`}>
+          <Icon d="M4 7h16M7 12h10M10 17h4" className="size-[18px] stroke-2" />
+          {count > 0 && <b className="num absolute -top-1 -right-1 grid size-[18px] place-items-center rounded-chip bg-on-hero text-[11px] font-semibold text-hero">{count}</b>}
+        </button>
+      </div>
+      {filtered ? (
+        <>
+          <p className="mt-5">
+            <Total amount={inBase(rows, base)} currency={base} unit={unit} className="text-on-hero" />
+          </p>
+          <p className="mt-2.5 text-[13px] font-medium text-on-hero2">
+            {rows.length} matching{unrated > 0 && ` + ${unrated} unconverted`}
+          </p>
+        </>
+      ) : (
+        <Summary unit={unit} end={month ? end : undefined} />
+      )}
+    </header>
+  );
+}

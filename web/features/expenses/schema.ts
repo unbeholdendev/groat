@@ -1,0 +1,60 @@
+import type { UseFormReturn } from "react-hook-form";
+import { z } from "zod";
+import { formatAmount, parseAmount, type Unit } from "../../../shared/amount";
+import { today } from "../../lib/dates";
+import type { Draft, Template } from "../../lib/schemas";
+
+export const expenseForm = (unit: Unit) =>
+  z
+    .object({
+      note: z.string(),
+      amount: z.string(),
+      currency: z.string(),
+      date: z.string(),
+      categoryId: z.number().nullable(),
+      tags: z.string().transform((s) => s.split(",").map((t) => t.trim()).filter(Boolean)),
+      period: z.string(),
+      every: z.string(),
+      endDate: z.string(),
+      needsConfirmation: z.boolean(),
+    })
+    .superRefine((v, ctx) => {
+      const issue = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
+      if (!v.note.trim()) issue("note", "Enter a note");
+      if (parseAmount(v.amount, v.currency, unit) === null) issue("amount", "Enter an amount");
+      if (!v.period) return;
+      if (!/^\d+$/.test(v.every.trim()) || Number(v.every) < 1) issue("every", "Enter 1 or more");
+      if (v.endDate && v.endDate < v.date) issue("endDate", "End on or after the start");
+    });
+
+type Schema = ReturnType<typeof expenseForm>;
+export type ExpenseValues = z.input<Schema>;
+export type ExpenseFormApi = UseFormReturn<ExpenseValues, unknown, z.output<Schema>>;
+
+const noRepeat = { period: "", every: "1", endDate: "", needsConfirmation: false };
+
+export const blank = (currency: string): ExpenseValues => ({ note: "", amount: "", currency, date: today(), categoryId: null, tags: "", ...noRepeat });
+
+export const filled = (e: Draft, unit: Unit): ExpenseValues => ({
+  note: e.note,
+  amount: e.amount ? formatAmount(e.amount, e.currency, unit) : "",
+  currency: e.currency,
+  date: e.date,
+  categoryId: e.categoryId || null,
+  tags: e.tags.join(", "),
+  ...noRepeat,
+});
+
+export const fromTemplate = (t: Template, unit: Unit): ExpenseValues => ({
+  ...filled({ ...t, date: t.startDate }, unit),
+  period: t.period,
+  every: String(t.every),
+  endDate: t.endDate ?? "",
+  needsConfirmation: t.needsConfirmation,
+});
+
+const rate = z
+  .string()
+  .trim()
+  .refine((v) => !v || (/^\d+(\.\d+)?$/.test(v) && Number(v) > 0), "Enter a positive number");
+export const rates = z.object({ rates: z.record(z.string(), rate) }).refine((v) => Object.values(v.rates).some(Boolean), { path: ["root"], message: "Enter a rate" });

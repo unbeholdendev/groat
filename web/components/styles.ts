@@ -1,0 +1,6 @@
+export const chip = "relative inline-flex shrink-0 items-center whitespace-nowrap gap-1.5 rounded-chip border border-line2 bg-surface px-2 py-[3px] text-[13px] font-medium text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent";
+export const divide = "relative not-last:after:absolute not-last:after:inset-x-0 not-last:after:bottom-0 not-last:after:ml-16 not-last:after:h-px not-last:after:bg-line";
+export const field = "-mx-5 -mt-[max(env(safe-area-inset-top),20px)] rounded-b-hero bg-hero px-5 pt-[max(env(safe-area-inset-top),16px)] pb-6 text-on-hero shadow-hero lg:mx-0 lg:mt-1 lg:rounded-hero [&_:focus-visible]:outline-on-hero";
+export const panel = "overflow-hidden rounded-panel bg-surface shadow-panel";
+export const sectionHead = "mt-7 mb-3 px-1 text-[20px] font-[650] tracking-[-0.02em]";
+export const linkRow = `press relative flex h-[62px] w-full items-center gap-3 px-4 text-left font-medium hover:bg-surface2 ${divide}`;
