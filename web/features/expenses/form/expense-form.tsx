@@ -24,7 +24,8 @@ export function ExpenseForm() {
   const { watch, setValue, handleSubmit } = form;
   const [categoryId, date] = watch(["categoryId", "date"]);
   const editRow = [...(useExpenses() ?? []), ...usePending()].find((e) => e.id === editing);
-  const saving = useSend(close);
+  const saving = useSend("expense", close);
+  const repeating = useSend(undefined, close);
   const [recurring, setRecurring] = useState(template?.id);
 
   useEffect(() => {
@@ -36,8 +37,8 @@ export function ExpenseForm() {
     if (editRow) fill(editRow);
   }, [editing, !!editRow]);
   useEffect(() => {
-    if (saving.isPaused) close();
-  }, [saving.isPaused]);
+    if (saving.isPaused || repeating.isPaused) close();
+  }, [saving.isPaused || repeating.isPaused]);
 
   function close() {
     navigate({ search: list, replace: true });
@@ -46,17 +47,16 @@ export function ExpenseForm() {
   function fill(e: Draft) {
     setRecurring(undefined);
     saving.reset();
+    repeating.reset();
     form.reset(filled(e, unit));
     scrollTo(0, 0);
   }
 
   const save = handleSubmit(({ categoryId, period, every, endDate, needsConfirmation, ...v }) => {
     const body = { ...v, unit, categoryId: categoryId || undefined };
-    saving.mutate(
-      period
-        ? [recurring ? "PUT" : "POST", recurring ? `/api/recurring/${recurring}` : "/api/recurring", { ...body, period, every: Number(every), endDate: endDate || null, needsConfirmation, startDate: v.date }]
-        : [editing ? "PUT" : "POST", editing ? `/api/expenses/${editing}` : "/api/expenses", body],
-    );
+    if (period)
+      repeating.mutate([recurring ? "PUT" : "POST", recurring ? `/api/recurring/${recurring}` : "/api/recurring", { ...body, period, every: Number(every), endDate: endDate || null, needsConfirmation, startDate: v.date }]);
+    else saving.mutate([editing ? "PUT" : "POST", editing ? `/api/expenses/${editing}` : "/api/expenses", body]);
   });
 
   return (
@@ -65,7 +65,7 @@ export function ExpenseForm() {
         form={form}
         title={editing ? "Edit expense" : recurring ? "Edit recurring" : "New expense"}
         submit={editing || recurring ? "Save" : "Add"}
-        pending={saving.isPending}
+        pending={saving.isPending || repeating.isPending}
         editing={!!editing}
         onCancel={close}
       />
@@ -80,7 +80,7 @@ export function ExpenseForm() {
         </a>
       )}
       {!editing && <RepeatFields form={form} />}
-      <FormError error={saving.error} className="mt-4" />
+      <FormError error={saving.error ?? repeating.error} className="mt-4" />
       {editing && (
         <Button variant="link" tone="up" className="mt-6 self-start text-sm" onClick={() => saving.mutate(["DELETE", `/api/expenses/${editing}`])}>
           Move to bin

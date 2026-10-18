@@ -11,7 +11,8 @@ import { ExpenseRow, rowClass } from "./expense-row";
 export function Bin() {
   const bin = useApi(z.array(expense), ["/api/bin"]).data;
   const [asking, setAsking] = useState(false);
-  const mutation = useSend();
+  const empty = useSend();
+  const restore = useSend("expense");
   if (!bin) return null;
   return (
     <>
@@ -21,7 +22,7 @@ export function Bin() {
           <Confirm
             ask={`Delete ${bin.length} ${bin.length === 1 ? "expense" : "expenses"} for good?`}
             yes="Delete"
-            onYes={() => (setAsking(false), mutation.mutate(["DELETE", "/api/bin"]))}
+            onYes={() => (setAsking(false), empty.mutate(["DELETE", "/api/bin"]))}
             onNo={() => setAsking(false)}
           />
         ) : (
@@ -39,7 +40,7 @@ export function Bin() {
           {bin.map((e) => (
             <li key={e.id} className={`${rowClass} ${divide}`}>
               <ExpenseRow expense={e} dated />
-              <Button variant="quiet" className="hit h-8 px-3 text-[13px]" onClick={() => mutation.mutate(["POST", `/api/bin/${e.id}/restore`])}>
+              <Button variant="quiet" className="hit h-8 px-3 text-[13px]" onClick={() => restore.mutate(["POST", `/api/bin/${e.id}/restore`])}>
                 Restore
               </Button>
             </li>

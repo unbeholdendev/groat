@@ -11,8 +11,8 @@ const secret = z.object({ token: z.string() });
 
 export function Tokens() {
   const tokens = useApi(z.array(apiToken), ["/api/tokens"]).data ?? [];
-  const create = useSend();
-  const revoke = useSend();
+  const create = useSend("token");
+  const revoke = useSend("token");
   const shown = secret.safeParse(create.data).data?.token;
 
   return (

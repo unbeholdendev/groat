@@ -10,7 +10,7 @@ import { MemberRow } from "./member-row";
 
 export function Household() {
   const members = useApi(z.array(member), ["/api/users"]).data ?? [];
-  const mutation = useSendNow();
+  const mutation = useSendNow("users");
   const [open, setOpen] = useState<string | null>(null);
   const send = (...request: Request) => mutation.mutate(request, { onSuccess: () => setOpen(null) });
   const show = (next: string | null) => (mutation.reset(), setOpen(next));

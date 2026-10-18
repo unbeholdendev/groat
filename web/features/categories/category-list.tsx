@@ -9,7 +9,7 @@ import { Button } from "../../components/button";
 
 export function CategoryList(props: { categories: Category[]; editing: number | "new" | null; onEdit: (id: number | "new" | null) => void; reorder: boolean }) {
   const { categories, editing, onEdit, reorder } = props;
-  const { mutate: call, error, reset } = useSend();
+  const { mutate: call, error, reset } = useSend("category");
   const tree = categories.filter((p) => p.parentId === null).flatMap((p) => [p, ...categories.filter((c) => c.parentId === p.id)]);
   const edit = (id: number | "new") => (reset(), onEdit(id));
 

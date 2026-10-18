@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { type QueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { category, type Request, session, settings } from "./schemas";
 
@@ -13,7 +13,8 @@ export async function send(...[method, path, body]: Request): Promise<unknown> {
   if (!res.ok) throw Object.assign(new Error(failure.catch({}).parse(json).error ?? `Something went wrong (${res.status}). Try again.`), { status: res.status });
   return json;
 }
-export const useSend = (onSuccess?: () => void) => useMutation<unknown, Error, Request>({ mutationKey: ["send"], onSuccess });
+export const useSend = (key?: string, onSuccess?: () => void) => useMutation<unknown, Error, Request>({ mutationKey: ["send", key], onSuccess });
+export const refresh = (client: QueryClient, prefix: string) => client.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith(prefix) });
 
 export const useApi = <T extends z.ZodType>(schema: T, queryKey: string[], options: { enabled?: boolean; throwOnError?: boolean } = {}) =>
   useQuery({ queryKey, queryFn: async () => schema.parse(await send("GET", queryKey.join(""))), ...options });
@@ -22,4 +23,4 @@ export const useSettings = () => useApi(settings, ["/api/settings"]).data;
 export const useSession = () => useApi(session, ["/api/session"]).data;
 export const useCategories = () => useApi(z.array(category), ["/api/categories"]).data ?? [];
 // Paused mutations are persisted to localStorage; never let a password queue offline.
-export const useSendNow = () => useMutation<unknown, Error, Request>({ mutationKey: ["send"], networkMode: "always" });
+export const useSendNow = (key?: string) => useMutation<unknown, Error, Request>({ mutationKey: ["send", key], networkMode: "always" });

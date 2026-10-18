@@ -1,7 +1,9 @@
 import { dehydrate, hydrate, keepPreviousData, MutationCache, onlineManager, QueryCache, QueryClient } from "@tanstack/react-query";
 import { send } from "./lib/api";
 import type { Request } from "./lib/schemas";
-import { patchCache } from "./cache-sync";
+import { syncCategory } from "./features/categories/queries";
+import { syncExpense } from "./features/expenses/queries";
+import { syncSettings, syncToken, syncUsers } from "./features/settings/queries";
 
 export const queryClient: QueryClient = new QueryClient({
   defaultOptions: {
@@ -12,12 +14,26 @@ export const queryClient: QueryClient = new QueryClient({
     },
   },
   queryCache: new QueryCache({ onError: signedOut }),
-  mutationCache: new MutationCache({ onSuccess: (data, variables, _, mutation) => patchCache(queryClient, data, variables, mutation), onError: signedOut }),
+  mutationCache: new MutationCache({ onError: signedOut }),
 });
 function signedOut(e: Error & { status?: number }) {
   if (e.status === 401) queryClient.invalidateQueries({ queryKey: ["/api/session"] });
 }
-queryClient.setMutationDefaults(["send"], { mutationFn: (r: Request) => send(...r) });
+// In mutationFn, not onSuccess: a hook's onSuccess replaces the default, and only defaults survive a reload.
+const sync = (key: string[], patch: (client: QueryClient, data: unknown, request: Request) => unknown) =>
+  queryClient.setMutationDefaults(key, {
+    mutationFn: async (r: Request, { client }) => {
+      const data = await send(...r);
+      await patch(client, data, r);
+      return data;
+    },
+  });
+sync(["send"], (client) => client.invalidateQueries());
+sync(["send", "expense"], syncExpense);
+sync(["send", "category"], syncCategory);
+sync(["send", "settings"], syncSettings);
+sync(["send", "token"], syncToken);
+sync(["send", "users"], syncUsers);
 
 try {
   hydrate(queryClient, JSON.parse(localStorage.getItem("cache") ?? "null"));

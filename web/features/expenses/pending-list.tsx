@@ -13,7 +13,7 @@ export function PendingList() {
   const categories = useCategories();
   const [unit] = useContext(UnitContext);
   const edit = useEdit();
-  const mutation = useSend();
+  const mutation = useSend("expense");
   if (!pending.length) return null;
   return (
     <ul className="mt-5 overflow-hidden rounded-panel bg-amber-soft">

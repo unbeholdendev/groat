@@ -8,7 +8,7 @@ import { ExpenseRow, rowClass } from "./expense-row";
 export function SwipeRow({ expense: e, fresh, onSetRate }: { expense: Expense; fresh: boolean; onSetRate: () => void }) {
   const [swiped, setSwiped] = useState<{ x: number; dx: number } | null>(null);
   const dragged = useRef(false);
-  const mutation = useSend();
+  const mutation = useSend("expense");
   const sliding = !!swiped && swiped.dx < -8;
   return (
     <li

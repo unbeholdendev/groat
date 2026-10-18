@@ -3,7 +3,7 @@ import { useMutation, useMutationState } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useApi } from "../../lib/api";
-import { chat as chatSchema } from "../../lib/schemas";
+import { type Chat, chat as chatSchema } from "../../lib/schemas";
 import { ChatHeader } from "./chat-header";
 import { ChatList } from "./chat-list";
 import { Messages } from "./messages";
@@ -17,7 +17,10 @@ export function ChatPage({ openId }: { openId: number | null }) {
   const asking = useMutationState({ filters: { mutationKey: ["ask", openId], status: "pending" }, select: (m) => (typeof m.state.variables === "string" ? m.state.variables : undefined) })[0];
   const messages = [...(open?.messages ?? []), ...(asking ? [{ role: "user", content: asking }] : [])];
   useEffect(() => void (openId && scrollTo(0, document.body.scrollHeight)), [messages.length]);
-  const deleting = useMutation({ mutationFn: (id: number) => fetch(`/api/chats/${id}`, { method: "DELETE" }) });
+  const deleting = useMutation({
+    mutationFn: (id: number) => fetch(`/api/chats/${id}`, { method: "DELETE" }),
+    onSuccess: (_, id, __, { client }) => client.setQueryData<Chat[]>(["/api/chats"], (rows) => rows?.filter((c) => c.id !== id)),
+  });
 
   return (
     <div className="grid gap-5">

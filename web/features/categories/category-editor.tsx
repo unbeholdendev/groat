@@ -13,7 +13,7 @@ export function CategoryEditor(props: { category?: Category; categories: Categor
   const { category: c, categories } = props;
   const form = useZodForm(categoryForm, { name: c?.name ?? "", icon: c?.icon ?? "📁", color: c?.color ?? palette.Rose, parentId: "" });
   const { errors } = form.formState;
-  const save = useSend();
+  const save = useSend("category");
   const [deleting, setDeleting] = useState(false);
   const submit = form.handleSubmit(({ parentId, ...fields }) =>
     save.mutate(c ? ["PUT", `/api/categories/${c.id}`, fields] : ["POST", "/api/categories", { ...fields, parentId }], { onSuccess: props.onClose }),

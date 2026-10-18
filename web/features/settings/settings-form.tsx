@@ -14,7 +14,7 @@ export function SettingsForm(props: { settings: Settings; path: string; method: 
   const onboarding = !props.settings.onboarded;
   const [baseCurrency, setBase] = useState(props.settings.baseCurrency);
   const [others, setOthers] = useState(props.settings.currencies.filter((c) => c !== props.settings.baseCurrency));
-  const mutation = useSend(props.onSaved);
+  const mutation = useSend("settings", props.onSaved);
   const queryClient = useQueryClient();
   const saved = props.settings.currencies.join();
   useEffect(() => {

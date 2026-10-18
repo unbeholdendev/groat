@@ -58,7 +58,7 @@ export function Bar(props: {
   const { form, drafting, image, captureError, setCaptureError, unreview, photo, reviewing } = useDrafting(unit, () => props.onForm(seed()));
   useShared((file) => (online ? photo(file) : setCaptureError(new Error("Photos need a connection"))));
   const clear = () => (setText(""), setCategoryId(null), setDate(today()), unreview(), props.onGuided());
-  const adding = useSend(clear);
+  const adding = useSend("expense", clear);
   const save = form.handleSubmit((v) => adding.mutate(["POST", "/api/expenses", { ...v, attachmentId: drafting.data?.attachmentId }]));
   const queued = useMutationState({ filters: { predicate: (m) => m.state.isPaused } }).length;
   const receipt = useReceipt(categories, unit, adding.mutate);
