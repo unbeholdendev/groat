@@ -2,7 +2,7 @@ import { and, count, eq, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { z } from "zod";
-import { active, credentials, type Env } from "./auth";
+import { active, credentials, type Env, hashCost } from "./auth";
 import type { Db } from "./db";
 import { body } from "./request";
 import { apiTokens, sessions, users } from "./schema";
@@ -26,7 +26,7 @@ export function memberRoutes(db: Db, clock: () => Date) {
     if ("error" in parsed) return c.json(parsed, 400);
     const { username } = parsed.data;
     if (db.select().from(users).where(eq(users.username, username)).get()) return c.json({ error: "That username is taken" }, 409);
-    const passwordHash = await Bun.password.hash(parsed.data.password);
+    const passwordHash = await Bun.password.hash(parsed.data.password, hashCost);
     const { id } = db.insert(users).values({ username, passwordHash, role: "member" }).returning({ id: users.id }).get();
     return c.json({ id, username, role: "member" }, 201);
   });
@@ -34,7 +34,7 @@ export function memberRoutes(db: Db, clock: () => Date) {
   app.put("/api/users/:id/password", async (c) => {
     const parsed = await body(c, password);
     if ("error" in parsed) return c.json(parsed, 400);
-    const passwordHash = await Bun.password.hash(parsed.data.password);
+    const passwordHash = await Bun.password.hash(parsed.data.password, hashCost);
     const row = db.update(users).set({ passwordHash }).where(member(c.req.param("id"))).returning({ id: users.id }).get();
     if (!row) return c.json({ error: "Not found" }, 404);
     db.delete(sessions).where(and(eq(sessions.userId, row.id), ne(sessions.id, getCookie(c, "session") ?? ""))).run();

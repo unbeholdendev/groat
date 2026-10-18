@@ -8,6 +8,7 @@ import { expenses, sessions, users } from "./schema";
 export const credentials = z.object({ username: z.string().trim().min(1), password: z.string().min(1) });
 const days = 30;
 export const active = isNull(users.deletedAt);
+export const hashCost = Bun.env.NODE_ENV === "test" ? ({ algorithm: "argon2id", memoryCost: 8, timeCost: 1 } as const) : undefined;
 
 export type Env = { Variables: { user: { id: number; role: string } } };
 
@@ -40,7 +41,7 @@ export function auth(db: Db, clock: () => Date) {
     const parsed = await body(c);
     if (!parsed.success) return c.json({ error: "Enter a username and password" }, 400);
     const { username, password } = parsed.data;
-    const passwordHash = await Bun.password.hash(password);
+    const passwordHash = await Bun.password.hash(password, hashCost);
     if (db.select().from(users).get()) return c.json({ error: "Already set up" }, 409);
     const { id } = db.insert(users).values({ username, passwordHash, role: "admin" }).returning({ id: users.id }).get();
     db.update(expenses).set({ createdBy: id }).where(isNull(expenses.createdBy)).run();

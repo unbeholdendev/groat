@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { createApp, type Deps } from "../server/app";
+import { hashCost } from "../server/auth";
 
 type Handler = (url: URL, init?: RequestInit) => Response | undefined;
 
@@ -42,7 +43,7 @@ export function setup(now = "2026-10-10T12:00:00Z", handler: Handler = () => und
       config,
     });
   let app = build();
-  db.run("INSERT INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')", [Bun.password.hashSync("secret")]);
+  db.run("INSERT INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')", [Bun.password.hashSync("secret", hashCost)]);
   const restart = () => (app = build());
   const request = (path: string, init: RequestInit = {}) => {
     db.run("INSERT OR REPLACE INTO sessions (id, user_id, expires_at) VALUES ('admin', 1, '9999')");
