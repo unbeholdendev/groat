@@ -1,0 +1,57 @@
+import { expect, test } from "bun:test";
+import { cumulative, valueAt } from "../web/features/stats/cumulative";
+import { dayLabel, pick, today } from "../web/lib/dates";
+import { money } from "../web/lib/money";
+import { change, days, span } from "../web/lib/period";
+
+test("money formats fiat and bitcoin", () => {
+  expect(money(350, "GBP")).toBe("£3.50");
+  expect(money(5000, "JPY")).toBe("JP¥5,000");
+  expect(money(123456, "BTC", "sats")).toBe("123,456 sats");
+  expect(money(150000000, "BTC")).toBe("1.50000000 BTC");
+});
+
+test("dayLabel and pick", () => {
+  expect(dayLabel(today())).toBe("Today");
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  expect(dayLabel(y.toLocaleDateString("en-CA"))).toBe("Yesterday");
+  expect(dayLabel("2001-02-03")).toContain("2001");
+  expect(pick({ from: "2026-01-01", to: "nope", x: "2026-01-01" }, { from: /^\d{4}-\d{2}-\d{2}$/, to: /^\d+$/ })).toEqual({ from: "2026-01-01" });
+});
+
+test("span compares each preset with the matching earlier stretch", () => {
+  const now = new Date(2026, 2, 31);
+  expect(span("This month", undefined, now)).toEqual({
+    range: ["2026-03-01", "2026-03-31"],
+    ref: ["2026-02-01", "2026-02-28"],
+    full: ["2026-02-01", "2026-02-28"],
+    end: "2026-03-31",
+    name: "Feb",
+  });
+  expect(span("Last month", undefined, now)).toMatchObject({ range: ["2026-02-01", "2026-02-28"], ref: ["2026-01-01", "2026-01-31"], name: "Jan" });
+  expect(span("Year to date", undefined, now)).toMatchObject({ range: ["2026-01-01", "2026-03-31"], ref: ["2025-01-01", "2025-03-31"], end: "2026-12-31", name: "2025" });
+  expect(span("Custom", ["2026-03-10", "2026-03-19"], now)).toMatchObject({ ref: ["2026-02-28", "2026-03-09"], end: "2026-03-19", name: "Before" });
+  expect(days("2026-03-28", "2026-04-02")).toBe(6);
+});
+
+test("change gives signed percent and tone", () => {
+  expect(change(110, 100)).toEqual({ text: "+10%", tone: "text-up" });
+  expect(change(90, 100)).toEqual({ text: "−10%", tone: "text-down" });
+  expect(change(100, 100)).toEqual({ text: "0%", tone: "text-ink3" });
+  expect(change(5, 0)).toBeNull();
+});
+
+test("cumulative builds a running total over the range", () => {
+  const pts = cumulative(
+    [
+      { start: "2026-01-01", total: 10 },
+      { start: "2026-02-01", total: 5 },
+    ],
+    ["2026-01-01", "2026-02-28"],
+  );
+  expect(pts).toEqual([[0, 0], [31, 10], [31, 10], [31, 10], [59, 15], [59, 15]]);
+  expect(valueAt(pts, 0)).toBe(0);
+  expect(valueAt(pts, 40)).toBe(10);
+  expect(valueAt(pts, 59)).toBe(15);
+});
