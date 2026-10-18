@@ -77,14 +77,14 @@ function App() {
     );
   if (!session.user)
     return (
-      <main className="mx-auto max-w-md px-5 pt-12 pb-10">
+      <main className="mx-auto max-w-md px-5 pb-10 lg:pt-12">
         <SignIn setup={session.setup} />
       </main>
     );
   if (!settings) return null;
   if (!settings.onboarded)
     return (
-      <main className="mx-auto max-w-md px-5 pt-12 pb-10">
+      <main className="mx-auto max-w-md px-5 pb-10 lg:pt-12">
         <SettingsForm settings={settings} path="/api/onboarding" method="POST" title="Welcome" onSaved={() => setGuide(true)} />
       </main>
     );

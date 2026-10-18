@@ -1,7 +1,7 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { type Settings, theme as themes, useSend } from "./api";
-import { chip, Chevron, Icon, panel, Segmented, sectionHead } from "./ui";
+import { chip, Chevron, Icon, Masthead, panel, Segmented, sectionHead } from "./ui";
 
 const currencyNames = new Intl.DisplayNames(["en-GB"], { type: "currency" });
 const allCurrencies = [...Intl.supportedValuesOf("currency"), "BTC"].sort();
@@ -46,8 +46,11 @@ export function SettingsForm(props: { settings: Settings; path: string; method: 
 
   return (
     <form onSubmit={save} className="flex flex-col">
-      <h1 className="text-display font-bold">{props.title}</h1>
-      {onboarding && <p className="mt-2 text-ink2">Pick the currency totals are shown in, and any others you spend in. You can change both later.</p>}
+      {onboarding ? (
+        <Masthead title={props.title}>Pick the currency totals are shown in, and any others you spend in. You can change both later.</Masthead>
+      ) : (
+        <h1 className="text-display font-bold">{props.title}</h1>
+      )}
       <h2 className={sectionHead}>Currencies</h2>
       <div className={panel}>
         <label className="relative flex h-[62px] items-center gap-3 px-4 after:absolute after:inset-x-0 after:bottom-0 after:ml-16 after:h-px after:bg-line has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-accent">

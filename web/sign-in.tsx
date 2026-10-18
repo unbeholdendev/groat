@@ -1,6 +1,7 @@
 import type { FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import type { Request } from "./api";
+import { Masthead } from "./ui";
 
 export function SignIn({ setup }: { setup: boolean }) {
   // Paused mutations are persisted to localStorage; never let the password queue offline.
@@ -13,8 +14,9 @@ export function SignIn({ setup }: { setup: boolean }) {
 
   return (
     <form onSubmit={submit} onChangeCapture={() => mutation.reset()} className="flex flex-col gap-4">
-      <h1 className="text-display font-bold">{setup ? "Welcome" : "Sign in"}</h1>
-      {setup && <p className="-mt-2 text-ink2">Create the admin account. Anything already saved stays as it is.</p>}
+      <Masthead className="mb-3" title={setup ? "Welcome" : "Sign in"}>
+        {setup ? "Create the admin account. Anything already saved stays as it is." : "Your expenses, on your own server."}
+      </Masthead>
       <label className="label">
         Username
         <input name="username" className="input" autoComplete="username" autoCapitalize="none" required />
