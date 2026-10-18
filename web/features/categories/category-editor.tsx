@@ -8,7 +8,6 @@ import { useZodForm } from "../../lib/use-zod-form";
 import { ColourPicker, palette } from "./colour-picker";
 import { DeleteCategory } from "./delete-category";
 import { categoryForm } from "./schema";
-import { text } from "./styles";
 
 export function CategoryEditor(props: { category?: Category; categories: Category[]; onClose: () => void; onDelete: (moveTo: string) => void }) {
   const { category: c, categories } = props;
@@ -55,13 +54,13 @@ export function CategoryEditor(props: { category?: Category; categories: Categor
       ) : (
         <div className="flex items-center">
           {c && !c.builtin && (
-            <button type="button" className={`${text} -ml-2.5 text-up`} onClick={() => setDeleting(true)}>
+            <Button tone="up" className="-ml-2.5 h-11" onClick={() => setDeleting(true)}>
               Delete
-            </button>
+            </Button>
           )}
-          <button type="button" className={`${text} ml-auto text-ink2`} onClick={props.onClose}>
+          <Button className="ml-auto h-11" onClick={props.onClose}>
             Cancel
-          </button>
+          </Button>
           <Button variant="primary" type="submit">
             {c ? "Save" : "Add"}
           </Button>

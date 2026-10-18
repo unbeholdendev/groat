@@ -5,7 +5,7 @@ import { divide } from "../../components/styles";
 import { useSend } from "../../lib/api";
 import type { Category } from "../../lib/schemas";
 import { CategoryEditor } from "./category-editor";
-import { text } from "./styles";
+import { Button } from "../../components/button";
 
 export function CategoryList(props: { categories: Category[]; editing: number | "new" | null; onEdit: (id: number | "new" | null) => void; reorder: boolean }) {
   const { categories, editing, onEdit, reorder } = props;
@@ -61,10 +61,10 @@ export function CategoryList(props: { categories: Category[]; editing: number | 
           {editing === "new" && <li>{editor()}</li>}
         </ul>
         {editing !== "new" && !reorder && (
-          <button className={`${text} mt-2 ml-1.5 flex items-center gap-1.5 text-ink2`} onClick={() => edit("new")}>
+          <Button className="mt-2 ml-1.5 flex h-11 items-center gap-1.5" onClick={() => edit("new")}>
             <Icon d={paths.plus} className="size-4 stroke-2" />
             New category
-          </button>
+          </Button>
         )}
       </div>
     </>

@@ -4,7 +4,7 @@ import { CategoryOptions } from "../../components/category";
 import { Select } from "../../components/form";
 import { useApi } from "../../lib/api";
 import { type Category, expense } from "../../lib/schemas";
-import { text } from "./styles";
+import { Button } from "../../components/button";
 
 export function DeleteCategory(props: { category: Category; categories: Category[]; onKeep: () => void; onDelete: (moveTo: string) => void }) {
   const { category: c, categories } = props;
@@ -21,12 +21,12 @@ export function DeleteCategory(props: { category: Category; categories: Category
         </Select>
       </label>
       <div className="flex justify-end">
-        <button type="button" className={`${text} text-ink2`} onClick={props.onKeep}>
+        <Button className="h-11" onClick={props.onKeep}>
           Keep
-        </button>
-        <button type="button" className={`${text} text-up`} onClick={() => props.onDelete(moveTo)}>
+        </Button>
+        <Button tone="up" className="h-11" onClick={() => props.onDelete(moveTo)}>
           Delete {c.name}
-        </button>
+        </Button>
       </div>
     </div>
   );
