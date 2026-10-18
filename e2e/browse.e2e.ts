@@ -31,7 +31,7 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   await page.getByRole("button", { name: "Clear filters" }).first().click();
   await expect(page.getByRole("button", { name: "Groceries run" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Stats" }).click();
+  await page.getByRole("link", { name: "Stats", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Stats" })).toBeVisible();
   await expect(page.locator("section").first()).toContainText("£42.00");
   await page.getByRole("button", { name: /Food/ }).click();
@@ -40,7 +40,7 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   await expect(page.getByRole("button", { name: "Groceries run" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Cinema" })).toBeHidden();
 
-  await page.getByRole("link", { name: "Stats" }).click();
+  await page.getByRole("link", { name: "Stats", exact: true }).click();
   await page.getByRole("radio", { name: "Last month" }).click();
   await expect(page.locator("section").first()).toContainText("£8.00");
   await page.getByRole("radio", { name: "Custom" }).click();
@@ -97,4 +97,19 @@ test("changing period clears a scrub readout", async ({ app: page }) => {
   await page.getByRole("radio", { name: "Last month" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("section").first()).not.toContainText("· £3.20");
+});
+
+test("the desktop side column switches between amounts and shares", async ({ app: page }, info) => {
+  test.skip(info.project.name === "phone");
+  await seed(page, [
+    { note: "Groceries run", amount: "30", categoryId: 3 },
+    { note: "Cinema", amount: "10", categoryId: 16 },
+  ]);
+  await page.reload();
+  const aside = page.locator("aside");
+  await expect(aside).toContainText("£30.00");
+  await aside.getByRole("radio", { name: "Share" }).click();
+  await expect(aside).toContainText("75%");
+  await expect(aside).toContainText("25%");
+  await expect(aside).not.toContainText("£30.00");
 });

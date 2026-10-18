@@ -7,7 +7,7 @@ import { type Draft, type Expense, expense, request, suggestion, template as tem
 import { z } from "zod";
 import { CategoryOptions, Tile } from "../category";
 import { dated, dayLabel, pick, today } from "../dates";
-import { Chevron, Confirm, divide, Icon, panel, UnitContext } from "../ui";
+import { Chevron, Confirm, divide, Icon, panel, Segmented, UnitContext } from "../ui";
 
 export const Route = createFileRoute("/")({
   validateSearch: (s) =>
@@ -496,6 +496,7 @@ function Expenses() {
           <Summary unit={unit} end={month ? end : undefined} />
         )}
       </header>
+      {!filtered && <Breakdown unit={unit} end={month ? end : undefined} />}
       {showFilters && (
         <div className={`rise mt-4 grid grid-cols-2 gap-2 p-3 ${panel}`}>
           <div className="col-span-2 flex">{filterInput("q", "Search")}</div>
@@ -702,5 +703,50 @@ function Summary({ unit, end }: { unit: Unit; end?: Date }) {
         </>
       )}
     </>
+  );
+}
+
+function Breakdown({ unit, end }: { unit: Unit; end?: Date }) {
+  const s = span("This month", undefined, end);
+  const now = usePeriod(s.range);
+  const [show, setShow] = useState<"Amount" | "Share">("Amount");
+  const categories = useCategories();
+  if (!now?.total) return null;
+  return (
+    <aside className="fixed top-6 left-[calc(50%+248px)] hidden max-h-[calc(100dvh-48px)] w-72 overflow-y-auto xl:block">
+      <div className="flex items-center justify-between gap-3 px-1 pb-3">
+        <h2 className="text-[20px] font-[650] tracking-[-0.02em]">By category</h2>
+        <div className="w-36">
+          <Segmented label="Show" options={["Amount", "Share"]} value={show} onChange={setShow} />
+        </div>
+      </div>
+      <ul className={panel}>
+        {now.categories.map((c, i) => {
+          const known = categories.find((k) => k.id === c.id);
+          return (
+            <li key={c.id} className={divide}>
+              <Link to="/" search={{ category: String(c.id), from: s.range[0], to: s.range[1] }} className="press flex items-center gap-3 px-4 py-3 hover:bg-surface2">
+                <Tile category={known ?? c} small />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-2 text-[13px]">
+                    <span className="truncate font-medium">{c.name}</span>
+                    <span className="num ml-auto">{show === "Amount" ? money(c.total, now.baseCurrency, unit) : `${Math.round((c.total / now.total) * 100)}%`}</span>
+                  </span>
+                  <span className="mt-1.5 block h-1 overflow-hidden rounded-chip bg-track">
+                    <span
+                      className="block h-full origin-left animate-fill rounded-chip"
+                      style={{ width: `${(c.total / now.total) * 100}%`, background: known?.builtin ? "var(--ink3)" : c.color, animationDelay: `${i * 30}ms` }}
+                    />
+                  </span>
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      <Link to="/stats" className="mt-3 block px-1 text-[13px] font-medium text-accent">
+        All stats
+      </Link>
+    </aside>
   );
 }
