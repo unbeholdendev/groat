@@ -4,7 +4,7 @@ import { field } from "../../components/styles";
 import { Pill, Total } from "../../components/total";
 import { useApi, useCategories } from "../../lib/api";
 import { money } from "../../lib/money";
-import { change, days, span, usePeriod } from "../../lib/period";
+import { change, days, span } from "../../lib/period";
 import { period } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
 import { ByCategory } from "./by-category";
@@ -18,8 +18,8 @@ const group = (from: string, to: string) => {
   const n = days(from, to);
   return n <= 62 ? "day" : n <= 366 ? "week" : "month";
 };
-const useSeries = ([from, to]: [string, string]) =>
-  useApi(period, [`/api/stats?from=${from}&to=${to}&group=${group(from, to)}`], { enabled: from <= to }).data;
+const useSeries = ([from, to]: [string, string], by = group(from, to)) =>
+  useApi(period, [`/api/stats?from=${from}&to=${to}&group=${by}`], { enabled: from <= to, throwOnError: true }).data;
 
 export function StatsPage() {
   const [unit] = useContext(UnitContext);
@@ -40,7 +40,7 @@ export function StatsPage() {
     if (p !== "Custom") setRange(...span(p).range);
   };
   const now = useSeries(s.range);
-  const ref = usePeriod(s.ref);
+  const ref = useSeries(s.ref, "month");
   const full = useSeries(s.full);
   const head = <HeroHead preset={preset} range={s.range} onPreset={setPreset} onRange={setRange} />;
 
@@ -48,7 +48,7 @@ export function StatsPage() {
     return (
       <section className={field}>
         {head}
-        <div className="mt-7 h-[262px]" />
+        <div className="mt-7 h-[262px] text-on-hero2">{s.range[0] > s.range[1] && "From is after To."}</div>
       </section>
     );
 

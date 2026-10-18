@@ -56,6 +56,7 @@ export function ExpenseForm() {
     const body = { ...v, unit, categoryId: categoryId || undefined };
     if (period)
       repeating.mutate([recurring ? "PUT" : "POST", recurring ? `/api/recurring/${recurring}` : "/api/recurring", { ...body, period, every: Number(every), endDate: endDate || null, needsConfirmation, startDate: v.date }]);
+    else if (recurring) repeating.mutate(["DELETE", `/api/recurring/${recurring}`]);
     else saving.mutate([editing ? "PUT" : "POST", editing ? `/api/expenses/${editing}` : "/api/expenses", body]);
   });
 
@@ -79,7 +80,7 @@ export function ExpenseForm() {
           <img src={`/api/attachments/${editRow.attachmentId}`} alt="Receipt" className="max-h-40 rounded-field border border-line object-contain" />
         </a>
       )}
-      {!editing && <RepeatFields form={form} />}
+      {!editing && <RepeatFields form={form} stops={!!recurring} />}
       <FormError error={saving.error ?? repeating.error} className="mt-4" />
       {editing && (
         <Button variant="link" tone="up" className="mt-6 self-start text-sm" onClick={() => saving.mutate(["DELETE", `/api/expenses/${editing}`])}>

@@ -16,11 +16,11 @@ export function HeroHead(props: { preset: Preset; range: [string, string]; onPre
         <div className="mt-3 flex gap-2">
           <label className="label min-w-0 flex-1 text-on-hero2!">
             From
-            <Input type="date" value={from} onChange={(e) => props.onRange(e.target.value, to)} />
+            <Input type="date" max={to} value={from} onChange={(e) => props.onRange(e.target.value, to)} />
           </label>
           <label className="label min-w-0 flex-1 text-on-hero2!">
             To
-            <Input type="date" value={to} onChange={(e) => props.onRange(from, e.target.value)} />
+            <Input type="date" min={from} value={to} onChange={(e) => props.onRange(from, e.target.value)} />
           </label>
         </div>
       )}

@@ -1,14 +1,14 @@
 import { Field, Input, Select } from "../../../components/form";
 import type { ExpenseFormApi } from "../schema";
 
-export function RepeatFields({ form }: { form: ExpenseFormApi }) {
+export function RepeatFields({ form, stops }: { form: ExpenseFormApi; stops: boolean }) {
   const { register, watch, formState: { errors } } = form;
   const period = watch("period");
   return (
     <div className="mt-6 flex flex-wrap items-end gap-2">
       <Field label="Repeat">
         <Select {...register("period")}>
-          <option value="">Doesn't repeat</option>
+          <option value="">{stops ? "Stop repeating" : "Doesn’t repeat"}</option>
           {["day", "week", "month", "year"].map((u) => (
             <option key={u} value={u}>
               Every {u}

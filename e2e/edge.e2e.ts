@@ -52,6 +52,21 @@ test("a recurring expense can be edited", async ({ app: page }) => {
   await expect(page.getByText("£32.00 every month")).toBeVisible();
 });
 
+test("clearing Repeat stops a recurring expense", async ({ app: page }) => {
+  await page.request.post("/api/recurring", { data: { note: "Gym", amount: "30", currency: "GBP", period: "month", every: 1, startDate: "2026-01-01" } });
+  await page.goto("/?view=recurring");
+  await page.getByRole("button", { name: /Gym/ }).click();
+  await page.getByLabel("Repeat").selectOption("");
+  await page.getByRole("button", { name: "Save" }).click();
+  await page.goto("/?view=recurring");
+  await expect(page.getByText("Nothing repeats yet.", { exact: false })).toBeVisible();
+});
+
+test("Stats says when From is after To", async ({ app: page }) => {
+  await page.goto("/stats?from=2026-05-10&to=2026-05-01");
+  await expect(page.getByText("From is after To.")).toBeVisible();
+});
+
 test.describe("with AI", () => {
   test.use({ ai: true });
 

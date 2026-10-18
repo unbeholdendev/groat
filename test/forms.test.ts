@@ -50,7 +50,7 @@ test("quick-add review round-trips a draft", () => {
   const draft = { note: "Lunch", amount: 1200, currency: "GBP", date: "2026-05-01", categoryId: null, tags: ["work", "team"] };
   const f = fields(draft, "BTC");
   expect(f).toMatchObject({ amount: "12.00", categoryId: 0, tags: "#work #team" });
-  expect(review("sats").parse(f)).toEqual({ ...f, unit: "sats", tags: ["work", "team"] });
+  expect(review("sats").parse(f)).toEqual({ ...f, categoryId: undefined, unit: "sats", tags: ["work", "team"] });
   expect(fields({ ...draft, amount: 0 }, "BTC").amount).toBe("");
   expect(errors(review("BTC").safeParse({ ...f, note: "  ", amount: "x" }))).toEqual(["note", "amount"]);
 });

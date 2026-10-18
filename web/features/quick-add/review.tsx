@@ -56,6 +56,7 @@ export function Review(props: {
             <Picker className={chip}>
               {category?.name ?? "Category"}
               <select aria-label="Category" className={overlay} {...register("categoryId", { valueAsNumber: true })}>
+                <option value="0">Category</option>
                 <CategoryOptions categories={props.categories} />
               </select>
             </Picker>
