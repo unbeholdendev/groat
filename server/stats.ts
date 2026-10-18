@@ -102,7 +102,7 @@ export function statsRoutes(db: Db, value: Valuer) {
 
   app.get("/api/stats", async (c) => {
     const q = query(c, range);
-    if ("error" in q) return c.json({ error: "invalid range" }, 400);
+    if ("error" in q) return c.json({ error: "Invalid date range" }, 400);
     const { from, to, group } = q.data;
     return c.json(await stats(db, value, from, to, group));
   });

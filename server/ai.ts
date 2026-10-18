@@ -18,7 +18,7 @@ const chatMessage = z.looseObject({
 });
 type Message = z.infer<typeof chatMessage>;
 const completion = z.object({ choices: z.tuple([z.object({ message: chatMessage })], z.unknown()) });
-const question = z.object({ message: z.string("message is required").trim().min(1, "message is required") });
+const question = z.object({ message: z.string("Enter a message").trim().min(1, "Enter a message") });
 const range = z.object({ from: isoDate.describe("YYYY-MM-DD"), to: isoDate.describe("YYYY-MM-DD") });
 
 const tool = <T extends z.ZodType>(description: string, input: T, run: (args: z.output<T>) => unknown) => ({
@@ -37,15 +37,15 @@ export async function complete({ fetch, config }: Pick<Ctx, "fetch" | "config">,
     headers: { authorization: `Bearer ${config.aiApiKey}`, "content-type": "application/json" },
     body: JSON.stringify({ model: config.aiModel, ...request }),
   });
-  if (!res.ok) throw new Error(`AI provider returned ${res.status}`);
+  if (!res.ok) throw new Error(`The AI provider returned an error (${res.status})`);
   const reply = completion.safeParse(await res.json().catch(() => undefined));
-  if (!reply.success) throw new Error("AI provider sent an unexpected reply");
+  if (!reply.success) throw new Error("The AI provider sent an unexpected reply");
   return reply.data.choices[0].message;
 }
 
 export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
   const app = new Hono();
-  app.use("*", async (c, next) => (aiEnabled(config) ? next() : c.json({ error: "AI is not configured" }, 403)));
+  app.use("*", async (c, next) => (aiEnabled(config) ? next() : c.json({ error: "AI isn’t set up" }, 403)));
 
   const save = (chatId: number, message: object) => db.insert(chatMessages).values({ chatId, message }).run();
 
@@ -154,18 +154,18 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
 
   app.get("/:id", (c) => {
     const found = chat(c.req.param("id"));
-    return found ? c.json(found) : c.json({ error: "not found" }, 404);
+    return found ? c.json(found) : c.json({ error: "Not found" }, 404);
   });
 
   app.post("/:id/messages", async (c) => {
     const input = await body(c, question);
-    if (!chat(c.req.param("id"))) return c.json({ error: "not found" }, 404);
+    if (!chat(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
     if ("error" in input) return c.json(input, 400);
     return c.json(await ask(Number(c.req.param("id")), input.data.message));
   });
 
   app.delete("/:id", (c) =>
-    db.delete(chatTable).where(eq(chatTable.id, Number(c.req.param("id")))).returning().get() ? c.json({}) : c.json({ error: "not found" }, 404),
+    db.delete(chatTable).where(eq(chatTable.id, Number(c.req.param("id")))).returning().get() ? c.json({}) : c.json({ error: "Not found" }, 404),
   );
 
   return app;

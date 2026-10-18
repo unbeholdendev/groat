@@ -95,7 +95,7 @@ export function rateRoutes(db: Db) {
 
   app.put("/api/rates", async (c) => {
     const input = await body(c, manualRate);
-    if ("error" in input) return c.json({ error: "invalid rate" }, 400);
+    if ("error" in input) return c.json({ error: "Invalid rate" }, 400);
     const { date, currency, rate } = input.data;
     const row = { rate, source: "manual" };
     db.insert(t.rates).values({ date, currency, ...row }).onConflictDoUpdate({ target: [t.rates.date, t.rates.currency], set: row }).run();

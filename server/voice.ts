@@ -22,7 +22,7 @@ export function voiceRoutes(ctx: Ctx) {
 
   app.post("/api/voice", async (c) => {
     const provider = stt(ctx.config);
-    if (!provider) return c.json({ error: "voice is not configured" }, 403);
+    if (!provider) return c.json({ error: "Voice input isn’t set up" }, 403);
     const { base, key, model } = provider;
     const input = valid(recording, await c.req.parseBody().catch(() => undefined));
     if ("error" in input) return c.json(input, 400);
@@ -30,9 +30,9 @@ export function voiceRoutes(ctx: Ctx) {
     form.append("file", input.data.audio);
     form.append("model", model);
     const res = await ctx.fetch(`${base}/audio/transcriptions`, { method: "POST", headers: { authorization: `Bearer ${key}` }, body: form });
-    if (!res.ok) throw new Error(`speech-to-text provider returned ${res.status}`);
+    if (!res.ok) throw new Error(`The speech-to-text provider returned an error (${res.status})`);
     const heard = transcript.safeParse(await res.json().catch(() => undefined));
-    if (!heard.success) throw new Error("speech-to-text provider sent an unexpected reply");
+    if (!heard.success) throw new Error("The speech-to-text provider sent an unexpected reply");
     if (!heard.data.text.trim()) return c.json({ error: "Nothing was heard. Try again closer to the mic." }, 422);
     return c.json(await extract(ctx, heard.data.text));
   });

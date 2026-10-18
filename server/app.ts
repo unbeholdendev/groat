@@ -60,7 +60,7 @@ export function createApp(deps: Deps) {
   app.route("/", rateRoutes(db));
   app.route("/", recurring);
   app.route("/api/chats", chats(ctx, value));
-  app.all("/api/*", (c) => c.json({ error: "not found" }, 404));
+  app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
   return Object.assign(app, { generate: recurring.generate });
 }

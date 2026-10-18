@@ -38,10 +38,10 @@ export function auth(db: Db, clock: () => Date) {
 
   app.post("/api/setup", async (c) => {
     const parsed = await body(c);
-    if (!parsed.success) return c.json({ error: "username and password are required" }, 400);
+    if (!parsed.success) return c.json({ error: "Enter a username and password" }, 400);
     const { username, password } = parsed.data;
     const passwordHash = await Bun.password.hash(password);
-    if (db.select().from(users).get()) return c.json({ error: "already set up" }, 409);
+    if (db.select().from(users).get()) return c.json({ error: "Already set up" }, 409);
     const { id } = db.insert(users).values({ username, passwordHash, role: "admin" }).returning({ id: users.id }).get();
     db.update(expenses).set({ createdBy: id }).where(isNull(expenses.createdBy)).run();
     signIn(c, crypto.randomUUID(), id);
@@ -52,14 +52,14 @@ export function auth(db: Db, clock: () => Date) {
     const parsed = await body(c);
     const user = parsed.success ? db.select().from(users).where(and(eq(users.username, parsed.data.username), active)).get() : undefined;
     if (!parsed.success || !user || !(await Bun.password.verify(parsed.data.password, user.passwordHash)))
-      return c.json({ error: "wrong username or password" }, 401);
+      return c.json({ error: "Wrong username or password" }, 401);
     signIn(c, crypto.randomUUID(), user.id);
     return c.json({ username: user.username, role: user.role });
   });
 
   app.use("/api/*", async (c, next) => {
     const current = session(c);
-    if (!current) return c.json({ error: "sign in first" }, 401);
+    if (!current) return c.json({ error: "Sign in first" }, 401);
     signIn(c, current.id, current.userId);
     c.set("user", { id: current.userId, role: current.role });
     await next();

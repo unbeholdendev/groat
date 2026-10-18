@@ -27,7 +27,7 @@ const reply = z.string().transform((s, ctx) => {
   }
 });
 
-export const textInput = z.object({ text: z.string("text is required").trim().min(1, "text is required") });
+export const textInput = z.object({ text: z.string("Enter some text").trim().min(1, "Enter some text") });
 
 type Photo = { image: string; model: string };
 
@@ -54,7 +54,7 @@ export async function extract(ctx: Ctx, input: string | Photo) {
     ...(typeof input === "string" ? {} : { model: input.model }),
   });
   const read = reply.safeParse(message.tool_calls?.[0]?.function.arguments);
-  if (!read.success) throw new Error("AI provider sent an unexpected reply");
+  if (!read.success) throw new Error("The AI provider sent an unexpected reply");
   const { note, amount, currency, date, categoryId, tags = [] } = read.data;
   const code = currency?.toUpperCase();
   const draft = readExpense(
@@ -73,7 +73,7 @@ export async function extract(ctx: Ctx, input: string | Photo) {
     uncategorised(db),
     true,
   );
-  if ("error" in draft) throw new Error("AI provider sent an unexpected reply");
+  if ("error" in draft) throw new Error("The AI provider sent an unexpected reply");
   return draft;
 }
 
@@ -81,7 +81,7 @@ export function draftRoutes(ctx: Ctx) {
   const app = new Hono();
 
   app.post("/api/drafts", async (c) => {
-    if (!aiEnabled(ctx.config)) return c.json({ error: "AI is not configured" }, 403);
+    if (!aiEnabled(ctx.config)) return c.json({ error: "AI isn’t set up" }, 403);
     const parsed = await body(c, textInput);
     if ("error" in parsed) return c.json(parsed, 400);
     return c.json(await extract(ctx, parsed.data.text));

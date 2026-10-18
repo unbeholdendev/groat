@@ -9,13 +9,13 @@ const cat = t.categories;
 const e = t.expenses;
 const r = t.recurring;
 
-const required = "name, icon and colour are required";
+const required = "Enter a name, emoji and colour";
 const text = (message: string) => z.string(message).trim().min(1, message);
 const categoryInput = z.object({ name: text(required), icon: text(required), color: text(required) });
-const newCategory = categoryInput.extend({ parentId: z.number("invalid parent").int("invalid parent").nullable().default(null) });
-const order = z.array(z.number("expected a list of ids").int("expected a list of ids"), "expected a list of ids");
-const tagInput = z.object({ name: text("name is required") });
-const deletion = z.object({ moveTo: z.coerce.number("invalid moveTo").int("invalid moveTo").optional() });
+const newCategory = categoryInput.extend({ parentId: z.number("Invalid parent category").int("Invalid parent category").nullable().default(null) });
+const order = z.array(z.number("Expected a list of category IDs").int("Expected a list of category IDs"), "Expected a list of category IDs");
+const tagInput = z.object({ name: text("Enter a name") });
+const deletion = z.object({ moveTo: z.coerce.number("Invalid category to move to").int("Invalid category to move to").optional() });
 
 export const categories = (db: Db, where?: SQL) =>
   db.select({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, parentId: cat.parentId, builtin: cat.builtin }).from(cat).where(where);
@@ -30,7 +30,7 @@ export function categoryRoutes(db: Db) {
     if ("error" in input) return c.json(input, 400);
     const { parentId } = input.data;
     if (parentId !== null && !db.select().from(cat).where(and(eq(cat.id, parentId), isNull(cat.parentId))).get())
-      return c.json({ error: "invalid parent" }, 400);
+      return c.json({ error: "Invalid parent category" }, 400);
     const sort = sql`(SELECT coalesce(max(sort), -1) + 1 FROM categories WHERE parent_id IS ${parentId})`;
     const { id } = db.insert(cat).values({ ...input.data, sort }).returning({ id: cat.id }).get();
     return c.json(categories(db, eq(cat.id, id)).get(), 201);
@@ -46,7 +46,7 @@ export function categoryRoutes(db: Db) {
   app.put("/api/categories/:id", async (c) => {
     const id = Number(c.req.param("id"));
     const old = categories(db, eq(cat.id, id)).get();
-    if (!old) return c.json({ error: "not found" }, 404);
+    if (!old) return c.json({ error: "Not found" }, 404);
     const input = await body(c, categoryInput.partial());
     if ("error" in input) return c.json(input, 400);
     const { name, icon, color } = old;
@@ -57,13 +57,13 @@ export function categoryRoutes(db: Db) {
   app.delete("/api/categories/:id", (c) => {
     const id = Number(c.req.param("id"));
     const old = categories(db, eq(cat.id, id)).get();
-    if (!old) return c.json({ error: "not found" }, 404);
-    if (old.builtin) return c.json({ error: "Uncategorised cannot be deleted" }, 400);
+    if (!old) return c.json({ error: "Not found" }, 404);
+    if (old.builtin) return c.json({ error: "Uncategorised can’t be deleted" }, 400);
     const q = query(c, deletion);
     if ("error" in q) return c.json(q, 400);
     const target = q.data.moveTo ?? uncategorised(db);
     if (!db.select().from(cat).where(and(eq(cat.id, target), ne(cat.id, id), sql`${cat.parentId} IS NOT ${id}`)).get())
-      return c.json({ error: "invalid moveTo" }, 400);
+      return c.json({ error: "Invalid category to move to" }, 400);
     const family = or(eq(cat.id, id), eq(cat.parentId, id));
     const members = db.select({ id: cat.id }).from(cat).where(family);
     db.transaction(() => {
@@ -82,12 +82,12 @@ export function categoryRoutes(db: Db) {
     const { name } = input.data;
     const id = Number(c.req.param("id"));
     if (db.select().from(t.tags).where(and(eq(t.tags.name, name), ne(t.tags.id, id))).get())
-      return c.json({ error: "tag already exists" }, 409);
+      return c.json({ error: "That tag already exists" }, 409);
     const old = retag(id, name);
-    return old ? c.json({ id: old.id, name }) : c.json({ error: "not found" }, 404);
+    return old ? c.json({ id: old.id, name }) : c.json({ error: "Not found" }, 404);
   });
 
-  app.delete("/api/tags/:id", (c) => (retag(Number(c.req.param("id")), null) ? c.json({}) : c.json({ error: "not found" }, 404)));
+  app.delete("/api/tags/:id", (c) => (retag(Number(c.req.param("id")), null) ? c.json({}) : c.json({ error: "Not found" }, 404)));
 
   const retag = (id: number, name: string | null) =>
     db.transaction(() => {

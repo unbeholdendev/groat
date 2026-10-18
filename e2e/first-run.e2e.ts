@@ -25,7 +25,7 @@ test("sign out and back in", async ({ app: page }) => {
   await page.getByLabel("Username").fill("admin");
   await page.getByLabel("Password").fill("wrong");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByText("wrong username or password")).toBeVisible();
+  await expect(page.getByText("Wrong username or password")).toBeVisible();
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();

@@ -12,8 +12,8 @@ const e = t.expenses;
 const r = t.recurring;
 
 const schedule = expenseInput.omit({ date: true }).extend({
-  period: z.enum(["day", "week", "month", "year"], "invalid schedule"),
-  every: z.number("invalid schedule").int("invalid schedule").min(1, "invalid schedule"),
+  period: z.enum(["day", "week", "month", "year"], "Invalid schedule"),
+  every: z.number("Invalid schedule").int("Invalid schedule").min(1, "Invalid schedule"),
   startDate: isoDate.optional(),
   endDate: isoDate.nullable().default(null),
   needsConfirmation: z.boolean().default(false),
@@ -71,7 +71,7 @@ export function recurringRoutes({ db, clock }: Ctx) {
   app.put("/api/recurring/:id", async (c) => {
     const id = Number(c.req.param("id"));
     const old = templates(eq(r.id, id)).get();
-    if (!old) return c.json({ error: "not found" }, 404);
+    if (!old) return c.json({ error: "Not found" }, 404);
     const t = readTemplate(await json(c), old.currency, old.categoryId);
     if ("error" in t) return c.json(t, 400);
     db.update(r).set(t).where(eq(r.id, id)).run();
@@ -83,7 +83,7 @@ export function recurringRoutes({ db, clock }: Ctx) {
     const id = Number(c.req.param("id"));
     return db.update(r).set(set).where(and(eq(r.id, id), isNull(r.deletedAt))).returning({ id: r.id }).get()
       ? c.json(templates(eq(r.id, id)).get() ?? {})
-      : c.json({ error: "not found" }, 404);
+      : c.json({ error: "Not found" }, 404);
   };
 
   app.post("/api/recurring/:id/pause", (c) => setTemplate(c, { paused: true }));

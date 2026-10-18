@@ -2,7 +2,7 @@ import type { Context } from "hono";
 import type { z } from "zod";
 
 export function valid<T extends z.ZodType>(schema: T, input: unknown): { data: z.output<T> } | { error: string } {
-  const parsed = schema.safeParse(input, { error: (issue) => `invalid ${String(issue.path?.[0] ?? "request")}` });
+  const parsed = schema.safeParse(input, { error: (issue) => `Invalid ${String(issue.path?.[0] ?? "request")}` });
   return parsed.success ? { data: parsed.data } : { error: parsed.error.issues[0].message };
 }
 

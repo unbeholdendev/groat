@@ -181,8 +181,8 @@ test("drafting an expense resolves it against categories and currencies but save
   expect(draft).toEqual({
     draft: { note: "Lunch", amount: 1200, currency: "EUR", date: "2026-10-09", categoryId: id("Eating out"), tags: ["work"] },
   });
-  expect(wrongCurrency.error).toContain("currency not enabled");
-  expect(wrongCategory.error).toContain("invalid category");
+  expect(wrongCurrency.error).toContain("That currency isn’t enabled");
+  expect(wrongCategory.error).toContain("Invalid category");
   expect(ai.requests[0].body.messages[0].content).toContain("Today is 2026-10-10");
   expect((await api("GET", "/api/expenses")).body).toEqual(before);
 

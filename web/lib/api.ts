@@ -10,7 +10,7 @@ export async function send(...[method, path, body]: Request): Promise<unknown> {
     throw new Error("Couldn’t reach the server. Check your connection and try again.");
   });
   const json: unknown = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(failure.catch({}).parse(json).error ?? `The server answered ${res.status}.`), { status: res.status });
+  if (!res.ok) throw Object.assign(new Error(failure.catch({}).parse(json).error ?? `Something went wrong (${res.status}). Try again.`), { status: res.status });
   return json;
 }
 export const useSend = (onSuccess?: () => void) => useMutation<unknown, Error, Request>({ mutationKey: ["send"], onSuccess });

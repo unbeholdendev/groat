@@ -20,9 +20,9 @@ const defaultCategories: [string, string, string, [string, string][]?][] = [
   ["Gifts", "🎁", "#e977bb"],
 ];
 
-const currency = z.string("invalid currencies").refine((c) => knownCurrencies.has(c), "invalid currencies");
-const onboarding = z.object({ baseCurrency: currency, currencies: z.array(currency, "invalid currencies") });
-const update = onboarding.extend({ theme: z.enum(["system", "light", "dark"], "invalid theme") }).partial();
+const currency = z.string("Invalid currency").refine((c) => knownCurrencies.has(c), "Invalid currency");
+const onboarding = z.object({ baseCurrency: currency, currencies: z.array(currency, "Invalid currency") });
+const update = onboarding.extend({ theme: z.enum(["system", "light", "dark"], "Invalid theme") }).partial();
 const shortlist = (base: string, list: string[]) => [...new Set([base, ...list])];
 
 export function settingsRoutes(db: Db, config: Deps["config"]) {
@@ -41,7 +41,7 @@ export function settingsRoutes(db: Db, config: Deps["config"]) {
   });
 
   app.post("/api/onboarding", async (c) => {
-    if (settings().onboarded) return c.json({ error: "already onboarded" }, 409);
+    if (settings().onboarded) return c.json({ error: "Setup is already done" }, 409);
     const input = await body(c, onboarding);
     if ("error" in input) return c.json(input, 400);
     const { baseCurrency } = input.data;

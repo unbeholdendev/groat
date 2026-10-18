@@ -50,5 +50,5 @@ test("rejects invalid amounts and missing notes", async () => {
 
 test("unknown API routes are a JSON 404", async () => {
   const { call } = setup();
-  expect(await call("GET", "/api/nope")).toEqual({ status: 404, body: { error: "not found" } });
+  expect(await call("GET", "/api/nope")).toEqual({ status: 404, body: { error: "Not found" } });
 });

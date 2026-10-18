@@ -9,15 +9,15 @@ import { valid } from "./request";
 import { attachments } from "./schema";
 
 const maxSize = 5 * 1024 * 1024;
-const photo = z.object({ image: z.file().mime(["image/jpeg", "image/png", "image/webp"], "send a JPEG, PNG or WebP image") });
+const photo = z.object({ image: z.file().mime(["image/jpeg", "image/png", "image/webp"], "Send a JPEG, PNG or WebP image") });
 
 export function attachmentRoutes(ctx: Ctx) {
   const { db, clock } = ctx;
   const app = new Hono();
 
-  app.post("/api/drafts/photo", bodyLimit({ maxSize, onError: (c) => c.json({ error: "image is too large" }, 413) }), async (c) => {
+  app.post("/api/drafts/photo", bodyLimit({ maxSize, onError: (c) => c.json({ error: "That image is too large" }, 413) }), async (c) => {
     const model = visionModel(ctx.config);
-    if (!model) return c.json({ error: "photo reading is not configured" }, 403);
+    if (!model) return c.json({ error: "Photo reading isn’t set up" }, 403);
     const parsed = valid(photo, await c.req.parseBody().catch(() => undefined));
     if ("error" in parsed) return c.json(parsed, 400);
     const { image } = parsed.data;
@@ -33,7 +33,7 @@ export function attachmentRoutes(ctx: Ctx) {
 
   app.get("/api/attachments/:id", (c) => {
     const row = db.select().from(attachments).where(eq(attachments.id, Number(c.req.param("id")))).get();
-    return row ? c.body(new Uint8Array(row.bytes), 200, { "content-type": row.mime }) : c.json({ error: "not found" }, 404);
+    return row ? c.body(new Uint8Array(row.bytes), 200, { "content-type": row.mime }) : c.json({ error: "Not found" }, 404);
   });
 
   app.onError((e, c) => c.json({ error: e.message }, 502));

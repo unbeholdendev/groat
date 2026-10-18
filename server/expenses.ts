@@ -63,12 +63,12 @@ export function readExpense(raw: unknown, db: Db, today: string, fallback: strin
   const parsed = valid(expenseInput, raw);
   if ("error" in parsed) return parsed;
   const { note, currency = fallback, date = today, categoryId = category, tags = [], unit } = parsed.data;
-  if (currency !== fallback && !currencies.includes(currency)) return { error: "currency not enabled" };
+  if (currency !== fallback && !currencies.includes(currency)) return { error: "That currency isn’t enabled" };
   const amount = pending && parsed.data.amount === "0" ? 0 : parseAmount(parsed.data.amount, currency, unit);
-  if (amount === null) return { error: "invalid amount" };
+  if (amount === null) return { error: "Invalid amount" };
   // today is UTC; the user's local date can be a day ahead
-  if (date > new Date(Date.parse(today) + 864e5).toISOString().slice(0, 10)) return { error: "date can’t be in the future" };
-  if (!db.select().from(t.categories).where(eq(t.categories.id, categoryId)).get()) return { error: "invalid category" };
+  if (date > new Date(Date.parse(today) + 864e5).toISOString().slice(0, 10)) return { error: "Date can’t be in the future" };
+  if (!db.select().from(t.categories).where(eq(t.categories.id, categoryId)).get()) return { error: "Invalid category" };
   return { note, amount, currency, date, categoryId, tags: [...new Set(tags)] };
 }
 
@@ -138,7 +138,7 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     const now = clock().toISOString();
     const id = Number(c.req.param("id"));
     const old = db.select({ currency: e.currency, categoryId: e.categoryId }).from(e).where(and(eq(e.id, id), visible)).get();
-    if (!old) return c.json({ error: "not found" }, 404);
+    if (!old) return c.json({ error: "Not found" }, 404);
     const body = readExpense(await json(c), db, today(clock), old.currency, settings(db).currencies, old.categoryId ?? uncategorised(db));
     if ("error" in body) return c.json(body, 400);
     const { tags, ...fields } = body;
@@ -151,13 +151,13 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     const id = Number(c.req.param("id"));
     return db.update(e).set(set).where(and(eq(e.id, id), where)).returning({ id: e.id }).get()
       ? c.json(await valued(id))
-      : c.json({ error: "not found" }, 404);
+      : c.json({ error: "Not found" }, 404);
   };
 
   app.delete("/api/expenses/:id", (c) => {
     if (c.req.query("purge") === undefined) return setExpense(c, { deletedAt: clock().toISOString() }, visible);
     const row = db.delete(e).where(eq(e.id, Number(c.req.param("id")))).returning({ id: e.id }).get();
-    return row ? c.json(row) : c.json({ error: "not found" }, 404);
+    return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   });
   app.post("/api/expenses/:id/confirm", (c) => setExpense(c, { status: "normal" }, visible));
   app.post("/api/bin/:id/restore", (c) => setExpense(c, { deletedAt: null }, isNotNull(e.deletedAt)));
