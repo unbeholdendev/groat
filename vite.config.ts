@@ -5,6 +5,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   root: "web",
+  define: { "import.meta.env.BUILD": JSON.stringify(String(Date.now())) },
   build: { outDir: "../dist", emptyOutDir: true },
   plugins: [
     tanstackRouter({ routesDirectory: "routes", generatedRouteTree: "routeTree.gen.ts", autoCodeSplitting: true }),

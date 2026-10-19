@@ -134,3 +134,13 @@ test("swiping a row left bins it, and Undo brings it back", async ({ app: page }
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByRole("button", { name: "Mistake" })).toBeVisible();
 });
+
+test("a cache saved by an older build is dropped, not rendered", async ({ app: page }) => {
+  await page.addInitScript(() => {
+    const old = { queryKey: ["/api/settings"], queryHash: '["/api/settings"]', state: { data: { baseCurrency: "GBP", currencies: ["GBP"], lastCurrency: "GBP", theme: "system", onboarded: true }, dataUpdatedAt: Date.now(), status: "success", fetchStatus: "idle" } };
+    localStorage.setItem("cache", JSON.stringify({ mutations: [], queries: [old] }));
+  });
+  await page.reload();
+  await bar(page).fill("tea 2");
+  await expect(page.getByText("Nothing this month yet")).toBeVisible();
+});

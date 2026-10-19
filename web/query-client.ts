@@ -37,7 +37,9 @@ sync(["send", "token"], syncToken);
 sync(["send", "users"], syncUsers);
 
 try {
-  hydrate(queryClient, JSON.parse(localStorage.getItem("cache") ?? "null"));
+  const cache = JSON.parse(localStorage.getItem("cache") ?? "null");
+  // Another build's queries may not fit its schemas; queued adds must survive.
+  hydrate(queryClient, cache?.build === import.meta.env.BUILD ? cache : { mutations: cache?.mutations ?? [], queries: [] });
 } catch {}
 onlineManager.setOnline(navigator.onLine);
 queryClient.resumePausedMutations();
@@ -45,7 +47,7 @@ let persisting: ReturnType<typeof setTimeout>;
 const save = () => {
   clearTimeout(persisting);
   try {
-    localStorage.setItem("cache", JSON.stringify(dehydrate(queryClient)));
+    localStorage.setItem("cache", JSON.stringify({ build: import.meta.env.BUILD, ...dehydrate(queryClient) }));
   } catch {}
 };
 queryClient.getQueryCache().subscribe(() => {
