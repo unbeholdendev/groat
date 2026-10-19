@@ -18,7 +18,10 @@ export function Tokens() {
   return (
     <section>
       <h2 className={sectionHead}>API tokens</h2>
-      <p className="-mt-1 mb-3 px-1 text-[13px] text-ink2">Let a phone shortcut add expenses by posting text to /api/capture.</p>
+      <p className="-mt-1 mb-3 px-1 text-[13px] text-ink2">
+        A token lets a phone shortcut or script add expenses without signing in. It can only add expenses: post JSON like {'{"text": "coffee 4.50"}'} to /api/capture with the header{" "}
+        <span className="num">Authorization: Bearer &lt;token&gt;</span>.
+      </p>
       {shown && <TokenSecret key={shown} token={shown} />}
       <ul className={panel}>
         {tokens.map((t) => (

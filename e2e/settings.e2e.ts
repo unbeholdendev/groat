@@ -54,6 +54,7 @@ test("household members and API tokens", async ({ app: page }) => {
   await page.getByRole("button", { name: "Create" }).click();
   await expect(page.getByText("Copy it now.")).toBeVisible();
   const token = await page.locator("code").textContent();
+  await expect(page.locator("pre")).toContainText(`Bearer ${token}`);
   const res = await page.request.post("/api/capture", { headers: { authorization: `Bearer ${token}` }, data: { text: "milk 1.20" } });
   expect(res.ok()).toBe(true);
   await page.getByRole("link", { name: "Expenses" }).click();

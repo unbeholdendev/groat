@@ -4,7 +4,7 @@ Self-hosted expense tracker. Run it with Docker; data lives in `/data`, the app 
 
 ## Capture from your phone
 
-Create a token in Settings, under API tokens. Then post text to `/api/capture`:
+Create a token in Settings, under API tokens. A token can only add expenses, as the user who made it. Post text to `/api/capture`:
 
 ```sh
 curl -X POST https://your-host/api/capture \
