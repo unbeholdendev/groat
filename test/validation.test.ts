@@ -18,8 +18,7 @@ test("malformed input gets a readable 400 on every route family", async () => {
     ["PUT", "/api/tags/1", { name: 3 }, "Enter a name"],
     ["POST", "/api/recurring", { note: "rent", amount: "5", period: "fortnight", every: 1 }, "Invalid schedule"],
     ["PUT", "/api/settings", { theme: "neon" }, "Invalid theme"],
-    ["POST", "/api/onboarding", { baseCurrency: "NOPE", currencies: [] }, "Invalid currency"],
-    ["PUT", "/api/rates", { date: "2026-10-01", currency: "EUR", rate: 1.2 }, "Invalid rate"],
+    ["POST", "/api/onboarding", { baseCurrency: "NOPE" }, "Invalid currency"],
     ["GET", "/api/stats?from=2026-10-10&to=2026-10-01", undefined, "Invalid date range"],
     ["POST", "/api/chats", { message: 4 }, "Enter a message"],
   ];

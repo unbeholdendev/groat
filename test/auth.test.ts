@@ -29,7 +29,7 @@ test("a fresh install asks for setup, which creates the admin and signs them in,
 
 test("an upgraded install keeps its data after setup, added by the admin", async () => {
   const { db, call, post, get, session } = anonymous();
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP"] });
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   await call("POST", "/api/expenses", { note: "Coffee", amount: "3" });
   db.run("UPDATE expenses SET created_by = NULL");
   db.run("DELETE FROM sessions");

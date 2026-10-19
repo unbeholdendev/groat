@@ -1,16 +1,13 @@
 import { bar, expect, test, today } from "./fixtures";
 
-test("theme and currencies save as they change", async ({ app: page }) => {
+test("theme and base currency save as they change", async ({ app: page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
   await page.getByRole("radio", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.getByRole("radio", { name: "Light" }).click();
   await expect(page.locator("html")).not.toHaveClass(/dark/);
-  await Promise.all([page.waitForResponse((r) => !!r.request().postData()?.includes("JPY")), page.getByLabel("Add a currency").selectOption("JPY")]);
-  await page.getByLabel("Base currency").selectOption("EUR");
-  await expect(page.getByRole("button", { name: "Remove GBP" })).toBeVisible();
+  await Promise.all([page.waitForResponse((r) => !!r.request().postData()?.includes("EUR")), page.getByLabel("Base currency").selectOption("EUR")]);
   await page.reload();
-  await expect(page.getByRole("button", { name: "Remove JPY" })).toBeVisible();
   await expect(page.getByLabel("Base currency")).toHaveValue("EUR");
   await expect(page.locator("html")).not.toHaveClass(/dark/);
 });

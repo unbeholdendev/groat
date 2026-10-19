@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { credentials } from "../web/features/auth/schema";
 import { categoryForm, tagForm } from "../web/features/categories/schema";
-import { blank, expenseForm, filled, fromTemplate, rates } from "../web/features/expenses/schema";
+import { blank, expenseForm, filled, fromTemplate } from "../web/features/expenses/schema";
 import { fields, review } from "../web/features/quick-add/schema";
 import { newPassword, tokenName } from "../web/features/settings/schema";
 import { today } from "../web/lib/dates";
@@ -38,12 +38,6 @@ test("blank, filled and fromTemplate seed the form", () => {
   const template = { ...draft, id: 1, categoryId: 3, period: "week", every: 2, startDate: "2026-01-05", endDate: null, needsConfirmation: true, paused: false };
   expect(fromTemplate(template, "BTC")).toMatchObject({ date: "2026-01-05", categoryId: 3, period: "week", every: "2", endDate: "", needsConfirmation: true });
   expect(fromTemplate({ ...template, endDate: "2026-12-31" }, "BTC").endDate).toBe("2026-12-31");
-});
-
-test("rates need at least one positive number", () => {
-  expect(errors(rates.safeParse({ rates: { USD: " 1.25 ", EUR: "" } }))).toEqual([]);
-  expect(errors(rates.safeParse({ rates: { USD: "", EUR: " " } }))).toEqual(["root"]);
-  for (const bad of ["0", "-1", "1.", "abc"]) expect(errors(rates.safeParse({ rates: { USD: bad } }))).toContain("rates.USD");
 });
 
 test("quick-add review round-trips a draft", () => {

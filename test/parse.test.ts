@@ -7,6 +7,12 @@ test("parses amount, currency, tags and note", () => {
   expect(parse("tip 5000 sats", [])).toMatchObject({ amount: "5000", currency: "BTC", unit: "sats" });
 });
 
+test("any known code parses in capitals; lower case only for recent ones", () => {
+  expect(parse("taxi 300 THB", ["GBP"])).toMatchObject({ currency: "THB", note: "taxi" });
+  expect(parse("pen 3", ["GBP"])).toMatchObject({ currency: null, note: "pen" });
+  expect(parse("pen 3", ["PEN"])).toMatchObject({ currency: "PEN", note: "" });
+});
+
 test("confident needs an amount and a guessed category", () => {
   expect(confident(parse("coffee 3", []), 1)).toBe(true);
   expect(confident(parse("coffee 3", []), null)).toBe(false);

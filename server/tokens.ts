@@ -1,6 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
+import { knownCurrencies } from "../shared/amount";
 import { confident, parse } from "../shared/parse";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
@@ -26,13 +27,13 @@ export function captureRoutes(ctx: Ctx) {
     const parsed = await body(c, textInput);
     if ("error" in parsed) return c.json(parsed, 400);
     const { text } = parsed.data;
-    const { lastCurrency, currencies } = settings(db);
-    const p = parse(text, currencies);
+    const { lastCurrency, recentCurrencies } = settings(db);
+    const p = parse(text, recentCurrencies);
     const guess = p.note.length > 1 ? suggestions(db, p.note)[0] : undefined;
     const input = {
       note: p.amount && p.note ? p.note : text,
       amount: p.amount ?? "0",
-      currency: p.currency ?? currencies.find((c) => c === guess?.currency),
+      currency: p.currency ?? (guess && knownCurrencies.has(guess.currency) ? guess.currency : undefined),
       unit: p.unit ?? undefined,
       categoryId: guess?.categoryId ?? undefined,
       tags: p.tags,
@@ -40,7 +41,7 @@ export function captureRoutes(ctx: Ctx) {
     const sure = confident(p, guess?.categoryId);
     const read = !sure && aiEnabled(ctx.config) && (await extract(ctx, text).catch(() => undefined));
     if (read) return c.json(addExpense(db, now, read, owner.userId, "pending"), 201);
-    const row = readExpense(input, db, today(clock), lastCurrency, currencies, uncategorised(db), !sure);
+    const row = readExpense(input, db, today(clock), lastCurrency, uncategorised(db), !sure);
     if ("error" in row) return c.json(row, 400);
     return c.json(addExpense(db, now, row, owner.userId, sure ? "normal" : "pending"), 201);
   });

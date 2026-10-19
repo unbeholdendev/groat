@@ -75,7 +75,7 @@ export function FormHeader({ form, title, submit, pending, editing, onCancel }: 
         )}
         <Picker className={`${onField} num relative gap-1 bg-on-hero/16 text-[13px] font-medium`} chevron={<Chevron className="size-3.5 stroke-2 text-on-hero2" />}>
           {currency}
-          <CurrencySelect currencies={settings.currencies} className={overlay} {...register("currency")} />
+          <CurrencySelect recent={settings.recentCurrencies} className={overlay} {...register("currency")} />
         </Picker>
       </div>
       <HeroError id={ids.amount} message={errors.amount?.message} />

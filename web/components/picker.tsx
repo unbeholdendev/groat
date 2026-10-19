@@ -1,4 +1,5 @@
 import type { ComponentProps, ReactNode } from "react";
+import { byRecent } from "../../shared/amount";
 import { today } from "../lib/dates";
 import { Chevron } from "./icon";
 
@@ -23,9 +24,9 @@ export const DateInput = ({ value, onChange, className = overlay }: { value: str
   />
 );
 
-export const CurrencySelect = ({ currencies, ...props }: ComponentProps<"select"> & { currencies: string[] }) => (
+export const CurrencySelect = ({ recent, ...props }: ComponentProps<"select"> & { recent: string[] }) => (
   <select aria-label="Currency" {...props}>
-    {currencies.map((c) => (
+    {byRecent(recent).map((c) => (
       <option key={c}>{c}</option>
     ))}
   </select>

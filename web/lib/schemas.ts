@@ -24,7 +24,7 @@ export type Category = z.infer<typeof category>;
 export const theme = z.enum(["system", "light", "dark"]);
 export const settings = z.object({
   baseCurrency: z.string(),
-  currencies: z.array(z.string()),
+  recentCurrencies: z.array(z.string()),
   lastCurrency: z.string(),
   theme,
   onboarded: z.boolean(),

@@ -28,7 +28,7 @@ export function recurringRoutes({ db, clock }: Ctx) {
   const readTemplate = (raw: unknown, fallback: string, category: number) => {
     const input = valid(schedule, raw);
     if ("error" in input) return input;
-    const e = readExpense({ ...input.data, date: today(clock) }, db, today(clock), fallback, settings(db).currencies, category);
+    const e = readExpense({ ...input.data, date: today(clock) }, db, today(clock), fallback, category);
     if ("error" in e) return e;
     const { period, every, startDate = today(clock), endDate, needsConfirmation } = input.data;
     const { note, amount, currency, categoryId, tags } = e;

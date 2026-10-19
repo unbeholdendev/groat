@@ -26,7 +26,6 @@ test("category filter includes its subcategories", async () => {
 
 test("tag, currency and note search narrow the list and combine", async () => {
   const { call } = setup();
-  await call("PUT", "/api/settings", { currencies: ["GBP", "EUR"] });
   await call("POST", "/api/expenses", { note: "Coffee in Paris", amount: "3", currency: "EUR", tags: ["hols"] });
   await call("POST", "/api/expenses", { note: "coffee at home", amount: "3", currency: "GBP", tags: ["hols"] });
   await call("POST", "/api/expenses", { note: "Museum", amount: "9", currency: "EUR" });
@@ -40,7 +39,6 @@ test("tag, currency and note search narrow the list and combine", async () => {
 
 test("autocomplete suggests distinct notes with the latest live match's details", async () => {
   const { call } = setup();
-  await call("PUT", "/api/settings", { currencies: ["GBP", "EUR"] });
   const food = (await call("POST", "/api/categories", { name: "Food", icon: "🍽️", color: "#f00" })).body.id;
   await call("POST", "/api/expenses", { note: "Coffee", amount: "2.50", currency: "GBP", date: "2026-10-01" });
   await call("POST", "/api/expenses", { note: "Coffee", amount: "3", currency: "EUR", date: "2026-10-03", categoryId: food });

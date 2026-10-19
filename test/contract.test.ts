@@ -7,7 +7,7 @@ test("web schemas accept what the server sends", async () => {
   const ai = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "k", aiModel: "m" };
   const reply = { choices: [{ message: { role: "assistant", content: "hi" } }] };
   const { call } = setup(undefined, (url) => (url.host === "ai.test" ? Response.json(reply) : undefined), ai);
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "EUR"] });
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const food = (await call("POST", "/api/categories", { name: "Food", icon: "x", color: "#f00" })).body;
   const row = (await call("POST", "/api/expenses", { note: "milk", amount: "1.20", tags: ["a"], categoryId: food.id })).body;
   await call("POST", "/api/recurring", { note: "rent", amount: "5", period: "month", every: 1 });

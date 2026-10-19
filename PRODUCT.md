@@ -22,7 +22,7 @@ Two jobs, equal weight:
 ## Capabilities
 
 - Expenses: note, amount, currency, date, category, tags. Note autocomplete fills amount, currency and category from past entries.
-- Multi-currency with a base currency. Rates fetched automatically (ECB for fiat, mempool.space for BTC); a missing rate can be set by hand.
+- Multi-currency with a base currency. Every currency Frankfurter quotes, plus BTC, is offered, recently used first; no list to set up. Rates fetched automatically (Frankfurter for fiat, mempool.space for BTC); an expense without a rate stays out of totals until one is fetched.
 - Bitcoin is first-class: amounts in BTC or sats, toggleable.
 - Recurring expenses: every N days/weeks/months/years, optional end date, optional "confirm each" which creates pending expenses.
 - Categories: two-level tree, user-chosen emoji and colour, reorderable; deleting one moves its expenses elsewhere.
@@ -31,7 +31,7 @@ Two jobs, equal weight:
 - Bin: deleted expenses can be restored or purged.
 - Stats: presets (this month, last month, year to date), grouped by day/week/month, category breakdown with drill-down, change vs previous period.
 - Optional AI chat: ask questions about spending (read-only SQL) and get drafted expenses to review and save.
-- Onboarding sets base currency and currencies in use. Theme: system, light or dark.
+- Onboarding sets the base currency. Theme: system, light or dark.
 
 ## Constraints
 

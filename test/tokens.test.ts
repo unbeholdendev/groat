@@ -43,11 +43,11 @@ test("confident text saves an expense and marks the token used", async () => {
   expect((await call("GET", "/api/tokens")).body[0].lastUsedAt).toBe("2026-10-10T12:00:00.000Z");
 });
 
-test("a guessed currency that has since been disabled falls back instead of failing", async () => {
-  const { call, capture } = await withToken();
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "EUR"] });
-  await call("POST", "/api/expenses", { note: "Croissant", amount: "2", currency: "EUR" });
-  expect((await call("PUT", "/api/settings", { baseCurrency: "GBP", currencies: [] })).status).toBe(200);
+test("a guessed currency no longer offered falls back instead of failing", async () => {
+  const { call, db, capture } = await withToken();
+  const { body } = await call("POST", "/api/expenses", { note: "Croissant", amount: "2" });
+  db.run("UPDATE expenses SET currency = 'ADP' WHERE id = ?", [body.id]);
+  await call("POST", "/api/expenses", { note: "Tea", amount: "1", currency: "GBP" });
 
   expect((await capture("croissant 3")).body).toMatchObject({ note: "croissant", amount: 300, currency: "GBP" });
 });

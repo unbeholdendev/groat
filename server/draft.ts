@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import { knownCurrencies } from "../shared/amount";
 import { parse } from "../shared/parse";
 import { isoDate } from "../shared/schema";
 import { aiEnabled, complete } from "./ai";
@@ -34,7 +35,7 @@ type Photo = { image: string; model: string };
 export async function extract(ctx: Ctx, input: string | Photo) {
   const { db, clock } = ctx;
   const text = typeof input === "string" ? input : "";
-  const { lastCurrency, currencies } = settings(db);
+  const { lastCurrency, recentCurrencies } = settings(db);
   const day = today(clock);
   const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).all();
   const message = await complete(ctx, {
@@ -43,7 +44,7 @@ export async function extract(ctx: Ctx, input: string | Photo) {
         role: "system",
         content: [
           "Read one expense from the user's text, or from a receipt photo: its total, with the merchant as the note.",
-          `Today is ${day}. Enabled currencies: ${currencies.join(", ")}.`,
+          `Today is ${day}. Recent currencies: ${recentCurrencies.join(", ")}.`,
           `Categories: ${JSON.stringify(cats)}`,
         ].join("\n"),
       },
@@ -61,15 +62,14 @@ export async function extract(ctx: Ctx, input: string | Photo) {
     {
       note: note.trim() || text || "Receipt",
       amount: amount ?? "0",
-      currency: code && currencies.includes(code) ? code : undefined,
+      currency: code && knownCurrencies.has(code) ? code : undefined,
       date: isoDate.safeParse(date).success && date && date <= day ? date : undefined,
       categoryId: cats.some((c) => c.id === categoryId) ? categoryId : undefined,
-      tags: [...parse(text, currencies).tags, ...tags],
+      tags: [...parse(text, recentCurrencies).tags, ...tags],
     },
     db,
     day,
     lastCurrency,
-    currencies,
     uncategorised(db),
     true,
   );

@@ -9,20 +9,20 @@ test("a fresh database needs onboarding", async () => {
 
 test("onboarding rejects unknown currencies", async () => {
   const { call } = setup();
-  for (const body of [{}, { baseCurrency: "XYZ", currencies: [] }, { baseCurrency: "GBP", currencies: ["GBP", "nope"] }])
+  for (const body of [{}, { baseCurrency: "XYZ" }])
     expect((await call("POST", "/api/onboarding", body)).status).toBe(400);
   expect((await call("GET", "/api/settings")).body.onboarded).toBe(false);
 });
 
-test("settings changes persist and base currency joins the shortlist", async () => {
+test("settings changes persist", async () => {
   const { call } = setup();
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP"] });
-  const saved = await call("PUT", "/api/settings", { baseCurrency: "BTC", currencies: ["USD", "JPY"], theme: "dark" });
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
+  const saved = await call("PUT", "/api/settings", { baseCurrency: "BTC", theme: "dark" });
   expect(saved.status).toBe(200);
   expect((await call("GET", "/api/settings")).body).toEqual({
     onboarded: true,
     baseCurrency: "BTC",
-    currencies: ["BTC", "USD", "JPY"],
+    recentCurrencies: ["BTC"],
     lastCurrency: "BTC",
     theme: "dark",
     ai: false,
@@ -31,16 +31,16 @@ test("settings changes persist and base currency joins the shortlist", async () 
   });
   await call("PUT", "/api/settings", { theme: "light" });
   expect((await call("GET", "/api/settings")).body).toMatchObject({ baseCurrency: "BTC", theme: "light" });
-  for (const body of [{ theme: "blue" }, { baseCurrency: "XYZ" }, { currencies: "USD" }])
+  for (const body of [{ theme: "blue" }, { baseCurrency: "XYZ" }])
     expect((await call("PUT", "/api/settings", body)).status).toBe(400);
   expect((await call("GET", "/api/settings")).body.theme).toBe("light");
 });
 
-test("expense currency must be on the shortlist and defaults to the last one used", async () => {
+test("expense currency must be a known one and defaults to the last one used", async () => {
   const { call } = setup();
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "JPY", "BTC"] });
-  expect((await call("GET", "/api/settings")).body.lastCurrency).toBe("GBP");
-  expect((await call("POST", "/api/expenses", { note: "a", amount: "5", currency: "USD" })).status).toBe(400);
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
+  expect((await call("GET", "/api/settings")).body).toMatchObject({ lastCurrency: "GBP", recentCurrencies: ["GBP"] });
+  expect((await call("POST", "/api/expenses", { note: "a", amount: "5", currency: "XYZ" })).status).toBe(400);
   expect((await call("POST", "/api/expenses", { note: "a", amount: "1.5", currency: "JPY" })).status).toBe(400);
   const ramen = await call("POST", "/api/expenses", { note: "Ramen", amount: "1200", currency: "JPY" });
   expect(ramen.body).toMatchObject({ amount: 1200, currency: "JPY" });
@@ -48,12 +48,13 @@ test("expense currency must be on the shortlist and defaults to the last one use
   const next = await call("POST", "/api/expenses", { note: "Tea", amount: "300", date: "2020-01-01" });
   expect(next.body.currency).toBe("JPY");
   await call("POST", "/api/expenses", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2020-01-01" });
-  expect((await call("GET", "/api/settings")).body.lastCurrency).toBe("BTC");
+  await call("POST", "/api/expenses", { note: "Bus", amount: "2", currency: "GBP", date: "2020-01-01" });
+  expect((await call("GET", "/api/settings")).body).toMatchObject({ lastCurrency: "GBP", recentCurrencies: ["GBP", "BTC", "JPY"] });
 });
 
 test("last-used currency ignores binned and recurring expenses", async () => {
   const { call } = setup();
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "JPY", "EUR"] });
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   await call("POST", "/api/expenses", { note: "a", amount: "1", currency: "EUR" });
   const binned = await call("POST", "/api/expenses", { note: "b", amount: "1", currency: "JPY" });
   await call("DELETE", `/api/expenses/${binned.body.id}`);
@@ -61,32 +62,37 @@ test("last-used currency ignores binned and recurring expenses", async () => {
   expect((await call("GET", "/api/settings")).body.lastCurrency).toBe("EUR");
 });
 
-test("editing keeps the expense's currency unless a shortlisted one is given", async () => {
+test("editing keeps the expense's currency unless a known one is given", async () => {
   const { call } = setup();
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "JPY"] });
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const { body } = await call("POST", "/api/expenses", { note: "Ramen", amount: "1200", currency: "JPY" });
-  await call("PUT", "/api/settings", { currencies: ["GBP"] });
   expect((await call("PUT", `/api/expenses/${body.id}`, { note: "Ramen", amount: "1300" })).body).toMatchObject({
     amount: 1300,
     currency: "JPY",
   });
-  expect((await call("PUT", `/api/expenses/${body.id}`, { note: "Ramen", amount: "8", currency: "USD" })).status).toBe(400);
+  expect((await call("PUT", `/api/expenses/${body.id}`, { note: "Ramen", amount: "8", currency: "XYZ" })).status).toBe(400);
   expect((await call("PUT", `/api/expenses/${body.id}`, { note: "Ramen", amount: "8", currency: "GBP" })).body).toMatchObject({
     amount: 800,
     currency: "GBP",
   });
 });
 
-test("onboarding saves base currency and shortlist and seeds categories once", async () => {
+test("an expense in a currency no longer offered still reads and edits", async () => {
+  const { call, db } = setup();
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
+  const { body } = await call("POST", "/api/expenses", { note: "Old", amount: "5" });
+  db.run("UPDATE expenses SET currency = 'ADP' WHERE id = ?", [body.id]);
+  expect((await call("GET", "/api/expenses")).body[0]).toMatchObject({ currency: "ADP", baseAmount: null });
+  expect((await call("PUT", `/api/expenses/${body.id}`, { note: "Old", amount: "6" })).body).toMatchObject({ currency: "ADP", amount: 600 });
+  expect((await call("POST", "/api/expenses", { note: "New", amount: "1", currency: "ZWL" })).status).toBe(400);
+});
+
+test("onboarding saves base currency and seeds categories once", async () => {
   const { call } = setup();
-  const done = await call("POST", "/api/onboarding", { baseCurrency: "EUR", currencies: ["EUR", "BTC", "USD"] });
+  const done = await call("POST", "/api/onboarding", { baseCurrency: "EUR" });
   expect(done.status).toBe(200);
-  expect((await call("GET", "/api/settings")).body).toMatchObject({
-    onboarded: true,
-    baseCurrency: "EUR",
-    currencies: ["EUR", "BTC", "USD"],
-  });
-  await call("POST", "/api/onboarding", { baseCurrency: "EUR", currencies: ["EUR"] });
+  expect((await call("GET", "/api/settings")).body).toMatchObject({ onboarded: true, baseCurrency: "EUR" });
+  await call("POST", "/api/onboarding", { baseCurrency: "EUR" });
   const categories = (await call("GET", "/api/categories")).body;
   const tree = categories
     .filter((c: { parentId: number | null }) => c.parentId === null)

@@ -13,11 +13,14 @@ test("one line adds a row, updates the total and can be undone", async ({ app: p
 test("tags, currencies and sats parse from the line", async ({ app: page }) => {
   await add(page, "ramen 24.50 #friends");
   await expect(page.getByText("#friends")).toBeVisible();
-  await add(page, "beer 10 eur");
+  await add(page, "beer 10 EUR");
   await expect(page.getByRole("listitem").filter({ hasText: "beer" })).toContainText("€10.00");
   await expect(page.getByRole("listitem").filter({ hasText: "beer" })).toContainText("£8.89");
   await add(page, "tip 5000 sats");
   await expect(page.getByRole("listitem").filter({ hasText: "tip" })).toContainText("0.00005000 BTC");
+  await page.getByRole("button", { name: "Full form" }).click();
+  const options = page.getByLabel("Currency").locator("option");
+  for (const [i, code] of ["BTC", "EUR", "GBP", "AED"].entries()) await expect(options.nth(i)).toHaveText(code);
 });
 
 test("past notes fill amount and category", async ({ app: page }) => {

@@ -14,7 +14,7 @@ export function Review(props: {
   form: Drafting["form"];
   ready: boolean;
   categories: Category[];
-  currencies: string[];
+  recent: string[];
   unit: Unit;
   image?: string;
   saving: boolean;
@@ -66,7 +66,7 @@ export function Review(props: {
             </Picker>
             <Picker className={chip}>
               <span className="num">{f.currency === "BTC" ? props.unit : f.currency}</span>
-              <CurrencySelect currencies={props.currencies} className={overlay} {...register("currency")} />
+              <CurrencySelect recent={props.recent} className={overlay} {...register("currency")} />
             </Picker>
             <input aria-label="Tags" placeholder="#tags" className={`${chip} w-28 text-ink2 outline-none focus:ring-2 focus:ring-accent-soft`} {...register("tags")} />
           </div>

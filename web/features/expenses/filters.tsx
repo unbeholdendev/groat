@@ -1,3 +1,4 @@
+import { byRecent } from "../../../shared/amount";
 import { Button } from "../../components/button";
 import { CategoryOptions } from "../../components/category";
 import { Input, Select } from "../../components/form";
@@ -29,7 +30,7 @@ export function Filters() {
       </Select>
       <Select className="min-w-0" aria-label="Currency" value={filter.currency ?? ""} onChange={(e) => setFilter({ ...filter, currency: e.target.value })}>
         <option value="">All currencies</option>
-        {settings.currencies.map((c) => (
+        {byRecent(settings.recentCurrencies).map((c) => (
           <option key={c}>{c}</option>
         ))}
       </Select>

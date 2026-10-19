@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, max } from "drizzle-orm";
 import type { Database } from "bun:sqlite";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import * as t from "./schema";
@@ -19,17 +19,24 @@ export const uncategorised = (db: Db) =>
   seeded(db.select({ id: t.categories.id }).from(t.categories).where(eq(t.categories.builtin, true)).get()).id;
 
 export function settings(db: Db) {
-  const { baseCurrency, currencies, theme, onboarded } = seeded(db.select().from(t.settings).get());
+  const { baseCurrency, theme, onboarded } = seeded(db.select().from(t.settings).get());
   const last = db
     .select({ currency: t.expenses.currency })
     .from(t.expenses)
     .where(and(visible, isNull(t.expenses.recurringId)))
     .orderBy(desc(t.expenses.id))
     .get();
+  const used = db
+    .select({ currency: t.expenses.currency })
+    .from(t.expenses)
+    .where(visible)
+    .groupBy(t.expenses.currency)
+    .orderBy(desc(max(t.expenses.id)))
+    .all();
   return {
     baseCurrency,
-    currencies,
-    lastCurrency: last && currencies.includes(last.currency) ? last.currency : baseCurrency,
+    recentCurrencies: [...new Set([...used.map((u) => u.currency), baseCurrency])],
+    lastCurrency: last?.currency ?? baseCurrency,
     theme,
     onboarded,
   };

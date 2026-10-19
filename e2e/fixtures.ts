@@ -12,7 +12,7 @@ export const test = base.extend<{ ai: boolean; fresh: Page; app: Page }>({
   },
   app: async ({ fresh: page }, use) => {
     await page.request.post("/api/setup", { data: { username: "admin", password: "secret" } });
-    await page.request.post("/api/onboarding", { data: { baseCurrency: "GBP", currencies: ["EUR", "BTC"] } });
+    await page.request.post("/api/onboarding", { data: { baseCurrency: "GBP" } });
     await page.goto("/");
     await use(page);
   },

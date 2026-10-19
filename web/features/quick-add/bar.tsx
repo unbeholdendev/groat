@@ -41,7 +41,7 @@ export function Bar(props: {
   const inChat = settings.ai && props.chat !== undefined;
   const ask = inChat || (settings.ai && text.startsWith("?"));
   const question = text.replace(/^\?/, "").trim();
-  const p = parse(ask ? "" : text, settings.currencies);
+  const p = parse(ask ? "" : text, settings.recentCurrencies);
   const { guess, fills, ghost, line } = useSuggestions(p, text, settings.lastCurrency);
   const fill = (s: Suggestion) => (setText(line(s)), input.current?.focus());
   const category = categories.find((c) => c.id === (categoryId ?? guess?.categoryId));
@@ -95,7 +95,7 @@ export function Bar(props: {
               form={form}
               ready={drafting.isSuccess}
               categories={categories}
-              currencies={settings.currencies}
+              recent={settings.recentCurrencies}
               unit={unit}
               image={image}
               saving={adding.isPending}

@@ -21,7 +21,6 @@ export const settings = sqliteTable(
   {
     id: integer().primaryKey(),
     baseCurrency: text().notNull(),
-    currencies: text({ mode: "json" }).notNull().$type<string[]>(),
     theme: text().notNull(),
     onboarded: integer({ mode: "boolean" }).notNull(),
   },

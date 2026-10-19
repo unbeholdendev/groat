@@ -1,8 +1,8 @@
-import type { Unit } from "./amount";
+import { knownCurrencies, type Unit } from "./amount";
 
 export type Part = [string, "tag" | "amount" | "currency" | ""];
 
-export function parse(text: string, currencies: string[]) {
+export function parse(text: string, recent: string[]) {
   let amount: string | null = null;
   let currency: string | null = null;
   let unit: Unit | null = null;
@@ -17,7 +17,7 @@ export function parse(text: string, currencies: string[]) {
     } else if (!amount && /^\d+([.,]\d+)?$/.test(w)) {
       amount = w.replace(",", ".");
       parts.push([w, "amount"]);
-    } else if (!currency && (currencies.includes(code) || code === "SATS")) {
+    } else if (!currency && (recent.includes(code) || code === "SATS" || (w === code && knownCurrencies.has(code)))) {
       currency = code === "SATS" ? "BTC" : code;
       if (code === "SATS") unit = "sats";
       parts.push([w, "currency"]);

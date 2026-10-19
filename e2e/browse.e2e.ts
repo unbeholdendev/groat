@@ -52,7 +52,7 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
 });
 
 test("a bitcoin total fits the Stats card", async ({ app: page }) => {
-  await page.request.put("/api/settings", { data: { baseCurrency: "BTC", currencies: ["GBP"] } });
+  await page.request.put("/api/settings", { data: { baseCurrency: "BTC" } });
   await page.request.post("/api/expenses", { data: { note: "Coffee", amount: "1375", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
   await page.goto("/stats");
   const total = page.locator("section").first().locator("b").first();

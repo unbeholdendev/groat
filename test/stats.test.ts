@@ -5,7 +5,7 @@ const rates = { "2026-09-01": { EUR: 0.8, GBP: 0.75, JPY: 150 } };
 
 async function onboarded() {
   const s = setup("2026-10-10T12:00:00Z", frankfurter(rates));
-  await s.call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "EUR", "JPY"] });
+  await s.call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const all: { id: number; name: string }[] = (await s.call("GET", "/api/categories")).body;
   const id = (name: string) => all.find((c) => c.name === name)!.id;
   const spend = (note: string, amount: string, currency: string, date: string, category: string) =>

@@ -52,9 +52,3 @@ export const fromTemplate = (t: Template, unit: Unit): ExpenseValues => ({
   endDate: t.endDate ?? "",
   needsConfirmation: t.needsConfirmation,
 });
-
-const rate = z
-  .string()
-  .trim()
-  .refine((v) => !v || (/^\d+(\.\d+)?$/.test(v) && Number(v) > 0), "Enter a positive number");
-export const rates = z.object({ rates: z.record(z.string(), rate) }).refine((v) => Object.values(v.rates).some(Boolean), { path: ["root"], message: "Enter a rate" });

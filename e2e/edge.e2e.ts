@@ -12,16 +12,14 @@ test("adds made offline wait on the device and sync when back", async ({ app: pa
   expect((await (await page.request.get("/api/expenses")).json()).length).toBe(1);
 });
 
-test("a currency without a rate can be given one by hand", async ({ app: page }) => {
-  await page.request.put("/api/settings", { data: { currencies: ["EUR", "JPY"] } });
-  await seed(page, [{ note: "Sushi", amount: "3000", currency: "JPY" }]);
+test("an expense without a rate shows as unconverted and stays out of the day total", async ({ app: page }) => {
+  await seed(page, [
+    { note: "Sushi", amount: "3000", currency: "JPY" },
+    { note: "Tea", amount: "2" },
+  ]);
   await page.reload();
-  const row = page.getByRole("listitem").filter({ hasText: "Sushi" });
-  await row.getByRole("button", { name: "Set rate" }).click();
-  await page.getByLabel("1 USD in JPY").fill("150");
-  await page.getByLabel("1 USD in GBP").fill("0.8");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(row).toContainText("£16.00");
+  await expect(page.getByRole("listitem").filter({ hasText: "Sushi" })).toContainText("Unconverted");
+  await expect(page.getByText("£2.00 + 1 unconverted")).toBeVisible();
 });
 
 test("/ focuses the bar", async ({ app: page, isMobile }) => {

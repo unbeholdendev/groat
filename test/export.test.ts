@@ -9,7 +9,7 @@ async function exported(request: ReturnType<typeof setup>["request"], query = ""
 
 test("export lists live expenses as CSV with base values, categories and escaping", async () => {
   const { request, call } = setup("2026-10-10T12:00:00Z", frankfurter({ "2026-10-02": { EUR: 0.8, GBP: 0.76 } }));
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "EUR"] });
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const food = (await call("POST", "/api/categories", { name: "Food", icon: "🍽️", color: "#f00" })).body.id;
   const groceries = (await call("POST", "/api/categories", { name: "Groceries", icon: "🛒", color: "#f00", parentId: food })).body.id;
   await call("POST", "/api/expenses", {
@@ -35,7 +35,7 @@ test("export lists live expenses as CSV with base values, categories and escapin
 
 test("export respects the list filters and leaves base amount blank without a rate", async () => {
   const { request, call } = setup();
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "JPY"] });
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   await call("POST", "/api/expenses", { note: "Ramen", amount: "1200", currency: "JPY", date: "2026-10-01", tags: ["hols"] });
   await call("POST", "/api/expenses", { note: "Bus", amount: "2", currency: "GBP", date: "2026-10-01", tags: ["hols"] });
   await call("POST", "/api/expenses", { note: "Sushi", amount: "900", currency: "JPY", date: "2026-10-05", tags: ["hols"] });
@@ -47,7 +47,7 @@ test("export respects the list filters and leaves base amount blank without a ra
 
 test("export shows bitcoin amounts in BTC to 8 decimals", async () => {
   const { request, call } = setup();
-  await call("POST", "/api/onboarding", { baseCurrency: "BTC", currencies: ["BTC"] });
+  await call("POST", "/api/onboarding", { baseCurrency: "BTC" });
   await call("POST", "/api/expenses", { note: "Pizza", amount: "0.0012345", currency: "BTC", date: "2026-10-01" });
   expect((await exported(request)).split("\r\n")[1]).toBe("2026-10-01,Pizza,0.00123450,BTC,0.00123450,BTC,Uncategorised,,");
 });

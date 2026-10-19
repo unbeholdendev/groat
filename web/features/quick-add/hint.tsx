@@ -27,8 +27,8 @@ export function Hint(props: {
 }) {
   const { settings, text, ask, p, receipt } = props;
   const shown = receipt.shown;
-  const other = settings.currencies.find((c) => c !== "BTC" && c !== settings.lastCurrency);
-  const examples = [other && `12 ${other.toLowerCase()}`, settings.currencies.includes("BTC") && "5000 sats", "#work"].filter((e) => typeof e === "string");
+  const other = settings.recentCurrencies.find((c) => c !== "BTC" && c !== settings.lastCurrency);
+  const examples = [other && `12 ${other.toLowerCase()}`, settings.recentCurrencies.includes("BTC") && "5000 sats", "#work"].filter((e) => typeof e === "string");
   return (
     <p
       onMouseEnter={() => receipt.setHold(true)}
@@ -68,7 +68,7 @@ export function Hint(props: {
           {examples.map((e, i) => (
             <Fragment key={e}>
               {i > 0 && " · "}
-              <Tokens parts={parse(e, settings.currencies).parts} />
+              <Tokens parts={parse(e, settings.recentCurrencies).parts} />
             </Fragment>
           ))}
           {settings.ai && (

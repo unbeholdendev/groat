@@ -82,7 +82,7 @@ async function withSpending() {
   const ai = provider();
   const rates = frankfurter({ "2026-08-01": { EUR: 0.8, GBP: 0.75 } });
   const s = setup("2026-10-10T12:00:00Z", (url, init) => ai.handler(url, init) ?? rates(url), config);
-  await s.call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "EUR"] });
+  await s.call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const all: { id: number; name: string }[] = (await s.call("GET", "/api/categories")).body;
   const id = (name: string) => all.find((c) => c.name === name)!.id;
   const spend = (note: string, amount: string, currency: string, date: string, category: string, tags: string[] = []) =>
@@ -174,14 +174,14 @@ test("drafting an expense resolves it against categories and currencies but save
   const [draft, wrongCurrency, wrongCategory] = await ask(
     "lunch 12 euros yesterday",
     call("draft_expense", { note: "Lunch", amount: "12", currency: "EUR", date: "2026-10-09", categoryId: id("Eating out"), tags: ["work"] }),
-    call("draft_expense", { note: "Lunch", amount: "12", currency: "JPY" }),
+    call("draft_expense", { note: "Lunch", amount: "12", currency: "XYZ" }),
     call("draft_expense", { note: "Lunch", amount: "12", categoryId: 999 }),
     { content: "Check the draft" },
   );
   expect(draft).toEqual({
     draft: { note: "Lunch", amount: 1200, currency: "EUR", date: "2026-10-09", categoryId: id("Eating out"), tags: ["work"] },
   });
-  expect(wrongCurrency.error).toContain("That currency isn’t enabled");
+  expect(wrongCurrency.error).toContain("Invalid currency");
   expect(wrongCategory.error).toContain("Invalid category");
   expect(ai.requests[0].body.messages[0].content).toContain("Today is 2026-10-10");
   expect((await api("GET", "/api/expenses")).body).toEqual(before);

@@ -1,11 +1,8 @@
 import { decimals } from "../shared/amount";
 import { eq } from "drizzle-orm";
-import { Hono } from "hono";
 import { z } from "zod";
-import { isoDate } from "../shared/schema";
 import type { Ctx, Deps } from "./app";
-import { type Db, settings, today } from "./db";
-import { body } from "./request";
+import { settings, today } from "./db";
 import * as t from "./schema";
 
 type Row = { amount: number; currency: string; date: string };
@@ -17,7 +14,7 @@ const prices = z.object({ prices: z.array(z.object({ USD: z.number() })) });
 const frankfurter: Source = async (fetch, date, currencies) => {
   const fiat = currencies.filter((c) => c !== "BTC");
   if (!fiat.length) return {};
-  const res = await fetch(`https://api.frankfurter.dev/v2/rates?date=${date}&base=USD&quotes=${fiat}&providers=ECB`);
+  const res = await fetch(`https://api.frankfurter.dev/v2/rates?date=${date}&base=USD&quotes=${fiat}`);
   return Object.fromEntries(quotes.parse(await res.json()).map((r) => [r.quote, r.rate]));
 };
 
@@ -39,7 +36,7 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
   const failed = new Set<string>();
 
   return async <T extends Row>(rows: T[]) => {
-    const { baseCurrency: base, currencies } = settings(db);
+    const { baseCurrency: base } = settings(db);
     const now = today(clock);
     const rates = new Map<string, Map<string, number>>();
 
@@ -56,7 +53,7 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
         rates.set(date, have);
         const needed = rows.filter((r) => r.date === date).map((r) => r.currency).concat(base);
         if (needed.every((c) => have.has(c) || failed.has(`${date} ${c}`))) return;
-        const missing = [...new Set([...needed, ...currencies])].filter((c) => !have.has(c));
+        const missing = [...new Set(needed)].filter((c) => !have.has(c));
         for (const [name, source] of Object.entries(sources)) {
           const got = await source(fetch, date, missing).catch(() => ({}));
           for (const [currency, rate] of Object.entries(got)) {
@@ -76,31 +73,4 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
       return { ...r, baseAmount: Math.round((r.amount * to * 10 ** decimals(base)) / (from * 10 ** decimals(r.currency))) };
     });
   };
-}
-
-export const knownCurrencies = new Set([...Intl.supportedValuesOf("currency"), "BTC"]);
-
-const manualRate = z.object({
-  date: isoDate,
-  currency: z.string().refine((c) => knownCurrencies.has(c)),
-  rate: z
-    .string()
-    .regex(/^\d+(\.\d+)?$/)
-    .transform(Number)
-    .refine((n) => n > 0),
-});
-
-export function rateRoutes(db: Db) {
-  const app = new Hono();
-
-  app.put("/api/rates", async (c) => {
-    const input = await body(c, manualRate);
-    if ("error" in input) return c.json({ error: "Invalid rate" }, 400);
-    const { date, currency, rate } = input.data;
-    const row = { rate, source: "manual" };
-    db.insert(t.rates).values({ date, currency, ...row }).onConflictDoUpdate({ target: [t.rates.date, t.rates.currency], set: row }).run();
-    return c.json({ date, currency, rate });
-  });
-
-  return app;
 }

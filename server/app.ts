@@ -11,7 +11,7 @@ import { draftRoutes } from "./draft";
 import { expenseRoutes } from "./expenses";
 import { memberRoutes } from "./members";
 import { exportRoutes } from "./export";
-import { rateRoutes, valuer } from "./rates";
+import { valuer } from "./rates";
 import { recurringRoutes } from "./recurring";
 import { settingsRoutes } from "./settings";
 import { statsRoutes } from "./stats";
@@ -57,7 +57,6 @@ export function createApp(deps: Deps) {
   app.route("/", attachmentRoutes(ctx));
   app.route("/", exportRoutes(db, value));
   app.route("/", statsRoutes(db, value));
-  app.route("/", rateRoutes(db));
   app.route("/", recurring);
   app.route("/api/chats", chats(ctx, value));
   app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));

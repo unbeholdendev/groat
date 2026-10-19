@@ -11,7 +11,7 @@ import { useEdit } from "./use-month";
 
 export const rowClass = "press relative flex h-[62px] items-center gap-3 px-4";
 
-export function ExpenseRow({ expense: e, dated, onSetRate }: { expense: Expense; dated?: boolean; onSetRate?: () => void }) {
+export function ExpenseRow({ expense: e, dated }: { expense: Expense; dated?: boolean }) {
   const settings = useSettings()!;
   const [unit] = useContext(UnitContext);
   const category = useCategories().find((c) => c.id === e.categoryId);
@@ -44,14 +44,8 @@ export function ExpenseRow({ expense: e, dated, onSetRate }: { expense: Expense;
         {foreign && e.baseAmount != null ? show(e.baseAmount, settings.baseCurrency) : show(e.amount, e.currency)}
         {e.id < 0 && <span className="block font-sans text-xs text-ink3">Will sync</span>}
         {foreign && (
-          <span className="relative block text-xs text-ink3">
-            {e.baseAmount === null ? (
-              <button className="hit font-sans text-amber underline underline-offset-2" onClick={onSetRate}>
-                Set rate
-              </button>
-            ) : (
-              show(e.amount, e.currency)
-            )}
+          <span className="block text-xs text-ink3">
+            {e.baseAmount === null ? <span className="font-sans text-amber">Unconverted</span> : show(e.amount, e.currency)}
           </span>
         )}
       </span>

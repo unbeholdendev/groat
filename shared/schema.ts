@@ -9,7 +9,7 @@ export const unit = z.enum(["sats", "BTC"]);
 export const expenseInput = z.object({
   note: z.string("Enter a note").trim().min(1, "Enter a note"),
   amount: z.string("Invalid amount"),
-  currency: z.string("That currency isn’t enabled").optional(),
+  currency: z.string("Invalid currency").optional(),
   unit: unit.optional(),
   date: isoDate.optional(),
   categoryId: z.number("Invalid category").int("Invalid category").optional(),

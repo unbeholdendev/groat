@@ -24,7 +24,7 @@ test("text becomes a draft with a category from the household's list, saving not
     return { note: "Lunch with Sam", amount: "18.40", date: "2026-10-09", categoryId: food.id, tags: ["friends"] };
   });
   const { call } = setup(undefined, ai.handler, config);
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP"] });
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const food = (await call("GET", "/api/categories")).body.find((c: { name: string }) => c.name === "Food");
 
   const res = await call("POST", "/api/drafts", { text: "lunch with sam yesterday eighteen forty #work" });

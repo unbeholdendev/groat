@@ -5,7 +5,7 @@ type Category = { id: number; name: string; parentId: number | null; builtin: bo
 
 async function onboarded() {
   const s = setup();
-  await s.call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP"] });
+  await s.call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const categories = async (): Promise<Category[]> => (await s.call("GET", "/api/categories")).body;
   const all = await categories();
   const find = (name: string) => all.find((c) => c.name === name)!;

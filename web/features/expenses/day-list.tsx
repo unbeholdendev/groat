@@ -1,4 +1,4 @@
-import { Fragment, useContext, useState } from "react";
+import { useContext } from "react";
 import { panel } from "../../components/styles";
 import { useSettings } from "../../lib/api";
 import { dayLabel } from "../../lib/dates";
@@ -6,13 +6,11 @@ import { money } from "../../lib/money";
 import type { Expense } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
 import { inBase } from "./queries";
-import { SetRate } from "./set-rate";
 import { SwipeRow } from "./swipe-row";
 
 export function DayList({ days, newest }: { days: Map<string, Expense[]>; newest: number }) {
   const base = useSettings()!.baseCurrency;
   const [unit] = useContext(UnitContext);
-  const [rating, setRating] = useState<number | null>(null);
   return (
     <div className={`mt-6 ${panel}`}>
       {[...days].map(([date, rows]) => (
@@ -28,14 +26,7 @@ export function DayList({ days, newest }: { days: Map<string, Expense[]>; newest
           </h2>
           <ul>
             {rows.map((e) => (
-              <Fragment key={e.id}>
-                <SwipeRow expense={e} fresh={e.id > newest || e.id < 0} onSetRate={() => setRating(e.id)} />
-                {rating === e.id && (
-                  <li>
-                    <SetRate expense={e} onDone={() => setRating(null)} />
-                  </li>
-                )}
-              </Fragment>
+              <SwipeRow key={e.id} expense={e} fresh={e.id > newest || e.id < 0} />
             ))}
           </ul>
         </section>

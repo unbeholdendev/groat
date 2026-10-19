@@ -1,7 +1,7 @@
 import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, or, type SQL, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
-import { parseAmount } from "../shared/amount";
+import { knownCurrencies, parseAmount } from "../shared/amount";
 import { expenseInput, isoDate } from "../shared/schema";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
@@ -59,11 +59,11 @@ export function expenseFilter(db: Db, q: z.infer<typeof expenseQuery>, base = vi
   );
 }
 
-export function readExpense(raw: unknown, db: Db, today: string, fallback: string, currencies: string[], category: number, pending = false) {
+export function readExpense(raw: unknown, db: Db, today: string, fallback: string, category: number, pending = false) {
   const parsed = valid(expenseInput, raw);
   if ("error" in parsed) return parsed;
   const { note, currency = fallback, date = today, categoryId = category, tags = [], unit } = parsed.data;
-  if (currency !== fallback && !currencies.includes(currency)) return { error: "That currency isn’t enabled" };
+  if (currency !== fallback && !knownCurrencies.has(currency)) return { error: "Invalid currency" };
   const amount = pending && parsed.data.amount === "0" ? 0 : parseAmount(parsed.data.amount, currency, unit);
   if (amount === null) return { error: "Invalid amount" };
   // today is UTC; the user's local date can be a day ahead
@@ -125,9 +125,9 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
 
   app.post("/api/expenses", async (c) => {
     const now = clock().toISOString();
-    const { lastCurrency, currencies } = settings(db);
+    const { lastCurrency } = settings(db);
     const raw = await json(c);
-    const body = readExpense(raw, db, today(clock), lastCurrency, currencies, uncategorised(db));
+    const body = readExpense(raw, db, today(clock), lastCurrency, uncategorised(db));
     if ("error" in body) return c.json(body, 400);
     const link = valid(attachment, raw);
     if ("error" in link) return c.json(link, 400);
@@ -139,7 +139,7 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     const id = Number(c.req.param("id"));
     const old = db.select({ currency: e.currency, categoryId: e.categoryId }).from(e).where(and(eq(e.id, id), visible)).get();
     if (!old) return c.json({ error: "Not found" }, 404);
-    const body = readExpense(await json(c), db, today(clock), old.currency, settings(db).currencies, old.categoryId ?? uncategorised(db));
+    const body = readExpense(await json(c), db, today(clock), old.currency, old.categoryId ?? uncategorised(db));
     if ("error" in body) return c.json(body, 400);
     const { tags, ...fields } = body;
     db.update(e).set({ ...fields, updatedAt: now }).where(eq(e.id, id)).run();

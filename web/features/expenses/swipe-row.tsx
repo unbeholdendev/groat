@@ -6,7 +6,7 @@ import { useSend } from "../../lib/api";
 import type { Expense } from "../../lib/schemas";
 import { ExpenseRow, rowClass } from "./expense-row";
 
-export function SwipeRow({ expense: e, fresh, onSetRate }: { expense: Expense; fresh: boolean; onSetRate: () => void }) {
+export function SwipeRow({ expense: e, fresh }: { expense: Expense; fresh: boolean }) {
   const [swiped, setSwiped] = useState<{ x: number; dx: number } | null>(null);
   const dragged = useRef(false);
   const mutation = useSend("expense");
@@ -30,7 +30,7 @@ export function SwipeRow({ expense: e, fresh, onSetRate }: { expense: Expense; f
         }}
         onPointerCancel={() => setSwiped(null)}
       >
-        <ExpenseRow expense={e} onSetRate={onSetRate} />
+        <ExpenseRow expense={e} />
       </div>
       <FormError error={mutation.error} className="px-4 pb-2" />
     </li>

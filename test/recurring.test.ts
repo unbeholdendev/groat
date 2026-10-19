@@ -119,7 +119,7 @@ test("changing the interval counts from the last generated date", async () => {
 
 test("the interval is called period and a BTC amount honours the sats unit", async () => {
   const { call } = setup("2026-10-10T12:00:00Z");
-  await call("POST", "/api/onboarding", { baseCurrency: "GBP", currencies: ["GBP", "BTC"] });
+  await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const r = await call("POST", "/api/recurring", {
     note: "Node",
     amount: "1000",

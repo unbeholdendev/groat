@@ -93,12 +93,11 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
       "Draft an expense the user describes, for them to review and save. Saves nothing. Resolve relative dates against today. Amount is a decimal string in major units.",
       expenseInput.omit({ unit: true }).extend({
         amount: z.string().describe("e.g. 12.50"),
-        currency: z.string().optional().describe("an enabled currency; defaults to base"),
+        currency: z.string().optional().describe("ISO 4217 code or BTC; defaults to base"),
         date: isoDate.optional().describe("YYYY-MM-DD; defaults to today"),
       }),
       (args) => {
-        const { baseCurrency, currencies } = settings(db);
-        const draft = readExpense(args, db, today(clock), baseCurrency, currencies, uncategorised(db));
+        const draft = readExpense(args, db, today(clock), settings(db).baseCurrency, uncategorised(db));
         if ("error" in draft) throw new Error(draft.error);
         return { draft };
       },
