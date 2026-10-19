@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull, ne, or, type SQL, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
+import type { Env } from "./auth";
 import { type Db, uncategorised } from "./db";
 import { body, query } from "./request";
 import * as t from "./schema";
@@ -8,6 +9,7 @@ import * as t from "./schema";
 const cat = t.categories;
 const e = t.expenses;
 const r = t.recurring;
+const o = t.categoryOrder;
 
 const required = "Enter a name, emoji and colour";
 const text = (message: string) => z.string(message).trim().min(1, message);
@@ -17,13 +19,16 @@ const order = z.array(z.number("Expected a list of category IDs").int("Expected 
 const tagInput = z.object({ name: text("Enter a name") });
 const deletion = z.object({ moveTo: z.coerce.number("Invalid category to move to").int("Invalid category to move to").optional() });
 
-export const categories = (db: Db, where?: SQL) =>
-  db.select({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, parentId: cat.parentId, builtin: cat.builtin }).from(cat).where(where);
+const shape = { id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, parentId: cat.parentId, builtin: cat.builtin };
+export const categories = (db: Db, where?: SQL) => db.select(shape).from(cat).where(where);
 
 export function categoryRoutes(db: Db) {
-  const app = new Hono();
+  const app = new Hono<Env>();
 
-  app.get("/api/categories", (c) => c.json(categories(db).orderBy(isNotNull(cat.parentId), cat.sort).all()));
+  app.get("/api/categories", (c) => {
+    const mine = and(eq(o.categoryId, cat.id), eq(o.userId, c.get("user").id));
+    return c.json(db.select(shape).from(cat).leftJoin(o, mine).orderBy(isNotNull(cat.parentId), isNull(o.sort), o.sort, cat.sort).all());
+  });
 
   app.post("/api/categories", async (c) => {
     const input = await body(c, newCategory);
@@ -39,7 +44,13 @@ export function categoryRoutes(db: Db) {
   app.put("/api/categories/order", async (c) => {
     const ids = await body(c, order);
     if ("error" in ids) return c.json(ids, 400);
-    db.transaction(() => ids.data.forEach((id, i) => db.update(cat).set({ sort: i }).where(eq(cat.id, id)).run()));
+    const userId = c.get("user").id;
+    const known = categories(db, inArray(cat.id, ids.data)).all().map((k) => k.id);
+    db.transaction(() =>
+      ids.data
+        .filter((id) => known.includes(id))
+        .forEach((categoryId, sort) => db.insert(o).values({ userId, categoryId, sort }).onConflictDoUpdate({ target: [o.userId, o.categoryId], set: { sort } }).run()),
+    );
     return c.json({});
   });
 

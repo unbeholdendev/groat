@@ -58,6 +58,27 @@ test("categories can be created, renamed, recoloured and reordered, two levels d
   expect((await call("PUT", "/api/categories/order", ["x"])).status).toBe(400);
 });
 
+test("each user keeps their own category order, and new categories go last for everyone", async () => {
+  const { app, call, categories } = await onboarded();
+  await call("POST", "/api/users", { username: "bob", password: "pw" });
+  const login = await app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "bob", password: "pw" }) });
+  const cookie = login.headers.get("set-cookie")!.split(";")[0];
+  const bob = async (method: string, path: string, body?: unknown) =>
+    (await app.request(path, { method, headers: { "content-type": "application/json", cookie }, body: JSON.stringify(body) })).json();
+  const names = (rows: Category[]) => rows.filter((c) => c.parentId === null).map((c) => c.name);
+
+  const shared = names(await categories());
+  expect(names(await bob("GET", "/api/categories"))).toEqual(shared);
+  const ids = (await categories()).filter((c) => c.parentId === null).map((c) => c.id);
+  await bob("PUT", "/api/categories/order", [...ids].reverse());
+  expect(names(await bob("GET", "/api/categories"))).toEqual([...shared].reverse());
+  expect(names(await categories())).toEqual(shared);
+
+  await call("POST", "/api/categories", { name: "Pets", icon: "🐶", color: "#000000" });
+  expect(names(await categories())).toEqual([...shared, "Pets"]);
+  expect(names(await bob("GET", "/api/categories"))).toEqual([...shared.reverse(), "Pets"]);
+});
+
 test("Uncategorised cannot be deleted", async () => {
   const { call, find, categories } = await onboarded();
   expect((await call("DELETE", `/api/categories/${find("Uncategorised").id}`)).status).toBe(400);

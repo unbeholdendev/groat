@@ -133,3 +133,17 @@ export const chatMessages = sqliteTable("chat_messages", {
     .references(() => chats.id, { onDelete: "cascade" }),
   message: text({ mode: "json" }).notNull(),
 });
+
+export const categoryOrder = sqliteTable(
+  "category_order",
+  {
+    userId: integer()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    categoryId: integer()
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    sort: integer().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.categoryId] })],
+);
