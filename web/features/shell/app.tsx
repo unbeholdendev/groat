@@ -34,7 +34,7 @@ export function App() {
     );
   return (
     <UnitContext value={unitState}>
-      <main className="mx-auto max-w-md px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[calc(10rem+env(safe-area-inset-bottom))] lg:pb-4">
+      <main className="mx-auto max-w-md px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[calc(var(--dock,124px)+2.25rem+env(safe-area-inset-bottom))] lg:pb-[calc(var(--stack,8px)+0.5rem)]">
         <Outlet />
       </main>
       <Dock settings={settings} guide={guide} onGuided={() => setGuide(false)} />

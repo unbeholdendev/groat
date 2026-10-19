@@ -249,6 +249,9 @@ body {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
+  :is(button, select, summary, label:has(> input:is([type="radio"], [type="checkbox"])), input:is([type="date"], [type="radio"], [type="checkbox"], [type="color"])):not(:disabled) {
+    cursor: pointer;
+  }
 }
 input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0.5;

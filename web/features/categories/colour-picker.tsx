@@ -17,7 +17,7 @@ export function ColourPicker({ value, onChange, error }: { value: string; onChan
         ))}
         <label className={`${swatch} border border-line2 ${custom ? "ring-2 ring-ink ring-offset-2 ring-offset-surface" : ""}`} style={{ background: custom ? value : undefined }}>
           <Icon d={paths.plus} className={`size-4 stroke-2 ${custom ? "text-white" : "text-ink3"}`} />
-          <input type="color" aria-label="Custom colour" className="absolute inset-0 size-full cursor-pointer opacity-0" value={value} onChange={(e) => onChange(e.target.value)} />
+          <input type="color" aria-label="Custom colour" className="absolute inset-0 size-full opacity-0" value={value} onChange={(e) => onChange(e.target.value)} />
         </label>
       </div>
       {error && <span className="text-up">{error}</span>}

@@ -24,7 +24,9 @@ export function MemberRow({ member: m, open, onOpen, send, pending }: Props) {
           <Confirm ask="Remove?" yes="Remove" onYes={() => send("DELETE", `/api/users/${m.id}`)} onNo={() => onOpen(null)} />
         ) : (
           <span className="flex gap-1 text-[13px] font-medium">
-            <Button onClick={() => onOpen(open === password ? null : password)}>Reset password</Button>
+            <Button aria-expanded={open === password} onClick={() => onOpen(open === password ? null : password)}>
+              Reset password
+            </Button>
             {m.role !== "admin" && (
               <Button tone="up" onClick={() => onOpen(remove)}>
                 Remove

@@ -10,7 +10,7 @@ import { inBase } from "./queries";
 import { Summary } from "./summary";
 import { route, useMonth } from "./use-month";
 
-const heroButton = "press hit grid size-9 shrink-0 place-items-center rounded-chip bg-on-hero/16";
+const heroButton = "press hit grid size-9 shrink-0 place-items-center rounded-chip bg-on-hero/16 aria-expanded:bg-on-hero aria-expanded:text-hero";
 
 export function MonthHeader({ rows, showFilters, onFilters }: { rows: Expense[]; showFilters: boolean; onFilters: () => void }) {
   const { month, filter, filtered, end, step, label } = useMonth();
@@ -53,7 +53,7 @@ export function MonthHeader({ rows, showFilters, onFilters }: { rows: Expense[];
         )}
         <button aria-label={count ? `Filters, ${count} on` : "Filters"} aria-expanded={showFilters} onClick={onFilters} className={`${heroButton} relative ml-1.5`}>
           <Icon d="M4 7h16M7 12h10M10 17h4" className="size-[18px] stroke-2" />
-          {count > 0 && <b className="num absolute -top-1 -right-1 grid size-[18px] place-items-center rounded-chip bg-on-hero text-[11px] font-semibold text-hero">{count}</b>}
+          {count > 0 && <b className="num absolute -top-1 -right-1 grid size-[18px] place-items-center rounded-chip bg-on-hero text-[11px] font-semibold text-hero ring-2 ring-hero">{count}</b>}
         </button>
       </div>
       {filtered ? (

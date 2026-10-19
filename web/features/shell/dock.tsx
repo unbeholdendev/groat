@@ -1,4 +1,4 @@
-import { use } from "react";
+import { use, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { TabBar } from "../../components/tab-bar";
 import { useCategories } from "../../lib/api";
@@ -13,8 +13,31 @@ export function Dock({ settings, guide, onGuided }: { settings: Settings; guide:
   const navigate = useNavigate();
   const categories = useCategories();
   const bar = !search.new && !search.edit;
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const dock = ref.current!;
+    const stack = dock.querySelector("[data-stack]");
+    const root = document.documentElement;
+    let last = 0;
+    let own = dock.offsetHeight;
+    const fit = () => {
+      const lift = stack?.clientHeight ?? 0;
+      const total = dock.offsetHeight + lift;
+      const flowed = dock.offsetParent ? Math.max(dock.offsetHeight - own, 0) : 0;
+      const end = innerHeight + scrollY >= root.scrollHeight - flowed - 1;
+      root.style.setProperty("--dock", `${total}px`);
+      root.style.setProperty("--stack", `${lift}px`);
+      if (end && last && total > last) scrollBy(0, total - last);
+      last = total;
+      own = dock.offsetHeight;
+    };
+    const o = new ResizeObserver(fit);
+    o.observe(dock);
+    if (stack) o.observe(stack);
+    return () => o.disconnect();
+  }, [bar]);
   return (
-    <div className="fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),8px)] z-10 mx-auto max-w-md p-2 max-lg:[view-transition-name:dock] lg:sticky lg:bottom-6">
+    <div ref={ref} className="fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),8px)] z-10 mx-auto max-w-md p-2 max-lg:[view-transition-name:dock] lg:sticky lg:bottom-6 lg:mb-6">
       <div aria-hidden className={`glass absolute inset-0 -z-10 rounded-dock shadow-dock ${bar ? "" : "lg:hidden"}`} />
       {bar && (
         <Bar
