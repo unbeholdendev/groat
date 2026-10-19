@@ -14,10 +14,7 @@ export function Hint(props: {
   text: string;
   ask: boolean;
   p: ReturnType<typeof parse>;
-  amount: number;
-  currency: string;
   category?: Category;
-  guessed: boolean;
   error: Error | null;
   receipt: Receipt;
   queued: number;
@@ -46,11 +43,7 @@ export function Hint(props: {
       ) : text && !p.amount ? (
         <span>Add an amount, like 24.50, or press Enter for the full form.</span>
       ) : text ? (
-        <span className="flex min-w-0 gap-1 text-ink2">
-          <span className="truncate">{p.note || "No note"}</span>·<span className="num shrink-0 text-ink">{money(props.amount, props.currency, p.unit ?? props.unit)}</span>
-          {p.tags.length > 0 && <span className="truncate">· {p.tags.map((t) => `#${t}`).join(" ")}</span>}
-          {props.guessed && <span className="shrink-0 text-ink3">· category guessed</span>}
-        </span>
+        <span />
       ) : shown ? (
         <span key={shown.id} className="rise flex min-w-0 items-center gap-2 text-ink2">
           <Tile category={receipt.category} small />

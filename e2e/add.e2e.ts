@@ -23,6 +23,14 @@ test("tags, currencies and sats parse from the line", async ({ app: page }) => {
   for (const [i, code] of ["BTC", "EUR", "GBP", "AED"].entries()) await expect(options.nth(i)).toHaveText(code);
 });
 
+test("the currency chip sets the currency on the line", async ({ app: page }) => {
+  await bar(page).fill("beer 10");
+  await page.getByLabel("Currency").selectOption("EUR");
+  await expect(bar(page)).toHaveValue("beer 10 EUR");
+  await page.getByLabel("Currency").selectOption("USD");
+  await expect(bar(page)).toHaveValue("beer 10 USD");
+});
+
 test("past notes fill amount and category", async ({ app: page }) => {
   await seed(page, [{ note: "ramen", amount: "12.00", categoryId: 3, date: "2026-01-05" }]);
   await page.reload();

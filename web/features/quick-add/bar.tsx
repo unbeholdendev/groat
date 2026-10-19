@@ -105,7 +105,17 @@ export function Bar(props: {
           )}
           {fills.length > 0 && !card && !reviewing && <PastEntries fills={fills} unit={unit} onFill={fill} />}
           {text && !ask && !card && !reviewing && (
-            <Chips categories={categories} category={category} onCategory={setCategoryId} date={date} onDate={setDate} currency={currency === "BTC" ? (p.unit ?? unit) : currency} />
+            <Chips
+              categories={categories}
+              category={category}
+              onCategory={setCategoryId}
+              date={date}
+              onDate={setDate}
+              currency={currency}
+              label={currency === "BTC" ? (p.unit ?? unit) : currency}
+              recent={settings.recentCurrencies}
+              onCurrency={(c) => setText(p.currency ? p.parts.map(([w, k]) => (k === "currency" ? c : w)).join("") : `${text.trimEnd()} ${c}`)}
+            />
           )}
         </div>
         <div
@@ -148,10 +158,7 @@ export function Bar(props: {
             text={text}
             ask={ask}
             p={p}
-            amount={seed().amount}
-            currency={currency}
             category={category}
-            guessed={!!category && !categoryId}
             error={error}
             receipt={receipt}
             queued={queued}
