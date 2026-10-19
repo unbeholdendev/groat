@@ -82,7 +82,7 @@ test("scrubbing the spend line reads out a day", async ({ app: page }) => {
   const chart = page.getByRole("img", { name: /so far/ }).locator("..");
   const b = (await chart.boundingBox())!;
   await chart.dispatchEvent("pointerdown", { clientX: b.x + b.width - 2, clientY: b.y + 50, pointerType: "touch" });
-  await expect(page.locator("section").first()).toContainText("· £3.20");
+  await expect(page.locator("section").first()).toContainText(`${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · £3.20`);
   await chart.dispatchEvent("pointerup", { pointerType: "touch" });
   await expect(page.locator("section").first()).not.toContainText("· £3.20");
 });

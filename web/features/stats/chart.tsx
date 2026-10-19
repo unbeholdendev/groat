@@ -26,7 +26,7 @@ export function Chart(props: {
     o.observe(el);
     return () => o.disconnect();
   };
-  const extent = Math.max(days(props.range[0], props.end), days(...props.full));
+  const extent = Math.max(days(props.range[0], props.end), days(...props.full)) - 1 || 1;
   const x = (n: number) => (n / extent) * w;
   const y = (v: number) => H - (v / (props.max || 1)) * (H - 20);
   const path = (pts: number[][]) => pts.map(([a, b], i) => `${i ? "L" : "M"}${x(a)},${y(b)}`).join("");

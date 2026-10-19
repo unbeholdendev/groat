@@ -50,8 +50,18 @@ test("cumulative builds a running total over the range", () => {
     ],
     ["2026-01-01", "2026-02-28"],
   );
-  expect(pts).toEqual([[0, 0], [31, 10], [31, 10], [31, 10], [59, 15], [59, 15]]);
+  expect(pts).toEqual([[0, 0], [30, 10], [31, 10], [58, 15]]);
   expect(valueAt(pts, 0)).toBe(0);
-  expect(valueAt(pts, 40)).toBe(10);
-  expect(valueAt(pts, 59)).toBe(15);
+  expect(valueAt(pts, 30)).toBe(10);
+  expect(valueAt(pts, 15)).toBe(5);
+  expect(valueAt(pts, 40)).toBe(12);
+  expect(valueAt(pts, 58)).toBe(15);
+});
+
+test("cumulative ends on the last day of the range", () => {
+  const range: [string, string] = ["2026-10-01", "2026-10-19"];
+  const last = (b: { start: string; total: number }[]) => cumulative(b, range).at(-1);
+  expect(last([{ start: "2026-10-19", total: 4 }])).toEqual([18, 4]);
+  expect(last([{ start: "2026-09-28", total: 1 }, { start: "2026-10-05", total: 2 }, { start: "2026-10-12", total: 3 }, { start: "2026-10-19", total: 4 }])).toEqual([18, 10]);
+  expect(last([{ start: "2026-10-01", total: 4 }])).toEqual([18, 4]);
 });
