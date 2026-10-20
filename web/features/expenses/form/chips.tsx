@@ -14,23 +14,39 @@ export function CategoryChips({ value, onChange }: { value: number | null; onCha
   const picked = categories.find((c) => c.id === value);
   const branch = picked?.parentId ?? picked?.id;
   const kids = categories.filter((c) => c.parentId !== null && c.parentId === branch);
-  const chip = (c: Category) => (
-    <button type="button" key={c.id} aria-pressed={value === c.id} onClick={() => onChange(value === c.id ? null : c.id)} className={`${choice(c.id === value || c.id === branch)} pr-3 pl-px`}>
-      <Tile category={c} small />
-      {c.name}
+  const tops = categories.filter((c) => c.parentId === null && !c.builtin);
+  const toggle = (c: Category) => onChange(value === c.id ? null : c.id);
+  const cells = tops.map((c) => (
+    <button
+      type="button"
+      key={c.id}
+      aria-pressed={value === c.id}
+      onClick={() => toggle(c)}
+      className={`press flex min-w-0 flex-col items-center gap-1 rounded-tile py-1 text-[11px] font-medium ${c.id === branch ? "text-ink" : "text-ink2"}`}
+    >
+      <span className={`rounded-[13px] p-0.5 outline-2 ${value === c.id ? "outline-accent" : "outline-transparent"}`}>
+        <Tile category={c} />
+      </span>
+      <span className="w-full truncate text-center">{c.name}</span>
     </button>
-  );
+  ));
+  if (kids.length)
+    cells.splice(
+      Math.min(tops.length, (Math.floor(tops.findIndex((c) => c.id === branch) / 4) + 1) * 4),
+      0,
+      <div key={`sub${branch}`} role="group" aria-label="Subcategory" className="rise col-span-4 flex flex-wrap gap-1.5 rounded-field bg-surface2 p-2">
+        {kids.map((c) => (
+          <button type="button" key={c.id} aria-pressed={value === c.id} onClick={() => toggle(c)} className={`${choice(value === c.id)} pr-3 pl-px`}>
+            <Tile category={c} small />
+            {c.name}
+          </button>
+        ))}
+      </div>,
+    );
   return (
-    <>
-      <div role="group" aria-label="Category" className="mt-5 flex flex-wrap gap-1.5">
-        {categories.filter((c) => c.parentId === null && !c.builtin).map(chip)}
-      </div>
-      {kids.length > 0 && (
-        <div key={branch} role="group" aria-label="Subcategory" className="rise mt-2 flex flex-wrap gap-1.5">
-          {kids.map(chip)}
-        </div>
-      )}
-    </>
+    <div role="group" aria-label="Category" className="mt-5 grid grid-cols-4 gap-x-1 gap-y-2">
+      {cells}
+    </div>
   );
 }
 
