@@ -294,7 +294,7 @@ Uncategorised is neutral: drawn, not coloured, in tiles (see Category tile); Ink
 The split is a rule, not a mood: the one figure that states the screen's headline is set in Geist; every other amount, delta, percentage and axis label is Geist Mono so columns align and figures read as data.
 
 ### Scale
-- **Hero** 60px / 1, 600, -0.04em, tabular. Pence at 0.5em, weight 500, 65% opacity. Strings over 9 characters (large totals) drop to **Hero long** 44px, and over 12 (BTC, millions) to 34px so they fit the Stats card. Implemented as `Total` in `web/period.tsx`; it counts up.
+- **Hero** 60px / 1, 600, -0.04em, tabular. Pence at 0.5em, weight 500, 65% opacity. Strings over 9 characters (large totals) drop to **Hero long** 44px, over 12 (BTC, millions) to 34px and over 14 to 28px so they fit. The steps are `numeralSize` in `web/components/total.tsx`, shared by `Total` (which counts up) and the expense form amount.
 - **Display** 34px / 1.1, 700, -0.035em (`text-display font-bold`): every page title ("Stats", "Categories", Settings, Bin, Recurring, Chats, the sign-in masthead). Home has no Display title; its month is a 15px label (see Layout).
 - **Title** 20px, 650, -0.02em: section heads ("By category", "By tag").
 - **Input** 17px, 500, -0.01em: the bar and AI answer text.

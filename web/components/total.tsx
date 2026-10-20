@@ -15,6 +15,8 @@ export const Pill = ({ d }: { d: NonNullable<ReturnType<typeof change>> }) => (
   </span>
 );
 
+export const numeralSize = (length: number) => (length > 14 ? "text-[28px]" : length > 12 ? "text-[34px]" : length > 9 ? "text-[44px]" : "text-[60px]");
+
 let counted = false;
 
 function useCountUp(to: number) {
@@ -42,7 +44,7 @@ export function Total({ amount, currency, unit, className = "" }: { amount: numb
   const final = money(amount, currency, unit);
   const [whole, part] = money(useCountUp(amount), currency, unit).split(/(?=\.\d+$)/);
   return (
-    <b className={`font-semibold tracking-[-0.04em] whitespace-nowrap ${final.length > 12 ? "text-[34px]" : final.length > 9 ? "text-[44px]" : "text-[60px]"} leading-none ${className}`}>
+    <b className={`font-semibold tracking-[-0.04em] whitespace-nowrap ${numeralSize(final.length)} leading-none ${className}`}>
       <span className="sr-only">{final}</span>
       <span aria-hidden>
         {whole}
