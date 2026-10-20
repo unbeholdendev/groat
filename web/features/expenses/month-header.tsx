@@ -1,6 +1,5 @@
 import { type PointerEvent, useContext, useRef } from "react";
 import { Chevron, Icon } from "../../components/icon";
-import { field } from "../../components/styles";
 import { Total } from "../../components/total";
 import { useSettings } from "../../lib/api";
 import { today } from "../../lib/dates";
@@ -10,7 +9,7 @@ import { inBase } from "./queries";
 import { Summary } from "./summary";
 import { route, useMonth } from "./use-month";
 
-const heroButton = "press hit grid size-9 shrink-0 place-items-center rounded-chip bg-on-hero/16 aria-expanded:bg-on-hero aria-expanded:text-hero";
+const stepper = "press hit grid size-9 shrink-0 place-items-center rounded-chip hover:bg-surface2";
 
 export function MonthHeader({ rows, showFilters, onFilters }: { rows: Expense[]; showFilters: boolean; onFilters: () => void }) {
   const { month, filter, filtered, end, step, label } = useMonth();
@@ -35,38 +34,36 @@ export function MonthHeader({ rows, showFilters, onFilters }: { rows: Expense[];
       onPointerDown={(e) => e.isPrimary && (swipeFrom.current = [e.clientX, e.clientY])}
       onPointerUp={(e) => e.isPrimary && swipe(e)}
       onPointerCancel={() => (swipeFrom.current = undefined)}
-      className={`touch-pan-y ${field}`}
+      className="touch-pan-y"
     >
-      <div className="flex items-center gap-2">
-        <h1 className="mr-auto min-w-0 text-display font-bold">{filtered ? "Filtered" : label}</h1>
+      <div className="flex items-center gap-1 text-ink2">
         {!filtered && (
-          <>
-            <button aria-label="Previous month" className={heroButton} onClick={() => go(-1)}>
-              <Chevron className="size-[18px] rotate-90 stroke-2" />
-            </button>
-            {month && (
-              <button aria-label="Next month" className={heroButton} onClick={() => go(1)}>
-                <Chevron className="size-[18px] -rotate-90 stroke-2" />
-              </button>
-            )}
-          </>
+          <button aria-label="Previous month" className={stepper} onClick={() => go(-1)}>
+            <Chevron className="size-[18px] rotate-90 stroke-2" />
+          </button>
         )}
-        <button aria-label={count ? `Filters, ${count} on` : "Filters"} aria-expanded={showFilters} onClick={onFilters} className={`${heroButton} relative ml-1.5`}>
+        <h1 className="min-w-0 text-[15px] font-semibold">{filtered ? "Filtered" : label}</h1>
+        {!filtered && (
+          <button aria-label="Next month" disabled={!month} className={`${stepper} disabled:opacity-30`} onClick={() => go(1)}>
+            <Chevron className="size-[18px] -rotate-90 stroke-2" />
+          </button>
+        )}
+        <button aria-label={count ? `Filters, ${count} on` : "Filters"} aria-expanded={showFilters} onClick={onFilters} className={`${stepper} relative ml-auto aria-expanded:bg-ink aria-expanded:text-bg`}>
           <Icon d="M4 7h16M7 12h10M10 17h4" className="size-[18px] stroke-2" />
-          {count > 0 && <b className="num absolute -top-1 -right-1 grid size-[18px] place-items-center rounded-chip bg-on-hero text-[11px] font-semibold text-hero ring-2 ring-hero">{count}</b>}
+          {count > 0 && <b className="num absolute -top-1 -right-1 grid size-[18px] place-items-center rounded-chip bg-accent text-[11px] font-semibold text-on-accent ring-2 ring-bg">{count}</b>}
         </button>
       </div>
       {filtered ? (
         <>
-          <p className="mt-5">
-            <Total amount={inBase(rows, base)} currency={base} unit={unit} className="text-on-hero" />
+          <p className="mt-4">
+            <Total amount={inBase(rows, base)} currency={base} unit={unit} />
           </p>
-          <p className="mt-2.5 text-[13px] font-medium text-on-hero2">
+          <p className="mt-2.5 text-[13px] font-medium text-ink2">
             {rows.length} matching{unrated > 0 && ` + ${unrated} unconverted`}
           </p>
         </>
       ) : (
-        <Summary unit={unit} end={month ? end : undefined} />
+        <Summary unit={unit} end={month ? end : undefined} rows={rows} month={step(0)} />
       )}
     </header>
   );

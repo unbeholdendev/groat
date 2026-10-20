@@ -5,11 +5,7 @@ import { money } from "../lib/money";
 import { Icon } from "./icon";
 
 export const Pill = ({ d }: { d: NonNullable<ReturnType<typeof change>> }) => (
-  <span
-    className={`num inline-flex items-center gap-1 rounded-chip px-[9px] py-[3px] text-xs ${
-      d.tone === "text-up" ? "bg-up-soft text-up-ink" : d.tone === "text-down" ? "bg-down-soft text-down-ink" : "bg-on-hero/16 text-on-hero"
-    }`}
-  >
+  <span className={`num inline-flex items-center gap-0.5 ${d.tone}`}>
     {d.tone !== "text-ink3" && (
       <Icon className={`size-3 stroke-[2.4] ${d.tone === "text-down" ? "rotate-180" : ""}`}>
         <path d="M12 19V5m-6 6 6-6 6 6" />

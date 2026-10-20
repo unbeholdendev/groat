@@ -1,6 +1,5 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { type ReactNode, useContext, useState } from "react";
-import { field } from "../../components/styles";
 import { Pill, Total } from "../../components/total";
 import { useApi, useCategories } from "../../lib/api";
 import { money } from "../../lib/money";
@@ -46,9 +45,9 @@ export function StatsPage() {
 
   if (!now || !ref || !full)
     return (
-      <section className={field}>
+      <section>
         {head}
-        <div className="mt-7 h-[262px] text-on-hero2">{s.range[0] > s.range[1] && "From is after To."}</div>
+        <div className="mt-7 h-[262px] text-ink2">{s.range[0] > s.range[1] && "From is after To."}</div>
       </section>
     );
 
@@ -60,10 +59,10 @@ export function StatsPage() {
 
   return (
     <>
-      <section className={field}>
+      <section>
         {head}
-        <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="mt-7 block text-on-hero" />
-        <p className="mt-2.5 flex min-h-[26px] flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-on-hero2">
+        <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="mt-7 block" />
+        <p className="mt-2.5 flex min-h-[26px] flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-ink2">
           {scrubbed ?? (d ? (
             <>
               <Pill d={d} />

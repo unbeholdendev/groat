@@ -12,7 +12,7 @@ const onField = "press hit inline-flex h-9 items-center rounded-chip px-3.5 text
 
 const HeroError = ({ id, message }: { id: string; message?: string }) =>
   message ? (
-    <p id={id} role="alert" className="mt-2 text-[13px] font-medium text-on-hero">
+    <p id={id} role="alert" className="mt-2 text-[13px] font-medium text-up">
       {message}
     </p>
   ) : null;
@@ -43,25 +43,25 @@ export function FormHeader({ form, title, submit, pending, editing, onCancel }: 
   }
 
   return (
-    <header className="-mx-5 -mt-[max(env(safe-area-inset-top),20px)] rounded-b-hero bg-hero px-5 pt-[max(env(safe-area-inset-top),16px)] pb-5 text-on-hero shadow-hero lg:mx-0 lg:mt-1 lg:rounded-hero [&_:focus-visible]:outline-on-hero">
+    <header className="pb-2">
       <div className="flex items-center justify-between gap-2">
-        <button type="button" className={`${onField} bg-on-hero/16 font-medium`} onClick={onCancel}>
+        <button type="button" className={`${onField} bg-surface2 font-medium`} onClick={onCancel}>
           Cancel
         </button>
         <h1 className="truncate text-[17px] font-semibold">{title}</h1>
-        <button className={`${onField} bg-on-hero font-semibold text-hero disabled:opacity-50`} disabled={pending}>
+        <button className={`${onField} bg-accent font-semibold text-on-accent disabled:opacity-50`} disabled={pending}>
           {submit}
         </button>
       </div>
       <div className="mt-6 flex items-center gap-2">
         {symbol && (
-          <span aria-hidden className="-mr-2 text-[60px] leading-none font-semibold tracking-[-0.04em] text-on-hero2">
+          <span aria-hidden className="-mr-2 text-[60px] leading-none font-semibold tracking-[-0.04em] text-ink3">
             {symbol}
           </span>
         )}
         <input
           aria-label="Amount"
-          className="w-0 min-w-0 flex-1 bg-transparent text-[60px] leading-none font-semibold tracking-[-0.04em] text-on-hero outline-none placeholder:text-on-hero/35"
+          className="w-0 min-w-0 flex-1 bg-transparent text-[60px] leading-none font-semibold tracking-[-0.04em] text-ink outline-none placeholder:text-ink3/50"
           placeholder="0.00"
           inputMode="decimal"
           autoFocus={!!note && !amount}
@@ -69,11 +69,11 @@ export function FormHeader({ form, title, submit, pending, editing, onCancel }: 
           {...register("amount")}
         />
         {(currency === "BTC" || settings.baseCurrency === "BTC") && (
-          <button type="button" aria-label="Unit" className={`${onField} num bg-on-hero/16 text-[13px] font-medium`} onClick={toggleUnit}>
+          <button type="button" aria-label="Unit" className={`${onField} num bg-surface2 text-[13px] font-medium`} onClick={toggleUnit}>
             {unit}
           </button>
         )}
-        <Picker className={`${onField} num relative gap-1 bg-on-hero/16 text-[13px] font-medium`} chevron={<Chevron className="size-3.5 stroke-2 text-on-hero2" />}>
+        <Picker className={`${onField} num relative gap-1 bg-surface2 text-[13px] font-medium`} chevron={<Chevron className="size-3.5 stroke-2 text-ink3" />}>
           {currency}
           <CurrencySelect recent={settings.recentCurrencies} className={overlay} {...register("currency")} />
         </Picker>
@@ -82,7 +82,7 @@ export function FormHeader({ form, title, submit, pending, editing, onCancel }: 
       <input
         aria-label="Note"
         placeholder="What was it for?"
-        className="mt-5 h-12 w-full rounded-field bg-on-hero/12 px-4 text-[17px] font-medium text-on-hero outline-none placeholder:text-on-hero2/70 focus:bg-on-hero/20"
+        className="mt-5 h-12 w-full rounded-field bg-surface2 px-4 text-[17px] font-medium text-ink outline-none placeholder:text-ink3 focus:bg-surface focus:ring-2 focus:ring-accent"
         list="notes"
         autoFocus={!note}
         {...invalid("note")}

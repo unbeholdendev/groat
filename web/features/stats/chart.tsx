@@ -44,7 +44,7 @@ export function Chart(props: {
     setAt(n);
     props.onScrub(
       <>
-        <span className="num text-on-hero">
+        <span className="num text-ink">
           {new Date(fy, fm - 1, fd + n).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {props.show(valueAt(now, n))}
         </span>
         {props.ghost && <span className="num">vs {props.name} {props.show(valueAt(prev, n))}</span>}
@@ -66,24 +66,24 @@ export function Chart(props: {
         className="relative h-[112px] touch-pan-y select-none"
       >
         {w > 0 && (
-          <svg role="img" aria-label={props.aria} viewBox={`0 0 ${w} ${H}`} className="size-full overflow-visible">
+          <svg role="img" aria-label={props.aria} viewBox={`0 0 ${w} ${H}`} className="size-full overflow-visible text-accent">
             <defs>
               <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stopColor="white" stopOpacity="0.18" />
-                <stop offset="1" stopColor="white" stopOpacity="0" />
+                <stop offset="0" stopColor="currentColor" stopOpacity="0.18" />
+                <stop offset="1" stopColor="currentColor" stopOpacity="0" />
               </linearGradient>
             </defs>
-            <line x1="0" x2={w} y1={H} y2={H} className="stroke-white/20" />
-            {props.ghost && <path d={path(prev)} fill="none" className="stroke-on-hero2 opacity-60" strokeWidth="1.5" strokeDasharray="4 4" strokeLinejoin="round" />}
-            {running && <line x1={x(ex)} x2={x(ex)} y1="0" y2={H} className="stroke-white/30" />}
+            <line x1="0" x2={w} y1={H} y2={H} className="stroke-line2" />
+            {props.ghost && <path d={path(prev)} fill="none" className="stroke-ink3" strokeWidth="1.5" strokeDasharray="4 4" strokeLinejoin="round" />}
+            {running && <line x1={x(ex)} x2={x(ex)} y1="0" y2={H} className="stroke-line2" />}
             <path d={`${path(now)}L${x(ex)},${H}L0,${H}Z`} fill={`url(#${id})`} className="animate-fade [animation-delay:200ms]" />
-            <path d={path(now)} pathLength={1} fill="none" className="draw stroke-white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {running && <circle cx={x(ex)} cy={y(ey)} r="5.5" strokeWidth="3" className="animate-fade fill-white stroke-hero [animation-delay:700ms]" />}
+            <path d={path(now)} pathLength={1} fill="none" className="draw stroke-accent" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            {running && <circle cx={x(ex)} cy={y(ey)} r="5.5" strokeWidth="3" className="animate-fade fill-accent stroke-bg [animation-delay:700ms]" />}
             {at !== null && (
               <>
-                <line x1={x(at)} x2={x(at)} y1="0" y2={H} className="stroke-white/60" />
-                {props.ghost && <circle cx={x(at)} cy={y(valueAt(prev, at))} r="3.5" className="fill-on-hero2" />}
-                <circle cx={x(at)} cy={y(valueAt(now, at))} r="5.5" strokeWidth="3" className="fill-white stroke-hero" />
+                <line x1={x(at)} x2={x(at)} y1="0" y2={H} className="stroke-ink3" />
+                {props.ghost && <circle cx={x(at)} cy={y(valueAt(prev, at))} r="3.5" className="fill-ink3" />}
+                <circle cx={x(at)} cy={y(valueAt(now, at))} r="5.5" strokeWidth="3" className="fill-accent stroke-bg" />
               </>
             )}
           </svg>
@@ -91,14 +91,14 @@ export function Chart(props: {
         {props.ghost && at === null && (
           <span
             aria-hidden
-            className={`num absolute right-0 text-[11px] whitespace-nowrap text-on-hero2 ${above ? "-translate-y-[calc(100%+6px)]" : "translate-y-1.5"}`}
+            className={`num absolute right-0 text-[11px] whitespace-nowrap text-ink3 ${above ? "-translate-y-[calc(100%+6px)]" : "translate-y-1.5"}`}
             style={{ top: y(py) }}
           >
             {props.label}
           </span>
         )}
       </div>
-      <div aria-hidden className="num mt-2 flex justify-between text-[11px] text-on-hero2">
+      <div aria-hidden className="num mt-2 flex justify-between text-[11px] text-ink3">
         <span>{short(props.range[0])}</span>
         <span>{short(props.end)}</span>
       </div>
