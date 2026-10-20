@@ -66,15 +66,19 @@ test("zero-decimal currencies convert in whole units", async () => {
   expect((await call("GET", "/api/expenses")).body[1]).toMatchObject({ amount: 250, currency: "GBP", baseAmount: 521 });
 });
 
-test("today's rates are used but not cached", async () => {
+test("today's rates are reused for ten minutes, never stored", async () => {
   const fiat = frankfurter(rates);
   const btc = mempool({ "2026-10-01": 50_000 });
-  const { call, fetches } = await onboarded("GBP", (url) => fiat(url) ?? btc(url));
+  const { call, fetches, clock, db } = await onboarded("GBP", (url) => fiat(url) ?? btc(url));
   await call("POST", "/api/expenses", { note: "a", amount: "10", currency: "EUR", date: "2026-10-10" });
   await call("POST", "/api/expenses", { note: "b", amount: "0.001", currency: "BTC", date: "2026-10-10" });
   expect((await call("GET", "/api/expenses")).body.map((e: { baseAmount: number }) => e.baseAmount)).toEqual([3800, 950]);
+  await call("GET", "/api/stats?from=2026-10-01&to=2026-10-10&group=month");
+  expect(fetches.length).toBe(2);
+  expect(db.query("SELECT * FROM rates WHERE date = '2026-10-10'").all()).toEqual([]);
+  clock.now = new Date("2026-10-10T12:11:00Z");
   await call("GET", "/api/expenses");
-  expect(fetches.length).toBe(7);
+  expect(fetches.length).toBe(4);
 });
 
 test("a failed fetch is not retried until restart", async () => {
@@ -114,4 +118,25 @@ test("BTC falls back to Coinbase when mempool.space has no price, and only then"
   const up = await onboarded("GBP", (url) => frankfurter(rates)(url) ?? mempool({ "2026-10-02": 100000 })(url) ?? coinbase(url));
   await up.call("POST", "/api/expenses", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2026-10-02" });
   expect(up.fetches.some((f) => f.includes("coinbase"))).toBe(false);
+});
+
+test("a missing rate for today is not refetched on every request", async () => {
+  const { call, fetches } = await onboarded("GBP", () => new Response("down", { status: 503 }));
+  await call("POST", "/api/expenses", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2026-10-10" });
+  const after = fetches.length;
+  await call("GET", "/api/expenses");
+  await call("GET", "/api/stats?from=2026-10-01&to=2026-10-10&group=month");
+  expect(fetches.length).toBe(after);
+});
+
+test("a missing rate for today is not refetched while another currency is", async () => {
+  const fiat = frankfurter({ "2026-10-10": { EUR: 0.9, GBP: 0.75 } });
+  const { call, fetches, clock } = await onboarded("GBP", (url) => fiat(url) ?? new Response("down", { status: 503 }));
+  await call("POST", "/api/expenses", { note: "Lunch", amount: "10", currency: "EUR", date: "2026-10-10" });
+  clock.now = new Date("2026-10-10T12:11:00Z");
+  await call("POST", "/api/expenses", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2026-10-10" });
+  const btc = () => fetches.filter((f) => !f.includes("frankfurter")).length;
+  const before = btc();
+  await call("GET", "/api/expenses");
+  expect(btc()).toBe(before);
 });

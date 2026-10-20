@@ -42,6 +42,7 @@ export type Valuer = ReturnType<typeof valuer>;
 
 export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">) {
   const failed = new Set<string>();
+  const recent = new Map<string, { at: number; rate?: number }>();
 
   return async <T extends Row>(rows: T[]) => {
     const { baseCurrency: base } = settings(db);
@@ -60,8 +61,16 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
         ).set("USD", 1);
         rates.set(date, have);
         const needed = rows.filter((r) => r.date === date).map((r) => r.currency).concat(base);
-        if (needed.every((c) => have.has(c) || failed.has(`${date} ${c}`))) return;
-        const missing = [...new Set(needed)].filter((c) => !have.has(c));
+        const fresh = (c: string) => {
+          const hit = recent.get(`${date} ${c}`);
+          return hit && clock().getTime() - hit.at < 600_000 ? hit : undefined;
+        };
+        for (const c of needed) {
+          const rate = fresh(c)?.rate;
+          if (rate) have.set(c, rate);
+        }
+        if (needed.every((c) => have.has(c) || failed.has(`${date} ${c}`) || fresh(c))) return;
+        const missing = [...new Set(needed)].filter((c) => !have.has(c) && !fresh(c));
         for (const [name, source] of Object.entries(sources)) {
           const got = await source(fetch, date, missing.filter((c) => !have.has(c))).catch(() => ({}));
           for (const [currency, rate] of Object.entries(got)) {
@@ -70,6 +79,7 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
           }
         }
         if (date < now) for (const c of missing) if (!have.has(c)) failed.add(`${date} ${c}`);
+        if (date >= now) for (const c of missing) recent.set(`${date} ${c}`, { at: clock().getTime(), rate: have.get(c) });
       }),
     );
 
