@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import type { Unit } from "../../../shared/amount";
 import { confident, parse } from "../../../shared/parse";
 import { Tile } from "../../components/category";
+import { Icon } from "../../components/icon";
 import { money } from "../../lib/money";
 import type { Category, Settings } from "../../lib/schemas";
 import { Tokens } from "./tokens";
@@ -85,9 +86,16 @@ export function Hint(props: {
       ) : (
         !ask &&
         (!text || p.amount) && (
-          <Button variant="link" className="shrink-0" onMouseDown={(e) => e.preventDefault()} onClick={props.onForm}>
-            Full form
-          </Button>
+          <button
+            type="button"
+            aria-label="Full form"
+            title="Full form"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={props.onForm}
+            className="press hit -my-1 grid size-7 shrink-0 place-items-center rounded-chip text-ink2 hover:bg-surface2 hover:text-ink"
+          >
+            <Icon d="M14 4h6v6M20 4l-6 6M10 20H4v-6M4 20l6-6" className="size-4 stroke-2" />
+          </button>
         )
       )}
     </p>
