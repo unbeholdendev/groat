@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { createApp, type Deps } from "../server/app";
 import { hashCost } from "../server/auth";
 
-type Handler = (url: URL, init?: RequestInit) => Response | undefined;
+type Handler = (url: URL, init?: RequestInit) => Response | undefined | Promise<Response>;
 
 export function frankfurter(rates: Record<string, Record<string, number>>): Handler {
   return (url) => {
@@ -38,7 +38,7 @@ export function setup(now = "2026-10-10T12:00:00Z", handler: Handler = () => und
       clock: () => clock.now,
       fetch: async (input, init) => {
         fetches.push(String(input));
-        return handler(new URL(String(input)), init) ?? new Response("not found", { status: 404 });
+        return (await handler(new URL(String(input)), init)) ?? new Response("not found", { status: 404 });
       },
       config,
     });

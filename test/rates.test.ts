@@ -95,3 +95,23 @@ test("adding or editing a foreign expense answers with its base value", async ()
   const edited = await call("PUT", `/api/expenses/${added.body.id}`, { note: "Lunch", amount: "20.00", currency: "EUR", date: "2026-10-02" });
   expect(edited.body.baseAmount).toBe(1900);
 });
+
+test("an unreachable rate source does not hold up saving", async () => {
+  const hang = (url: URL, init?: RequestInit) =>
+    url.host === "mempool.space" ? new Promise<Response>((_, reject) => init?.signal?.addEventListener("abort", () => reject(init.signal?.reason))) : undefined;
+  const { call } = await onboarded("GBP", hang);
+  const saved = await call("POST", "/api/expenses", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2026-10-02" });
+  expect(saved).toMatchObject({ status: 201, body: { baseAmount: null } });
+});
+
+test("BTC falls back to Coinbase when mempool.space has no price, and only then", async () => {
+  const coinbase = (url: URL) => (url.host === "api.coinbase.com" ? Response.json({ data: { amount: "100000.00", base: "BTC", currency: "USD" } }) : undefined);
+  const down = await onboarded("GBP", (url) => frankfurter(rates)(url) ?? coinbase(url));
+  const pizza = await down.call("POST", "/api/expenses", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2026-10-02" });
+  expect(pizza.body.baseAmount).toBe(760);
+  expect(down.fetches).toContain("https://api.coinbase.com/v2/prices/BTC-USD/spot?date=2026-10-02");
+
+  const up = await onboarded("GBP", (url) => frankfurter(rates)(url) ?? mempool({ "2026-10-02": 100000 })(url) ?? coinbase(url));
+  await up.call("POST", "/api/expenses", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2026-10-02" });
+  expect(up.fetches.some((f) => f.includes("coinbase"))).toBe(false);
+});

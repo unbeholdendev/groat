@@ -22,7 +22,7 @@ Two jobs, equal weight:
 ## Capabilities
 
 - Expenses: note, amount, currency, date, category, tags. Note autocomplete fills amount, currency and category from past entries.
-- Multi-currency with a base currency. Every currency Frankfurter quotes, plus BTC, is offered, recently used first; no list to set up. Rates fetched automatically (Frankfurter for fiat, mempool.space for BTC); an expense without a rate stays out of totals until one is fetched.
+- Multi-currency with a base currency. Every currency Frankfurter quotes, plus BTC, is offered, recently used first; no list to set up. Rates fetched automatically (Frankfurter for fiat, mempool.space for BTC, Coinbase if that fails); an expense without a rate stays out of totals until one is fetched.
 - Bitcoin is first-class: amounts in BTC or sats, toggleable.
 - Recurring expenses: every N days/weeks/months/years, optional end date, optional "confirm each" which creates pending expenses.
 - Categories: two-level tree, user-chosen emoji and colour, reorderable; deleting one moves its expenses elsewhere.

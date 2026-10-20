@@ -10,25 +10,33 @@ type Source = (fetch: Deps["fetch"], date: string, currencies: string[]) => Prom
 
 const quotes = z.array(z.object({ quote: z.string(), rate: z.number() }));
 const prices = z.object({ prices: z.array(z.object({ USD: z.number() })) });
+const spot = z.object({ data: z.object({ amount: z.coerce.number() }) });
 
 const frankfurter: Source = async (fetch, date, currencies) => {
   const fiat = currencies.filter((c) => c !== "BTC");
   if (!fiat.length) return {};
-  const res = await fetch(`https://api.frankfurter.dev/v2/rates?date=${date}&base=USD&quotes=${fiat}`);
+  const res = await fetch(`https://api.frankfurter.dev/v2/rates?date=${date}&base=USD&quotes=${fiat}`, { signal: AbortSignal.timeout(3000) });
   return Object.fromEntries(quotes.parse(await res.json()).map((r) => [r.quote, r.rate]));
 };
 
 const mempool: Source = async (fetch, date, currencies) => {
   if (!currencies.includes("BTC")) return {};
   const timestamp = Date.parse(`${date}T23:59:59Z`) / 1000;
-  const res = await fetch(`https://mempool.space/api/v1/historical-price?currency=USD&timestamp=${timestamp}`);
+  const res = await fetch(`https://mempool.space/api/v1/historical-price?currency=USD&timestamp=${timestamp}`, { signal: AbortSignal.timeout(3000) });
   const usd = prices.parse(await res.json()).prices[0]?.USD ?? 0;
   const rates: Record<string, number> = {};
   if (usd > 0) rates.BTC = 1 / usd;
   return rates;
 };
 
-const sources = { frankfurter, mempool };
+const coinbase: Source = async (fetch, date, currencies) => {
+  if (!currencies.includes("BTC")) return {};
+  const res = await fetch(`https://api.coinbase.com/v2/prices/BTC-USD/spot?date=${date}`, { signal: AbortSignal.timeout(3000) });
+  const usd = spot.parse(await res.json()).data.amount;
+  return Object.fromEntries(usd > 0 ? [["BTC", 1 / usd]] : []);
+};
+
+const sources = { frankfurter, mempool, coinbase };
 
 export type Valuer = ReturnType<typeof valuer>;
 
@@ -55,7 +63,7 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
         if (needed.every((c) => have.has(c) || failed.has(`${date} ${c}`))) return;
         const missing = [...new Set(needed)].filter((c) => !have.has(c));
         for (const [name, source] of Object.entries(sources)) {
-          const got = await source(fetch, date, missing).catch(() => ({}));
+          const got = await source(fetch, date, missing.filter((c) => !have.has(c))).catch(() => ({}));
           for (const [currency, rate] of Object.entries(got)) {
             have.set(currency, rate);
             if (date < now) db.insert(t.rates).values({ date, currency, rate, source: name }).onConflictDoNothing().run();
