@@ -371,7 +371,7 @@ Radii grow with size: parsed tokens 4px, small tiles 9px, tiles 11px, fields and
 
 ### Day skyline (signature)
 In `web/features/expenses/summary.tsx`, under the Home delta. A 112px grid, one column per day of the month, 3px gap, bottom-aligned.
-- **Past day with spend**: a button whose height is its total relative to the month's biggest day, stacked from category-colour segments (1px gap, 2.5px radius, 2px minimum), biggest category of the month at the bottom, uncategorised in Ink 3. Its name is "Mon 6 Oct, £42.10". Tapping it scrolls smoothly to that day's group in the list. Press scale applies.
+- **Past day with spend**: a button whose height is its total relative to the month's biggest day, stacked from category-colour segments (1px gap, 2.5px radius, 2px minimum), biggest category of the month at the bottom, uncategorised in Ink 3. Its name is "Mon 6 Oct, £42.10: Food £30.00, Home £12.10". Tapping it scrolls smoothly to that day's group in the list. Press scale applies. Hover, touch or focus dims the other bars to 35% (ticks and dots stay) and swaps the delta row for "Mon 6 Oct · £42.10" then the day's categories (emoji and name for one, emoji and mono amount each for several) in Ink 3.
 - **Past day with no spend**: a 2px `line2` tick on the baseline.
 - **Past day with only unconverted spend** (no rate yet): the same tick in `amber`.
 - **Future day**: a centred 3px `line2` dot.

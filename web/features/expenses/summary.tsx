@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Unit } from "../../../shared/amount";
 import { Icon } from "../../components/icon";
 import { Pill, Total } from "../../components/total";
@@ -12,10 +13,12 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
   const now = usePeriod(s.range);
   const ref = usePeriod(end ? s.full : s.ref);
   const categories = useCategories();
+  const [hover, setHover] = useState<string>();
   if (!now) return <div className="h-[222px]" />;
   const d = ref && change(now.total, ref.total);
   const share = (n: number) => `${Math.round((n / now.total) * 100)}%`;
   const builtin = (id: number | null) => !id || categories.find((c) => c.id === id)?.builtin;
+  const name = (id: number | null) => categories.find((c) => c.id === id)?.name ?? "Uncategorised";
   const colour = (id: number | null) => (builtin(id) ? undefined : categories.find((c) => c.id === id)?.color);
   const rank = (id: number | null) => now.categories.findIndex((c) => c.id === id) >>> 0;
   const rest = now.categories.slice(3);
@@ -27,13 +30,24 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
     return { date, unrated: rows.some((e) => e.date === date && e.baseAmount == null), total: [...spent.values()].reduce((a, b) => a + b, 0), parts: [...spent].sort(([a], [b]) => rank(a) - rank(b)) };
   });
   const max = Math.max(...days.map((day) => day.total));
+  const shown = days.find((day) => day.date === hover);
   return (
     <>
       <p className="mt-4">
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} />
       </p>
-      <p className="mt-2.5 flex items-center gap-1.5 text-[13px] font-medium text-ink2">
-        {d ? (
+      <p className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] font-medium text-ink2">
+        {shown ? (
+          <>
+            {`${dayLabel(shown.date)} ·`}
+            <span className="num text-ink">{money(shown.total, now.baseCurrency, unit)}</span>
+            {shown.parts.map(([id, v]) => (
+              <span key={id} className="text-ink3">
+                {builtin(id) ? "" : categories.find((c) => c.id === id)?.icon} {shown.parts.length > 1 ? <span className="num">{money(v, now.baseCurrency, unit)}</span> : name(id)}
+              </span>
+            ))}
+          </>
+        ) : d ? (
           <>
             <Pill d={d} />
             vs {s.name}
@@ -52,9 +66,13 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
           ) : day.total ? (
             <button
               key={day.date}
-              aria-label={`${dayLabel(day.date)}, ${money(day.total, now.baseCurrency, unit)}`}
+              aria-label={`${dayLabel(day.date)}, ${money(day.total, now.baseCurrency, unit)}: ${day.parts.map(([id, v]) => `${name(id)} ${money(v, now.baseCurrency, unit)}`).join(", ")}`}
+              onPointerEnter={() => setHover(day.date)}
+              onPointerLeave={() => setHover(undefined)}
+              onFocus={() => setHover(day.date)}
+              onBlur={() => setHover(undefined)}
               onClick={() => document.getElementById(`day-${day.date}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              className={`press flex origin-bottom animate-lift flex-col-reverse gap-px rounded-[3px] ${day.date === today() ? "outline-[1.5px] outline-offset-2 outline-ink" : ""}`}
+              className={`press flex origin-bottom animate-lift flex-col-reverse gap-px rounded-[3px] transition-opacity ${hover && hover !== day.date ? "opacity-35" : ""} ${day.date === today() ? "outline-[1.5px] outline-offset-2 outline-ink" : ""}`}
               style={{ height: `${(day.total / max) * 100}%`, animationDelay: `${i * 15}ms` }}
             >
               {day.parts.map(([id, v]) => (

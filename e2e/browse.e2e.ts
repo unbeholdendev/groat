@@ -15,6 +15,8 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   const header = page.locator("header");
   await expect(header.getByText("£42.00").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Next month" })).toBeDisabled();
+  await page.getByRole("button", { name: "Today, £42.00" }).hover();
+  await expect(header.getByText("Today ·")).toBeVisible();
 
   await page.getByRole("button", { name: "Previous month" }).click();
   await expect(page.getByRole("button", { name: "Old lunch" })).toBeVisible();
