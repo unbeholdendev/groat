@@ -38,6 +38,8 @@ export function Hint(props: {
         <span className="text-up">{props.error.message}</span>
       ) : ask ? (
         <span>Answers come from your own data. Expenses are only added once you review them.</span>
+      ) : !settings.ai && text.startsWith("?") ? (
+        <span>Asking isn't set up on this server. See AI features in the README.</span>
       ) : text && settings.ai && !confident(p, props.category?.id) ? (
         <span>Press Enter and AI reads it for you to check.</span>
       ) : text && !p.amount ? (

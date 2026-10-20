@@ -27,6 +27,18 @@ The text is read like the add bar. If it has an amount and the note matches a pa
 
 On Android, Tasker's **HTTP Request** action does the same.
 
+## AI features
+
+Off until you point the app at an OpenAI-compatible API (anything that serves `/chat/completions`). Until then the camera and mic in the add bar are dimmed, and tapping one says what is missing.
+
+| Variable | Turns on |
+|---|---|
+| `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` | Asking: start the add bar with `?`. Unclear lines are read by AI for you to check. |
+| `AI_VISION_MODEL` | Adding from a receipt photo. Needs the three above. |
+| `AI_STT_MODEL` | Dictation. Needs the three above. Set `AI_STT_BASE_URL` and `AI_STT_KEY` if speech-to-text uses another provider. |
+
+Set them in the container's environment, or in `.env` when running from source.
+
 ## Development
 
 ```sh

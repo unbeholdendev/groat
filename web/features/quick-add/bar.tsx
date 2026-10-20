@@ -141,7 +141,10 @@ export function Bar(props: {
               /
             </kbd>
           )}
-          {!text && !inChat && !reviewing && settings.vision && <PhotoButton online={online} onPhoto={photo} />}
+          {!text && !inChat && !reviewing && (
+            <PhotoButton online={online} onPhoto={photo} off={settings.vision ? undefined : "Receipt photos aren't set up on this server. See AI features in the README."} onOff={setCaptureError} />
+          )}
+          {!text && !inChat && !reviewing && !settings.voice && <Mic onAudio={() => {}} onError={setCaptureError} off="Dictation isn't set up on this server. See AI features in the README." />}
           {!text && !inChat && !reviewing && settings.voice && online ? (
             <Mic onAudio={(audio) => (setCaptureError(null), drafting.mutate({ audio }))} onError={setCaptureError} />
           ) : (

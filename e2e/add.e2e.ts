@@ -90,3 +90,12 @@ test("the total counts up through real amounts", async ({ app: page }) => {
   }
   expect(seen.filter((t) => !/^£[\d,]+\.\d\d$/.test(t))).toEqual([]);
 });
+
+test("without AI the camera and mic show dimmed and say why", async ({ app: page }) => {
+  await page.getByRole("button", { name: "Dictate" }).click({ force: true });
+  await expect(page.getByText("Dictation isn't set up on this server.")).toBeVisible();
+  await page.getByRole("button", { name: "Add from a photo" }).click({ force: true });
+  await expect(page.getByText("Receipt photos aren't set up on this server.")).toBeVisible();
+  await bar(page).fill("?where");
+  await expect(page.getByText("Asking isn't set up on this server.")).toBeVisible();
+});
