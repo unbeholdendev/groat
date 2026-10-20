@@ -1,13 +1,17 @@
 import { useContext, useId } from "react";
 import { z } from "zod";
-import { formatAmount, parseAmount } from "../../../../shared/amount";
+import { formatAmount, parseAmount, type Unit } from "../../../../shared/amount";
 import { Chevron } from "../../../components/icon";
 import { CurrencySelect, overlay, Picker } from "../../../components/picker";
+import { Segmented } from "../../../components/segmented";
 import { numeralSize } from "../../../components/total";
 import { useApi, useSettings } from "../../../lib/api";
-import { suggestion } from "../../../lib/schemas";
+import { rate } from "../../../lib/money";
+import { suggestion, type Expense } from "../../../lib/schemas";
 import { UnitContext } from "../../../lib/unit";
 import type { ExpenseFormApi } from "../schema";
+
+const units = ["BTC", "sats"] as const;
 
 const onField = "press hit inline-flex h-9 items-center rounded-chip px-3.5 text-[15px]";
 const chip = "press hit num inline-flex h-7 items-center rounded-chip bg-surface2 px-2.5 text-xs font-medium";
@@ -19,7 +23,7 @@ const HeroError = ({ id, message }: { id: string; message?: string }) =>
     </p>
   ) : null;
 
-export function FormHeader({ form, title, submit, pending, editing, onCancel }: { form: ExpenseFormApi; title: string; submit: string; pending: boolean; editing: boolean; onCancel: () => void }) {
+export function FormHeader({ form, title, submit, pending, editing, row, onCancel }: { form: ExpenseFormApi; title: string; submit: string; pending: boolean; editing: boolean; row?: Expense; onCancel: () => void }) {
   const settings = useSettings()!;
   const [unit, setUnit] = useContext(UnitContext);
   const { register, watch, getValues, setValue, formState: { errors } } = form;
@@ -30,8 +34,10 @@ export function FormHeader({ form, title, submit, pending, editing, onCancel }: 
   const size = numeralSize((symbol ?? "").length + (amount || "0.00").length);
   const invalid = (key: "amount" | "note") => (errors[key] ? { "aria-invalid": true, "aria-describedby": ids[key] } : {});
 
-  function toggleUnit() {
-    const next = unit === "BTC" ? "sats" : "BTC";
+  const rated = row?.baseAmount && row.currency === currency && currency !== settings.baseCurrency ? rate(row.amount, currency, row.baseAmount, settings.baseCurrency, unit) : null;
+  const switchable = currency === "BTC" || settings.baseCurrency === "BTC";
+
+  function switchUnit(next: Unit) {
     const sats = currency === "BTC" && parseAmount(getValues("amount"), "BTC", unit);
     if (sats) setValue("amount", formatAmount(sats, "BTC", next));
     setUnit(next);
@@ -71,18 +77,21 @@ export function FormHeader({ form, title, submit, pending, editing, onCancel }: 
           {...invalid("amount")}
           {...register("amount")}
         />
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <Picker className={`${chip} relative gap-0.5`} chevron={<Chevron className="size-3 stroke-2 text-ink3" />}>
-            {currency}
-            <CurrencySelect recent={settings.recentCurrencies} className={overlay} {...register("currency")} />
-          </Picker>
-          {(currency === "BTC" || settings.baseCurrency === "BTC") && (
-            <button type="button" aria-label="Unit" className={chip} onClick={toggleUnit}>
-              {unit}
-            </button>
+        <Picker className={`${chip} relative shrink-0 gap-0.5`} chevron={<Chevron className="size-3 stroke-2 text-ink3" />}>
+          {currency}
+          <CurrencySelect recent={settings.recentCurrencies} className={overlay} {...register("currency")} />
+        </Picker>
+      </div>
+      {(rated || switchable) && (
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="num text-[13px] text-ink3">{rated}</p>
+          {switchable && (
+            <div className="w-32 shrink-0">
+              <Segmented label="Show bitcoin as" options={units} value={unit} onChange={switchUnit} />
+            </div>
           )}
         </div>
-      </div>
+      )}
       <HeroError id={ids.amount} message={errors.amount?.message} />
       <input
         aria-label="Note"

@@ -115,3 +115,13 @@ test("the desktop side column switches between amounts and shares", async ({ app
   await expect(aside).toContainText("25%");
   await expect(aside).not.toContainText("£30.00");
 });
+
+test("a foreign expense shows its rate, in BTC or sats", async ({ app: page }) => {
+  await page.request.put("/api/settings", { data: { baseCurrency: "BTC" } });
+  await page.request.post("/api/expenses", { data: { note: "Coffee", amount: "4.50", currency: "GBP", date: today() } });
+  await page.reload();
+  await page.getByRole("button", { name: "Coffee" }).click();
+  await expect(page.getByText("1 GBP = 0.00002083 BTC")).toBeVisible();
+  await page.getByRole("radio", { name: "sats" }).click();
+  await expect(page.getByText("1 GBP = 2,083 sats")).toBeVisible();
+});

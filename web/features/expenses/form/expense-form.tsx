@@ -68,6 +68,7 @@ export function ExpenseForm() {
         submit={editing || recurring ? "Save" : "Add"}
         pending={saving.isPending || repeating.isPending}
         editing={!!editing}
+        row={editRow}
         onCancel={close}
       />
       <CategoryChips value={categoryId} onChange={(id) => setValue("categoryId", id)} />
