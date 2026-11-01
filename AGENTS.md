@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Forgejo issues on git.unbeholden.dev/unbeholden/expense-tracker, via the forgejo MCP tools. See `docs/agents/issue-tracker.md`.
+Forgejo issues on git.home.unbeholden.dev/unbeholden/expense-tracker, via `tea`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
