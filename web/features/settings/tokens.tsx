@@ -10,7 +10,8 @@ import { TokenSecret } from "./token-secret";
 const secret = z.object({ token: z.string() });
 
 export function Tokens() {
-  const tokens = useApi(z.array(apiToken), ["/api/tokens"]).data ?? [];
+  const query = useApi(z.array(apiToken), ["/api/tokens"], { throwOnError: false });
+  const tokens = query.data ?? [];
   const create = useSend("token");
   const revoke = useSend("token");
   const shown = secret.safeParse(create.data).data?.token;
@@ -23,14 +24,17 @@ export function Tokens() {
         <span className="num">Authorization: Bearer &lt;token&gt;</span>.
       </p>
       {shown && <TokenSecret key={shown} token={shown} />}
-      <ul className={panel}>
+      {query.isPending && <p role="status">Loading tokens…</p>}
+      <FormError error={query.error} />
+      {query.isError && <button type="button" className="press text-accent" onClick={() => void query.refetch()}>Try again</button>}
+      {query.data && <ul className={panel}>
         {tokens.map((t) => (
           <TokenRow key={t.id} token={t} onRevoke={() => revoke.mutate(["DELETE", `/api/tokens/${t.id}`])} />
         ))}
         <li>
           <TokenForm create={create} />
         </li>
-      </ul>
+      </ul>}
       <FormError error={create.error ?? revoke.error} className="mt-2 px-1" />
     </section>
   );

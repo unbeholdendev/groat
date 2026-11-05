@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 
 export const expenses = sqliteTable("expenses", {
   id: integer().primaryKey(),
+  clientRequestId: text().unique(),
   note: text().notNull(),
   amount: integer().notNull(),
   currency: text().notNull(),

@@ -1,3 +1,4 @@
+import { ReceiptPreview } from "./receipt-preview";
 import { useId } from "react";
 import type { Unit } from "../../../shared/amount";
 import { Button } from "../../components/button";
@@ -35,7 +36,7 @@ export function Review(props: {
       ) : (
         <>
           <div className="flex items-center gap-3">
-            {props.image && <img src={props.image} alt="Receipt" className="size-10 shrink-0 rounded-token object-cover" />}
+            {props.image && <ReceiptPreview image={props.image} />}
             <Tile category={category} />
             <input aria-label="Note" className={`${field} flex-1 text-[17px] font-medium`} {...invalid("note")} {...register("note")} />
             <input

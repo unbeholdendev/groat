@@ -84,3 +84,20 @@ test("without a session the API refuses everything else", async () => {
   expect((await post("/api/logout")).status).toBe(401);
   expect((await get("/api/expenses", "session=forged")).status).toBe(401);
 });
+
+test("a queued write cannot run under a different signed-in user", async () => {
+  const { request, call } = setup();
+  const res = await request("/api/expenses", { method: "POST", headers: { "content-type": "application/json", "x-expense-user": "someone-else" }, body: JSON.stringify({ note: "Wrong owner", amount: "2" }) });
+  expect(res.status).toBe(409);
+  expect((await call("GET", "/api/expenses")).body).toHaveLength(0);
+});
+
+test("queued writes support Unicode usernames", async () => {
+  const { app, call } = setup();
+  await call("POST", "/api/users", { username: "用户", password: "secret" });
+  const login = await app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "用户", password: "secret" }) });
+  const cookie = login.headers.get("set-cookie")!.split(";")[0];
+  const res = await app.request("/api/expenses", { method: "POST", headers: { cookie, "content-type": "application/json", "x-expense-user": encodeURIComponent("用户") }, body: JSON.stringify({ note: "Lunch", amount: "2" }) });
+  expect(res.status).toBe(201);
+  expect((await res.json()).addedBy).toBe("用户");
+});

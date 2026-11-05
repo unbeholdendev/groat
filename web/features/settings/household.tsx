@@ -9,7 +9,8 @@ import { AddMember } from "./add-member";
 import { MemberRow } from "./member-row";
 
 export function Household() {
-  const members = useApi(z.array(member), ["/api/users"]).data ?? [];
+  const query = useApi(z.array(member), ["/api/users"], { throwOnError: false });
+  const members = query.data ?? [];
   const mutation = useSendNow("users");
   const [open, setOpen] = useState<string | null>(null);
   const send = (...request: Request) => mutation.mutate(request, { onSuccess: () => setOpen(null) });
@@ -18,7 +19,10 @@ export function Household() {
   return (
     <section>
       <h2 className={sectionHead}>Household</h2>
-      <ul className={panel}>
+      {query.isPending && <p role="status">Loading household…</p>}
+      <FormError error={query.error} />
+      {query.isError && <button type="button" className="press text-accent" onClick={() => void query.refetch()}>Try again</button>}
+      {query.data && <ul className={panel}>
         {members.map((m) => (
           <MemberRow key={m.id} member={m} open={open} onOpen={show} send={send} pending={mutation.isPending} />
         ))}
@@ -34,7 +38,7 @@ export function Household() {
             </button>
           )}
         </li>
-      </ul>
+      </ul>}
       <FormError error={mutation.error} className="mt-2 px-1" />
     </section>
   );

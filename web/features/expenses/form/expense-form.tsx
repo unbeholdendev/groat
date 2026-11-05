@@ -1,13 +1,15 @@
 import { Button } from "../../../components/button";
-import { useContext, useEffect, useState } from "react";
-import { useLocation } from "@tanstack/react-router";
+import { useContext, useEffect, useRef, useId, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { persistCache } from "../../../query-client";
+import { useBlocker, useLocation } from "@tanstack/react-router";
 import { Field, FormError, Input } from "../../../components/form";
-import { useSend, useSettings } from "../../../lib/api";
+import { useSend, useSession, useSettings } from "../../../lib/api";
 import type { Draft } from "../../../lib/schemas";
 import { UnitContext } from "../../../lib/unit";
 import { useZodForm } from "../../../lib/use-zod-form";
 import { useExpenses, usePending } from "../queries";
-import { blank, expenseForm, filled, fromTemplate } from "../schema";
+import { blank, expenseForm, filled, fromTemplate, type ExpenseValues } from "../schema";
 import { route, useList } from "../use-month";
 import { CategoryChips, DateChips } from "./chips";
 import { FormHeader } from "./form-header";
@@ -15,18 +17,42 @@ import { RepeatFields } from "./repeat-fields";
 
 export function ExpenseForm() {
   const settings = useSettings()!;
-  const [unit] = useContext(UnitContext);
+  const [unit, setUnit] = useContext(UnitContext);
   const { draft, template } = useLocation().state;
   const editing = Number(route.useSearch().edit) || null;
   const list = useList();
   const navigate = route.useNavigate();
-  const form = useZodForm(expenseForm(unit), template ? fromTemplate(template, unit) : blank(settings.lastCurrency));
+  const cache = useQueryClient();
+  const owner = useSession()?.user?.username;
+  const draftKey = ["expense-draft", owner, editing ? `edit:${editing}` : template ? `recurring:${template.id}` : "new"];
+  const [recovered] = useState(() => draft ? undefined : cache.getQueryData<{ values: ExpenseValues; recurring?: number; unit: typeof unit }>(draftKey));
+  const form = useZodForm(expenseForm(unit), recovered?.values ?? (template ? fromTemplate(template, unit) : blank(settings.lastCurrency)));
   const { watch, setValue, handleSubmit } = form;
   const [categoryId, date] = watch(["categoryId", "date"]);
   const editRow = [...(useExpenses() ?? []), ...usePending()].find((e) => e.id === editing);
-  const saving = useSend("expense", close);
-  const repeating = useSend(undefined, close);
-  const [recurring, setRecurring] = useState(template?.id);
+  const saving = useSend("expense", () => close(true));
+  const repeating = useSend(undefined, () => close(true));
+  const [recurring, setRecurring] = useState(recovered?.recurring ?? template?.id);
+
+  const values = JSON.stringify(watch());
+  const dirty = !!recovered || values !== JSON.stringify(form.formState.defaultValues);
+  useEffect(() => { if (recovered) setUnit(recovered.unit); }, [recovered]);
+  useEffect(() => {
+    if (!dirty) {
+      cache.removeQueries({ queryKey: draftKey, exact: true });
+      persistCache();
+      return;
+    }
+    cache.setQueryData(draftKey, { values: form.getValues(), recurring, unit });
+    persistCache();
+  }, [values, recurring, unit, dirty]);
+  const blocker = useBlocker({ shouldBlockFn: () => dirty, enableBeforeUnload: dirty, withResolver: true });
+  const dialog = useRef<HTMLDialogElement>(null);
+  const title = useId();
+  useEffect(() => {
+    if (blocker.status === "blocked") dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [blocker.status]);
 
   useEffect(() => {
     if (!draft) return;
@@ -34,14 +60,15 @@ export function ExpenseForm() {
     navigate({ search: (prev) => prev, state: {}, replace: true });
   }, [draft]);
   useEffect(() => {
-    if (editRow) fill(editRow);
+    if (editRow && !recovered) fill(editRow);
   }, [editing, !!editRow]);
   useEffect(() => {
-    if (saving.isPaused || repeating.isPaused) close();
+    if (saving.isPaused || repeating.isPaused) close(true);
   }, [saving.isPaused || repeating.isPaused]);
 
-  function close() {
-    navigate({ search: list, replace: true });
+  function close(saved = false) {
+    if (saved || !dirty) cache.removeQueries({ queryKey: draftKey, exact: true });
+    navigate({ search: list, replace: true, ignoreBlocker: saved });
   }
 
   function fill(e: Draft) {
@@ -69,8 +96,17 @@ export function ExpenseForm() {
         pending={saving.isPending || repeating.isPending}
         editing={!!editing}
         row={editRow}
-        onCancel={close}
+        onCancel={() => close()}
       />
+      {recovered && <p role="status" className="mt-3 text-sm text-ink2">Recovered unsaved expense.</p>}
+      <dialog ref={dialog} aria-labelledby={title} onCancel={(e) => { e.preventDefault(); blocker.reset?.(); }} className="fixed inset-0 m-auto w-[min(26rem,92vw)] rounded-card bg-surface p-5 text-ink shadow-lift backdrop:bg-bg/80">
+        <h2 id={title} className="text-[17px] font-semibold">Discard expense changes?</h2>
+        <p className="mt-2 text-sm text-ink2">Your changes have not been saved.</p>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <button type="button" autoFocus onClick={() => blocker.reset?.()} className="press min-h-11 rounded-chip bg-surface2 px-4 font-medium">Keep editing</button>
+          <button type="button" onClick={() => { cache.removeQueries({ queryKey: draftKey, exact: true }); persistCache(); blocker.proceed?.(); }} className="press min-h-11 rounded-chip bg-accent px-4 font-medium text-on-accent">Discard changes</button>
+        </div>
+      </dialog>
       <CategoryChips value={categoryId} onChange={(id) => setValue("categoryId", id)} />
       <DateChips value={date} onChange={(d) => setValue("date", d)} />
       <Field label="Tags" className="mt-6">

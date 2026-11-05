@@ -52,3 +52,13 @@ test("unknown API routes are a JSON 404", async () => {
   const { call } = setup();
   expect(await call("GET", "/api/nope")).toEqual({ status: 404, body: { error: "Not found" } });
 });
+
+test("retrying an expense request saves it once across restarts", async () => {
+  const { call, restart } = setup();
+  const requestId = crypto.randomUUID();
+  const first = await call("POST", "/api/expenses", { note: "Train", amount: "4", requestId });
+  restart();
+  const retry = await call("POST", "/api/expenses", { note: "Train", amount: "4", requestId });
+  expect(retry.body.id).toBe(first.body.id);
+  expect((await call("GET", "/api/expenses")).body).toHaveLength(1);
+});

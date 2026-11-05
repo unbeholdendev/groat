@@ -18,7 +18,7 @@ export function SettingsForm(props: { settings: Settings; path: string; method: 
 
   function change(base: string) {
     setBase(base);
-    if (!onboarding) mutation.mutate([props.method, props.path, { baseCurrency: base }]);
+    if (!onboarding) mutation.mutate([props.method, props.path, { baseCurrency: base }], { onError: () => setBase(props.settings.baseCurrency) });
   }
 
   function save(e: FormEvent) {
@@ -35,14 +35,16 @@ export function SettingsForm(props: { settings: Settings; path: string; method: 
       )}
       <h2 className={sectionHead}>Currencies</h2>
       <div className={panel}>
-        <BaseCurrency value={baseCurrency} onChange={change} />
+        <fieldset disabled={mutation.isPending}><BaseCurrency value={baseCurrency} onChange={change} /></fieldset>
       </div>
       {!onboarding && (
-        <ThemeSection
+        <fieldset disabled={mutation.isPending}><ThemeSection
           value={props.settings.theme}
-          onChange={(theme) => (queryClient.setQueryData(["/api/settings"], { ...props.settings, theme }), mutation.mutate([props.method, props.path, { theme }]))}
-        />
+          onChange={(theme) => (queryClient.setQueryData(["/api/settings"], { ...props.settings, theme }), mutation.mutate([props.method, props.path, { theme }], { onError: () => queryClient.setQueryData(["/api/settings"], props.settings) }))}
+        /></fieldset>
       )}
+      {!onboarding && <p className="mt-2 px-1 text-sm text-ink2">Totals use the base currency. Each expense keeps its original currency.</p>}
+      {!onboarding && <p role="status" className="mt-3 text-sm text-ink2">{mutation.isPaused ? "Waiting for a connection to save…" : mutation.isPending ? "Saving settings…" : mutation.isSuccess ? "Settings saved." : ""}</p>}
       <FormError error={mutation.error} className="mt-3 px-1" />
       {onboarding && (
         <Button variant="primary" type="submit" className="mt-7" disabled={mutation.isPending}>

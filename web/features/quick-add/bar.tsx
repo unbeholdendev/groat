@@ -3,6 +3,7 @@ import { useMutationState } from "@tanstack/react-query";
 import { parseAmount, type Unit } from "../../../shared/amount";
 import { confident, parse } from "../../../shared/parse";
 import { useSend } from "../../lib/api";
+import { Icon } from "../../components/icon";
 import { today } from "../../lib/dates";
 import { useOnline } from "../../lib/online";
 import type { Category, Draft, Settings, Suggestion } from "../../lib/schemas";
@@ -76,6 +77,7 @@ export function Bar(props: {
     e.preventDefault();
     if (ask) return question && asking.mutate(question, { onSuccess: (c) => inChat && (clear(), props.onChat(c.id)) });
     if (reviewing) return drafting.isSuccess && save();
+    if (!text.trim()) return props.onForm(seed());
     if (settings.ai && !confident(p, category?.id)) return drafting.mutate(text.trim());
     if (!p.amount) return props.onForm(seed());
     adding.mutate(["POST", "/api/expenses", { note: p.note, amount: p.amount, currency, unit: p.unit ?? unit, date, categoryId: category?.id, tags: p.tags }]);
@@ -150,6 +152,7 @@ export function Bar(props: {
           ) : (
             <SubmitButton name={key} dim={!text.trim() && !inChat} disabled={adding.isPending || asking.isPending || drafting.isPending || (inChat && !question)} />
           )}
+          {settings.voice && online && !text && !inChat && !reviewing && <button type="button" aria-label="Full form" title="Full form" onClick={() => props.onForm(seed())} className="press grid size-11 shrink-0 place-items-center rounded-chip text-ink2"><Icon d="M12 5v14M5 12h14" className="size-5" /></button>}
         </div>
         <span role="status" className="sr-only">
           {receipt.text}

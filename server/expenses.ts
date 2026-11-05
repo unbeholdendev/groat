@@ -11,7 +11,7 @@ import { json, query, valid } from "./request";
 import * as t from "./schema";
 
 const e = t.expenses;
-const { createdAt, updatedAt, deletedAt, createdBy, ...expenseColumns } = getTableColumns(e);
+const { createdAt, updatedAt, deletedAt, createdBy, clientRequestId, ...expenseColumns } = getTableColumns(e);
 
 export const newest = [desc(e.date), desc(e.id)];
 
@@ -74,7 +74,7 @@ export function readExpense(raw: unknown, db: Db, today: string, fallback: strin
 
 type ExpenseFields = Exclude<ReturnType<typeof readExpense>, { error: string }>;
 
-const attachment = z.object({ attachmentId: z.number().int().optional() });
+const attachment = z.object({ attachmentId: z.number().int().optional(), requestId: z.uuid().optional() });
 
 export function addExpense(db: Db, now: string, { tags, ...fields }: ExpenseFields, createdBy: number, status = "normal", attachmentId?: number) {
   const { id } = db.insert(e).values({ ...fields, status, createdBy, createdAt: now, updatedAt: now }).returning({ id: e.id }).get();
@@ -131,7 +131,15 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     if ("error" in body) return c.json(body, 400);
     const link = valid(attachment, raw);
     if ("error" in link) return c.json(link, 400);
-    return c.json(await valued(addExpense(db, now, body, c.get("user").id, "normal", link.data.attachmentId)!.id), 201);
+    const key = link.data.requestId ? `${c.get("user").id}:${link.data.requestId}` : null;
+    const id = db.transaction(() => {
+      const existing = key && db.select({ id: e.id }).from(e).where(eq(e.clientRequestId, key)).get();
+      if (existing) return existing.id;
+      const row = addExpense(db, now, body, c.get("user").id, "normal", link.data.attachmentId)!;
+      if (key) db.update(e).set({ clientRequestId: key }).where(eq(e.id, row.id)).run();
+      return row.id;
+    });
+    return c.json(await valued(id), 201);
   });
 
   app.put("/api/expenses/:id", async (c) => {

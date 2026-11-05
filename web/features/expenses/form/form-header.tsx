@@ -62,7 +62,8 @@ export function FormHeader({ form, title, submit, pending, editing, row, onCance
           {submit}
         </button>
       </div>
-      <div className="mt-6 flex items-center gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <div className={`flex min-w-0 flex-1 items-center gap-2 ${(symbol ?? "").length + amount.length > 8 ? "max-[400px]:basis-full" : ""}`}>
         {symbol && (
           <span aria-hidden className={`-mr-2 ${size} leading-none font-semibold tracking-[-0.04em] text-ink3`}>
             {symbol}
@@ -77,6 +78,7 @@ export function FormHeader({ form, title, submit, pending, editing, row, onCance
           {...invalid("amount")}
           {...register("amount")}
         />
+        </div>
         <Picker className={`${chip} relative shrink-0 gap-0.5`} chevron={<Chevron className="size-3 stroke-2 text-ink3" />}>
           {currency}
           <CurrencySelect recent={settings.recentCurrencies} className={overlay} {...register("currency")} />

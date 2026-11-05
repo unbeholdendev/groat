@@ -49,3 +49,40 @@ bun run e2e    # browser tests (Playwright, phone and desktop)
 ```
 
 The first `bun run e2e` needs the browsers: `bunx playwright install --with-deps chromium webkit`.
+
+## Password recovery
+
+Change your own password in Settings. If you forget it, ask a household admin to reset it under Household. There is no email reset.
+
+If the admin is locked out, stop the container and run the offline recovery command against the same data volume. Replace `expenses` with your container name; use the same image as the stopped container:
+
+```sh
+docker stop expenses
+docker run --rm -it --volumes-from expenses \
+  --entrypoint bun "$(docker inspect --format '{{.Config.Image}}' expenses)" \
+  server/recover-admin.ts
+docker start expenses
+```
+
+Enter the admin username and the new password twice. Password input is hidden and never passed as a command argument. Recovery keeps expenses and API tokens, and signs out all sessions for that admin. If you set a custom `DB_PATH`, pass the same value to the recovery container with `-e DB_PATH=...`. For a source install, stop the server and run `DB_PATH=/path/to/expenses.db bun server/recover-admin.ts`.
+
+## Backup and restore
+
+Stop the container before copying data. Back up the whole `/data` directory, including attachments and any SQLite journal files, with ownership and permissions intact. Keep the image version with the backup.
+
+```sh
+docker stop expenses
+docker cp -a expenses:/data ./expenses-backup
+docker start expenses
+```
+
+To restore, stop the container, move its existing data aside, and copy the backup contents into its empty data volume. For a bind mount, replace `/srv/expenses` below with the host directory mounted at `/data`:
+
+```sh
+docker stop expenses
+sudo mv /srv/expenses /srv/expenses.before-restore
+sudo cp -a ./expenses-backup /srv/expenses
+docker start expenses
+```
+
+For a named volume, use a temporary container with that volume mounted to replace its contents while the app is stopped. Preserve numeric ownership and permissions. Start with the image version recorded with the backup, then sign in and check expenses and attachments before upgrading. Do not copy a single database file from a running server.

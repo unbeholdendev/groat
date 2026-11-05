@@ -1,18 +1,21 @@
 import { type QueryClient, useMutationState } from "@tanstack/react-query";
 import { z } from "zod";
-import { refresh, useApi } from "../../lib/api";
+import { refresh, useApi, useSession } from "../../lib/api";
 import { type Expense, expense, type Request, request, template, unsent } from "../../lib/schemas";
 import { useMonth } from "./use-month";
 
-export const useExpenses = () => useApi(z.array(expense), ["/api/expenses?", useMonth().query.toString()]).data;
+export const useExpenseQuery = () => useApi(z.array(expense), ["/api/expenses?", useMonth().query.toString()]);
+export const useExpenses = () => useExpenseQuery().data;
 export const usePending = () => useApi(z.array(expense), ["/api/expenses?", "status=pending"]).data ?? [];
 export const useTemplates = () => useApi(z.array(template), ["/api/recurring"]).data ?? [];
 
-export const useQueued = () =>
-  useMutationState({
-    filters: { predicate: (m) => m.state.isPaused },
+export const useQueued = () => {
+  const owner = useSession()?.user?.username;
+  return useMutationState({
+    filters: { predicate: (m) => m.state.isPaused && m.meta?.owner === owner },
     select: (m) => request.safeParse(m.state.variables).data,
   }).flatMap((r, i) => (r?.[0] === "POST" && r[1] === "/api/expenses" ? (unsent(r[2], -1 - i) ?? []) : []));
+};
 
 export function syncExpense(client: QueryClient, data: unknown, [method]: Request) {
   const { id } = z.object({ id: z.number() }).parse(data);

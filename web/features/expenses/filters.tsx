@@ -1,7 +1,7 @@
 import { byRecent } from "../../../shared/amount";
 import { Button } from "../../components/button";
 import { CategoryOptions } from "../../components/category";
-import { Input, Select } from "../../components/form";
+import { Field, Input, Select } from "../../components/form";
 import { panel } from "../../components/styles";
 import { useCategories, useSettings } from "../../lib/api";
 import { useMonth } from "./use-month";
@@ -11,19 +11,17 @@ export function Filters() {
   const settings = useSettings()!;
   const categories = useCategories();
   const filterInput = (key: keyof typeof filter, label: string, type = "text") => (
-    <Input className="min-w-0 flex-1" type={type} aria-label={label} placeholder={label} value={filter[key] ?? ""} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} />
+    <Input className="min-w-0 w-full" type={type} aria-label={label} placeholder={label} value={filter[key] ?? ""} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} />
   );
   return (
     <div className={`rise mt-4 grid grid-cols-2 gap-2 p-3 ${panel}`}>
       <div className="col-span-2 flex">{filterInput("q", "Search")}</div>
-      <label className="label min-w-0">
-        From
+      <Field label="From" className="col-span-2 min-w-0 min-[380px]:col-span-1">
         {filterInput("from", "From", "date")}
-      </label>
-      <label className="label min-w-0">
-        To
+      </Field>
+      <Field label="To" className="col-span-2 min-w-0 min-[380px]:col-span-1">
         {filterInput("to", "To", "date")}
-      </label>
+      </Field>
       <Select className="col-span-2 min-w-0" aria-label="Category" value={filter.category ?? ""} onChange={(e) => setFilter({ ...filter, category: e.target.value })}>
         <option value="">All categories</option>
         <CategoryOptions categories={categories} />

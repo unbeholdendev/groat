@@ -6,7 +6,7 @@ test("create, rename, reorder and delete a category, moving its expenses", async
   await page.getByRole("button", { name: "New category" }).click();
   await page.getByLabel("Emoji").fill("🐶");
   await page.getByLabel("Name").fill("Pets");
-  await page.getByRole("button", { name: "Add" }).click();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByRole("button", { name: "Pets" })).toBeVisible();
 
   await page.getByRole("button", { name: "Pets" }).click();

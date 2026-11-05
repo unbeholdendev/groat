@@ -1,3 +1,4 @@
+import { useStorageWarning } from "../../lib/device";
 import { Button } from "../../components/button";
 import { Fragment } from "react";
 import type { Unit } from "../../../shared/amount";
@@ -25,6 +26,7 @@ export function Hint(props: {
 }) {
   const { settings, text, ask, p, receipt } = props;
   const shown = receipt.shown;
+  const storageWarning = useStorageWarning();
   const other = settings.recentCurrencies.find((c) => c !== "BTC" && c !== settings.lastCurrency);
   const examples = [other && `12 ${other.toLowerCase()}`, settings.recentCurrencies.includes("BTC") && "5000 sats", "#work"].filter((e) => typeof e === "string");
   return (
@@ -55,7 +57,7 @@ export function Hint(props: {
           {!shown.row.id && <span className="shrink-0 text-ink3">· will sync</span>}
         </span>
       ) : props.queued > 0 ? (
-        <span>Offline. Saved here, will sync.</span>
+        <span>{storageWarning ? "Not saved on this device. Keep this tab open." : "Offline. Saved here, will sync."}</span>
       ) : props.guide ? (
         <span className="text-ink2">Start with the last thing you paid for</span>
       ) : (

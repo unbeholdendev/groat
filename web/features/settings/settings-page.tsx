@@ -2,10 +2,12 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Chevron, paths } from "../../components/icon";
 import { linkRow, panel, sectionHead } from "../../components/styles";
-import { useSend, useSession, useSettings } from "../../lib/api";
+import { useSession, useSettings } from "../../lib/api";
 import { Household } from "./household";
+import { PasswordForm } from "./password-form";
 import { SettingsForm } from "./settings-form";
 import { SettingsIcon } from "./settings-icon";
+import { SignOut } from "./sign-out";
 import { Tokens } from "./tokens";
 
 const Go = ({ d, children }: { d: string; children: ReactNode }) => (
@@ -20,7 +22,6 @@ const Go = ({ d, children }: { d: string; children: ReactNode }) => (
 
 export function SettingsPage() {
   const settings = useSettings()!;
-  const signOut = useSend();
   return (
     <>
       <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" />
@@ -43,9 +44,8 @@ export function SettingsPage() {
         </a>
       </nav>
       <Tokens />
-      <button type="button" className={`${panel} press mt-7 h-[52px] w-full font-medium text-up`} onClick={() => signOut.mutate(["POST", "/api/logout"])}>
-        Sign out
-      </button>
+      <PasswordForm />
+      <SignOut />
     </>
   );
 }

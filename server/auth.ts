@@ -61,6 +61,8 @@ export function auth(db: Db, clock: () => Date) {
   app.use("/api/*", async (c, next) => {
     const current = session(c);
     if (!current) return c.json({ error: "Sign in first" }, 401);
+    const owner = c.req.header("x-expense-user");
+    if (owner && owner !== encodeURIComponent(current.username)) return c.json({ error: "Your sign-in changed. Sign in as the original user to sync this change." }, 409);
     signIn(c, current.id, current.userId);
     c.set("user", { id: current.userId, role: current.role });
     await next();

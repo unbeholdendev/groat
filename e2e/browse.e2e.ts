@@ -15,8 +15,8 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   const header = page.locator("header");
   await expect(header.getByText("£42.00").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Next month" })).toBeDisabled();
-  await page.getByRole("button", { name: "Today, £42.00" }).hover();
-  await expect(header.getByText("Today ·")).toBeVisible();
+  await page.getByLabel("Spending day").selectOption(today());
+  await expect(header.locator("p").filter({ hasText: "Today ·" }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Previous month" }).click();
   await expect(page.getByRole("button", { name: "Old lunch" })).toBeVisible();
@@ -28,7 +28,7 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   await page.getByLabel("Search").fill("cine");
   await expect(page.getByRole("heading", { name: "Filtered" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Groceries run" })).toBeHidden();
-  await expect(page.getByRole("button", { name: "Filters, 1 on" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Filters, 3 on" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Export CSV" })).toHaveAttribute("href", /q=cine/);
   await page.getByRole("button", { name: "Clear filters" }).first().click();
   await expect(page.getByRole("button", { name: "Groceries run" })).toBeVisible();
@@ -124,4 +124,48 @@ test("a foreign expense shows its rate, in BTC or sats", async ({ app: page }) =
   await expect(page.getByText("1 GBP = 0.00002083 BTC")).toBeVisible();
   await page.getByRole("radio", { name: "sats" }).click();
   await expect(page.getByText("1 GBP = 2,083 sats")).toBeVisible();
+});
+
+
+test("opening filters fills an editable date range and keeps full-size fields", async ({ app: page }) => {
+  await page.getByRole("button", { name: "Filters", exact: true }).click();
+  const from = page.getByLabel("From", { exact: true });
+  const to = page.getByLabel("To", { exact: true });
+  const past = new Date();
+  past.setDate(past.getDate() - 30);
+  await expect(from).toHaveValue(past.toLocaleDateString("en-CA"));
+  await expect(to).toHaveValue(today());
+  const search = await page.getByLabel("Search", { exact: true }).boundingBox();
+  for (const field of [from, to]) {
+    const box = (await field.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(search!.height - 1);
+    expect(box.width).toBeGreaterThan(100);
+  }
+  await from.fill("2020-01-01");
+  await to.fill("2020-12-31");
+  await page.getByLabel("Currency", { exact: true }).selectOption("GBP");
+  await page.getByRole("button", { name: /^Filters/ }).click();
+  await page.getByRole("button", { name: /^Filters/ }).click();
+  await expect(from).toHaveValue("2020-01-01");
+  await expect(to).toHaveValue("2020-12-31");
+  await expect(page.getByLabel("Currency", { exact: true })).toHaveValue("GBP");
+  await expect(page.getByRole("link", { name: "Export CSV" })).toHaveAttribute("href", /from=2020-01-01&to=2020-12-31/);
+});
+
+test("reopening filters preserves deliberately cleared dates", async ({ app: page }) => {
+  await page.getByRole("button", { name: "Filters", exact: true }).click();
+  const from = page.getByLabel("From", { exact: true });
+  const to = page.getByLabel("To", { exact: true });
+  for (const [start, end] of [["", "2020-12-31"], ["2020-01-01", ""], ["", ""]]) {
+    await from.fill(start);
+    await to.fill(end);
+    await page.getByRole("button", { name: /^Filters/ }).click();
+    await page.getByRole("button", { name: /^Filters/ }).click();
+    await expect(from).toHaveValue(start);
+    await expect(to).toHaveValue(end);
+  }
+  await page.goto("/?to=2020-12-31");
+  await page.getByRole("button", { name: /^Filters/ }).click();
+  await expect(from).toHaveValue("");
+  await expect(to).toHaveValue("2020-12-31");
 });

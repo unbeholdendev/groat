@@ -2,6 +2,10 @@ import { type PointerEvent, type ReactNode, useEffect, useId, useState } from "r
 import { days } from "../../lib/period";
 import { cumulative, valueAt } from "./cumulative";
 
+const dayAt = (from: string, n: number) => {
+  const [y, m, d] = from.split("-").map(Number);
+  return new Date(y, m - 1, d + n).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+};
 const H = 112;
 const short = (d: string) => new Date(`${d}T00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
@@ -33,7 +37,8 @@ export function Chart(props: {
   const now = cumulative(props.now, props.range);
   const prev = cumulative(props.prev, props.full);
   const [ex, ey] = now[now.length - 1];
-  const [, py] = prev[prev.length - 1];
+  const [previousEnd, py] = prev[prev.length - 1];
+  const tableEnd = props.ghost ? Math.max(ex, previousEnd) : ex;
   const running = props.end > props.range[1];
   const clash = x(ex) > w - 110 && Math.abs(y(ey) - y(py)) < 22;
   const above = !(clash && ey > py);
@@ -102,6 +107,19 @@ export function Chart(props: {
         <span>{short(props.range[0])}</span>
         <span>{short(props.end)}</span>
       </div>
+      <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink2">
+        <span><span aria-hidden className="mr-1 inline-block w-4 border-t-2 border-accent" />Cumulative spending</span>
+        {props.ghost && <span><span aria-hidden className="mr-1 inline-block w-4 border-t-2 border-dashed border-ink3" />{props.name}</span>}
+      </p>
+      <details className="mt-3 text-[13px] text-ink2">
+        <summary className="min-h-11 cursor-pointer py-3">Compare daily totals</summary>
+        <div role="region" aria-label="Daily comparison values" tabIndex={0} className="max-h-72 overflow-auto">
+          <table className="num w-full text-left" aria-label="Cumulative spending by day">
+            <thead><tr><th scope="col">Date</th><th scope="col">Cumulative spending</th>{props.ghost && <><th scope="col">Comparison date</th><th scope="col">{props.name}</th></>}</tr></thead>
+            <tbody>{Array.from({ length: tableEnd + 1 }, (_, n) => <tr key={n} className="border-t border-line"><th scope="row" className="py-2 font-normal">{n <= ex ? dayAt(props.range[0], n) : "Outside current range"}</th><td>{n <= ex ? props.show(valueAt(now, n)) : "—"}</td>{props.ghost && <><td>{n <= previousEnd ? dayAt(props.full[0], n) : "Outside comparison range"}</td><td>{n <= previousEnd ? props.show(valueAt(prev, n)) : "—"}</td></>}</tr>)}</tbody>
+          </table>
+        </div>
+      </details>
     </div>
   );
 }

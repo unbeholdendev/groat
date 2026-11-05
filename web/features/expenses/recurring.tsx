@@ -1,19 +1,20 @@
 import { useContext, useState } from "react";
+import { z } from "zod";
 import { BackToSettings } from "../../components/back-link";
 import { Button } from "../../components/button";
 import { Tile } from "../../components/category";
 import { Confirm } from "../../components/confirm";
 import { FormError } from "../../components/form";
 import { divide, panel } from "../../components/styles";
-import { useCategories, useSend } from "../../lib/api";
+import { useApi, useCategories, useSend } from "../../lib/api";
 import { money } from "../../lib/money";
-import type { Template } from "../../lib/schemas";
+import { template, type Template } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
 import { rowClass } from "./expense-row";
-import { useTemplates } from "./queries";
 
 export function Recurring({ onEdit }: { onEdit: (t: Template) => void }) {
-  const templates = useTemplates();
+  const query = useApi(z.array(template), ["/api/recurring"], { throwOnError: false });
+  const templates = query.data ?? [];
   const categories = useCategories();
   const [unit] = useContext(UnitContext);
   const [stopping, setStopping] = useState<number | null>(null);
@@ -26,8 +27,11 @@ export function Recurring({ onEdit }: { onEdit: (t: Template) => void }) {
     <>
       <BackToSettings />
       <h1 className="mt-4 text-display font-bold">Recurring</h1>
+      {query.isPending && <p role="status">Loading recurring expenses…</p>}
+      <FormError error={query.error} />
+      {query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}
       <FormError error={mutation.error} className="mt-4" />
-      {templates.length === 0 && <p className="mt-4 text-ink3">Nothing repeats yet. Open the full form and set Repeat to add one.</p>}
+      {query.data && templates.length === 0 && <p className="mt-4 text-ink3">Nothing repeats yet. Open the full form and set Repeat to add one.</p>}
       {templates.length > 0 && (
         <ul className={`mt-4 ${panel}`}>
           {templates.map((t) => (

@@ -24,6 +24,7 @@ test("an expense without a rate shows as unconverted and stays out of the day to
 
 test("/ focuses the bar", async ({ app: page, isMobile }) => {
   test.skip(isMobile, "keyboard only");
+  await expect(bar(page)).toBeVisible();
   await page.locator("body").press("/");
   await expect(bar(page)).toBeFocused();
 });

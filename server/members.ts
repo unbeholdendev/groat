@@ -14,6 +14,23 @@ export function memberRoutes(db: Db, clock: () => Date) {
   const member = (id: string) => and(eq(users.id, Number(id)), active);
   const list = () => db.select({ id: users.id, username: users.username, role: users.role }).from(users).where(active).orderBy(users.id).all();
 
+  app.put("/api/password", async (c) => {
+    const parsed = await body(c, password.extend({ currentPassword: credentials.shape.password }));
+    if ("error" in parsed) return c.json(parsed, 400);
+    const id = c.get("user").id;
+    const user = db.select().from(users).where(and(eq(users.id, id), active)).get();
+    if (!user || !(await Bun.password.verify(parsed.data.currentPassword, user.passwordHash)))
+      return c.json({ error: "Current password is incorrect" }, 400);
+    const passwordHash = await Bun.password.hash(parsed.data.password, hashCost);
+    const changed = db.transaction((tx) => {
+      const row = tx.update(users).set({ passwordHash }).where(and(eq(users.id, id), active, eq(users.passwordHash, user.passwordHash))).returning({ id: users.id }).get();
+      if (!row) return false;
+      tx.delete(sessions).where(and(eq(sessions.userId, id), ne(sessions.id, getCookie(c, "session") ?? ""))).run();
+      return true;
+    });
+    return changed ? c.json({}) : c.json({ error: "Account changed. Try again." }, 409);
+  });
+
   app.use("/api/users/*", async (c, next) => {
     if (c.get("user").role !== "admin") return c.json({ error: "Only admins can do that" }, 403);
     await next();

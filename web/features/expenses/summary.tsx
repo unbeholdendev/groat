@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type PointerEvent, useEffect, useState } from "react";
 import type { Unit } from "../../../shared/amount";
 import { Icon } from "../../components/icon";
 import { Pill, Total } from "../../components/total";
@@ -14,6 +14,7 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
   const ref = usePeriod(end ? s.full : s.ref);
   const categories = useCategories();
   const [hover, setHover] = useState<string>();
+  useEffect(() => setHover(undefined), [month]);
   if (!now) return <div className="h-[222px]" />;
   const d = ref && change(now.total, ref.total);
   const share = (n: number) => `${Math.round((n / now.total) * 100)}%`;
@@ -31,12 +32,17 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
   });
   const max = Math.max(...days.map((day) => day.total));
   const shown = days.find((day) => day.date === hover);
+  const selectDay = (e: PointerEvent<HTMLButtonElement>) => {
+        const bounds = e.currentTarget.getBoundingClientRect();
+        const index = Math.min(days.length - 1, Math.max(0, Math.floor((e.clientX - bounds.left) / bounds.width * days.length)));
+        if (days[index].date <= today()) setHover(days[index].date);
+      };
   return (
     <>
       <p className="mt-4">
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} />
       </p>
-      <p className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] font-medium text-ink2">
+      <p aria-live="polite" className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] font-medium text-ink2">
         {shown ? (
           <>
             {`${dayLabel(shown.date)} ·`}
@@ -59,35 +65,34 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
           "this month"
         )}
       </p>
-      <div className="mt-5 grid h-28 items-end gap-[3px]" style={{ gridTemplateColumns: `repeat(${dates.length}, 1fr)` }}>
+      <button type="button" aria-label="Show selected day's expenses" onClick={() => document.getElementById(`day-${hover ?? days.filter((day) => day.date <= today()).at(-1)?.date}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} onPointerDown={selectDay} onPointerMove={selectDay} className="mt-5 grid h-28 w-full items-end gap-[3px] rounded-token focus-visible:outline-2 focus-visible:outline-accent" style={{ gridTemplateColumns: `repeat(${dates.length}, 1fr)` }}>
         {days.map((day, i) =>
           day.date > today() ? (
             <i key={day.date} aria-hidden className="mx-auto size-[3px] rounded-full bg-line2" />
           ) : day.total ? (
-            <button
-              key={day.date}
-              aria-label={`${dayLabel(day.date)}, ${money(day.total, now.baseCurrency, unit)}: ${day.parts.map(([id, v]) => `${name(id)} ${money(v, now.baseCurrency, unit)}`).join(", ")}`}
-              onPointerEnter={() => setHover(day.date)}
-              onPointerLeave={() => setHover(undefined)}
-              onFocus={() => setHover(day.date)}
-              onBlur={() => setHover(undefined)}
-              onClick={() => document.getElementById(`day-${day.date}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            <span key={day.date} aria-hidden
               className={`press flex origin-bottom animate-lift flex-col-reverse gap-px rounded-[3px] transition-opacity ${hover && hover !== day.date ? "opacity-35" : ""} ${day.date === today() ? "outline-[1.5px] outline-offset-2 outline-ink" : ""}`}
               style={{ height: `${(day.total / max) * 100}%`, animationDelay: `${i * 15}ms` }}
             >
               {day.parts.map(([id, v]) => (
                 <i key={id} className={`min-h-0.5 rounded-[2.5px] ${colour(id) ? "" : "bg-ink3"}`} style={{ flex: v, background: colour(id) }} />
               ))}
-            </button>
+            </span>
           ) : (
             <i key={day.date} aria-hidden className={`h-0.5 rounded-full ${day.unrated ? "bg-amber" : "bg-line2"} ${day.date === today() ? "outline-[1.5px] outline-offset-2 outline-ink" : ""}`} />
           ),
         )}
-      </div>
+      </button>
       <p aria-hidden className="num mt-2 flex justify-between text-[11px] text-ink3">
         <span>1</span>
         <span>{dates.length}</span>
       </p>
+      <label className="mt-3 flex items-center gap-3 text-[13px] text-ink2">
+        Spending day
+        <select aria-label="Spending day" value={hover ?? (end ? dates.at(-1) : today())} onChange={(e) => setHover(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-token bg-surface2 px-3 text-ink">
+          {days.filter((day) => day.date <= today()).map((day) => <option key={day.date} value={day.date}>{dayLabel(day.date)} · {money(day.total, now.baseCurrency, unit)}</option>)}
+        </select>
+      </label>
       {now.total > 0 && (
         <p role="img" className="mt-3 flex flex-wrap gap-x-3.5 gap-y-1 text-xs font-medium text-ink2" aria-label={`By category: ${parts.map((c) => `${c.name} ${share(c.total)}`).join(", ")}`}>
           {parts.map((c) => (

@@ -73,3 +73,19 @@ test("removing a member signs them out and keeps their expenses under their name
   expect((await call("GET", "/api/users")).body.map((u: { username: string }) => u.username)).toEqual(["admin"]);
   expect((await call("GET", "/api/expenses")).body.map((e: { addedBy: string }) => e.addedBy)).toEqual(["bob"]);
 });
+
+test("members change their password with current credentials and retain only this session", async () => {
+  const { call, as, login } = household();
+  await call("POST", "/api/users", { username: "bob", password: "old" });
+  const current = await login("bob", "old");
+  const other = await login("bob", "old");
+  expect((await as(current, "PUT", "/api/password", { currentPassword: "wrong", password: "new" })).status).toBe(400);
+  expect((await as(current, "PUT", "/api/password", { currentPassword: "old", password: "" })).status).toBe(400);
+  expect((await as(other, "GET", "/api/expenses")).status).toBe(200);
+  expect((await as(current, "PUT", "/api/password", { currentPassword: "old", password: "new" })).status).toBe(200);
+  expect((await as(current, "GET", "/api/expenses")).status).toBe(200);
+  expect((await as(other, "GET", "/api/expenses")).status).toBe(401);
+  expect(await login("bob", "old")).toBe("");
+  expect(await login("bob", "new")).not.toBe("");
+  expect((await as("", "PUT", "/api/password", { currentPassword: "old", password: "new" })).status).toBe(401);
+});

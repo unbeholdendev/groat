@@ -10,11 +10,12 @@ import { expense } from "../../lib/schemas";
 import { ExpenseRow, rowClass } from "./expense-row";
 
 export function Bin() {
-  const bin = useApi(z.array(expense), ["/api/bin"]).data;
+  const query = useApi(z.array(expense), ["/api/bin"], { throwOnError: false });
+  const bin = query.data;
   const [asking, setAsking] = useState(false);
   const empty = useSend("bin");
   const restore = useSend("expense");
-  if (!bin) return null;
+  if (!bin) return <><BackToSettings /><h1 className="mt-4 text-display font-bold">Bin</h1>{query.isPending && <p role="status">Loading bin…</p>}<FormError error={query.error} />{query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}</>;
   return (
     <>
       <div className="flex items-center justify-between">
@@ -35,6 +36,8 @@ export function Bin() {
         )}
       </div>
       <h1 className="mt-4 text-display font-bold">Bin</h1>
+      <FormError error={query.error} />
+      {query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}
       <FormError error={empty.error ?? restore.error} className="mt-4" />
       {bin.length === 0 && <p className="mt-4 text-ink3">The bin is empty.</p>}
       {bin.length > 0 && (
