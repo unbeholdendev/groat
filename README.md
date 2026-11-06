@@ -41,7 +41,7 @@ Set them in the container's environment, or in `.env` when running from source.
 
 ## Backup and restore
 
-An admin downloads a backup from Settings, under Backup. It is one SQLite file, taken consistently while the app runs, with every expense (pending and binned too), category, tag, recurring schedule, rate, photo, setting and account. Password hashes are kept, so everyone signs in as before. Sign-ins, API tokens and chats are left out: after a restore, sign in again and make new tokens.
+An admin downloads a backup from Settings, under Backup and import. It is one SQLite file, taken consistently while the app runs, with every expense (pending and binned too), category, tag, recurring schedule, rate, photo, setting and account. Password hashes are kept, so everyone signs in as before. Sign-ins, API tokens and chats are left out: after a restore, sign in again and make new tokens.
 
 The file holds the household's spending and password hashes. Keep it private, e.g. `chmod 600`, and encrypt it if it leaves your machine.
 
@@ -62,6 +62,10 @@ sqlite3 /path/to/data/expenses.db ".backup '/backups/expenses-$(date +%F).sqlite
 ```
 
 A copy made this way still has sign-ins and tokens in it.
+
+## Importing expenses
+
+On a new instance, before any expenses are added, an admin can import a CSV in the export format from Settings, under Backup and import. It shows a preview first. To move from Lofextra, see [docs/import-lofextra.md](docs/import-lofextra.md).
 
 ## Development
 

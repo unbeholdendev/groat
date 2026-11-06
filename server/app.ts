@@ -12,6 +12,7 @@ import { draftRoutes } from "./draft";
 import { expenseRoutes } from "./expenses";
 import { memberRoutes } from "./members";
 import { exportRoutes } from "./export";
+import { importRoutes } from "./import";
 import { valuer } from "./rates";
 import { recurringRoutes } from "./recurring";
 import { settingsRoutes } from "./settings";
@@ -58,6 +59,7 @@ export function createApp(deps: Deps) {
   app.route("/", voiceRoutes(ctx));
   app.route("/", attachmentRoutes(ctx));
   app.route("/", exportRoutes(db, value));
+  app.route("/", importRoutes(ctx));
   app.route("/", backupRoutes(db, deps.clock));
   app.route("/", statsRoutes(db, value));
   app.route("/", recurring);
