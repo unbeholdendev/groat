@@ -21,7 +21,7 @@ export function App() {
   const [guide, setGuide] = useState(false);
   useTheme(settings?.theme);
 
-  if (!session) return error ? <LoadError error={error} onRetry={() => refetch()} /> : <Gate><p role="status" className="pt-12 text-ink2">Loading Expenses…</p></Gate>;
+  if (!session) return error ? <LoadError error={error} onRetry={() => refetch()} /> : <Gate><p role="status" className="pt-12 text-ink2">Loading Groat…</p></Gate>;
   if (!session.user)
     return (
       <Gate>

@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "expense-tracker",
+      "name": "groat",
       "dependencies": {
         "drizzle-orm": "^0.45.4",
         "hono": "^4.13.13",

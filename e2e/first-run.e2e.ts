@@ -36,7 +36,7 @@ test.describe(() => {
     test.setTimeout(60_000);
     await page.route("**/api/session", (route) => route.abort());
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Can’t load Expenses" })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: "Can’t load Groat" })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText("Couldn’t reach the server.")).toBeVisible();
     await page.unroute("**/api/session");
     await page.getByRole("button", { name: "Try again" }).click();

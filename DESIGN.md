@@ -1,5 +1,5 @@
 ---
-name: Expenses
+name: Groat
 description: A bold, self-hosted expense tracker built around one line at thumb reach.
 colors:
   ground: "#f5f7fb"

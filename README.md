@@ -1,6 +1,6 @@
-# Expense tracker
+# Groat
 
-Self-hosted expense tracker. Run it with Docker; data lives in `/data`, the app on port 3000.
+Groat is a self-hosted expense tracker. Run it with Docker; data lives in `/data`, the app on port 3000.
 
 ## Capture from your phone
 
