@@ -39,6 +39,30 @@ Off until you point the app at an OpenAI-compatible API (anything that serves `/
 
 Set them in the container's environment, or in `.env` when running from source.
 
+## Backup and restore
+
+An admin downloads a backup from Settings, under Backup. It is one SQLite file, taken consistently while the app runs, with every expense (pending and binned too), category, tag, recurring schedule, rate, photo, setting and account. Password hashes are kept, so everyone signs in as before. Sign-ins, API tokens and chats are left out: after a restore, sign in again and make new tokens.
+
+The file holds the household's spending and password hashes. Keep it private, e.g. `chmod 600`, and encrypt it if it leaves your machine.
+
+The backup does not hold the container's environment: the `AI_*` variables, `PORT` and `DB_PATH`. Keep those, such as your compose file or `.env`, with the backup.
+
+To restore:
+
+1. Start the app with an empty `/data` volume, the same image version as the backup or newer.
+2. Open it. On the welcome screen, choose **Restore from a backup** and pick the file.
+3. Sign in with an account from the backup.
+
+Restore only works before anyone signs up, so it can't overwrite a server in use. A file that isn't a backup, is damaged, or comes from a newer version of the app is refused and changes nothing. Backups from older versions are upgraded as they are restored. Uploads are limited to 128 MB.
+
+For scheduled backups, copy the database from the host with SQLite's own tools, e.g. from cron:
+
+```sh
+sqlite3 /path/to/data/expenses.db ".backup '/backups/expenses-$(date +%F).sqlite'"
+```
+
+A copy made this way still has sign-ins and tokens in it.
+
 ## Development
 
 ```sh

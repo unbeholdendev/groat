@@ -5,8 +5,9 @@ import { Hono } from "hono";
 import { chats } from "./ai";
 import { attachmentRoutes } from "./attachments";
 import { auth } from "./auth";
+import { backupRoutes, restoreRoutes } from "./backup";
 import { categoryRoutes } from "./categories";
-import type { Db } from "./db";
+import { type Db, migrationsFolder } from "./db";
 import { draftRoutes } from "./draft";
 import { expenseRoutes } from "./expenses";
 import { memberRoutes } from "./members";
@@ -30,7 +31,7 @@ export type Ctx = Omit<Deps, "db"> & { db: Db };
 export function createApp(deps: Deps) {
   deps.db.run("PRAGMA foreign_keys = ON");
   const db = drizzle(deps.db, { casing: "snake_case" });
-  migrate(db, { migrationsFolder: `${import.meta.dir}/drizzle` });
+  migrate(db, { migrationsFolder });
   const ctx = { ...deps, db };
   const app = new Hono();
   const value = valuer(ctx);
@@ -46,6 +47,7 @@ export function createApp(deps: Deps) {
   });
 
   app.route("/", captureRoutes(ctx));
+  app.route("/", restoreRoutes(db));
   app.route("/", auth(db, deps.clock));
   app.route("/", memberRoutes(db, deps.clock));
   app.route("/", tokenRoutes(ctx));
@@ -56,6 +58,7 @@ export function createApp(deps: Deps) {
   app.route("/", voiceRoutes(ctx));
   app.route("/", attachmentRoutes(ctx));
   app.route("/", exportRoutes(db, value));
+  app.route("/", backupRoutes(db, deps.clock));
   app.route("/", statsRoutes(db, value));
   app.route("/", recurring);
   app.route("/api/chats", chats(ctx, value));

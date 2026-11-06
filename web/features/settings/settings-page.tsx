@@ -22,10 +22,24 @@ const Go = ({ d, children }: { d: string; children: ReactNode }) => (
 
 export function SettingsPage() {
   const settings = useSettings()!;
+  const admin = useSession()?.user?.role === "admin";
   return (
     <>
       <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" />
-      {useSession()?.user?.role === "admin" && <Household />}
+      {admin && <Household />}
+      {admin && (
+        <section>
+          <h2 className={sectionHead}>Backup</h2>
+          <p className="-mt-1 mb-3 px-1 text-[13px] text-ink2">
+            One file with every expense, category, schedule, rate, photo and account. Sign-ins, API tokens and chats are left out. Restore it on a new server’s welcome screen.
+          </p>
+          <div className={panel}>
+            <a href="/api/backup" download className={linkRow}>
+              <Go d="M12 4v11m-4-4 4 4 4-4M5 19h14">Download backup</Go>
+            </a>
+          </div>
+        </section>
+      )}
       <h2 className={sectionHead}>More</h2>
       <nav className={panel}>
         <Link to="/" search={{ view: "recurring" }} className={linkRow}>

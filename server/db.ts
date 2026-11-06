@@ -5,6 +5,8 @@ import * as t from "./schema";
 
 export type Db = BunSQLiteDatabase & { $client: Database };
 
+export const migrationsFolder = `${import.meta.dir}/drizzle`;
+
 export const visible = isNull(t.expenses.deletedAt);
 export const countable = and(visible, eq(t.expenses.status, "normal"));
 

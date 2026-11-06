@@ -5,6 +5,7 @@ import { Field, FormError, Input } from "../../components/form";
 import { Masthead } from "../../components/masthead";
 import { useSendNow } from "../../lib/api";
 import { useZodForm } from "../../lib/use-zod-form";
+import { Restore } from "./restore";
 import { credentials } from "./schema";
 
 export function SignIn({ setup }: { setup: boolean }) {
@@ -38,6 +39,7 @@ export function SignIn({ setup }: { setup: boolean }) {
       <Button variant="primary" type="submit" disabled={mutation.isPending}>
         {setup ? "Create account" : "Sign in"}
       </Button>
+      {setup && <Restore />}
     </form>
   );
 }
