@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Forgejo issues on git.home.unbeholden.dev/unbeholden/expense-tracker, via `tea`. See `docs/agents/issue-tracker.md`.
+Forgejo issues on git.home.unbeholden.dev/unbeholden/groat, via `tea`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

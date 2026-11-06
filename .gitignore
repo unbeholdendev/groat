@@ -3,3 +3,6 @@ dist
 *.db*
 test-results
 playwright-report
+.impeccable/critique
+.impeccable/mocks
+.impeccable/questions
