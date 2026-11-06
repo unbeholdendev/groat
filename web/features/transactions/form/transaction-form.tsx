@@ -4,11 +4,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { persistCache } from "../../../query-client";
 import { useBlocker, useLocation } from "@tanstack/react-router";
 import { Field, FormError, Input } from "../../../components/form";
-import { useSend, useSession, useSettings } from "../../../lib/api";
+import { kinds } from "../../../../shared/schema";
+import { Segmented } from "../../../components/segmented";
+import { useCategories, useSend, useSession, useSettings } from "../../../lib/api";
 import type { Draft } from "../../../lib/schemas";
 import { UnitContext } from "../../../lib/unit";
 import { useZodForm } from "../../../lib/use-zod-form";
-import { useTransactions, usePending } from "../queries";
+import { useKindOf, useTransactions, usePending } from "../queries";
 import { blank, transactionForm, filled, fromTemplate, type TransactionValues } from "../schema";
 import { route, useList } from "../use-month";
 import { CategoryChips, DateChips } from "./chips";
@@ -26,9 +28,11 @@ export function TransactionForm() {
   const owner = useSession()?.user?.username;
   const draftKey = ["transaction-draft", owner, editing ? `edit:${editing}` : template ? `recurring:${template.id}` : "new"];
   const [recovered] = useState(() => draft ? undefined : cache.getQueryData<{ values: TransactionValues; recurring?: number; unit: typeof unit }>(draftKey));
-  const form = useZodForm(transactionForm(unit), recovered?.values ?? (template ? fromTemplate(template, unit) : blank(settings.lastCurrency)));
+  const kindOf = useKindOf();
+  const form = useZodForm(transactionForm(unit), recovered?.values ?? (template ? fromTemplate(template, unit, kindOf(template)) : blank(settings.lastCurrency)));
   const { watch, setValue, handleSubmit } = form;
-  const [categoryId, date] = watch(["categoryId", "date"]);
+  const [categoryId, date, kind] = watch(["categoryId", "date", "kind"]);
+  const categories = useCategories();
   const editRow = [...(useTransactions() ?? []), ...usePending()].find((e) => e.id === editing);
   const saving = useSend("transaction", () => close(true));
   const repeating = useSend(undefined, () => close(true));
@@ -60,8 +64,8 @@ export function TransactionForm() {
     navigate({ search: (prev) => prev, state: {}, replace: true });
   }, [draft]);
   useEffect(() => {
-    if (editRow && !recovered) fill(editRow);
-  }, [editing, !!editRow]);
+    if (editRow && categories.length && !recovered) fill(editRow);
+  }, [editing, !!editRow, !!categories.length]);
   useEffect(() => {
     if (saving.isPaused || repeating.isPaused) close(true);
   }, [saving.isPaused || repeating.isPaused]);
@@ -75,12 +79,12 @@ export function TransactionForm() {
     setRecurring(undefined);
     saving.reset();
     repeating.reset();
-    form.reset(filled(e, unit));
+    form.reset(filled(e, unit, kindOf(e)));
     scrollTo(0, 0);
   }
 
-  const save = handleSubmit(({ categoryId, period, every, endDate, needsConfirmation, ...v }) => {
-    const body = { ...v, unit, categoryId: categoryId || undefined };
+  const save = handleSubmit(({ categoryId, period, every, endDate, needsConfirmation, kind, ...v }) => {
+    const body = { ...v, unit, categoryId: categoryId || categories.find((c) => c.builtin && c.kind === kind)?.id };
     if (period)
       repeating.mutate([recurring ? "PUT" : "POST", recurring ? `/api/recurring/${recurring}` : "/api/recurring", { ...body, period, every: Number(every), endDate: endDate || null, needsConfirmation, startDate: v.date }]);
     else if (recurring) repeating.mutate(["DELETE", `/api/recurring/${recurring}`]);
@@ -91,7 +95,7 @@ export function TransactionForm() {
     <form noValidate onSubmit={save} className="flex flex-col">
       <FormHeader
         form={form}
-        title={editing ? "Edit expense" : recurring ? "Edit recurring" : "New expense"}
+        title={editing ? `Edit ${kind}` : recurring ? "Edit recurring" : `New ${kind}`}
         submit={editing || recurring ? "Save" : "Add"}
         pending={saving.isPending || repeating.isPending}
         editing={!!editing}
@@ -107,7 +111,16 @@ export function TransactionForm() {
           <button type="button" onClick={() => { cache.removeQueries({ queryKey: draftKey, exact: true }); persistCache(); blocker.proceed?.(); }} className="press min-h-11 rounded-chip bg-accent px-4 font-medium text-on-accent">Discard changes</button>
         </div>
       </dialog>
-      <CategoryChips value={categoryId} onChange={(id) => setValue("categoryId", id)} />
+      <div className="mt-5">
+        <Segmented
+          label="Kind"
+          options={kinds}
+          names={{ expense: "Expense", income: "Income" }}
+          value={kind}
+          onChange={(k) => (setValue("kind", k), kindOf({ categoryId }) !== k && setValue("categoryId", null))}
+        />
+      </div>
+      <CategoryChips kind={kind} value={categoryId} onChange={(id) => setValue("categoryId", id)} />
       <DateChips value={date} onChange={(d) => setValue("date", d)} />
       <Field label="Tags" className="mt-6">
         <Input placeholder="work, trip" {...form.register("tags")} />

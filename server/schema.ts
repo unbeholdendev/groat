@@ -1,5 +1,6 @@
 import { type AnySQLiteColumn, blob, check, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { kinds } from "../shared/schema";
 
 export const transactions = sqliteTable("transactions", {
   id: integer().primaryKey(),
@@ -36,6 +37,7 @@ export const categories = sqliteTable("categories", {
   parentId: integer().references((): AnySQLiteColumn => categories.id),
   sort: integer().notNull(),
   builtin: integer({ mode: "boolean" }).notNull().default(false),
+  kind: text({ enum: kinds }).notNull().default("expense"),
 });
 
 export const rates = sqliteTable(

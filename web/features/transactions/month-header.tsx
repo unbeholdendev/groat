@@ -5,21 +5,24 @@ import { useSettings } from "../../lib/api";
 import { today } from "../../lib/dates";
 import type { Transaction } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
-import { inBase } from "./queries";
+import { inBase, useKindOf } from "./queries";
 import { Summary } from "./summary";
 import { route, useMonth } from "./use-month";
 
 const stepper = "press hit grid size-9 shrink-0 place-items-center rounded-chip hover:bg-surface2";
 
 export function MonthHeader({ rows, showFilters, onFilters }: { rows: Transaction[]; showFilters: boolean; onFilters: () => void }) {
-  const { month, filter, filtered, end, step, label } = useMonth();
+  const { month, filter, filtered, end, step, label, kind } = useMonth();
+  const kindOf = useKindOf();
+  const counted = rows.filter((e) => kindOf(e) === (kind ?? "expense"));
+  const shown = kind ? counted : rows;
   const base = useSettings()!.baseCurrency;
   const [unit] = useContext(UnitContext);
   const navigate = route.useNavigate();
   const swipeFrom = useRef<[number, number]>(undefined);
   const count = Object.values(filter).filter(Boolean).length;
-  const unrated = rows.filter((e) => e.baseAmount === null).length;
-  const go = (n: number) => navigate({ search: { month: step(n) === today().slice(0, 7) ? undefined : step(n) }, viewTransition: { types: [n < 0 ? "back" : "forward"] } });
+  const unrated = counted.filter((e) => e.baseAmount === null).length;
+  const go = (n: number) => navigate({ search: { month: step(n) === today().slice(0, 7) ? undefined : step(n), kind }, viewTransition: { types: [n < 0 ? "back" : "forward"] } });
   const swipe = (e: PointerEvent<HTMLElement>) => {
     const [x, y] = swipeFrom.current ?? [e.clientX, e.clientY];
     const dx = e.clientX - x;
@@ -56,14 +59,14 @@ export function MonthHeader({ rows, showFilters, onFilters }: { rows: Transactio
       {filtered ? (
         <>
           <p className="mt-4">
-            <Total amount={inBase(rows, base)} currency={base} unit={unit} />
+            <Total amount={inBase(counted, base)} currency={base} unit={unit} />
           </p>
           <p className="mt-2.5 text-[13px] font-medium text-ink2">
-            {rows.length} matching{unrated > 0 && ` + ${unrated} unconverted`}
+            {shown.length} matching{unrated > 0 && ` + ${unrated} unconverted`}
           </p>
         </>
       ) : (
-        <Summary unit={unit} end={month ? end : undefined} rows={rows} month={step(0)} />
+        <Summary unit={unit} end={month ? end : undefined} rows={rows.filter((e) => kindOf(e) === "expense")} month={step(0)} />
       )}
     </header>
   );

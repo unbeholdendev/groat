@@ -6,8 +6,8 @@ for (const theme of ["light", "dark"])
     test.setTimeout(90_000);
     await page.request.put("/api/settings", { data: { theme } });
     await seed(page, [
-      { note: "Ramen", amount: "24.50", categoryId: 4, tags: ["friends"] },
-      { note: "Lunch", amount: "10", currency: "EUR", categoryId: 4 },
+      { note: "Ramen", amount: "24.50", categoryId: 6, tags: ["friends"] },
+      { note: "Lunch", amount: "10", currency: "EUR", categoryId: 6 },
     ]);
     await page.request.post("/api/recurring", { data: { note: "Rent", amount: "900", currency: "GBP", period: "month", every: 1, startDate: new Date().toLocaleDateString("en-CA"), needsConfirmation: true } });
     const found: string[] = [];

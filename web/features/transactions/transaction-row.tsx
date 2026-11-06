@@ -21,6 +21,7 @@ export function TransactionRow({ transaction: e, dated }: { transaction: Transac
   const show = (amount: number, c: string) => money(amount, c, unit);
   const Note = dated || e.id < 0 ? "span" : "button";
   const foreign = e.currency !== settings.baseCurrency && e.baseAmount !== undefined;
+  const income = category?.kind === "income";
   return (
     <>
       <Tile category={category} />
@@ -41,7 +42,10 @@ export function TransactionRow({ transaction: e, dated }: { transaction: Transac
         </span>
       </span>
       <span className="num text-right text-[15px] font-medium whitespace-nowrap">
-        {foreign && e.baseAmount != null ? show(e.baseAmount, settings.baseCurrency) : show(e.amount, e.currency)}
+        <span className={income ? "text-down" : undefined}>
+          {income && "+"}
+          {foreign && e.baseAmount != null ? show(e.baseAmount, settings.baseCurrency) : show(e.amount, e.currency)}
+        </span>
         {e.id < 0 && <span className="block font-sans text-xs text-ink3">Will sync</span>}
         {foreign && (
           <span className="block text-xs text-ink3">

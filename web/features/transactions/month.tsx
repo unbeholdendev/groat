@@ -2,6 +2,7 @@ import { FormError } from "../../components/form";
 import { Button } from "../../components/button";
 import { useContext, useState } from "react";
 import { panel } from "../../components/styles";
+import { useSettings } from "../../lib/api";
 import type { Transaction } from "../../lib/schemas";
 import { iso } from "../../lib/period";
 import { today } from "../../lib/dates";
@@ -11,11 +12,14 @@ import { DayList } from "./day-list";
 import { Filters } from "./filters";
 import { MonthHeader } from "./month-header";
 import { PendingList } from "./pending-list";
-import { useTransactionQuery, useQueued } from "./queries";
+import { KindFilter } from "./kind-filter";
+import { useKindOf, useTransactionQuery, useQueued } from "./queries";
 import { useMonth } from "./use-month";
 
 export function Month({ newest }: { newest: number }) {
-  const { month, filter, setFilter, filtered, shown, end, label } = useMonth();
+  const { month, filter, setFilter, filtered, shown, end, label, kind } = useMonth();
+  const income = useSettings()?.income;
+  const kindOf = useKindOf();
   const [unit] = useContext(UnitContext);
   const [filterPanel, setFilterPanel] = useState<"unopened" | "open" | "closed">("unopened");
   const showFilters = filterPanel === "open";
@@ -23,13 +27,15 @@ export function Month({ newest }: { newest: number }) {
   const listed = query.data;
   const transactions = listed ?? [];
   const queued = useQueued();
+  const rows = [...queued.filter((e) => !filtered && e.date.startsWith(shown)), ...transactions]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .filter((e) => e.status !== "pending");
   const days = new Map<string, Transaction[]>();
-  for (const e of [...queued.filter((e) => !filtered && e.date.startsWith(shown)), ...transactions].sort((a, b) => b.date.localeCompare(a.date)))
-    if (e.status !== "pending") days.set(e.date, [...(days.get(e.date) ?? []), e]);
+  for (const e of rows) if (!kind || kindOf(e) === kind) days.set(e.date, [...(days.get(e.date) ?? []), e]);
 
   return (
     <>
-      <MonthHeader rows={[...days.values()].flat()} showFilters={showFilters} onFilters={() => {
+      <MonthHeader rows={rows} showFilters={showFilters} onFilters={() => {
         if (filterPanel === "unopened" && !filtered) {
           const past = new Date();
           past.setDate(past.getDate() - 30);
@@ -39,6 +45,7 @@ export function Month({ newest }: { newest: number }) {
       }} />
       {!filtered && <Breakdown unit={unit} end={month ? end : undefined} />}
       {showFilters && <Filters />}
+      {income && <KindFilter />}
       <PendingList />
       {query.isPending && <p role="status" className="mt-6 text-ink2">Loading expenses…</p>}
       <FormError error={query.error} className="mt-4" />

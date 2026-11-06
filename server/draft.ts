@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { knownCurrencies } from "../shared/amount";
 import { parse } from "../shared/parse";
@@ -37,7 +38,7 @@ export async function extract(ctx: Ctx, input: string | Photo) {
   const text = typeof input === "string" ? input : "";
   const { lastCurrency, recentCurrencies } = settings(db);
   const day = today(clock);
-  const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).all();
+  const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).where(eq(categories.kind, "expense")).all();
   const message = await complete(ctx, {
     messages: [
       {

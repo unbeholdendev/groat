@@ -72,7 +72,7 @@ export function Backup() {
           <Row d="M12 15V4m-4 4 4-4 4 4M5 19h14">{check.isPending ? "Checking file…" : "Import from CSV"}</Row>
         </button>
       </div>
-      <p className="mt-2 px-1 text-[13px] text-ink2">Import works once, before any expenses are added. Columns: date, note, amount, currency, and optionally category, subcategory and tags.</p>
+      <p className="mt-2 px-1 text-[13px] text-ink2">Import works once, before any expenses are added. Columns: date, note, amount, currency, and optionally type (expense or income), category, subcategory and tags.</p>
       <FormError error={check.error ?? run.error} className="mt-2 px-1" />
       {run.data && <p role="status" className="mt-2 px-1 text-sm">Imported {run.data.imported} expenses.</p>}
       {plan && (

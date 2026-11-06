@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { transactionInput, isoDate } from "../shared/schema";
 import type { Ctx, Deps } from "./app";
@@ -62,14 +62,14 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
   };
 
   const tools: Record<string, ReturnType<typeof tool>> = {
-    category_totals: tool("Spend per category (with subcategories) for a date range, in base currency.", range, totals),
+    category_totals: tool("Spend per category (with subcategories) for a date range, in base currency, and income the same way under `income`.", range, totals),
     list_transactions: tool(
-      "Expenses newest first (max 200), each with baseAmount in base currency. All filters optional.",
+      "Transactions newest first (max 200), each with baseAmount in base currency. All filters optional; filter by kind to separate expenses from income.",
       transactionQuery.omit({ status: true }),
       async (args) => value(transactions(db, transactionFilter(db, args, countable)).orderBy(...newest).limit(200).all()),
     ),
     compare_periods: tool(
-      "Spend per category for two date ranges, in base currency.",
+      "Spend and income per category for two date ranges, in base currency.",
       z.object({ first: range, second: range }),
       async ({ first, second }) => ({ first: await totals(first), second: await totals(second) }),
     ),
@@ -99,16 +99,19 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
       (args) => {
         const draft = readTransaction(args, db, today(clock), settings(db).baseCurrency, uncategorised(db));
         if ("error" in draft) throw new Error(draft.error);
+        if (db.select().from(categories).where(and(eq(categories.id, draft.categoryId), eq(categories.kind, "income"))).get())
+          throw new Error("Drafts are expenses only; pick an expense category");
         return { draft };
       },
     ),
   };
   const system = () => {
-    const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).all();
+    const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId, kind: categories.kind }).from(categories).all();
     return [
-      "You answer questions about the user's spending, and give recommendations when asked, using the tools for real data.",
+      "You answer questions about the user's spending and income, and give recommendations when asked, using the tools for real data.",
       `Today is ${today(clock)}. Base currency: ${settings(db).baseCurrency}.`,
       "Binned (deleted_at set) and pending (status 'pending') expenses are not spending: leave them out unless the user asks for them.",
+      "Each category has a kind, expense or income; subcategories share their parent's. A transaction's kind is its category's. Amounts are always positive: income is money in, never spending. Net is income minus spending; savings rate is net divided by income.",
       "Amounts are integers in the currency's smallest unit (pence, cents, whole yen, sats for BTC).",
       `Categories: ${JSON.stringify(cats)}`,
     ].join("\n");

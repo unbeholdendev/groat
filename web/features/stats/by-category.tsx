@@ -12,6 +12,7 @@ export function ByCategory(props: {
   show: (n: number) => string;
   open: number | null;
   onOpen: (id: number | null) => void;
+  empty: string;
 }) {
   const { now, prev, vs } = props;
   const tile = (id: number) => props.categories.find((c) => c.id === id);
@@ -20,7 +21,7 @@ export function ByCategory(props: {
     <>
       <Head title="By category" vs={vs} />
       <ul className="overflow-hidden rounded-panel bg-surface shadow-panel">
-        {now.categories.length === 0 && <li className="px-4 py-6 text-ink3">No spending in this period.</li>}
+        {now.categories.length === 0 && <li className="px-4 py-6 text-ink3">{props.empty}</li>}
         {now.categories.map((c, i) => (
           <CategoryRow
             key={c.id}

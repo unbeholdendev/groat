@@ -63,3 +63,11 @@ test("capture with unsure text saves the AI's read as pending; sure text skips t
   expect(await capture("crisps 2")).toMatchObject({ note: "crisps", amount: 200, categoryId: food.id, status: "normal" });
   expect(ai.requests).toHaveLength(1);
 });
+
+test("drafts are offered expense categories only", async () => {
+  const ai = provider(() => ({ note: "Pay" }));
+  const { call } = setup(undefined, ai.handler, config);
+  await call("POST", "/api/drafts", { text: "pay" });
+  const names = JSON.parse(ai.requests[0].messages[0].content.match(/Categories: (.*)/)[1]).map((c: { name: string }) => c.name);
+  expect(names).toEqual(["Uncategorised"]);
+});

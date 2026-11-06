@@ -3,18 +3,19 @@ import { FormError } from "../../components/form";
 import { Icon, paths } from "../../components/icon";
 import { divide } from "../../components/styles";
 import { useSend } from "../../lib/api";
+import type { Kind } from "../../../shared/schema";
 import type { Category } from "../../lib/schemas";
 import { CategoryEditor } from "./category-editor";
 import { Button } from "../../components/button";
 
-export function CategoryList(props: { categories: Category[]; editing: number | "new" | null; onEdit: (id: number | "new" | null) => void; reorder: boolean }) {
-  const { categories, editing, onEdit, reorder } = props;
+export function CategoryList(props: { kind: Kind; categories: Category[]; editing: number | Kind | null; onEdit: (id: number | Kind | null) => void; reorder: boolean }) {
+  const { kind, categories, editing, onEdit, reorder } = props;
   const { mutate: call, error, reset } = useSend("category");
-  const tree = categories.filter((p) => p.parentId === null).flatMap((p) => [p, ...categories.filter((c) => c.parentId === p.id)]);
-  const edit = (id: number | "new") => (reset(), onEdit(id));
+  const tree = categories.filter((p) => p.parentId === null && p.kind === kind).flatMap((p) => [p, ...categories.filter((c) => c.parentId === p.id)]);
+  const edit = (id: number | Kind) => (reset(), onEdit(id));
 
   function move(c: Category, by: number) {
-    const siblings = categories.filter((s) => s.parentId === c.parentId);
+    const siblings = categories.filter((s) => s.parentId === c.parentId && s.kind === kind);
     const other = siblings[siblings.indexOf(c) + by];
     if (!other) return;
     call(["PUT", "/api/categories/order", siblings.map((s) => (s === c ? other.id : s === other ? c.id : s.id))]);
@@ -23,6 +24,7 @@ export function CategoryList(props: { categories: Category[]; editing: number | 
   const editor = (c?: Category) => (
     <CategoryEditor
       category={c}
+      kind={kind}
       categories={categories}
       onClose={() => onEdit(null)}
       onDelete={(moveTo) => (onEdit(null), c && call(["DELETE", `/api/categories/${c.id}${moveTo ? `?moveTo=${moveTo}` : ""}`]))}
@@ -58,12 +60,12 @@ export function CategoryList(props: { categories: Category[]; editing: number | 
               </li>
             ),
           )}
-          {editing === "new" && <li>{editor()}</li>}
+          {editing === kind && <li>{editor()}</li>}
         </ul>
-        {editing !== "new" && !reorder && (
-          <Button className="mt-2 ml-1.5 flex h-11 items-center gap-1.5" onClick={() => edit("new")}>
+        {editing !== kind && !reorder && (
+          <Button className="mt-2 ml-1.5 flex h-11 items-center gap-1.5" onClick={() => edit(kind)}>
             <Icon d={paths.plus} className="size-4 stroke-2" />
-            New category
+            New {kind} category
           </Button>
         )}
       </div>

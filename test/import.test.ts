@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { frankfurter, setup } from "./harness";
 
-type Category = { id: number; name: string; parentId: number | null };
+type Category = { id: number; name: string; parentId: number | null; kind: string };
 type Transaction = { note: string; amount: number; currency: string; date: string; categoryId: number; tags: string[]; createdBy: number };
 
 async function onboarded() {
@@ -24,7 +24,12 @@ async function onboarded() {
     const rows: Transaction[] = (await h.call("GET", "/api/transactions")).body;
     return rows.map((e) => ({ date: e.date, note: e.note, amount: e.amount, currency: e.currency, category: name(e.categoryId), tags: e.tags }));
   };
-  return { ...h, upload, listed };
+  const kinds = async () => {
+    const cats: Category[] = (await h.call("GET", "/api/categories")).body;
+    const rows: Transaction[] = (await h.call("GET", "/api/transactions")).body;
+    return rows.map((e) => cats.find((c) => c.id === e.categoryId)!.kind);
+  };
+  return { ...h, upload, listed, kinds };
 }
 
 const lofextra = [
@@ -133,11 +138,16 @@ test("an export imports back into a fresh instance", async () => {
   await source.call("POST", "/api/transactions", { note: 'Milk, "organic"', amount: "10", currency: "EUR", date: "2026-10-02", tags: ["b", "a"] });
   await source.call("POST", "/api/transactions", { note: "Dinner", amount: "12.50", currency: "GBP", date: "2026-10-03", categoryId: food });
   await source.call("POST", "/api/transactions", { note: "Node", amount: "21000", currency: "BTC", unit: "sats", date: "2026-10-04" });
+  const freelance = (await source.call("POST", "/api/categories", { name: "Freelance", icon: "🎨", color: "#3fbe90", kind: "income" })).body.id;
+  const design = (await source.call("POST", "/api/categories", { name: "Design", icon: "🎨", color: "#3fbe90", parentId: freelance })).body.id;
+  await source.call("POST", "/api/transactions", { note: "Logo", amount: "300", currency: "GBP", date: "2026-10-05", categoryId: design });
+  await source.call("POST", "/api/transactions", { note: "Gift", amount: "50", currency: "GBP", date: "2026-10-06", categoryId: freelance });
   const csv = await (await source.request("/api/export")).text();
 
   const target = await onboarded();
-  expect((await target.upload("/api/import", csv)).body).toEqual({ imported: 3 });
+  expect((await target.upload("/api/import", csv)).body).toEqual({ imported: 5 });
   expect(await target.listed()).toEqual(await source.listed());
+  expect(await target.kinds()).toEqual(await source.kinds());
 });
 
 test("an unclosed quote fails the whole file instead of swallowing later rows", async () => {
@@ -159,4 +169,24 @@ test("rejected lines are numbered as in the file when a note spans lines", async
   const h = await onboarded();
   const csv = ["date,note,amount,currency", '2025-03-01,"Two', 'lines",1,GBP', "2025-03-02,Bad,1,XYZ"].join("\r\n");
   expect((await h.upload("/api/import/preview", csv)).body).toMatchObject({ count: 1, rejected: [{ line: 4, error: "Invalid currency" }] });
+});
+
+test("the type column picks the kind, and a row that contradicts its category is rejected", async () => {
+  const h = await onboarded();
+  const csv = [
+    "date,type,note,amount,currency,category",
+    "2025-03-01,income,Tips,5,GBP,",
+    "2025-03-02,income,Invoice,500,GBP,Consulting",
+    "2025-03-03,,Retainer,200,GBP,Consulting",
+    "2025-03-04,expense,Coffee,3,GBP,Salary",
+    "2025-03-05,gift,Mug,4,GBP,",
+  ].join("\r\n");
+  expect((await h.upload("/api/import/preview", csv)).body).toMatchObject({
+    count: 3,
+    categories: ["Consulting"],
+    rejected: [{ line: 5, error: "Salary isn’t an expense category" }, { line: 6, error: "Invalid type" }],
+  });
+  await h.upload("/api/import", csv.split("\r\n").slice(0, 4).join("\r\n"));
+  expect(await h.kinds()).toEqual(["income", "income", "income"]);
+  expect((await h.listed()).map((r) => r.category)).toEqual(["Consulting", "Consulting", "Other income"]);
 });

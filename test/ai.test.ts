@@ -191,3 +191,12 @@ test("drafting an expense resolves it against categories and currencies but save
   expect(saved.body).toMatchObject(draft.draft);
   expect((await api("GET", "/api/transactions")).body).toHaveLength(before.length + 1);
 });
+
+test("the AI knows category kinds, and drafts only expenses", async () => {
+  const { ask, id, ai } = await withSpending();
+  const [salary] = await ask("I got paid", call("draft_transaction", { note: "Pay", amount: "3000", categoryId: id("Salary") }), { content: "No" });
+  expect(salary.error).toContain("expenses only");
+  const prompt = ai.requests[0].body.messages[0].content;
+  expect(prompt).toMatch(/kind, expense or income/);
+  expect(prompt).toContain(`"name":"Salary","parentId":null,"kind":"income"`);
+});

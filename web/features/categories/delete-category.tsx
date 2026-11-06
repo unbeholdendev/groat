@@ -13,11 +13,11 @@ export function DeleteCategory(props: { category: Category; categories: Category
   return (
     <div className="flex flex-col gap-2 text-sm text-ink2">
       <label className="label">
-        {affected ? `${affected.length} ${affected.length === 1 ? "expense" : "expenses"}` : "Its expenses"}
+        {affected ? `${affected.length} ${affected.length === 1 ? "entry" : "entries"}` : "Its entries"}
         {c.parentId === null && categories.some((s) => s.parentId === c.id) && " (subcategories included)"} will move to
         <Select value={moveTo} onChange={(e) => setMoveTo(e.target.value)}>
-          <option value="">Uncategorised</option>
-          <CategoryOptions categories={categories} except={c.id} />
+          <option value="">{categories.find((k) => k.builtin && k.kind === c.kind)?.name}</option>
+          <CategoryOptions categories={categories} except={c.id} kind={c.kind} />
         </Select>
       </label>
       <div className="flex justify-end">

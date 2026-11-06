@@ -1,10 +1,12 @@
 import { z } from "zod";
+import { kind } from "../../../shared/schema";
 
 export const categoryForm = z.object({
   name: z.string().trim().min(1, "Enter a name"),
   icon: z.string().trim().min(1, "Enter an emoji"),
   color: z.string().regex(/^#[0-9a-f]{6}$/i, "Pick a colour"),
   parentId: z.string().transform((id) => Number(id) || null),
+  kind,
 });
 
 export const tagForm = z.object({ name: z.string().trim().min(1, "Enter a name") });

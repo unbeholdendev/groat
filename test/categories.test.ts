@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { setup } from "./harness";
 
-type Category = { id: number; name: string; parentId: number | null; builtin: boolean };
+type Category = { id: number; name: string; parentId: number | null; builtin: boolean; kind: string };
 
 async function onboarded() {
   const s = setup();
@@ -65,11 +65,11 @@ test("each user keeps their own category order, and new categories go last for e
   const cookie = login.headers.get("set-cookie")!.split(";")[0];
   const bob = async (method: string, path: string, body?: unknown) =>
     (await app.request(path, { method, headers: { "content-type": "application/json", cookie }, body: JSON.stringify(body) })).json();
-  const names = (rows: Category[]) => rows.filter((c) => c.parentId === null).map((c) => c.name);
+  const names = (rows: Category[]) => rows.filter((c) => c.parentId === null && c.kind === "expense").map((c) => c.name);
 
   const shared = names(await categories());
   expect(names(await bob("GET", "/api/categories"))).toEqual(shared);
-  const ids = (await categories()).filter((c) => c.parentId === null).map((c) => c.id);
+  const ids = (await categories()).filter((c) => c.parentId === null && c.kind === "expense").map((c) => c.id);
   await bob("PUT", "/api/categories/order", [...ids].reverse());
   expect(names(await bob("GET", "/api/categories"))).toEqual([...shared].reverse());
   expect(names(await categories())).toEqual(shared);
@@ -114,7 +114,11 @@ test("deleting a parent moves expenses under it and its subcategories to the cho
 
 test("expenses can be saved before onboarding", async () => {
   const { call } = setup();
-  const uncategorised = (await call("GET", "/api/categories")).body;
-  expect(uncategorised).toMatchObject([{ name: "Uncategorised", builtin: true }]);
-  expect((await call("POST", "/api/transactions", { note: "x", amount: "1" })).body.categoryId).toBe(uncategorised[0].id);
+  const seeded = (await call("GET", "/api/categories")).body;
+  expect(seeded).toMatchObject([
+    { name: "Uncategorised", builtin: true, kind: "expense" },
+    { name: "Salary", builtin: false, kind: "income" },
+    { name: "Other income", builtin: true, kind: "income" },
+  ]);
+  expect((await call("POST", "/api/transactions", { note: "x", amount: "1" })).body.categoryId).toBe(seeded[0].id);
 });

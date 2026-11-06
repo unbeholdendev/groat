@@ -25,6 +25,7 @@ test("settings changes persist", async () => {
     recentCurrencies: ["BTC"],
     lastCurrency: "BTC",
     theme: "dark",
+    income: false,
     ai: false,
     vision: false,
     voice: false,
@@ -111,5 +112,7 @@ test("onboarding saves base currency and seeds categories once", async () => {
     ["Travel", []],
     ["Gifts", []],
     ["Uncategorised", []],
+    ["Salary", []],
+    ["Other income", []],
   ]);
 });

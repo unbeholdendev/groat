@@ -1,8 +1,8 @@
 import { and, between, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
-import { isoDate } from "../shared/schema";
-import { countable, type Db, settings } from "./db";
+import { isoDate, type Kind } from "../shared/schema";
+import { countable, type Db, kindOf, settings } from "./db";
 import type { Valuer } from "./rates";
 import { query } from "./request";
 import { categories as c, transactions as e, transactionTags as et, tags as tg } from "./schema";
@@ -11,7 +11,7 @@ const range = z
   .object({ from: isoDate, to: isoDate, group: z.enum(["day", "week", "month"]).default("day") })
   .refine((r) => r.from <= r.to);
 type Group = z.infer<typeof range>["group"];
-type Category = { id: number; name: string; icon: string; color: string; parentId: number | null };
+type Category = { id: number; name: string; icon: string; color: string; parentId: number | null; kind: Kind };
 type Total = { total: number };
 
 const shift = (date: string, days: number) => {
@@ -34,27 +34,30 @@ const byTotal = (a: Total, b: Total) => b.total - a.total;
 
 export async function period(db: Db, value: Valuer, from: string, to: string, group: Group) {
   const rows = db
-    .select({ id: e.id, amount: e.amount, currency: e.currency, date: e.date, categoryId: e.categoryId })
+    .select({ id: e.id, amount: e.amount, currency: e.currency, date: e.date, categoryId: e.categoryId, kind: kindOf })
     .from(e)
     .where(and(countable, between(e.date, from, to)))
     .all();
   const valued = await value(rows);
-  const counted = valued.filter((r): r is (typeof valued)[number] & { baseAmount: number } => r.baseAmount !== null);
+  const rated = valued.filter((r): r is (typeof valued)[number] & { baseAmount: number } => r.baseAmount !== null);
+  const counted = rated.filter((r) => r.kind === "expense");
+  const earned = rated.filter((r) => r.kind === "income");
   const sum = (rs: { baseAmount: number }[]) => rs.reduce((s, r) => s + r.baseAmount, 0);
 
-  const all: Category[] = db.select({ id: c.id, name: c.name, icon: c.icon, color: c.color, parentId: c.parentId }).from(c).all();
-  const categories = all
-    .filter((p) => p.parentId === null)
-    .map((p) => {
-      const children = all
-        .filter((c) => c.id === p.id || c.parentId === p.id)
-        .map((c) => ({ ...c, total: sum(counted.filter((r) => r.categoryId === c.id)) }))
-        .filter((c) => c.total)
-        .sort(byTotal);
-      return { ...p, total: children.reduce((s, c) => s + c.total, 0), children };
-    })
-    .filter((c) => c.total)
-    .sort(byTotal);
+  const all: Category[] = db.select({ id: c.id, name: c.name, icon: c.icon, color: c.color, parentId: c.parentId, kind: c.kind }).from(c).all();
+  const breakdown = (kind: Kind, rs: { categoryId: number | null; baseAmount: number }[]) =>
+    all
+      .filter((p) => p.parentId === null && p.kind === kind)
+      .map(({ kind, ...p }) => {
+        const children = all
+          .filter((c) => c.id === p.id || c.parentId === p.id)
+          .map(({ kind, ...c }) => ({ ...c, total: sum(rs.filter((r) => r.categoryId === c.id)) }))
+          .filter((c) => c.total)
+          .sort(byTotal);
+        return { ...p, total: children.reduce((s, c) => s + c.total, 0), children };
+      })
+      .filter((c) => c.total)
+      .sort(byTotal);
 
   const amounts = new Map(counted.map((r) => [r.id, r.baseAmount]));
   const tagged = new Map<string, number>();
@@ -82,10 +85,11 @@ export async function period(db: Db, value: Valuer, from: string, to: string, gr
     to,
     baseCurrency: settings(db).baseCurrency,
     total: sum(counted),
-    unconverted: valued.length - counted.length,
-    categories,
+    unconverted: valued.length - rated.length,
+    categories: breakdown("expense", counted),
     tags,
     buckets: [...buckets].map(([start, total]) => ({ start, total })),
+    income: { total: sum(earned), categories: breakdown("income", earned) },
   };
 }
 

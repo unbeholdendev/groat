@@ -5,7 +5,8 @@ import { z } from "zod";
 import { formatAmount } from "../shared/amount";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
-import { type Db, settings, today, uncategorised } from "./db";
+import { kind, type Kind } from "../shared/schema";
+import { builtin, type Db, settings, today } from "./db";
 import { addTransaction, readTransaction } from "./transactions";
 import { valid } from "./request";
 import * as t from "./schema";
@@ -56,12 +57,14 @@ function plan(db: Db, text: string, date: string) {
   if (required.some((name) => !column.has(name))) return { error: "The file needs date, note, amount and currency columns" };
 
   const existing = new Map<string, number>();
-  const all = db.select({ id: cat.id, name: cat.name, parentId: cat.parentId }).from(cat).all();
+  const kinds = new Map<string, Kind>();
+  const all = db.select({ id: cat.id, name: cat.name, parentId: cat.parentId, kind: cat.kind }).from(cat).all();
   for (const c of all) {
     const parent = all.find((p) => p.id === c.parentId);
     existing.set(parent ? key(parent.name, c.name) : key(c.name), c.id);
+    if (!parent) kinds.set(key(c.name), c.kind);
   }
-  const fallback = uncategorised(db);
+  const fallback = { expense: builtin(db, "expense"), income: builtin(db, "income") };
   const { baseCurrency } = settings(db);
   const created = new Map<string, [string, string?]>();
   const rows = [];
@@ -71,16 +74,23 @@ function plan(db: Db, text: string, date: string) {
     const cell = (name: string) => cells[column.get(name) ?? -1]?.trim() ?? "";
     const tags = cell("tags").split(",").map((tag) => tag.trim()).filter(Boolean);
     const input = { note: cell("note"), amount: trimZeros(cell("amount")), currency: cell("currency"), date: cell("date"), tags };
+    const [category, sub] = [cell("category"), cell("subcategory")];
+    const type = kind.optional().safeParse(cell("type").toLowerCase() || undefined);
+    const rowKind = (type.success && type.data) || (category && kinds.get(key(category))) || "expense";
     const read = !input.date
       ? { error: "Invalid date" }
       : !input.currency
         ? { error: "Invalid currency" }
-        : readTransaction(input, db, date, baseCurrency, fallback);
+        : !type.success
+          ? { error: "Invalid type" }
+          : category && rowKind !== (kinds.get(key(category)) ?? rowKind)
+            ? { error: `${category} isn’t an ${rowKind} category` }
+            : readTransaction(input, db, date, baseCurrency, fallback[rowKind]);
     if ("error" in read) {
       rejected.push({ line, error: read.error });
       continue;
     }
-    const [category, sub] = [cell("category"), cell("subcategory")];
+    if (category && !kinds.has(key(category))) kinds.set(key(category), rowKind);
     if (category && !existing.has(key(category)) && !created.has(key(category))) created.set(key(category), [category]);
     if (category && sub && !existing.has(key(category, sub)) && !created.has(key(category, sub))) created.set(key(category, sub), [category, sub]);
     rows.push({ ...read, at: !category ? undefined : sub ? key(category, sub) : key(category) });
@@ -92,6 +102,7 @@ function plan(db: Db, text: string, date: string) {
     rows,
     created,
     existing,
+    kinds,
     preview: {
       count: rows.length,
       totals: [...totals].sort(([a], [b]) => a.localeCompare(b)).map(([currency, amount]) => ({ currency, amount: formatAmount(amount, currency) })),
@@ -130,7 +141,7 @@ export function importRoutes({ db, clock }: Ctx) {
     if (result.preview.rejected.length) return c.json({ error: "Fix the rejected rows, then import again" }, 400);
     // read() awaited the upload after its check, so another import may have finished since.
     if (!empty()) return c.json({ error: used }, 409);
-    const { rows, created, existing } = result;
+    const { rows, created, existing, kinds } = result;
     const now = clock().toISOString();
     const userId = c.get("user").id;
     db.transaction(() => {
@@ -139,7 +150,7 @@ export function importRoutes({ db, clock }: Ctx) {
         const parentId = sub ? existing.get(key(name))! : null;
         const color = parentId ? db.select({ color: cat.color }).from(cat).where(eq(cat.id, parentId)).get()!.color : "#71717a";
         const sort = sql`(SELECT coalesce(max(sort), -1) + 1 FROM categories WHERE parent_id IS ${parentId})`;
-        const { id } = db.insert(cat).values({ name: sub ?? name, icon: "🏷️", color, parentId, sort }).returning({ id: cat.id }).get();
+        const { id } = db.insert(cat).values({ name: sub ?? name, icon: "🏷️", color, parentId, sort, kind: kinds.get(key(name)) }).returning({ id: cat.id }).get();
         existing.set(sub ? key(name, sub) : key(name), id);
       }
       for (const { at, ...row } of rows) addTransaction(db, now, { ...row, categoryId: at ? existing.get(at)! : row.categoryId }, userId);

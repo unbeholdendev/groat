@@ -7,9 +7,9 @@ const lastMonth = () => {
 
 test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   await seed(page, [
-    { note: "Groceries run", amount: "30", categoryId: 3, tags: ["home"] },
-    { note: "Cinema", amount: "12", categoryId: 16 },
-    { note: "Old lunch", amount: "8", categoryId: 4, date: lastMonth() },
+    { note: "Groceries run", amount: "30", categoryId: 5, tags: ["home"] },
+    { note: "Cinema", amount: "12", categoryId: 18 },
+    { note: "Old lunch", amount: "8", categoryId: 6, date: lastMonth() },
   ]);
   await page.reload();
   const header = page.locator("header");
@@ -104,8 +104,8 @@ test("changing period clears a scrub readout", async ({ app: page }) => {
 test("the desktop side column switches between amounts and shares", async ({ app: page }, info) => {
   test.skip(info.project.name === "phone");
   await seed(page, [
-    { note: "Groceries run", amount: "30", categoryId: 3 },
-    { note: "Cinema", amount: "10", categoryId: 16 },
+    { note: "Groceries run", amount: "30", categoryId: 5 },
+    { note: "Cinema", amount: "10", categoryId: 18 },
   ]);
   await page.reload();
   const aside = page.locator("aside");

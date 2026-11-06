@@ -7,7 +7,7 @@ import { useCategories, useSettings } from "../../lib/api";
 import { useMonth } from "./use-month";
 
 export function Filters() {
-  const { filter, setFilter, filtered, query } = useMonth();
+  const { filter, setFilter, filtered, query, kind } = useMonth();
   const settings = useSettings()!;
   const categories = useCategories();
   const filterInput = (key: keyof typeof filter, label: string, type = "text") => (
@@ -41,7 +41,7 @@ export function Filters() {
         ) : (
           <span />
         )}
-        <a className="hit text-accent" href={`/api/export?${query}`} download="expenses.csv">
+        <a className="hit text-accent" href={`/api/export?${query}${kind ? `&kind=${kind}` : ""}`} download="expenses.csv">
           Export CSV
         </a>
       </div>

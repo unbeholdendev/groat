@@ -1,6 +1,7 @@
 import { type QueryClient, useMutationState } from "@tanstack/react-query";
 import { z } from "zod";
-import { refresh, useApi, useSession } from "../../lib/api";
+import type { Kind } from "../../../shared/schema";
+import { refresh, useApi, useCategories, useSession } from "../../lib/api";
 import { type Transaction, transaction, type Request, request, template, unsent } from "../../lib/schemas";
 import { useMonth } from "./use-month";
 
@@ -35,3 +36,8 @@ export function syncTransaction(client: QueryClient, data: unknown, [method]: Re
 }
 
 export const inBase = (rows: Transaction[], base: string) => rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === base ? e.amount : 0)), 0);
+
+export const useKindOf = () => {
+  const categories = useCategories();
+  return (e: { categoryId: number | null }): Kind => categories.find((c) => c.id === e.categoryId)?.kind ?? "expense";
+};

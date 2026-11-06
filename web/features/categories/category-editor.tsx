@@ -1,23 +1,31 @@
 import { useState } from "react";
 import { Controller } from "react-hook-form";
+import { kinds, type Kind } from "../../../shared/schema";
 import { Button } from "../../components/button";
 import { Field, FormError, Input, Select } from "../../components/form";
+import { Segmented } from "../../components/segmented";
 import { useSend } from "../../lib/api";
 import type { Category } from "../../lib/schemas";
 import { useZodForm } from "../../lib/use-zod-form";
 import { ColourPicker, palette } from "./colour-picker";
 import { DeleteCategory } from "./delete-category";
+import { MoveKind } from "./move-kind";
 import { categoryForm } from "./schema";
 
-export function CategoryEditor(props: { category?: Category; categories: Category[]; onClose: () => void; onDelete: (moveTo: string) => void }) {
+export function CategoryEditor(props: { category?: Category; kind: Kind; categories: Category[]; onClose: () => void; onDelete: (moveTo: string) => void }) {
   const { category: c, categories } = props;
-  const form = useZodForm(categoryForm, { name: c?.name ?? "", icon: c?.icon ?? "📁", color: c?.color ?? palette.Rose, parentId: "" });
+  const form = useZodForm(categoryForm, { name: c?.name ?? "", icon: c?.icon ?? "📁", color: c?.color ?? palette.Rose, parentId: "", kind: props.kind });
   const { errors } = form.formState;
   const save = useSend("category");
   const [deleting, setDeleting] = useState(false);
-  const submit = form.handleSubmit(({ parentId, ...fields }) =>
-    save.mutate(c ? ["PUT", `/api/categories/${c.id}`, fields] : ["POST", "/api/categories", { ...fields, parentId }], { onSuccess: props.onClose }),
+  const [moving, setMoving] = useState(false);
+  const kind = form.watch("kind");
+  const send = form.handleSubmit(({ parentId, kind, ...fields }) =>
+    save.mutate(c ? ["PUT", `/api/categories/${c.id}`, kind === c.kind ? fields : { ...fields, kind }] : ["POST", "/api/categories", { ...fields, parentId, kind }], {
+      onSuccess: props.onClose,
+    }),
   );
+  const submit = c && kind !== c.kind ? form.handleSubmit(() => setMoving(true)) : send;
 
   return (
     <form onSubmit={submit} className="rise flex flex-col gap-3 p-4">
@@ -39,7 +47,7 @@ export function CategoryEditor(props: { category?: Category; categories: Categor
           <Select {...form.register("parentId")}>
             <option value="">Nothing (top level)</option>
             {categories
-              .filter((p) => p.parentId === null)
+              .filter((p) => p.parentId === null && p.kind === kind)
               .map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.icon} {p.name}
@@ -48,8 +56,17 @@ export function CategoryEditor(props: { category?: Category; categories: Categor
           </Select>
         </Field>
       )}
+      {c && c.parentId === null && !c.builtin && (
+        <Controller
+          control={form.control}
+          name="kind"
+          render={({ field }) => <Segmented label="Kind" options={kinds} names={{ expense: "Expense", income: "Income" }} value={field.value} onChange={field.onChange} />}
+        />
+      )}
       <FormError error={save.error} />
-      {deleting && c ? (
+      {moving && c ? (
+        <MoveKind category={c} kind={kind} categories={categories} onKeep={() => setMoving(false)} onMove={send} />
+      ) : deleting && c ? (
         <DeleteCategory category={c} categories={categories} onKeep={() => setDeleting(false)} onDelete={props.onDelete} />
       ) : (
         <div className="flex items-center">

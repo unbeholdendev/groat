@@ -2,7 +2,8 @@ import { and, eq, inArray, isNotNull, isNull, ne, or, type SQL, sql } from "driz
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Env } from "./auth";
-import { type Db, uncategorised } from "./db";
+import { kind } from "../shared/schema";
+import { builtin, type Db } from "./db";
 import { body, query } from "./request";
 import * as t from "./schema";
 
@@ -14,12 +15,16 @@ const o = t.categoryOrder;
 const required = "Enter a name, emoji and colour";
 const text = (message: string) => z.string(message).trim().min(1, message);
 const categoryInput = z.object({ name: text(required), icon: text(required), color: text(required) });
-const newCategory = categoryInput.extend({ parentId: z.number("Invalid parent category").int("Invalid parent category").nullable().default(null) });
+const newCategory = categoryInput.extend({
+  parentId: z.number("Invalid parent category").int("Invalid parent category").nullable().default(null),
+  kind: kind.optional(),
+});
+const categoryUpdate = categoryInput.extend({ kind }).partial();
 const order = z.array(z.number("Expected a list of category IDs").int("Expected a list of category IDs"), "Expected a list of category IDs");
 const tagInput = z.object({ name: text("Enter a name") });
 const deletion = z.object({ moveTo: z.coerce.number("Invalid category to move to").int("Invalid category to move to").optional() });
 
-const shape = { id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, parentId: cat.parentId, builtin: cat.builtin };
+const shape = { id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, parentId: cat.parentId, builtin: cat.builtin, kind: cat.kind };
 export const categories = (db: Db, where?: SQL) => db.select(shape).from(cat).where(where);
 
 export function categoryRoutes(db: Db) {
@@ -27,17 +32,22 @@ export function categoryRoutes(db: Db) {
 
   app.get("/api/categories", (c) => {
     const mine = and(eq(o.categoryId, cat.id), eq(o.userId, c.get("user").id));
-    return c.json(db.select(shape).from(cat).leftJoin(o, mine).orderBy(isNotNull(cat.parentId), isNull(o.sort), o.sort, cat.sort).all());
+    return c.json(db.select(shape).from(cat).leftJoin(o, mine).orderBy(isNotNull(cat.parentId), cat.kind, isNull(o.sort), o.sort, cat.sort).all());
   });
 
   app.post("/api/categories", async (c) => {
     const input = await body(c, newCategory);
     if ("error" in input) return c.json(input, 400);
     const { parentId } = input.data;
-    if (parentId !== null && !db.select().from(cat).where(and(eq(cat.id, parentId), isNull(cat.parentId))).get())
-      return c.json({ error: "Invalid parent category" }, 400);
+    const parent = parentId === null ? undefined : db.select().from(cat).where(and(eq(cat.id, parentId), isNull(cat.parentId))).get();
+    if (parentId !== null && !parent) return c.json({ error: "Invalid parent category" }, 400);
+    if (parent && input.data.kind && input.data.kind !== parent.kind) return c.json({ error: "A subcategory has its parent’s kind" }, 400);
     const sort = sql`(SELECT coalesce(max(sort), -1) + 1 FROM categories WHERE parent_id IS ${parentId})`;
-    const { id } = db.insert(cat).values({ ...input.data, sort }).returning({ id: cat.id }).get();
+    const { id } = db
+      .insert(cat)
+      .values({ ...input.data, kind: parent?.kind ?? input.data.kind, sort })
+      .returning({ id: cat.id })
+      .get();
     return c.json(categories(db, eq(cat.id, id)).get(), 201);
   });
 
@@ -56,12 +66,17 @@ export function categoryRoutes(db: Db) {
 
   app.put("/api/categories/:id", async (c) => {
     const id = Number(c.req.param("id"));
+    const input = await body(c, categoryUpdate);
+    if ("error" in input) return c.json(input, 400);
     const old = categories(db, eq(cat.id, id)).get();
     if (!old) return c.json({ error: "Not found" }, 404);
-    const input = await body(c, categoryInput.partial());
-    if ("error" in input) return c.json(input, 400);
-    const { name, icon, color } = old;
-    db.update(cat).set({ name, icon, color, ...input.data }).where(eq(cat.id, id)).run();
+    const { kind = old.kind, ...fields } = input.data;
+    if (kind !== old.kind && old.parentId !== null) return c.json({ error: "Only top-level categories can change kind" }, 400);
+    if (kind !== old.kind && old.builtin) return c.json({ error: `${old.name} can’t change kind` }, 400);
+    db.transaction(() => {
+      db.update(cat).set({ ...fields, kind }).where(eq(cat.id, id)).run();
+      db.update(cat).set({ kind }).where(eq(cat.parentId, id)).run();
+    });
     return c.json(categories(db, eq(cat.id, id)).get());
   });
 
@@ -69,11 +84,11 @@ export function categoryRoutes(db: Db) {
     const id = Number(c.req.param("id"));
     const old = categories(db, eq(cat.id, id)).get();
     if (!old) return c.json({ error: "Not found" }, 404);
-    if (old.builtin) return c.json({ error: "Uncategorised can’t be deleted" }, 400);
+    if (old.builtin) return c.json({ error: `${old.name} can’t be deleted` }, 400);
     const q = query(c, deletion);
     if ("error" in q) return c.json(q, 400);
-    const target = q.data.moveTo ?? uncategorised(db);
-    if (!db.select().from(cat).where(and(eq(cat.id, target), ne(cat.id, id), sql`${cat.parentId} IS NOT ${id}`)).get())
+    const target = q.data.moveTo ?? builtin(db, old.kind);
+    if (!db.select().from(cat).where(and(eq(cat.id, target), eq(cat.kind, old.kind), ne(cat.id, id), sql`${cat.parentId} IS NOT ${id}`)).get())
       return c.json({ error: "Invalid category to move to" }, 400);
     const family = or(eq(cat.id, id), eq(cat.parentId, id));
     const members = db.select({ id: cat.id }).from(cat).where(family);

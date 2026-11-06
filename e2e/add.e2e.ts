@@ -32,13 +32,13 @@ test("the currency chip sets the currency on the line", async ({ app: page }) =>
 });
 
 test("past notes fill amount and category", async ({ app: page }) => {
-  await seed(page, [{ note: "ramen", amount: "12.00", categoryId: 3, date: "2026-01-05" }]);
+  await seed(page, [{ note: "ramen", amount: "12.00", categoryId: 5, date: "2026-01-05" }]);
   await page.reload();
   await bar(page).fill("ra");
   await expect(page.getByRole("button", { name: /ramen/ })).toBeVisible();
   await bar(page).press("Tab");
   await expect(bar(page)).toHaveValue("ramen 12.00 ");
-  await expect(page.getByLabel("Category")).toHaveValue("3");
+  await expect(page.getByLabel("Category")).toHaveValue("5");
   await bar(page).press("Enter");
   await expect(page.getByRole("listitem").filter({ hasText: "ramen" })).toContainText("Groceries");
 });

@@ -4,6 +4,10 @@ export const isoDate = z
   .string()
   .refine((s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && new Date(Date.parse(s) || 0).toISOString().slice(0, 10) === s, "Invalid date");
 
+export const kinds = ["expense", "income"] as const;
+export const kind = z.enum(kinds, "Invalid kind");
+export type Kind = z.infer<typeof kind>;
+
 export const unit = z.enum(["sats", "BTC"]);
 
 export const transactionInput = z.object({

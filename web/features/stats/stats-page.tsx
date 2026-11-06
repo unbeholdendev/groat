@@ -1,7 +1,8 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { type ReactNode, useContext, useState } from "react";
 import { Pill, Total } from "../../components/total";
-import { useApi, useCategories } from "../../lib/api";
+import { Segmented } from "../../components/segmented";
+import { useApi, useCategories, useSettings } from "../../lib/api";
 import { money } from "../../lib/money";
 import { change, days, span } from "../../lib/period";
 import { period } from "../../lib/schemas";
@@ -10,8 +11,11 @@ import { ByCategory } from "./by-category";
 import { ByTag } from "./by-tag";
 import { Chart } from "./chart";
 import { HeroHead, type Preset, presets } from "./hero-head";
+import { IncomeRow } from "./income-row";
+import type { Period } from "./types";
 
 const route = getRouteApi("/stats");
+const incomeOnly = (p: Period): Period => ({ ...p, total: p.income.total, categories: p.income.categories });
 
 const group = (from: string, to: string) => {
   const n = days(from, to);
@@ -30,6 +34,9 @@ export function StatsPage() {
   const preset = (!custom && presets.find((p) => p !== "Custom" && span(p).range.join() === range)) || "Custom";
   const [open, setOpen] = useState<number | null>(null);
   const [scrubbed, setScrubbed] = useState<ReactNode>(null);
+  const income = useSettings()?.income;
+  const [shown, setBreakdown] = useState<"Spending" | "Income">("Spending");
+  const breakdown = income ? shown : "Spending";
   const [rangeFrom = "", rangeTo = ""] = range.split(",");
   const s = span(preset, [rangeFrom, rangeTo]);
   const setRange = (from: string, to: string) => navigate({ search: { from, to }, replace: true });
@@ -89,8 +96,24 @@ export function StatsPage() {
           aria={`${show(now.total)} ${running ? "so far" : "in total"}. ${preset === "Custom" ? "The period before" : s.name} was at ${show(ref.total)} by this point and ended at ${show(full.total)}.`}
         />
       </section>
-      {now.unconverted > 0 && <p className="mt-3 text-[13px] text-amber">{now.unconverted === 1 ? "1 expense has no rate and is left out." : `${now.unconverted} expenses have no rate and are left out.`}</p>}
-      <ByCategory now={now} prev={ref} categories={categories} range={s.range} vs={vs} show={show} open={open} onOpen={setOpen} />
+      {now.unconverted > 0 && <p className="mt-3 text-[13px] text-amber">{now.unconverted === 1 ? "1 entry has no rate and is left out." : `${now.unconverted} entries have no rate and are left out.`}</p>}
+      {income && <IncomeRow now={now} prev={ref} show={show} />}
+      {income && (
+        <div className="mt-7">
+          <Segmented label="Breakdown" options={["Spending", "Income"]} value={breakdown} onChange={(b) => (setBreakdown(b), setOpen(null))} />
+        </div>
+      )}
+      <ByCategory
+        now={breakdown === "Income" ? incomeOnly(now) : now}
+        prev={breakdown === "Income" ? incomeOnly(ref) : ref}
+        categories={categories}
+        range={s.range}
+        vs={vs}
+        show={show}
+        open={open}
+        onOpen={setOpen}
+        empty={breakdown === "Income" ? "No income in this period." : "No spending in this period."}
+      />
       <ByTag now={now} prev={ref} range={s.range} vs={vs} show={show} />
     </>
   );

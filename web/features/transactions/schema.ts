@@ -1,6 +1,7 @@
 import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { formatAmount, parseAmount, type Unit } from "../../../shared/amount";
+import { type Kind, kind } from "../../../shared/schema";
 import { today } from "../../lib/dates";
 import type { Draft, Template } from "../../lib/schemas";
 
@@ -17,6 +18,7 @@ export const transactionForm = (unit: Unit) =>
       every: z.string(),
       endDate: z.string(),
       needsConfirmation: z.boolean(),
+      kind,
     })
     .superRefine((v, ctx) => {
       const issue = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
@@ -33,20 +35,21 @@ export type TransactionFormApi = UseFormReturn<TransactionValues, unknown, z.out
 
 const noRepeat = { period: "", every: "1", endDate: "", needsConfirmation: false };
 
-export const blank = (currency: string): TransactionValues => ({ note: "", amount: "", currency, date: today(), categoryId: null, tags: "", ...noRepeat });
+export const blank = (currency: string): TransactionValues => ({ note: "", amount: "", currency, date: today(), categoryId: null, tags: "", kind: "expense", ...noRepeat });
 
-export const filled = (e: Draft, unit: Unit): TransactionValues => ({
+export const filled = (e: Draft, unit: Unit, kind: Kind = "expense"): TransactionValues => ({
   note: e.note,
   amount: e.amount ? formatAmount(e.amount, e.currency, unit) : "",
   currency: e.currency,
   date: e.date,
   categoryId: e.categoryId || null,
   tags: e.tags.join(", "),
+  kind,
   ...noRepeat,
 });
 
-export const fromTemplate = (t: Template, unit: Unit): TransactionValues => ({
-  ...filled({ ...t, date: t.startDate }, unit),
+export const fromTemplate = (t: Template, unit: Unit, kind?: Kind): TransactionValues => ({
+  ...filled({ ...t, date: t.startDate }, unit, kind),
   period: t.period,
   every: String(t.every),
   endDate: t.endDate ?? "",

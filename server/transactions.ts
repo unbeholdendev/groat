@@ -2,10 +2,10 @@ import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, o
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { knownCurrencies, parseAmount } from "../shared/amount";
-import { transactionInput, isoDate } from "../shared/schema";
+import { transactionInput, isoDate, kind } from "../shared/schema";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
-import { type Db, settings, today, uncategorised, visible } from "./db";
+import { type Db, kindOf, settings, today, uncategorised, visible } from "./db";
 import type { Valuer } from "./rates";
 import { json, query, valid } from "./request";
 import * as t from "./schema";
@@ -37,6 +37,7 @@ export const transactionQuery = z
     tag: z.string(),
     currency: z.string(),
     status: z.enum(["normal", "pending"]),
+    kind: kind.describe("expense or income, from the category"),
     q: z.string().describe("text the note contains"),
   })
   .partial();
@@ -55,6 +56,7 @@ export function transactionFilter(db: Db, q: z.infer<typeof transactionQuery>, b
       : undefined,
     q.currency ? eq(e.currency, q.currency) : undefined,
     q.status ? eq(e.status, q.status) : undefined,
+    q.kind ? eq(kindOf, q.kind) : undefined,
     q.q ? sql`instr(lower(${e.note}), lower(${q.q}))` : undefined,
   );
 }

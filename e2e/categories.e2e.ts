@@ -1,9 +1,9 @@
 import { expect, seed, test } from "./fixtures";
 
 test("create, rename, reorder and delete a category, moving its expenses", async ({ app: page }) => {
-  await seed(page, [{ note: "Vet", amount: "60", categoryId: 2 }]);
+  await seed(page, [{ note: "Vet", amount: "60", categoryId: 4 }]);
   await page.getByRole("link", { name: "Categories" }).click();
-  await page.getByRole("button", { name: "New category" }).click();
+  await page.getByRole("button", { name: "New expense category" }).click();
   await page.getByLabel("Emoji").fill("🐶");
   await page.getByLabel("Name").fill("Pets");
   await page.getByRole("button", { name: "Add", exact: true }).click();
@@ -23,7 +23,7 @@ test("create, rename, reorder and delete a category, moving its expenses", async
 
   await page.getByRole("button", { name: "Food", exact: true }).click();
   await page.getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByText("1 expense (subcategories included) will move to")).toBeVisible();
+  await expect(page.getByText("1 entry (subcategories included) will move to")).toBeVisible();
   await page.getByLabel(/will move to/).selectOption({ label: "🐶 Pet care" });
   await page.getByRole("button", { name: "Delete Food" }).click();
   await expect(page.getByRole("button", { name: "Food", exact: true })).toBeHidden();

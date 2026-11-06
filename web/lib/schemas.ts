@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { parseAmount } from "../../shared/amount";
-import { transactionInput } from "../../shared/schema";
+import { kind, transactionInput } from "../../shared/schema";
 
 export const transaction = z.object({
   id: z.number(),
@@ -18,7 +18,7 @@ export const transaction = z.object({
 });
 export type Transaction = z.infer<typeof transaction>;
 
-export const category = z.object({ id: z.number(), name: z.string(), icon: z.string(), color: z.string(), parentId: z.number().nullable(), builtin: z.boolean() });
+export const category = z.object({ id: z.number(), name: z.string(), icon: z.string(), color: z.string(), parentId: z.number().nullable(), builtin: z.boolean(), kind });
 export type Category = z.infer<typeof category>;
 
 export const theme = z.enum(["system", "light", "dark"]);
@@ -31,6 +31,7 @@ export const settings = z.object({
   ai: z.boolean(),
   vision: z.boolean(),
   voice: z.boolean(),
+  income: z.boolean(),
 });
 export type Settings = z.infer<typeof settings>;
 
@@ -72,11 +73,13 @@ export const suggestion = z.object({ note: z.string(), categoryId: z.number().nu
 export type Suggestion = z.infer<typeof suggestion>;
 
 const slice = z.object({ id: z.number(), name: z.string(), icon: z.string(), color: z.string(), total: z.number() });
+const breakdown = z.array(slice.extend({ children: z.array(slice) }));
 export const period = z.object({
   baseCurrency: z.string(),
   total: z.number(),
   unconverted: z.number(),
-  categories: z.array(slice.extend({ children: z.array(slice) })),
+  categories: breakdown,
+  income: z.object({ total: z.number(), categories: breakdown }),
   tags: z.array(z.object({ name: z.string(), total: z.number() })),
   buckets: z.array(z.object({ start: z.string(), total: z.number() })),
 });

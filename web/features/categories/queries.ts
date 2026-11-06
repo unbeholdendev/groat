@@ -1,10 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { kind } from "../../../shared/schema";
 import { refresh } from "../../lib/api";
 import { type Category, category, type Request } from "../../lib/schemas";
 
 export function syncCategory(client: QueryClient, data: unknown, [method, , body]: Request) {
-  if (method === "DELETE") return client.invalidateQueries();
+  if (method === "DELETE" || (method === "PUT" && z.object({ kind }).safeParse(body).success)) return client.invalidateQueries();
   const order = z.array(z.number()).safeParse(body).data;
   if (order)
     return client.setQueryData<Category[]>(["/api/categories"], (rows) => {
