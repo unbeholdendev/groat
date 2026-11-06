@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { frankfurter, setup } from "./harness";
 
 type Category = { id: number; name: string; parentId: number | null };
-type Expense = { note: string; amount: number; currency: string; date: string; categoryId: number; tags: string[]; createdBy: number };
+type Transaction = { note: string; amount: number; currency: string; date: string; categoryId: number; tags: string[]; createdBy: number };
 
 async function onboarded() {
   const h = setup("2026-10-10T12:00:00Z", frankfurter({ "2026-01-01": { EUR: 0.9, GBP: 0.8, JPY: 150 } }));
@@ -21,7 +21,7 @@ async function onboarded() {
       const parent = cats.find((p) => p.id === c.parentId);
       return parent ? `${parent.name} › ${c.name}` : c.name;
     };
-    const rows: Expense[] = (await h.call("GET", "/api/expenses")).body;
+    const rows: Transaction[] = (await h.call("GET", "/api/transactions")).body;
     return rows.map((e) => ({ date: e.date, note: e.note, amount: e.amount, currency: e.currency, category: name(e.categoryId), tags: e.tags }));
   };
   return { ...h, upload, listed };
@@ -65,7 +65,7 @@ test("confirming imports exact amounts, matches categories by name and creates t
     { date: "2025-03-02", note: "Ramen", amount: 1200, currency: "JPY", category: "Food › Groceries", tags: [] },
     { date: "2025-03-01", note: "Pizza, large", amount: 12345, currency: "BTC", category: "Food › Eating out", tags: [] },
   ]);
-  expect(h.db.query("SELECT DISTINCT created_by FROM expenses").values()).toEqual([[1]]);
+  expect(h.db.query("SELECT DISTINCT created_by FROM transactions").values()).toEqual([[1]]);
   expect(h.db.query("SELECT count(*) FROM categories WHERE lower(name) = 'pets'").values()).toEqual([[1]]);
 });
 
@@ -107,7 +107,7 @@ test("a file without the required columns is refused", async () => {
 
 test("import only runs on an instance with no expenses, schedules or tags", async () => {
   for (const add of [
-    (h: Awaited<ReturnType<typeof onboarded>>) => h.call("POST", "/api/expenses", { note: "Tea", amount: "1" }),
+    (h: Awaited<ReturnType<typeof onboarded>>) => h.call("POST", "/api/transactions", { note: "Tea", amount: "1" }),
     (h: Awaited<ReturnType<typeof onboarded>>) => h.call("POST", "/api/recurring", { note: "Rent", amount: "900", period: "month", every: 1, startDate: "2027-01-01" }),
   ]) {
     const h = await onboarded();
@@ -130,9 +130,9 @@ test("only admins can import", async () => {
 test("an export imports back into a fresh instance", async () => {
   const source = await onboarded();
   const food = (await source.call("GET", "/api/categories")).body.find((c: Category) => c.name === "Food").id;
-  await source.call("POST", "/api/expenses", { note: 'Milk, "organic"', amount: "10", currency: "EUR", date: "2026-10-02", tags: ["b", "a"] });
-  await source.call("POST", "/api/expenses", { note: "Dinner", amount: "12.50", currency: "GBP", date: "2026-10-03", categoryId: food });
-  await source.call("POST", "/api/expenses", { note: "Node", amount: "21000", currency: "BTC", unit: "sats", date: "2026-10-04" });
+  await source.call("POST", "/api/transactions", { note: 'Milk, "organic"', amount: "10", currency: "EUR", date: "2026-10-02", tags: ["b", "a"] });
+  await source.call("POST", "/api/transactions", { note: "Dinner", amount: "12.50", currency: "GBP", date: "2026-10-03", categoryId: food });
+  await source.call("POST", "/api/transactions", { note: "Node", amount: "21000", currency: "BTC", unit: "sats", date: "2026-10-04" });
   const csv = await (await source.request("/api/export")).text();
 
   const target = await onboarded();

@@ -40,24 +40,24 @@ test("expense currency must be a known one and defaults to the last one used", a
   const { call } = setup();
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   expect((await call("GET", "/api/settings")).body).toMatchObject({ lastCurrency: "GBP", recentCurrencies: ["GBP"] });
-  expect((await call("POST", "/api/expenses", { note: "a", amount: "5", currency: "XYZ" })).status).toBe(400);
-  expect((await call("POST", "/api/expenses", { note: "a", amount: "1.5", currency: "JPY" })).status).toBe(400);
-  const ramen = await call("POST", "/api/expenses", { note: "Ramen", amount: "1200", currency: "JPY" });
+  expect((await call("POST", "/api/transactions", { note: "a", amount: "5", currency: "XYZ" })).status).toBe(400);
+  expect((await call("POST", "/api/transactions", { note: "a", amount: "1.5", currency: "JPY" })).status).toBe(400);
+  const ramen = await call("POST", "/api/transactions", { note: "Ramen", amount: "1200", currency: "JPY" });
   expect(ramen.body).toMatchObject({ amount: 1200, currency: "JPY" });
   expect((await call("GET", "/api/settings")).body.lastCurrency).toBe("JPY");
-  const next = await call("POST", "/api/expenses", { note: "Tea", amount: "300", date: "2020-01-01" });
+  const next = await call("POST", "/api/transactions", { note: "Tea", amount: "300", date: "2020-01-01" });
   expect(next.body.currency).toBe("JPY");
-  await call("POST", "/api/expenses", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2020-01-01" });
-  await call("POST", "/api/expenses", { note: "Bus", amount: "2", currency: "GBP", date: "2020-01-01" });
+  await call("POST", "/api/transactions", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2020-01-01" });
+  await call("POST", "/api/transactions", { note: "Bus", amount: "2", currency: "GBP", date: "2020-01-01" });
   expect((await call("GET", "/api/settings")).body).toMatchObject({ lastCurrency: "GBP", recentCurrencies: ["GBP", "BTC", "JPY"] });
 });
 
 test("last-used currency ignores binned and recurring expenses", async () => {
   const { call } = setup();
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
-  await call("POST", "/api/expenses", { note: "a", amount: "1", currency: "EUR" });
-  const binned = await call("POST", "/api/expenses", { note: "b", amount: "1", currency: "JPY" });
-  await call("DELETE", `/api/expenses/${binned.body.id}`);
+  await call("POST", "/api/transactions", { note: "a", amount: "1", currency: "EUR" });
+  const binned = await call("POST", "/api/transactions", { note: "b", amount: "1", currency: "JPY" });
+  await call("DELETE", `/api/transactions/${binned.body.id}`);
   await call("POST", "/api/recurring", { note: "r", amount: "1", currency: "JPY", period: "day", every: 1, startDate: "2026-10-01" });
   expect((await call("GET", "/api/settings")).body.lastCurrency).toBe("EUR");
 });
@@ -65,13 +65,13 @@ test("last-used currency ignores binned and recurring expenses", async () => {
 test("editing keeps the expense's currency unless a known one is given", async () => {
   const { call } = setup();
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
-  const { body } = await call("POST", "/api/expenses", { note: "Ramen", amount: "1200", currency: "JPY" });
-  expect((await call("PUT", `/api/expenses/${body.id}`, { note: "Ramen", amount: "1300" })).body).toMatchObject({
+  const { body } = await call("POST", "/api/transactions", { note: "Ramen", amount: "1200", currency: "JPY" });
+  expect((await call("PUT", `/api/transactions/${body.id}`, { note: "Ramen", amount: "1300" })).body).toMatchObject({
     amount: 1300,
     currency: "JPY",
   });
-  expect((await call("PUT", `/api/expenses/${body.id}`, { note: "Ramen", amount: "8", currency: "XYZ" })).status).toBe(400);
-  expect((await call("PUT", `/api/expenses/${body.id}`, { note: "Ramen", amount: "8", currency: "GBP" })).body).toMatchObject({
+  expect((await call("PUT", `/api/transactions/${body.id}`, { note: "Ramen", amount: "8", currency: "XYZ" })).status).toBe(400);
+  expect((await call("PUT", `/api/transactions/${body.id}`, { note: "Ramen", amount: "8", currency: "GBP" })).body).toMatchObject({
     amount: 800,
     currency: "GBP",
   });
@@ -80,11 +80,11 @@ test("editing keeps the expense's currency unless a known one is given", async (
 test("an expense in a currency no longer offered still reads and edits", async () => {
   const { call, db } = setup();
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
-  const { body } = await call("POST", "/api/expenses", { note: "Old", amount: "5" });
-  db.run("UPDATE expenses SET currency = 'ADP' WHERE id = ?", [body.id]);
-  expect((await call("GET", "/api/expenses")).body[0]).toMatchObject({ currency: "ADP", baseAmount: null });
-  expect((await call("PUT", `/api/expenses/${body.id}`, { note: "Old", amount: "6" })).body).toMatchObject({ currency: "ADP", amount: 600 });
-  expect((await call("POST", "/api/expenses", { note: "New", amount: "1", currency: "ZWL" })).status).toBe(400);
+  const { body } = await call("POST", "/api/transactions", { note: "Old", amount: "5" });
+  db.run("UPDATE transactions SET currency = 'ADP' WHERE id = ?", [body.id]);
+  expect((await call("GET", "/api/transactions")).body[0]).toMatchObject({ currency: "ADP", baseAmount: null });
+  expect((await call("PUT", `/api/transactions/${body.id}`, { note: "Old", amount: "6" })).body).toMatchObject({ currency: "ADP", amount: 600 });
+  expect((await call("POST", "/api/transactions", { note: "New", amount: "1", currency: "ZWL" })).status).toBe(400);
 });
 
 test("onboarding saves base currency and seeds categories once", async () => {

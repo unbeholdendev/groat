@@ -25,7 +25,7 @@ export function attachmentRoutes(ctx: Ctx) {
     const draft = await extract(ctx, { image: `data:${image.type};base64,${bytes.toString("base64")}`, model });
     const now = clock();
     db.delete(attachments)
-      .where(and(isNull(attachments.expenseId), lt(attachments.createdAt, new Date(now.getTime() - 864e5).toISOString())))
+      .where(and(isNull(attachments.transactionId), lt(attachments.createdAt, new Date(now.getTime() - 864e5).toISOString())))
       .run();
     const { id } = db.insert(attachments).values({ mime: image.type, bytes, createdAt: now.toISOString() }).returning({ id: attachments.id }).get();
     return c.json({ ...draft, attachmentId: id });

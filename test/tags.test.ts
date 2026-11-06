@@ -2,12 +2,12 @@ import { expect, test } from "bun:test";
 import { setup } from "./harness";
 
 const tagsOf = async (call: ReturnType<typeof setup>["call"]) =>
-  (await call("GET", "/api/expenses")).body.map((e: { note: string; tags: string[] }) => [e.note, e.tags]);
+  (await call("GET", "/api/transactions")).body.map((e: { note: string; tags: string[] }) => [e.note, e.tags]);
 
 test("renaming a tag renames it on every expense", async () => {
   const { call } = setup();
-  await call("POST", "/api/expenses", { note: "a", amount: "1", tags: ["hols", "work"] });
-  await call("POST", "/api/expenses", { note: "b", amount: "1", tags: ["hols"] });
+  await call("POST", "/api/transactions", { note: "a", amount: "1", tags: ["hols", "work"] });
+  await call("POST", "/api/transactions", { note: "b", amount: "1", tags: ["hols"] });
   const tags = (await call("GET", "/api/tags")).body;
   expect(tags.map((t: { name: string }) => t.name)).toEqual(["hols", "work"]);
   const hols = tags[0].id;
@@ -23,7 +23,7 @@ test("renaming a tag renames it on every expense", async () => {
 
 test("deleting a tag removes it from expenses", async () => {
   const { call } = setup();
-  await call("POST", "/api/expenses", { note: "a", amount: "1", tags: ["hols", "work"] });
+  await call("POST", "/api/transactions", { note: "a", amount: "1", tags: ["hols", "work"] });
   const [hols] = (await call("GET", "/api/tags")).body;
   expect((await call("DELETE", `/api/tags/${hols.id}`)).status).toBe(200);
   expect(await tagsOf(call)).toEqual([["a", ["work"]]]);
@@ -33,16 +33,16 @@ test("deleting a tag removes it from expenses", async () => {
 
 test("emptying the bin keeps tags working on other expenses", async () => {
   const { call } = setup();
-  const gone = await call("POST", "/api/expenses", { note: "gone", amount: "1", tags: ["work"] });
-  await call("DELETE", `/api/expenses/${gone.body.id}`);
+  const gone = await call("POST", "/api/transactions", { note: "gone", amount: "1", tags: ["work"] });
+  await call("DELETE", `/api/transactions/${gone.body.id}`);
   await call("DELETE", "/api/bin");
-  await call("POST", "/api/expenses", { note: "new", amount: "1", tags: ["work"] });
+  await call("POST", "/api/transactions", { note: "new", amount: "1", tags: ["work"] });
   expect(await tagsOf(call)).toEqual([["new", ["work"]]]);
 });
 
 test("renaming or deleting a tag updates recurring templates", async () => {
   const { call } = setup();
-  await call("POST", "/api/expenses", { note: "a", amount: "1", tags: ["hols", "work"] });
+  await call("POST", "/api/transactions", { note: "a", amount: "1", tags: ["hols", "work"] });
   await call("POST", "/api/recurring", { note: "r", amount: "1", period: "month", every: 1, startDate: "2026-11-01", tags: ["hols", "work"] });
   const [hols, work] = (await call("GET", "/api/tags")).body;
   await call("PUT", `/api/tags/${hols.id}`, { name: "holiday" });

@@ -2,7 +2,7 @@ import { FormError } from "../../components/form";
 import { Button } from "../../components/button";
 import { useContext, useState } from "react";
 import { panel } from "../../components/styles";
-import type { Expense } from "../../lib/schemas";
+import type { Transaction } from "../../lib/schemas";
 import { iso } from "../../lib/period";
 import { today } from "../../lib/dates";
 import { UnitContext } from "../../lib/unit";
@@ -11,7 +11,7 @@ import { DayList } from "./day-list";
 import { Filters } from "./filters";
 import { MonthHeader } from "./month-header";
 import { PendingList } from "./pending-list";
-import { useExpenseQuery, useQueued } from "./queries";
+import { useTransactionQuery, useQueued } from "./queries";
 import { useMonth } from "./use-month";
 
 export function Month({ newest }: { newest: number }) {
@@ -19,12 +19,12 @@ export function Month({ newest }: { newest: number }) {
   const [unit] = useContext(UnitContext);
   const [filterPanel, setFilterPanel] = useState<"unopened" | "open" | "closed">("unopened");
   const showFilters = filterPanel === "open";
-  const query = useExpenseQuery();
+  const query = useTransactionQuery();
   const listed = query.data;
-  const expenses = listed ?? [];
+  const transactions = listed ?? [];
   const queued = useQueued();
-  const days = new Map<string, Expense[]>();
-  for (const e of [...queued.filter((e) => !filtered && e.date.startsWith(shown)), ...expenses].sort((a, b) => b.date.localeCompare(a.date)))
+  const days = new Map<string, Transaction[]>();
+  for (const e of [...queued.filter((e) => !filtered && e.date.startsWith(shown)), ...transactions].sort((a, b) => b.date.localeCompare(a.date)))
     if (e.status !== "pending") days.set(e.date, [...(days.get(e.date) ?? []), e]);
 
   return (

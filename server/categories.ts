@@ -7,7 +7,7 @@ import { body, query } from "./request";
 import * as t from "./schema";
 
 const cat = t.categories;
-const e = t.expenses;
+const e = t.transactions;
 const r = t.recurring;
 const o = t.categoryOrder;
 

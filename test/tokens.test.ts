@@ -35,7 +35,7 @@ test("a token is shown once, listed without its secret, and revoked", async () =
 test("confident text saves an expense and marks the token used", async () => {
   const { call, capture } = await withToken();
   const food = (await call("POST", "/api/categories", { name: "Food", icon: "x", color: "#f00" })).body;
-  await call("POST", "/api/expenses", { note: "Coffee", amount: "3", categoryId: food.id });
+  await call("POST", "/api/transactions", { note: "Coffee", amount: "3", categoryId: food.id });
 
   const res = await capture("coffee 4.50 #work");
   expect(res.status).toBe(201);
@@ -45,9 +45,9 @@ test("confident text saves an expense and marks the token used", async () => {
 
 test("a guessed currency no longer offered falls back instead of failing", async () => {
   const { call, db, capture } = await withToken();
-  const { body } = await call("POST", "/api/expenses", { note: "Croissant", amount: "2" });
-  db.run("UPDATE expenses SET currency = 'ADP' WHERE id = ?", [body.id]);
-  await call("POST", "/api/expenses", { note: "Tea", amount: "1", currency: "GBP" });
+  const { body } = await call("POST", "/api/transactions", { note: "Croissant", amount: "2" });
+  db.run("UPDATE transactions SET currency = 'ADP' WHERE id = ?", [body.id]);
+  await call("POST", "/api/transactions", { note: "Tea", amount: "1", currency: "GBP" });
 
   expect((await capture("croissant 3")).body).toMatchObject({ note: "croissant", amount: 300, currency: "GBP" });
 });
@@ -61,15 +61,15 @@ test("unsure text waits as pending until confirmed", async () => {
   const amountless = await capture("lunch with sam");
   expect(amountless.body).toMatchObject({ note: "lunch with sam", amount: 0, status: "pending" });
 
-  expect((await call("GET", "/api/expenses?status=pending")).body.map((e: { note: string }) => e.note)).toEqual(["lunch with sam", "parking"]);
-  expect((await call("POST", `/api/expenses/${guessless.body.id}/confirm`)).body.status).toBe("normal");
+  expect((await call("GET", "/api/transactions?status=pending")).body.map((e: { note: string }) => e.note)).toEqual(["lunch with sam", "parking"]);
+  expect((await call("POST", `/api/transactions/${guessless.body.id}/confirm`)).body.status).toBe("normal");
   expect((await capture("")).status).toBe(400);
 });
 
 test("a revoked or unknown token is refused, and tokens only open capture", async () => {
   const { app, call, created, token, capture } = await withToken();
   expect((await capture("tea 2", "et_nope")).status).toBe(401);
-  expect((await app.request("/api/expenses", { headers: { authorization: `Bearer ${token}` } })).status).toBe(401);
+  expect((await app.request("/api/transactions", { headers: { authorization: `Bearer ${token}` } })).status).toBe(401);
   await call("DELETE", `/api/tokens/${created.body.id}`);
   expect((await capture("tea 2")).status).toBe(401);
 });

@@ -11,7 +11,7 @@ function provider(url: URL, init?: RequestInit) {
   const body = JSON.parse(String(init?.body));
   const last = body.messages.at(-1).content;
   const message = body.tool_choice
-    ? { content: null, tool_calls: [{ id: "x", type: "function", function: { name: "expense", arguments: JSON.stringify({ note: typeof last === "string" ? last.replace(/[\d.]+/g, "").trim() : "Corner shop", amount: "9.99" }) } }] }
+    ? { content: null, tool_calls: [{ id: "x", type: "function", function: { name: "transaction", arguments: JSON.stringify({ note: typeof last === "string" ? last.replace(/[\d.]+/g, "").trim() : "Corner shop", amount: "9.99" }) } }] }
     : { content: "Mostly on food." };
   return Response.json({ choices: [{ message: { role: "assistant", ...message } }] });
 }

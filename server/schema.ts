@@ -1,7 +1,7 @@
 import { type AnySQLiteColumn, blob, check, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-export const expenses = sqliteTable("expenses", {
+export const transactions = sqliteTable("transactions", {
   id: integer().primaryKey(),
   clientRequestId: text().unique(),
   note: text().notNull(),
@@ -54,17 +54,17 @@ export const tags = sqliteTable("tags", {
   name: text().notNull().unique(),
 });
 
-export const expenseTags = sqliteTable(
-  "expense_tags",
+export const transactionTags = sqliteTable(
+  "transaction_tags",
   {
-    expenseId: integer()
+    transactionId: integer()
       .notNull()
-      .references(() => expenses.id, { onDelete: "cascade" }),
+      .references(() => transactions.id, { onDelete: "cascade" }),
     tagId: integer()
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" }),
   },
-  (t) => [primaryKey({ columns: [t.expenseId, t.tagId] })],
+  (t) => [primaryKey({ columns: [t.transactionId, t.tagId] })],
 );
 
 export const recurring = sqliteTable("recurring", {
@@ -115,7 +115,7 @@ export const apiTokens = sqliteTable("api_tokens", {
 
 export const attachments = sqliteTable("attachments", {
   id: integer().primaryKey(),
-  expenseId: integer().references(() => expenses.id, { onDelete: "cascade" }),
+  transactionId: integer().references(() => transactions.id, { onDelete: "cascade" }),
   mime: text().notNull(),
   bytes: blob({ mode: "buffer" }).notNull(),
   createdAt: text().notNull(),

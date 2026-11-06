@@ -9,7 +9,7 @@ test("adds made offline wait on the device and sync when back", async ({ app: pa
   await expect(page.getByRole("listitem").filter({ hasText: "bus" })).not.toContainText("Will sync");
   await page.reload();
   await expect(page.getByRole("button", { name: "bus" })).toHaveCount(1);
-  expect((await (await page.request.get("/api/expenses")).json()).length).toBe(1);
+  expect((await (await page.request.get("/api/transactions")).json()).length).toBe(1);
 });
 
 test("an expense without a rate shows as unconverted and stays out of the day total", async ({ app: page }) => {
@@ -106,7 +106,7 @@ test("reload right after reconnecting does not post twice", async ({ app: page, 
   await posted;
   await page.reload();
   await page.waitForTimeout(1500);
-  expect((await (await page.request.get("/api/expenses")).json()).length).toBe(1);
+  expect((await (await page.request.get("/api/transactions")).json()).length).toBe(1);
 });
 
 test("a long note truncates and keeps the amount in view", async ({ app: page }) => {

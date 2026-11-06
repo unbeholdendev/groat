@@ -7,9 +7,9 @@ import { Segmented } from "../../../components/segmented";
 import { numeralSize } from "../../../components/total";
 import { useApi, useSettings } from "../../../lib/api";
 import { rate } from "../../../lib/money";
-import { suggestion, type Expense } from "../../../lib/schemas";
+import { suggestion, type Transaction } from "../../../lib/schemas";
 import { UnitContext } from "../../../lib/unit";
-import type { ExpenseFormApi } from "../schema";
+import type { TransactionFormApi } from "../schema";
 
 const units = ["BTC", "sats"] as const;
 
@@ -23,7 +23,7 @@ const HeroError = ({ id, message }: { id: string; message?: string }) =>
     </p>
   ) : null;
 
-export function FormHeader({ form, title, submit, pending, editing, row, onCancel }: { form: ExpenseFormApi; title: string; submit: string; pending: boolean; editing: boolean; row?: Expense; onCancel: () => void }) {
+export function FormHeader({ form, title, submit, pending, editing, row, onCancel }: { form: TransactionFormApi; title: string; submit: string; pending: boolean; editing: boolean; row?: Transaction; onCancel: () => void }) {
   const settings = useSettings()!;
   const [unit, setUnit] = useContext(UnitContext);
   const { register, watch, getValues, setValue, formState: { errors } } = form;

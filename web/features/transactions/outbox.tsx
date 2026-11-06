@@ -45,7 +45,7 @@ function Unsent({ change, onRetry, onDiscard, onEdit }: { change: Change; onRetr
   const [editing, setEditing] = useState(false);
   const [note, setNote] = useState(body?.note ?? "");
   const [amount, setAmount] = useState(String(body?.amount ?? ""));
-  const resources: Record<string, string> = { expenses: "expense", categories: "category", recurring: "recurring expense", settings: "settings", tags: "tag", bin: "bin" };
+  const resources: Record<string, string> = { transactions: "expense", categories: "category", recurring: "recurring expense", settings: "settings", tags: "tag", bin: "bin" };
   const action = r?.[0] === "DELETE" ? "Delete" : r?.[0] === "POST" ? "Add" : "Update";
   const label = `${action} ${resources[r?.[1].split("/")[2] ?? ""] ?? "change"}`;
   const busy = change.status === "pending" && !change.paused;
@@ -58,7 +58,7 @@ function Unsent({ change, onRetry, onDiscard, onEdit }: { change: Change; onRetr
       <div><Button type="submit" tone="accent" disabled={busy}>Keep changes</Button><Button onClick={() => setEditing(false)}>Cancel</Button></div>
     </form> : <div className="mt-2 flex gap-3">
       <Button tone="accent" disabled={busy || change.paused} onClick={onRetry}>Retry</Button>
-      {body?.note != null && r?.[1].startsWith("/api/expenses") && <Button disabled={busy} onClick={() => setEditing(true)}>Edit</Button>}
+      {body?.note != null && r?.[1].startsWith("/api/transactions") && <Button disabled={busy} onClick={() => setEditing(true)}>Edit</Button>}
       <Button tone="up" disabled={busy} onClick={onDiscard}>Discard</Button>
     </div>}
   </div>;

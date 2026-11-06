@@ -1,7 +1,7 @@
 import { Field, Input, Select } from "../../../components/form";
-import type { ExpenseFormApi } from "../schema";
+import type { TransactionFormApi } from "../schema";
 
-export function RepeatFields({ form, stops }: { form: ExpenseFormApi; stops: boolean }) {
+export function RepeatFields({ form, stops }: { form: TransactionFormApi; stops: boolean }) {
   const { register, watch, formState: { errors } } = form;
   const period = watch("period");
   return (

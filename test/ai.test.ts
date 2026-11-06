@@ -86,12 +86,12 @@ async function withSpending() {
   const all: { id: number; name: string }[] = (await s.call("GET", "/api/categories")).body;
   const id = (name: string) => all.find((c) => c.name === name)!.id;
   const spend = (note: string, amount: string, currency: string, date: string, category: string, tags: string[] = []) =>
-    s.call("POST", "/api/expenses", { note, amount, currency, date, categoryId: id(category), tags });
+    s.call("POST", "/api/transactions", { note, amount, currency, date, categoryId: id(category), tags });
   await spend("Shop", "10.00", "GBP", "2026-09-03", "Groceries", ["home"]);
   await spend("Cafe", "8.00", "EUR", "2026-09-05", "Eating out");
   await spend("Train", "6.00", "GBP", "2026-08-20", "Public transport", ["home"]);
   const binned = await spend("Binned", "100.00", "GBP", "2026-09-04", "Groceries", ["home"]);
-  await s.call("DELETE", `/api/expenses/${binned.body.id}`);
+  await s.call("DELETE", `/api/transactions/${binned.body.id}`);
   await s.call("POST", "/api/recurring", {
     note: "Power",
     amount: "50.00",
@@ -125,9 +125,9 @@ test("listing expenses applies filters, values them in base currency and skips b
   const { ask, id } = await withSpending();
   const [home, september, euros] = await ask(
     "Show my expenses",
-    call("list_expenses", { tag: "home" }),
-    call("list_expenses", { from: "2026-09-01", to: "2026-09-30" }),
-    call("list_expenses", { category: id("Food"), currency: "EUR" }),
+    call("list_transactions", { tag: "home" }),
+    call("list_transactions", { from: "2026-09-01", to: "2026-09-30" }),
+    call("list_transactions", { category: id("Food"), currency: "EUR" }),
     { content: "Here they are" },
   );
   const brief = (rows: { note: string; baseAmount: number }[]) => rows.map((r) => [r.note, r.baseAmount]);
@@ -151,15 +151,15 @@ test("read-only SQL sees the data but cannot write, and caps rows and time", asy
   const { ask, call: api, ai } = await withSpending();
   const [notes, write, many, slow] = await ask(
     "Anything",
-    call("sql", { query: "SELECT note FROM expenses WHERE deleted_at IS NULL AND status = 'normal' ORDER BY note" }),
-    call("sql", { query: "DELETE FROM expenses" }),
+    call("sql", { query: "SELECT note FROM transactions WHERE deleted_at IS NULL AND status = 'normal' ORDER BY note" }),
+    call("sql", { query: "DELETE FROM transactions" }),
     call("sql", { query: "WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM n WHERE x < 500) SELECT x FROM n" }),
     call("sql", { query: "WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM n) SELECT count(*) FROM n" }),
     { content: "Done" },
   );
   expect(notes).toEqual({ rows: [{ note: "Cafe" }, { note: "Shop" }, { note: "Train" }], truncated: false });
   expect(write.error).toContain("readonly");
-  expect((await api("GET", "/api/expenses")).body).toHaveLength(5);
+  expect((await api("GET", "/api/transactions")).body).toHaveLength(5);
   expect(many.rows).toHaveLength(200);
   expect(many.truncated).toBe(true);
   expect(slow.error).toContain("timed out");
@@ -170,12 +170,12 @@ test("read-only SQL sees the data but cannot write, and caps rows and time", asy
 
 test("drafting an expense resolves it against categories and currencies but saves nothing until created", async () => {
   const { ask, call: api, id, ai } = await withSpending();
-  const before = (await api("GET", "/api/expenses")).body;
+  const before = (await api("GET", "/api/transactions")).body;
   const [draft, wrongCurrency, wrongCategory] = await ask(
     "lunch 12 euros yesterday",
-    call("draft_expense", { note: "Lunch", amount: "12", currency: "EUR", date: "2026-10-09", categoryId: id("Eating out"), tags: ["work"] }),
-    call("draft_expense", { note: "Lunch", amount: "12", currency: "XYZ" }),
-    call("draft_expense", { note: "Lunch", amount: "12", categoryId: 999 }),
+    call("draft_transaction", { note: "Lunch", amount: "12", currency: "EUR", date: "2026-10-09", categoryId: id("Eating out"), tags: ["work"] }),
+    call("draft_transaction", { note: "Lunch", amount: "12", currency: "XYZ" }),
+    call("draft_transaction", { note: "Lunch", amount: "12", categoryId: 999 }),
     { content: "Check the draft" },
   );
   expect(draft).toEqual({
@@ -184,10 +184,10 @@ test("drafting an expense resolves it against categories and currencies but save
   expect(wrongCurrency.error).toContain("Invalid currency");
   expect(wrongCategory.error).toContain("Invalid category");
   expect(ai.requests[0].body.messages[0].content).toContain("Today is 2026-10-10");
-  expect((await api("GET", "/api/expenses")).body).toEqual(before);
+  expect((await api("GET", "/api/transactions")).body).toEqual(before);
 
   const { amount, ...rest } = draft.draft;
-  const saved = await api("POST", "/api/expenses", { ...rest, amount: "12.00" });
+  const saved = await api("POST", "/api/transactions", { ...rest, amount: "12.00" });
   expect(saved.body).toMatchObject(draft.draft);
-  expect((await api("GET", "/api/expenses")).body).toHaveLength(before.length + 1);
+  expect((await api("GET", "/api/transactions")).body).toHaveLength(before.length + 1);
 });

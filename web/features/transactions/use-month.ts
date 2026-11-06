@@ -1,7 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { today } from "../../lib/dates";
 import { iso } from "../../lib/period";
-import type { Expense } from "../../lib/schemas";
+import type { Transaction } from "../../lib/schemas";
 
 export const route = getRouteApi("/");
 
@@ -13,7 +13,7 @@ export function useList() {
 export function useEdit() {
   const list = useList();
   const navigate = route.useNavigate();
-  return (e: Expense) => e.id > 0 && navigate({ search: { ...list, edit: String(e.id) } });
+  return (e: Transaction) => e.id > 0 && navigate({ search: { ...list, edit: String(e.id) } });
 }
 
 export function useMonth() {

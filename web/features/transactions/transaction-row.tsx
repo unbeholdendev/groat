@@ -4,14 +4,14 @@ import { Icon, paths } from "../../components/icon";
 import { useCategories, useSession, useSettings } from "../../lib/api";
 import { dayLabel } from "../../lib/dates";
 import { money } from "../../lib/money";
-import type { Expense } from "../../lib/schemas";
+import type { Transaction } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
 import { useTemplates } from "./queries";
 import { useEdit } from "./use-month";
 
 export const rowClass = "press relative flex h-[62px] items-center gap-3 px-4";
 
-export function ExpenseRow({ expense: e, dated }: { expense: Expense; dated?: boolean }) {
+export function TransactionRow({ transaction: e, dated }: { transaction: Transaction; dated?: boolean }) {
   const settings = useSettings()!;
   const [unit] = useContext(UnitContext);
   const category = useCategories().find((c) => c.id === e.categoryId);

@@ -19,6 +19,6 @@ test("service worker is served and leaves the API to the network", async () => {
 
 test("API responses are not cacheable", async () => {
   const { app } = setup();
-  const res = await app.request("/api/expenses");
+  const res = await app.request("/api/transactions");
   expect(res.headers.get("cache-control")).toBe("no-store");
 });

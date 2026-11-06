@@ -15,7 +15,7 @@ const scrubbed = ["sessions", "api_tokens", "chat_messages", "chats"];
 const notBackup = "That file isn’t a backup from this app";
 const upload = z.object({ backup: z.file() });
 
-const temp = async () => join(await mkdtemp(join(tmpdir(), "expense-backup-")), "backup.sqlite");
+const temp = async () => join(await mkdtemp(join(tmpdir(), "transaction-backup-")), "backup.sqlite");
 const remove = (path: string) => rm(dirname(path), { recursive: true, force: true });
 const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 
@@ -67,7 +67,7 @@ function prepare(path: string) {
 export function restoreRoutes(db: Db) {
   const app = new Hono();
   const live = db.$client;
-  const fresh = () => !live.query("SELECT 1 FROM users UNION ALL SELECT 1 FROM expenses").get();
+  const fresh = () => !live.query("SELECT 1 FROM users UNION ALL SELECT 1 FROM transactions").get();
   const used = "Restore only works on a new instance, before anyone signs up";
 
   app.post("/api/restore", async (c) => {

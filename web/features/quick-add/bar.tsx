@@ -59,8 +59,8 @@ export function Bar(props: {
   const { form, drafting, image, captureError, setCaptureError, unreview, photo, reviewing } = useDrafting(unit, () => props.onForm(seed()));
   useShared((file) => (online ? photo(file) : setCaptureError(new Error("Photos need a connection"))));
   const clear = () => (setText(""), setCategoryId(null), setDate(today()), unreview(), props.onGuided());
-  const adding = useSend("expense", clear);
-  const save = form.handleSubmit((v) => adding.mutate(["POST", "/api/expenses", { ...v, attachmentId: drafting.data?.attachmentId }]));
+  const adding = useSend("transaction", clear);
+  const save = form.handleSubmit((v) => adding.mutate(["POST", "/api/transactions", { ...v, attachmentId: drafting.data?.attachmentId }]));
   const queued = useMutationState({ filters: { predicate: (m) => m.state.isPaused } }).length;
   const receipt = useReceipt(categories, unit, adding.mutate);
   useEffect(() => {
@@ -80,7 +80,7 @@ export function Bar(props: {
     if (!text.trim()) return props.onForm(seed());
     if (settings.ai && !confident(p, category?.id)) return drafting.mutate(text.trim());
     if (!p.amount) return props.onForm(seed());
-    adding.mutate(["POST", "/api/expenses", { note: p.note, amount: p.amount, currency, unit: p.unit ?? unit, date, categoryId: category?.id, tags: p.tags }]);
+    adding.mutate(["POST", "/api/transactions", { note: p.note, amount: p.amount, currency, unit: p.unit ?? unit, date, categoryId: category?.id, tags: p.tags }]);
   }
 
   const key = ask ? "Ask" : text.trim() && (p.amount || settings.ai) ? "Add" : "Full form";

@@ -3,7 +3,7 @@ import { Chevron, Icon } from "../../components/icon";
 import { Total } from "../../components/total";
 import { useSettings } from "../../lib/api";
 import { today } from "../../lib/dates";
-import type { Expense } from "../../lib/schemas";
+import type { Transaction } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
 import { inBase } from "./queries";
 import { Summary } from "./summary";
@@ -11,7 +11,7 @@ import { route, useMonth } from "./use-month";
 
 const stepper = "press hit grid size-9 shrink-0 place-items-center rounded-chip hover:bg-surface2";
 
-export function MonthHeader({ rows, showFilters, onFilters }: { rows: Expense[]; showFilters: boolean; onFilters: () => void }) {
+export function MonthHeader({ rows, showFilters, onFilters }: { rows: Transaction[]; showFilters: boolean; onFilters: () => void }) {
   const { month, filter, filtered, end, step, label } = useMonth();
   const base = useSettings()!.baseCurrency;
   const [unit] = useContext(UnitContext);

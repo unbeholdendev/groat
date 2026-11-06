@@ -8,7 +8,7 @@ import { UnitContext } from "../../lib/unit";
 import { SignIn } from "../auth/sign-in";
 import { SettingsForm } from "../settings/settings-form";
 import { useStorageWarning } from "../../lib/device";
-import { Outbox } from "../expenses/outbox";
+import { Outbox } from "../transactions/outbox";
 import { Dock } from "./dock";
 import { Gate, LoadError } from "./gates";
 

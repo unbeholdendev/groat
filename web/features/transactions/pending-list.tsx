@@ -14,7 +14,7 @@ export function PendingList() {
   const categories = useCategories();
   const [unit] = useContext(UnitContext);
   const edit = useEdit();
-  const mutation = useSend("expense");
+  const mutation = useSend("transaction");
   if (!pending.length) return null;
   return (
     <>
@@ -31,7 +31,7 @@ export function PendingList() {
             </button>
             <button
               className="press hit rounded-chip border border-amber-line bg-surface px-3 py-1.5 text-[13px] font-semibold text-amber"
-              onClick={() => mutation.mutate(["POST", `/api/expenses/${e.id}/confirm`])}
+              onClick={() => mutation.mutate(["POST", `/api/transactions/${e.id}/confirm`])}
             >
               Confirm
             </button>

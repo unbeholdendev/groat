@@ -6,7 +6,7 @@ export const isoDate = z
 
 export const unit = z.enum(["sats", "BTC"]);
 
-export const expenseInput = z.object({
+export const transactionInput = z.object({
   note: z.string("Enter a note").trim().min(1, "Enter a note"),
   amount: z.string("Invalid amount"),
   currency: z.string("Invalid currency").optional(),
@@ -15,4 +15,4 @@ export const expenseInput = z.object({
   categoryId: z.number("Invalid category").int("Invalid category").optional(),
   tags: z.array(z.string("Invalid tags").trim().min(1, "Invalid tags"), "Invalid tags").optional(),
 });
-export type ExpenseInput = z.infer<typeof expenseInput>;
+export type TransactionInput = z.infer<typeof transactionInput>;

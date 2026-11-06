@@ -1,9 +1,9 @@
 import { dehydrate, hydrate, keepPreviousData, MutationCache, onlineManager, QueryCache, QueryClient } from "@tanstack/react-query";
 import { refresh, send } from "./lib/api";
 import { isLocallySignedOut, lockDevice, storeCache, unlockDevice } from "./lib/device";
-import { expense, request, type Request } from "./lib/schemas";
+import { transaction, request, type Request } from "./lib/schemas";
 import { syncCategory } from "./features/categories/queries";
-import { syncExpense } from "./features/expenses/queries";
+import { syncTransaction } from "./features/transactions/queries";
 import { syncSettings, syncToken, syncUsers } from "./features/settings/queries";
 
 let endingSession: Promise<unknown> = Promise.resolve();
@@ -24,7 +24,7 @@ function signedOut(e: Error & { status?: number }) {
   if (e.status === 401 || e.status === 409) queryClient.invalidateQueries({ queryKey: ["/api/session"] });
 }
 function identify(r: [string, string, ...unknown[]]): Request {
-  if (r[0] === "POST" && r[1] === "/api/expenses") {
+  if (r[0] === "POST" && r[1] === "/api/transactions") {
     const body = r[2] as Record<string, unknown>;
     r[2] = { ...body, requestId: body.requestId ?? crypto.randomUUID() };
   }
@@ -53,14 +53,14 @@ const sync = (key: string[], patch: (client: QueryClient, data: unknown, request
           throw Object.assign(new Error("Sign in as the original user to sync this change"), { status: 401 });
       }
       let data = await send(r[0], r[1], r[2], authentication ? undefined : String(meta?.owner));
-      if (meta?.edited && r[0] === "POST" && r[1] === "/api/expenses") {
-        const { id } = expense.parse(data);
-        data = await send("PUT", `/api/expenses/${id}`, r[2], String(meta.owner));
+      if (meta?.edited && r[0] === "POST" && r[1] === "/api/transactions") {
+        const { id } = transaction.parse(data);
+        data = await send("PUT", `/api/transactions/${id}`, r[2], String(meta.owner));
       }
       if (authentication) {
         unlockDevice();
         await client.cancelQueries();
-        await client.resetQueries({ predicate: (q) => q.queryKey[0] !== "/api/session" && !(q.queryKey[0] === "expense-draft" && q.queryKey[1] === (data as { username: string }).username) });
+        await client.resetQueries({ predicate: (q) => q.queryKey[0] !== "/api/session" && !(q.queryKey[0] === "transaction-draft" && q.queryKey[1] === (data as { username: string }).username) });
         client.setQueryData(["/api/session"], { setup: false, user: data });
       }
       await patch(client, data, r);
@@ -69,7 +69,7 @@ const sync = (key: string[], patch: (client: QueryClient, data: unknown, request
   });
 sync(["send"], (client) => client.invalidateQueries());
 sync(["send", "bin"], (client) => refresh(client, "/api/bin"));
-sync(["send", "expense"], syncExpense);
+sync(["send", "transaction"], syncTransaction);
 sync(["send", "category"], syncCategory);
 sync(["send", "settings"], syncSettings);
 sync(["send", "token"], syncToken);

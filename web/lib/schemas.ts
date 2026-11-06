@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { parseAmount } from "../../shared/amount";
-import { expenseInput } from "../../shared/schema";
+import { transactionInput } from "../../shared/schema";
 
-export const expense = z.object({
+export const transaction = z.object({
   id: z.number(),
   note: z.string(),
   amount: z.number(),
@@ -16,7 +16,7 @@ export const expense = z.object({
   addedBy: z.string().nullish(),
   attachmentId: z.number().nullish(),
 });
-export type Expense = z.infer<typeof expense>;
+export type Transaction = z.infer<typeof transaction>;
 
 export const category = z.object({ id: z.number(), name: z.string(), icon: z.string(), color: z.string(), parentId: z.number().nullable(), builtin: z.boolean() });
 export type Category = z.infer<typeof category>;
@@ -58,7 +58,7 @@ export const tag = z.object({ id: z.number(), name: z.string() });
 export const apiToken = z.object({ id: z.number(), name: z.string(), createdAt: z.string(), lastUsedAt: z.string().nullable() });
 export type ApiToken = z.infer<typeof apiToken>;
 
-export const template = expense.omit({ date: true }).extend({
+export const template = transaction.omit({ date: true }).extend({
   period: z.string(),
   every: z.number(),
   startDate: z.string(),
@@ -81,8 +81,8 @@ export const period = z.object({
   buckets: z.array(z.object({ start: z.string(), total: z.number() })),
 });
 
-export function unsent(body: unknown, id: number): Expense | undefined {
-  const sent = expenseInput.safeParse(body).data;
+export function unsent(body: unknown, id: number): Transaction | undefined {
+  const sent = transactionInput.safeParse(body).data;
   if (!sent) return undefined;
   const { note, currency = "", date = "", categoryId = null, tags = [] } = sent;
   return { id, note, currency, date, categoryId, tags, amount: parseAmount(sent.amount, currency, sent.unit) || 0 };

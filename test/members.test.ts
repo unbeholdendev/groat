@@ -24,10 +24,10 @@ test("the admin adds, lists, resets and removes members", async () => {
 
   const signedIn = await login("bob", "pw1");
   expect(await call("PUT", `/api/users/${bob.body.id}/password`, { password: "pw2" })).toEqual({ status: 200, body: {} });
-  expect((await as(signedIn, "GET", "/api/expenses")).status).toBe(401);
+  expect((await as(signedIn, "GET", "/api/transactions")).status).toBe(401);
   const admin = await login("admin", "secret");
   expect((await as(admin, "PUT", "/api/users/1/password", { password: "new" })).status).toBe(200);
-  expect((await as(admin, "GET", "/api/expenses")).status).toBe(200);
+  expect((await as(admin, "GET", "/api/transactions")).status).toBe(200);
   expect(await login("bob", "pw1")).toBe("");
   expect(await login("bob", "pw2")).not.toBe("");
 
@@ -53,25 +53,25 @@ test("each expense records who added it; anyone can edit or delete it and the au
   const { call, as, login } = household();
   await call("POST", "/api/users", { username: "bob", password: "pw" });
   const bob = await login("bob", "pw");
-  const mine = await call("POST", "/api/expenses", { note: "Coffee", amount: "3" });
+  const mine = await call("POST", "/api/transactions", { note: "Coffee", amount: "3" });
   expect(mine.body.addedBy).toBe("admin");
-  const edited = await as(bob, "PUT", `/api/expenses/${mine.body.id}`, { note: "Tea", amount: "2" });
+  const edited = await as(bob, "PUT", `/api/transactions/${mine.body.id}`, { note: "Tea", amount: "2" });
   expect([edited.status, edited.body.note, edited.body.addedBy]).toEqual([200, "Tea", "admin"]);
-  const his = await as(bob, "POST", "/api/expenses", { note: "Lunch", amount: "9" });
+  const his = await as(bob, "POST", "/api/transactions", { note: "Lunch", amount: "9" });
   expect(his.body.addedBy).toBe("bob");
-  expect((await call("DELETE", `/api/expenses/${his.body.id}`)).status).toBe(200);
+  expect((await call("DELETE", `/api/transactions/${his.body.id}`)).status).toBe(200);
 });
 
 test("removing a member signs them out and keeps their expenses under their name", async () => {
   const { call, as, login } = household();
   const { body } = await call("POST", "/api/users", { username: "bob", password: "pw" });
   const bob = await login("bob", "pw");
-  await as(bob, "POST", "/api/expenses", { note: "Lunch", amount: "9" });
+  await as(bob, "POST", "/api/transactions", { note: "Lunch", amount: "9" });
   expect(await call("DELETE", `/api/users/${body.id}`)).toEqual({ status: 200, body: {} });
-  expect((await as(bob, "GET", "/api/expenses")).status).toBe(401);
+  expect((await as(bob, "GET", "/api/transactions")).status).toBe(401);
   expect(await login("bob", "pw")).toBe("");
   expect((await call("GET", "/api/users")).body.map((u: { username: string }) => u.username)).toEqual(["admin"]);
-  expect((await call("GET", "/api/expenses")).body.map((e: { addedBy: string }) => e.addedBy)).toEqual(["bob"]);
+  expect((await call("GET", "/api/transactions")).body.map((e: { addedBy: string }) => e.addedBy)).toEqual(["bob"]);
 });
 
 test("members change their password with current credentials and retain only this session", async () => {
@@ -81,10 +81,10 @@ test("members change their password with current credentials and retain only thi
   const other = await login("bob", "old");
   expect((await as(current, "PUT", "/api/password", { currentPassword: "wrong", password: "new" })).status).toBe(400);
   expect((await as(current, "PUT", "/api/password", { currentPassword: "old", password: "" })).status).toBe(400);
-  expect((await as(other, "GET", "/api/expenses")).status).toBe(200);
+  expect((await as(other, "GET", "/api/transactions")).status).toBe(200);
   expect((await as(current, "PUT", "/api/password", { currentPassword: "old", password: "new" })).status).toBe(200);
-  expect((await as(current, "GET", "/api/expenses")).status).toBe(200);
-  expect((await as(other, "GET", "/api/expenses")).status).toBe(401);
+  expect((await as(current, "GET", "/api/transactions")).status).toBe(200);
+  expect((await as(other, "GET", "/api/transactions")).status).toBe(401);
   expect(await login("bob", "old")).toBe("");
   expect(await login("bob", "new")).not.toBe("");
   expect((await as("", "PUT", "/api/password", { currentPassword: "old", password: "new" })).status).toBe(401);

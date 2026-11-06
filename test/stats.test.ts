@@ -9,7 +9,7 @@ async function onboarded() {
   const all: { id: number; name: string }[] = (await s.call("GET", "/api/categories")).body;
   const id = (name: string) => all.find((c) => c.name === name)!.id;
   const spend = (note: string, amount: string, currency: string, date: string, category: string) =>
-    s.call("POST", "/api/expenses", { note, amount, currency, date, categoryId: id(category) });
+    s.call("POST", "/api/transactions", { note, amount, currency, date, categoryId: id(category) });
   return { ...s, id, spend };
 }
 
@@ -82,7 +82,7 @@ test("binned expenses are left out", async () => {
   const { call, spend } = await onboarded();
   await spend("kept", "1.00", "GBP", "2026-09-03", "Food");
   const binned = await spend("binned", "9.00", "GBP", "2026-09-03", "Food");
-  await call("DELETE", `/api/expenses/${binned.body.id}`);
+  await call("DELETE", `/api/transactions/${binned.body.id}`);
   expect((await call("GET", "/api/stats?from=2026-09-01&to=2026-09-30")).body.total).toBe(100);
 });
 
@@ -102,7 +102,7 @@ test("rejects a bad range or grouping", async () => {
 test("tag totals count each tagged expense in base currency, largest first", async () => {
   const { call, id } = await onboarded();
   const spend = (amount: string, currency: string, tags: string[]) =>
-    call("POST", "/api/expenses", { note: "x", amount, currency, date: "2026-09-03", categoryId: id("Food"), tags });
+    call("POST", "/api/transactions", { note: "x", amount, currency, date: "2026-09-03", categoryId: id("Food"), tags });
   await spend("10.00", "GBP", ["holiday", "friends"]);
   await spend("8.00", "EUR", ["holiday"]);
   await spend("1.00", "GBP", []);

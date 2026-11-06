@@ -3,7 +3,7 @@ import { type Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
 import type { Db } from "./db";
-import { expenses, sessions, users } from "./schema";
+import { sessions, transactions, users } from "./schema";
 
 export const credentials = z.object({ username: z.string().trim().min(1), password: z.string().min(1) });
 const days = 30;
@@ -44,7 +44,7 @@ export function auth(db: Db, clock: () => Date) {
     const passwordHash = await Bun.password.hash(password, hashCost);
     if (db.select().from(users).get()) return c.json({ error: "Already set up" }, 409);
     const { id } = db.insert(users).values({ username, passwordHash, role: "admin" }).returning({ id: users.id }).get();
-    db.update(expenses).set({ createdBy: id }).where(isNull(expenses.createdBy)).run();
+    db.update(transactions).set({ createdBy: id }).where(isNull(transactions.createdBy)).run();
     signIn(c, crypto.randomUUID(), id);
     return c.json({ username, role: "admin" }, 201);
   });
@@ -61,7 +61,7 @@ export function auth(db: Db, clock: () => Date) {
   app.use("/api/*", async (c, next) => {
     const current = session(c);
     if (!current) return c.json({ error: "Sign in first" }, 401);
-    const owner = c.req.header("x-expense-user");
+    const owner = c.req.header("x-transaction-user");
     if (owner && owner !== encodeURIComponent(current.username)) return c.json({ error: "Your sign-in changed. Sign in as the original user to sync this change." }, 409);
     signIn(c, current.id, current.userId);
     c.set("user", { id: current.userId, role: current.role });

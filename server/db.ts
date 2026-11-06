@@ -7,8 +7,8 @@ export type Db = BunSQLiteDatabase & { $client: Database };
 
 export const migrationsFolder = `${import.meta.dir}/drizzle`;
 
-export const visible = isNull(t.expenses.deletedAt);
-export const countable = and(visible, eq(t.expenses.status, "normal"));
+export const visible = isNull(t.transactions.deletedAt);
+export const countable = and(visible, eq(t.transactions.status, "normal"));
 
 export const today = (clock: () => Date) => clock().toISOString().slice(0, 10);
 
@@ -23,17 +23,17 @@ export const uncategorised = (db: Db) =>
 export function settings(db: Db) {
   const { baseCurrency, theme, onboarded } = seeded(db.select().from(t.settings).get());
   const last = db
-    .select({ currency: t.expenses.currency })
-    .from(t.expenses)
-    .where(and(visible, isNull(t.expenses.recurringId)))
-    .orderBy(desc(t.expenses.id))
+    .select({ currency: t.transactions.currency })
+    .from(t.transactions)
+    .where(and(visible, isNull(t.transactions.recurringId)))
+    .orderBy(desc(t.transactions.id))
     .get();
   const used = db
-    .select({ currency: t.expenses.currency })
-    .from(t.expenses)
+    .select({ currency: t.transactions.currency })
+    .from(t.transactions)
     .where(visible)
-    .groupBy(t.expenses.currency)
-    .orderBy(desc(max(t.expenses.id)))
+    .groupBy(t.transactions.currency)
+    .orderBy(desc(max(t.transactions.id)))
     .all();
   return {
     baseCurrency,

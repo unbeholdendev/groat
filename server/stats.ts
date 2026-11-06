@@ -5,7 +5,7 @@ import { isoDate } from "../shared/schema";
 import { countable, type Db, settings } from "./db";
 import type { Valuer } from "./rates";
 import { query } from "./request";
-import { categories as c, expenses as e, expenseTags as et, tags as tg } from "./schema";
+import { categories as c, transactions as e, transactionTags as et, tags as tg } from "./schema";
 
 const range = z
   .object({ from: isoDate, to: isoDate, group: z.enum(["day", "week", "month"]).default("day") })
@@ -59,10 +59,10 @@ export async function period(db: Db, value: Valuer, from: string, to: string, gr
   const amounts = new Map(counted.map((r) => [r.id, r.baseAmount]));
   const tagged = new Map<string, number>();
   for (const { id, name } of db
-    .select({ id: et.expenseId, name: tg.name })
+    .select({ id: et.transactionId, name: tg.name })
     .from(et)
     .innerJoin(tg, eq(tg.id, et.tagId))
-    .innerJoin(e, eq(e.id, et.expenseId))
+    .innerJoin(e, eq(e.id, et.transactionId))
     .where(and(countable, between(e.date, from, to)))
     .all()) {
     const amount = amounts.get(id);

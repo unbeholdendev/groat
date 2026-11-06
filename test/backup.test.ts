@@ -4,9 +4,11 @@ import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
+import { readMigrationFiles } from "drizzle-orm/migrator";
+import { migrationsFolder } from "../server/db";
 import { frankfurter, setup } from "./harness";
 
-const kept = ["expenses", "settings", "categories", "category_order", "rates", "tags", "expense_tags", "recurring", "users", "attachments"];
+const kept = ["transactions", "settings", "categories", "category_order", "rates", "tags", "transaction_tags", "recurring", "users", "attachments"];
 const dump = (db: Database, table: string) => db.query(`SELECT * FROM ${table} ORDER BY rowid`).all();
 
 function fresh() {
@@ -28,12 +30,12 @@ async function household() {
   const { call, db } = h;
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   await call("POST", "/api/users", { username: "bob", password: "pw" });
-  const lunch = await call("POST", "/api/expenses", { note: "Lunch", amount: "12.50", currency: "EUR", tags: ["work"] });
-  const binned = await call("POST", "/api/expenses", { note: "Oops", amount: "1", currency: "GBP" });
-  await call("DELETE", `/api/expenses/${binned.body.id}`);
+  const lunch = await call("POST", "/api/transactions", { note: "Lunch", amount: "12.50", currency: "EUR", tags: ["work"] });
+  const binned = await call("POST", "/api/transactions", { note: "Oops", amount: "1", currency: "GBP" });
+  await call("DELETE", `/api/transactions/${binned.body.id}`);
   await call("POST", "/api/recurring", { note: "Power", amount: "60", period: "month", every: 1, startDate: "2026-10-01", needsConfirmation: true });
   await call("POST", "/api/tokens", { name: "phone" });
-  db.run("INSERT INTO attachments (expense_id, mime, bytes, created_at) VALUES (?, 'image/png', ?, '2026-10-10')", [lunch.body.id, new Uint8Array([1, 2, 3, 0, 255])]);
+  db.run("INSERT INTO attachments (transaction_id, mime, bytes, created_at) VALUES (?, 'image/png', ?, '2026-10-10')", [lunch.body.id, new Uint8Array([1, 2, 3, 0, 255])]);
   db.run("INSERT INTO chats (title) VALUES ('Spending')");
   db.run("INSERT INTO chat_messages (chat_id, message) VALUES (1, '\"hi\"')");
   db.run("INSERT INTO sessions (id, user_id, expires_at) VALUES ('live-session-6f1c2', 1, '9999')");
@@ -62,7 +64,7 @@ test("a backup restores into a fresh instance with its financial data and accoun
   expect(await target.restore(bytes)).toEqual({ status: 200, body: {} });
   for (const table of kept) expect([table, dump(target.db, table)]).toEqual([table, dump(source.db, table)]);
   for (const table of ["sessions", "api_tokens", "chats", "chat_messages"]) expect(dump(target.db, table)).toEqual([]);
-  expect(dump(target.db, "expenses").length).toBe(3);
+  expect(dump(target.db, "transactions").length).toBe(3);
 
   expect((await target.login("admin", "secret")).status).toBe(200);
   expect((await target.login("bob", "pw")).status).toBe(200);
@@ -86,9 +88,9 @@ test("restore is refused once the instance has an account or expenses", async ()
   expect((await used.app.request("/api/restore", { method: "POST", body: form })).status).toBe(409);
 
   const legacy = fresh();
-  legacy.db.run("INSERT INTO expenses (note, amount, currency, date, created_at, updated_at) VALUES ('Old', 1, 'GBP', '2026-01-01', '', '')");
+  legacy.db.run("INSERT INTO transactions (note, amount, currency, date, created_at, updated_at) VALUES ('Old', 1, 'GBP', '2026-01-01', '', '')");
   expect((await legacy.restore(bytes)).status).toBe(409);
-  expect(dump(legacy.db, "expenses").length).toBe(1);
+  expect(dump(legacy.db, "transactions").length).toBe(1);
 });
 
 test("a file that isn't a backup fails clearly and leaves the instance fresh", async () => {
@@ -121,7 +123,7 @@ test("a backup from a newer version is refused", async () => {
   expect(dump(target.db, "users")).toEqual([]);
 });
 
-test("a backup from an older version is migrated forward", async () => {
+test.skipIf(readMigrationFiles({ migrationsFolder }).length < 2)("a backup from an older version is migrated forward", async () => {
   const folder = mkdtempSync(`${tmpdir()}/migrations-`);
   cpSync(`${import.meta.dir}/../server/drizzle`, folder, { recursive: true });
   const journal = JSON.parse(readFileSync(`${folder}/meta/_journal.json`, "utf8"));

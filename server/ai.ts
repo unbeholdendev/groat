@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { expenseInput, isoDate } from "../shared/schema";
+import { transactionInput, isoDate } from "../shared/schema";
 import type { Ctx, Deps } from "./app";
 import { countable, settings, today, uncategorised } from "./db";
-import { expenseFilter, expenseQuery, expenses, newest, readExpense } from "./expenses";
+import { transactionFilter, transactionQuery, transactions, newest, readTransaction } from "./transactions";
 import { body } from "./request";
 import type { Valuer } from "./rates";
 import { categories, chatMessages, chats as chatTable } from "./schema";
@@ -63,10 +63,10 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
 
   const tools: Record<string, ReturnType<typeof tool>> = {
     category_totals: tool("Spend per category (with subcategories) for a date range, in base currency.", range, totals),
-    list_expenses: tool(
+    list_transactions: tool(
       "Expenses newest first (max 200), each with baseAmount in base currency. All filters optional.",
-      expenseQuery.omit({ status: true }),
-      async (args) => value(expenses(db, expenseFilter(db, args, countable)).orderBy(...newest).limit(200).all()),
+      transactionQuery.omit({ status: true }),
+      async (args) => value(transactions(db, transactionFilter(db, args, countable)).orderBy(...newest).limit(200).all()),
     ),
     compare_periods: tool(
       "Spend per category for two date ranges, in base currency.",
@@ -76,7 +76,7 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
     sql: tool(
       [
         "Run one read-only SQLite query for questions the other tools cannot answer. Max 200 rows, 2 second timeout.",
-        "Binned and pending expenses are included: add `deleted_at IS NULL AND status = 'normal'` on expenses unless asked otherwise.",
+        "Binned and pending rows are included: add `deleted_at IS NULL AND status = 'normal'` on transactions unless asked otherwise.",
         `Schema:\n${db
           .all<{ sql: string }>(sql`SELECT sql FROM sqlite_schema WHERE type = 'table' AND name != '__drizzle_migrations'`)
           .map((t) => t.sql)
@@ -89,15 +89,15 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
         return (await child.exited) === 0 ? JSON.parse(out) : { error: "query timed out" };
       },
     ),
-    draft_expense: tool(
+    draft_transaction: tool(
       "Draft an expense the user describes, for them to review and save. Saves nothing. Resolve relative dates against today. Amount is a decimal string in major units.",
-      expenseInput.omit({ unit: true }).extend({
+      transactionInput.omit({ unit: true }).extend({
         amount: z.string().describe("e.g. 12.50"),
         currency: z.string().optional().describe("ISO 4217 code or BTC; defaults to base"),
         date: isoDate.optional().describe("YYYY-MM-DD; defaults to today"),
       }),
       (args) => {
-        const draft = readExpense(args, db, today(clock), settings(db).baseCurrency, uncategorised(db));
+        const draft = readTransaction(args, db, today(clock), settings(db).baseCurrency, uncategorised(db));
         if ("error" in draft) throw new Error(draft.error);
         return { draft };
       },

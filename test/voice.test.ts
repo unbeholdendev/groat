@@ -14,7 +14,7 @@ function providers(text: string) {
     if (url.href !== "https://ai.test/v1/chat/completions") return;
     const args = { note: "Taxi home", amount: "14" };
     return Response.json({
-      choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "expense", arguments: JSON.stringify(args) } }] } }],
+      choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: JSON.stringify(args) } }] } }],
     });
   };
   return { handler, heard };
@@ -39,7 +39,7 @@ test("a recording is transcribed and comes back as a draft, using the AI base an
   expect(p.heard).toHaveLength(1);
   expect(p.heard[0]).toMatchObject({ url: "https://ai.test/v1/audio/transcriptions", auth: "Bearer sk-test", model: "whisper-1" });
   expect(p.heard[0].file).toBeInstanceOf(File);
-  expect((await call("GET", "/api/expenses")).body).toEqual([]);
+  expect((await call("GET", "/api/transactions")).body).toEqual([]);
 });
 
 test("a separate speech-to-text base and key are used when set", async () => {

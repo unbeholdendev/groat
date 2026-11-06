@@ -14,24 +14,24 @@ async function onboarded() {
 
 test("expenses default to Uncategorised and keep their category and tags", async () => {
   const { call, find } = await onboarded();
-  const plain = await call("POST", "/api/expenses", { note: "Thing", amount: "1" });
+  const plain = await call("POST", "/api/transactions", { note: "Thing", amount: "1" });
   expect(plain.body).toMatchObject({ categoryId: find("Uncategorised").id, tags: [] });
-  const lunch = await call("POST", "/api/expenses", {
+  const lunch = await call("POST", "/api/transactions", {
     note: "Lunch",
     amount: "12",
     categoryId: find("Eating out").id,
     tags: ["work", " holiday-2026 ", "work"],
   });
   expect(lunch.status).toBe(201);
-  expect((await call("GET", "/api/expenses")).body[0]).toMatchObject({
+  expect((await call("GET", "/api/transactions")).body[0]).toMatchObject({
     note: "Lunch",
     categoryId: find("Eating out").id,
     tags: ["holiday-2026", "work"],
   });
-  const edited = await call("PUT", `/api/expenses/${lunch.body.id}`, { note: "Lunch", amount: "12", tags: ["work"] });
+  const edited = await call("PUT", `/api/transactions/${lunch.body.id}`, { note: "Lunch", amount: "12", tags: ["work"] });
   expect(edited.body).toMatchObject({ categoryId: find("Eating out").id, tags: ["work"] });
   for (const body of [{ categoryId: 9999 }, { tags: "work" }, { tags: [""] }, { tags: [3] }])
-    expect((await call("POST", "/api/expenses", { note: "x", amount: "1", ...body })).status).toBe(400);
+    expect((await call("POST", "/api/transactions", { note: "x", amount: "1", ...body })).status).toBe(400);
 });
 
 test("categories can be created, renamed, recoloured and reordered, two levels deep", async () => {
@@ -88,26 +88,26 @@ test("Uncategorised cannot be deleted", async () => {
 
 test("deleting a category moves its expenses to Uncategorised by default", async () => {
   const { call, find, categories } = await onboarded();
-  const e = await call("POST", "/api/expenses", { note: "Film", amount: "9", categoryId: find("Entertainment").id });
+  const e = await call("POST", "/api/transactions", { note: "Film", amount: "9", categoryId: find("Entertainment").id });
   expect((await call("DELETE", `/api/categories/${find("Entertainment").id}`)).status).toBe(200);
   expect((await categories()).some((c) => c.name === "Entertainment")).toBe(false);
-  expect((await call("GET", "/api/expenses")).body).toMatchObject([{ id: e.body.id, categoryId: find("Uncategorised").id }]);
+  expect((await call("GET", "/api/transactions")).body).toMatchObject([{ id: e.body.id, categoryId: find("Uncategorised").id }]);
 });
 
 test("deleting a parent moves expenses under it and its subcategories to the chosen category", async () => {
   const { call, find, categories } = await onboarded();
   const food = find("Food").id;
   for (const categoryId of [food, find("Groceries").id, find("Eating out").id, find("Travel").id])
-    await call("POST", "/api/expenses", { note: "x", amount: "1", categoryId });
-  const binned = await call("POST", "/api/expenses", { note: "binned", amount: "1", categoryId: find("Groceries").id });
-  await call("DELETE", `/api/expenses/${binned.body.id}`);
+    await call("POST", "/api/transactions", { note: "x", amount: "1", categoryId });
+  const binned = await call("POST", "/api/transactions", { note: "binned", amount: "1", categoryId: find("Groceries").id });
+  await call("DELETE", `/api/transactions/${binned.body.id}`);
 
   expect((await call("DELETE", `/api/categories/${food}?moveTo=${find("Groceries").id}`)).status).toBe(400);
   expect((await call("DELETE", `/api/categories/${food}?moveTo=9999`)).status).toBe(400);
   expect((await call("DELETE", `/api/categories/${food}?moveTo=${find("Shopping").id}`)).status).toBe(200);
 
   expect((await categories()).filter((c) => ["Food", "Groceries", "Eating out"].includes(c.name))).toEqual([]);
-  const ids = (await call("GET", "/api/expenses")).body.map((e: { categoryId: number }) => e.categoryId);
+  const ids = (await call("GET", "/api/transactions")).body.map((e: { categoryId: number }) => e.categoryId);
   expect(ids.sort()).toEqual([find("Shopping").id, find("Shopping").id, find("Shopping").id, find("Travel").id].sort());
   expect((await call("GET", "/api/bin")).body[0].categoryId).toBe(find("Shopping").id);
 });
@@ -116,5 +116,5 @@ test("expenses can be saved before onboarding", async () => {
   const { call } = setup();
   const uncategorised = (await call("GET", "/api/categories")).body;
   expect(uncategorised).toMatchObject([{ name: "Uncategorised", builtin: true }]);
-  expect((await call("POST", "/api/expenses", { note: "x", amount: "1" })).body.categoryId).toBe(uncategorised[0].id);
+  expect((await call("POST", "/api/transactions", { note: "x", amount: "1" })).body.categoryId).toBe(uncategorised[0].id);
 });

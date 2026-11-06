@@ -31,4 +31,4 @@ export async function add(page: Page, line: string) {
 export const today = () => new Date().toLocaleDateString("en-CA");
 
 export const seed = (page: Page, rows: { note: string; amount: string; currency?: string; date?: string; categoryId?: number; tags?: string[] }[]) =>
-  Promise.all(rows.map((r) => page.request.post("/api/expenses", { data: { currency: "GBP", date: today(), tags: [], ...r } })));
+  Promise.all(rows.map((r) => page.request.post("/api/transactions", { data: { currency: "GBP", date: today(), tags: [], ...r } })));

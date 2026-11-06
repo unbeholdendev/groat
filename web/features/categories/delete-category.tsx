@@ -3,13 +3,13 @@ import { z } from "zod";
 import { CategoryOptions } from "../../components/category";
 import { Select } from "../../components/form";
 import { useApi } from "../../lib/api";
-import { type Category, expense } from "../../lib/schemas";
+import { type Category, transaction } from "../../lib/schemas";
 import { Button } from "../../components/button";
 
 export function DeleteCategory(props: { category: Category; categories: Category[]; onKeep: () => void; onDelete: (moveTo: string) => void }) {
   const { category: c, categories } = props;
   const [moveTo, setMoveTo] = useState("");
-  const affected = useApi(z.array(expense), ["/api/expenses?", `category=${c.id}`]).data;
+  const affected = useApi(z.array(transaction), ["/api/transactions?", `category=${c.id}`]).data;
   return (
     <div className="flex flex-col gap-2 text-sm text-ink2">
       <label className="label">

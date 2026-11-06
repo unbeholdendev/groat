@@ -6,7 +6,7 @@ test("failed offline entries survive reload and can be corrected and retried", a
   await expect(bar(page)).toBeVisible();
   await context.setOffline(true);
   await add(page, "bus 2.80");
-  await page.route("**/api/expenses", (route) => route.request().method() === "POST" ? route.fulfill({ status: 400, json: { error: "Check the note" } }) : route.continue());
+  await page.route("**/api/transactions", (route) => route.request().method() === "POST" ? route.fulfill({ status: 400, json: { error: "Check the note" } }) : route.continue());
   await context.setOffline(false);
   const outbox = page.getByRole("region", { name: "Unsent changes" });
   await expect(outbox).toContainText("Check the note");
@@ -15,7 +15,7 @@ test("failed offline entries survive reload and can be corrected and retried", a
   await outbox.getByRole("button", { name: "Edit" }).click();
   await outbox.getByLabel("Note").fill("bus fare");
   await outbox.getByRole("button", { name: "Keep changes" }).click();
-  await page.unroute("**/api/expenses");
+  await page.unroute("**/api/transactions");
   await outbox.getByRole("button", { name: "Retry" }).click();
   await expect(outbox).toBeHidden();
   await expect(page.getByRole("button", { name: "bus fare", exact: true })).toBeVisible();
@@ -47,7 +47,7 @@ test("offline sign-out confirms unsent changes and clears cached data", async ({
   await context.setOffline(false);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
-  await expect.poll(async () => (await page.request.get("/api/expenses")).status()).toBe(401);
+  await expect.poll(async () => (await page.request.get("/api/transactions")).status()).toBe(401);
 });
 
 test("discarding a paused entry never posts it after reconnecting", async ({ app: page, context }) => {
@@ -58,7 +58,7 @@ test("discarding a paused entry never posts it after reconnecting", async ({ app
   await context.setOffline(false);
   await expect(page.getByRole("region", { name: "Unsent changes" })).toBeHidden();
   await add(page, "keep me 3");
-  expect((await (await page.request.get("/api/expenses")).json()).map((r: { note: string }) => r.note)).toEqual(["keep me"]);
+  expect((await (await page.request.get("/api/transactions")).json()).map((r: { note: string }) => r.note)).toEqual(["keep me"]);
 });
 
 test("expired-session entries cannot replay as another household member", async ({ app: page, context }) => {
@@ -81,7 +81,7 @@ test("expired-session entries cannot replay as another household member", async 
   await expect(outbox).toContainText("original user");
   await outbox.getByRole("button", { name: "Retry" }).click();
   await expect(outbox).toBeHidden();
-  const rows = await (await page.request.get("/api/expenses")).json();
+  const rows = await (await page.request.get("/api/transactions")).json();
   expect(rows.map((r: { note: string; addedBy: string }) => [r.note, r.addedBy])).toEqual([["original user", "admin"]]);
 });
 
@@ -93,7 +93,7 @@ test("reload during offline replay keeps the entry and retry never duplicates it
   let release!: () => void;
   const saved = new Promise<void>((resolve) => { accepted = resolve; });
   const waiting = new Promise<void>((resolve) => { release = resolve; });
-  await page.route("**/api/expenses", async (route) => {
+  await page.route("**/api/transactions", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     const response = await route.fetch();
     accepted();
@@ -107,10 +107,10 @@ test("reload during offline replay keeps the entry and retry never duplicates it
   await expect(outbox).toContainText("interrupted");
   await expect(outbox.getByRole("button", { name: "Retry" })).toBeEnabled();
   release();
-  await page.unroute("**/api/expenses");
+  await page.unroute("**/api/transactions");
   await outbox.getByRole("button", { name: "Retry" }).click();
   await expect(outbox).toBeHidden();
-  expect((await (await page.request.get("/api/expenses")).json()).length).toBe(1);
+  expect((await (await page.request.get("/api/transactions")).json()).length).toBe(1);
 });
 
 test("password changes are never persisted while offline", async ({ app: page, context }) => {
@@ -127,12 +127,12 @@ test("retrying an old change preserves a new unfinished quick entry", async ({ a
   await expect(bar(page)).toBeVisible();
   await context.setOffline(true);
   await add(page, "old entry 2");
-  await page.route("**/api/expenses", (r) => r.request().method() === "POST" ? r.fulfill({ status: 400, json: { error: "Try later" } }) : r.continue());
+  await page.route("**/api/transactions", (r) => r.request().method() === "POST" ? r.fulfill({ status: 400, json: { error: "Try later" } }) : r.continue());
   await context.setOffline(false);
   const outbox = page.getByRole("region", { name: "Unsent changes" });
   await expect(outbox).toContainText("Try later");
   await bar(page).fill("new unfinished entry 3");
-  await page.unroute("**/api/expenses");
+  await page.unroute("**/api/transactions");
   await outbox.getByRole("button", { name: "Retry" }).click();
   await expect(outbox).toBeHidden();
   await expect(bar(page)).toHaveValue("new unfinished entry 3");
@@ -147,7 +147,7 @@ test("editing cannot replace an entry while its replay is in flight", async ({ a
   await outbox.getByLabel("Note").fill("edited replay");
   let release!: () => void;
   const waiting = new Promise<void>((resolve) => { release = resolve; });
-  await page.route("**/api/expenses", async (route) => {
+  await page.route("**/api/transactions", async (route) => {
     if (route.request().method() === "POST") await waiting;
     await route.continue();
   });
@@ -156,7 +156,7 @@ test("editing cannot replace an entry while its replay is in flight", async ({ a
   await expect(outbox.getByRole("button", { name: "Keep changes" })).toBeDisabled();
   release();
   await expect(outbox).toBeHidden();
-  expect((await (await page.request.get("/api/expenses")).json()).length).toBe(1);
+  expect((await (await page.request.get("/api/transactions")).json()).length).toBe(1);
 });
 
 test("reopening online automatically syncs an offline entry", async ({ app: page, context }) => {
@@ -191,7 +191,7 @@ test("legacy queued creations receive a stable ID before their first replay", as
   let release!: () => void;
   const saved = new Promise<void>((resolve) => { accepted = resolve; });
   const waiting = new Promise<void>((resolve) => { release = resolve; });
-  await reopened.route("**/api/expenses", async (route) => {
+  await reopened.route("**/api/transactions", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     const response = await route.fetch();
     accepted();
@@ -204,11 +204,11 @@ test("legacy queued creations receive a stable ID before their first replay", as
   expect(stored).toMatch(/^[0-9a-f-]{36}$/);
   await reopened.reload();
   release();
-  await reopened.unroute("**/api/expenses");
+  await reopened.unroute("**/api/transactions");
   const outbox = reopened.getByRole("region", { name: "Unsent changes" });
   await outbox.getByRole("button", { name: "Retry" }).click();
   await expect(outbox).toBeHidden();
-  expect((await (await reopened.request.get("/api/expenses")).json()).length).toBe(1);
+  expect((await (await reopened.request.get("/api/transactions")).json()).length).toBe(1);
 });
 
 for (const updateFails of [false, true])
@@ -216,7 +216,7 @@ test(`editing an accepted creation with a lost response applies the correction o
   await expect(bar(page)).toBeVisible();
   await context.setOffline(true);
   await add(page, "original accepted 2");
-  await page.route("**/api/expenses", async (route) => {
+  await page.route("**/api/transactions", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     await route.fetch();
     await route.abort();
@@ -230,18 +230,18 @@ test(`editing an accepted creation with a lost response applies the correction o
   await outbox.getByRole("button", { name: "Keep changes" }).click();
   await page.reload();
   await expect(outbox).toContainText("corrected accepted");
-  await page.unroute("**/api/expenses");
-  if (updateFails) await page.route("**/api/expenses/*", (route) => route.fulfill({ status: 400, json: { error: "Correction not saved" } }));
+  await page.unroute("**/api/transactions");
+  if (updateFails) await page.route("**/api/transactions/*", (route) => route.fulfill({ status: 400, json: { error: "Correction not saved" } }));
   await outbox.getByRole("button", { name: "Retry" }).click();
   if (updateFails) {
     await expect(outbox).toContainText("Correction not saved");
     await page.reload();
     await expect(outbox).toContainText("corrected accepted");
-    await page.unroute("**/api/expenses/*");
+    await page.unroute("**/api/transactions/*");
     await outbox.getByRole("button", { name: "Retry" }).click();
   }
   await expect(outbox).toBeHidden();
-  const rows = await (await page.request.get("/api/expenses")).json();
+  const rows = await (await page.request.get("/api/transactions")).json();
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ note: "corrected accepted", amount: 350 });
 });

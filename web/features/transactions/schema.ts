@@ -4,7 +4,7 @@ import { formatAmount, parseAmount, type Unit } from "../../../shared/amount";
 import { today } from "../../lib/dates";
 import type { Draft, Template } from "../../lib/schemas";
 
-export const expenseForm = (unit: Unit) =>
+export const transactionForm = (unit: Unit) =>
   z
     .object({
       note: z.string(),
@@ -27,15 +27,15 @@ export const expenseForm = (unit: Unit) =>
       if (v.endDate && v.endDate < v.date) issue("endDate", "End on or after the start");
     });
 
-type Schema = ReturnType<typeof expenseForm>;
-export type ExpenseValues = z.input<Schema>;
-export type ExpenseFormApi = UseFormReturn<ExpenseValues, unknown, z.output<Schema>>;
+type Schema = ReturnType<typeof transactionForm>;
+export type TransactionValues = z.input<Schema>;
+export type TransactionFormApi = UseFormReturn<TransactionValues, unknown, z.output<Schema>>;
 
 const noRepeat = { period: "", every: "1", endDate: "", needsConfirmation: false };
 
-export const blank = (currency: string): ExpenseValues => ({ note: "", amount: "", currency, date: today(), categoryId: null, tags: "", ...noRepeat });
+export const blank = (currency: string): TransactionValues => ({ note: "", amount: "", currency, date: today(), categoryId: null, tags: "", ...noRepeat });
 
-export const filled = (e: Draft, unit: Unit): ExpenseValues => ({
+export const filled = (e: Draft, unit: Unit): TransactionValues => ({
   note: e.note,
   amount: e.amount ? formatAmount(e.amount, e.currency, unit) : "",
   currency: e.currency,
@@ -45,7 +45,7 @@ export const filled = (e: Draft, unit: Unit): ExpenseValues => ({
   ...noRepeat,
 });
 
-export const fromTemplate = (t: Template, unit: Unit): ExpenseValues => ({
+export const fromTemplate = (t: Template, unit: Unit): TransactionValues => ({
   ...filled({ ...t, date: t.startDate }, unit),
   period: t.period,
   every: String(t.every),

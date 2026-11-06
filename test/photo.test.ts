@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { draft, expense, settings } from "../web/lib/schemas";
+import { draft, transaction, settings } from "../web/lib/schemas";
 import type { Deps } from "../server/app";
 import { setup } from "./harness";
 
@@ -12,7 +12,7 @@ function provider() {
     if (url.href !== "https://ai.test/v1/chat/completions") return;
     requests.push(JSON.parse(String(init?.body)));
     const args = JSON.stringify({ note: "Tesco", amount: "23.45", date: "2026-10-09" });
-    return Response.json({ choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "expense", arguments: args } }] } }] });
+    return Response.json({ choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: args } }] } }] });
   };
   return { handler, requests };
 }
@@ -41,7 +41,7 @@ test("a photo becomes a draft with an attachment, read by the vision model", asy
   expect(draft.parse(res.body).attachmentId).toBeNumber();
   expect(ai.requests[0].model).toBe("vision-model");
   expect(ai.requests[0].messages[1].content[0].image_url.url).toBe(`data:image/jpeg;base64,${Buffer.from(jpeg).toString("base64")}`);
-  expect((await call("GET", "/api/expenses")).body).toEqual([]);
+  expect((await call("GET", "/api/transactions")).body).toEqual([]);
   expect(settings.parse((await call("GET", "/api/settings")).body).vision).toBe(true);
 });
 
@@ -59,7 +59,7 @@ test("the vision model falls back to the AI model, and an empty one turns photos
 test("saving links the image, served only to signed-in users, and purging the expense deletes it", async () => {
   const { upload, call, request, app } = photos();
   const { attachmentId } = draft.parse((await upload()).body);
-  const saved = expense.parse((await call("POST", "/api/expenses", { note: "Tesco", amount: "23.45", attachmentId })).body);
+  const saved = transaction.parse((await call("POST", "/api/transactions", { note: "Tesco", amount: "23.45", attachmentId })).body);
   expect(saved.attachmentId).toBe(attachmentId);
 
   const image = await request(`/api/attachments/${attachmentId}`);
@@ -67,10 +67,10 @@ test("saving links the image, served only to signed-in users, and purging the ex
   expect(new Uint8Array(await image.arrayBuffer())).toEqual(jpeg);
   expect((await app.request(`/api/attachments/${attachmentId}`)).status).toBe(401);
 
-  await call("DELETE", `/api/expenses/${saved.id}`);
+  await call("DELETE", `/api/transactions/${saved.id}`);
   expect((await call("GET", "/api/bin")).body[0].attachmentId).toBe(attachmentId);
   expect((await request(`/api/attachments/${attachmentId}`)).status).toBe(200);
-  await call("DELETE", `/api/expenses/${saved.id}?purge`);
+  await call("DELETE", `/api/transactions/${saved.id}?purge`);
   expect((await request(`/api/attachments/${attachmentId}`)).status).toBe(404);
 });
 

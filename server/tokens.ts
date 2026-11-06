@@ -6,7 +6,7 @@ import { confident, parse } from "../shared/parse";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
 import { settings, today, uncategorised } from "./db";
-import { addExpense, readExpense, suggestions } from "./expenses";
+import { addTransaction, readTransaction, suggestions } from "./transactions";
 import { body } from "./request";
 import { apiTokens } from "./schema";
 import { aiEnabled } from "./ai";
@@ -40,10 +40,10 @@ export function captureRoutes(ctx: Ctx) {
     };
     const sure = confident(p, guess?.categoryId);
     const read = !sure && aiEnabled(ctx.config) && (await extract(ctx, text).catch(() => undefined));
-    if (read) return c.json(addExpense(db, now, read, owner.userId, "pending"), 201);
-    const row = readExpense(input, db, today(clock), lastCurrency, uncategorised(db), !sure);
+    if (read) return c.json(addTransaction(db, now, read, owner.userId, "pending"), 201);
+    const row = readTransaction(input, db, today(clock), lastCurrency, uncategorised(db), !sure);
     if ("error" in row) return c.json(row, 400);
-    return c.json(addExpense(db, now, row, owner.userId, sure ? "normal" : "pending"), 201);
+    return c.json(addTransaction(db, now, row, owner.userId, sure ? "normal" : "pending"), 201);
   });
 
   return app;

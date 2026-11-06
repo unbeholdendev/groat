@@ -6,9 +6,9 @@ import { useCategories } from "../../lib/api";
 import { dayLabel, today } from "../../lib/dates";
 import { money } from "../../lib/money";
 import { change, span, usePeriod } from "../../lib/period";
-import type { Expense } from "../../lib/schemas";
+import type { Transaction } from "../../lib/schemas";
 
-export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; rows: Expense[]; month: string }) {
+export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; rows: Transaction[]; month: string }) {
   const s = span("This month", undefined, end);
   const now = usePeriod(s.range);
   const ref = usePeriod(end ? s.full : s.ref);

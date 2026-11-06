@@ -9,7 +9,7 @@ import { backupRoutes, restoreRoutes } from "./backup";
 import { categoryRoutes } from "./categories";
 import { type Db, migrationsFolder } from "./db";
 import { draftRoutes } from "./draft";
-import { expenseRoutes } from "./expenses";
+import { transactionRoutes } from "./transactions";
 import { memberRoutes } from "./members";
 import { exportRoutes } from "./export";
 import { importRoutes } from "./import";
@@ -54,7 +54,7 @@ export function createApp(deps: Deps) {
   app.route("/", tokenRoutes(ctx));
   app.route("/", settingsRoutes(db, deps.config));
   app.route("/", categoryRoutes(db));
-  app.route("/", expenseRoutes(ctx, value));
+  app.route("/", transactionRoutes(ctx, value));
   app.route("/", draftRoutes(ctx));
   app.route("/", voiceRoutes(ctx));
   app.route("/", attachmentRoutes(ctx));

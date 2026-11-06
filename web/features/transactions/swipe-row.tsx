@@ -3,13 +3,13 @@ import { Icon, paths } from "../../components/icon";
 import { FormError } from "../../components/form";
 import { divide } from "../../components/styles";
 import { useSend } from "../../lib/api";
-import type { Expense } from "../../lib/schemas";
-import { ExpenseRow, rowClass } from "./expense-row";
+import type { Transaction } from "../../lib/schemas";
+import { TransactionRow, rowClass } from "./transaction-row";
 
-export function SwipeRow({ expense: e, fresh }: { expense: Expense; fresh: boolean }) {
+export function SwipeRow({ transaction: e, fresh }: { transaction: Transaction; fresh: boolean }) {
   const [swiped, setSwiped] = useState<{ x: number; dx: number } | null>(null);
   const dragged = useRef(false);
-  const mutation = useSend("expense");
+  const mutation = useSend("transaction");
   const sliding = !!swiped && swiped.dx < -8;
   return (
     <li
@@ -25,12 +25,12 @@ export function SwipeRow({ expense: e, fresh }: { expense: Expense; fresh: boole
         onPointerUp={() => {
           if (!swiped) return;
           dragged.current = swiped.dx < -8;
-          if (swiped.dx < -96) mutation.mutate(["DELETE", `/api/expenses/${e.id}`]);
+          if (swiped.dx < -96) mutation.mutate(["DELETE", `/api/transactions/${e.id}`]);
           setSwiped(null);
         }}
         onPointerCancel={() => setSwiped(null)}
       >
-        <ExpenseRow expense={e} />
+        <TransactionRow transaction={e} />
       </div>
       <FormError error={mutation.error} className="px-4 pb-2" />
     </li>

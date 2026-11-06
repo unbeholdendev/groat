@@ -5,57 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1791661915462,
+      "when": 1793992311306,
       "tag": "0000_baseline",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1792083609198,
-      "tag": "0001_users",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1792093736682,
-      "tag": "0002_members",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1792098076249,
-      "tag": "0003_api_tokens",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1792145687344,
-      "tag": "0004_attachments",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1792412438688,
-      "tag": "0005_category_order",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1792422950553,
-      "tag": "0006_drop_currencies",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1793824620998,
-      "tag": "0007_expense_request_id",
       "breakpoints": true
     }
   ]

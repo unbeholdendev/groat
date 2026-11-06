@@ -1,12 +1,12 @@
 import { type QueryClient, useMutationState } from "@tanstack/react-query";
 import { z } from "zod";
 import { refresh, useApi, useSession } from "../../lib/api";
-import { type Expense, expense, type Request, request, template, unsent } from "../../lib/schemas";
+import { type Transaction, transaction, type Request, request, template, unsent } from "../../lib/schemas";
 import { useMonth } from "./use-month";
 
-export const useExpenseQuery = () => useApi(z.array(expense), ["/api/expenses?", useMonth().query.toString()]);
-export const useExpenses = () => useExpenseQuery().data;
-export const usePending = () => useApi(z.array(expense), ["/api/expenses?", "status=pending"]).data ?? [];
+export const useTransactionQuery = () => useApi(z.array(transaction), ["/api/transactions?", useMonth().query.toString()]);
+export const useTransactions = () => useTransactionQuery().data;
+export const usePending = () => useApi(z.array(transaction), ["/api/transactions?", "status=pending"]).data ?? [];
 export const useTemplates = () => useApi(z.array(template), ["/api/recurring"]).data ?? [];
 
 export const useQueued = () => {
@@ -14,13 +14,13 @@ export const useQueued = () => {
   return useMutationState({
     filters: { predicate: (m) => m.state.isPaused && m.meta?.owner === owner },
     select: (m) => request.safeParse(m.state.variables).data,
-  }).flatMap((r, i) => (r?.[0] === "POST" && r[1] === "/api/expenses" ? (unsent(r[2], -1 - i) ?? []) : []));
+  }).flatMap((r, i) => (r?.[0] === "POST" && r[1] === "/api/transactions" ? (unsent(r[2], -1 - i) ?? []) : []));
 };
 
-export function syncExpense(client: QueryClient, data: unknown, [method]: Request) {
+export function syncTransaction(client: QueryClient, data: unknown, [method]: Request) {
   const { id } = z.object({ id: z.number() }).parse(data);
-  const row = method === "DELETE" ? undefined : expense.parse(data);
-  for (const [key, rows] of client.getQueriesData<Expense[]>({ queryKey: ["/api/expenses?"] })) {
+  const row = method === "DELETE" ? undefined : transaction.parse(data);
+  for (const [key, rows] of client.getQueriesData<Transaction[]>({ queryKey: ["/api/transactions?"] })) {
     if (!rows) continue;
     const { from = "", to = "~", status, ...rest } = Object.fromEntries(new URLSearchParams(String(key[1])));
     const fits = row && row.date >= from && row.date <= to && (!status || row.status === status);
@@ -34,4 +34,4 @@ export function syncExpense(client: QueryClient, data: unknown, [method]: Reques
   ["/api/settings", "/api/tags", "/api/notes", "/api/bin", "/api/stats"].forEach((p) => refresh(client, p));
 }
 
-export const inBase = (rows: Expense[], base: string) => rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === base ? e.amount : 0)), 0);
+export const inBase = (rows: Transaction[], base: string) => rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === base ? e.amount : 0)), 0);

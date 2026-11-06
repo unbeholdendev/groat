@@ -55,7 +55,7 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
 
 test("a bitcoin total fits the Stats card", async ({ app: page }) => {
   await page.request.put("/api/settings", { data: { baseCurrency: "BTC" } });
-  await page.request.post("/api/expenses", { data: { note: "Coffee", amount: "1375", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
+  await page.request.post("/api/transactions", { data: { note: "Coffee", amount: "1375", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
   await page.goto("/stats");
   const total = page.locator("section").first().locator("b").first();
   await expect(total).toContainText("BTC");
@@ -79,7 +79,7 @@ test("swiping the hero steps months", async ({ app: page }) => {
 });
 
 test("scrubbing the spend line reads out a day", async ({ app: page }) => {
-  await page.request.post("/api/expenses", { data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
+  await page.request.post("/api/transactions", { data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
   await page.goto("/stats");
   const chart = page.getByRole("img", { name: /so far/ }).locator("..");
   const b = (await chart.boundingBox())!;
@@ -90,7 +90,7 @@ test("scrubbing the spend line reads out a day", async ({ app: page }) => {
 });
 
 test("changing period clears a scrub readout", async ({ app: page }) => {
-  await page.request.post("/api/expenses", { data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
+  await page.request.post("/api/transactions", { data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
   await page.goto("/stats");
   const chart = page.getByRole("img", { name: /so far/ }).locator("..");
   const b = (await chart.boundingBox())!;
@@ -118,7 +118,7 @@ test("the desktop side column switches between amounts and shares", async ({ app
 
 test("a foreign expense shows its rate, in BTC or sats", async ({ app: page }) => {
   await page.request.put("/api/settings", { data: { baseCurrency: "BTC" } });
-  await page.request.post("/api/expenses", { data: { note: "Coffee", amount: "4.50", currency: "GBP", date: today() } });
+  await page.request.post("/api/transactions", { data: { note: "Coffee", amount: "4.50", currency: "GBP", date: today() } });
   await page.reload();
   await page.getByRole("button", { name: "Coffee" }).click();
   await expect(page.getByText("1 GBP = 0.00002083 BTC")).toBeVisible();

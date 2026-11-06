@@ -2,7 +2,7 @@ import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, o
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { knownCurrencies, parseAmount } from "../shared/amount";
-import { expenseInput, isoDate } from "../shared/schema";
+import { transactionInput, isoDate } from "../shared/schema";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
 import { type Db, settings, today, uncategorised, visible } from "./db";
@@ -10,26 +10,26 @@ import type { Valuer } from "./rates";
 import { json, query, valid } from "./request";
 import * as t from "./schema";
 
-const e = t.expenses;
-const { createdAt, updatedAt, deletedAt, createdBy, clientRequestId, ...expenseColumns } = getTableColumns(e);
+const e = t.transactions;
+const { createdAt, updatedAt, deletedAt, createdBy, clientRequestId, ...transactionColumns } = getTableColumns(e);
 
 export const newest = [desc(e.date), desc(e.id)];
 
 const tagList = z.array(z.string());
 
-export const expenses = (db: Db, where?: SQL) =>
+export const transactions = (db: Db, where?: SQL) =>
   db
     .select({
-      ...expenseColumns,
-      tags: sql`(SELECT json_group_array(name) FROM (SELECT name FROM expense_tags JOIN tags ON tags.id = tag_id
-        WHERE expense_id = expenses.id ORDER BY name))`.mapWith((v: string) => tagList.parse(JSON.parse(v))),
-      addedBy: sql<string | null>`(SELECT username FROM users WHERE users.id = expenses.created_by)`,
-      attachmentId: sql<number | null>`(SELECT id FROM attachments WHERE expense_id = expenses.id)`,
+      ...transactionColumns,
+      tags: sql`(SELECT json_group_array(name) FROM (SELECT name FROM transaction_tags JOIN tags ON tags.id = tag_id
+        WHERE transaction_id = transactions.id ORDER BY name))`.mapWith((v: string) => tagList.parse(JSON.parse(v))),
+      addedBy: sql<string | null>`(SELECT username FROM users WHERE users.id = transactions.created_by)`,
+      attachmentId: sql<number | null>`(SELECT id FROM attachments WHERE transaction_id = transactions.id)`,
     })
     .from(e)
     .where(where);
 
-export const expenseQuery = z
+export const transactionQuery = z
   .object({
     from: isoDate.describe("YYYY-MM-DD"),
     to: isoDate.describe("YYYY-MM-DD"),
@@ -41,7 +41,7 @@ export const expenseQuery = z
   })
   .partial();
 
-export function expenseFilter(db: Db, q: z.infer<typeof expenseQuery>, base = visible) {
+export function transactionFilter(db: Db, q: z.infer<typeof transactionQuery>, base = visible) {
   const category = q.category;
   return and(
     base,
@@ -51,7 +51,7 @@ export function expenseFilter(db: Db, q: z.infer<typeof expenseQuery>, base = vi
       ? inArray(e.categoryId, db.select({ id: t.categories.id }).from(t.categories).where(or(eq(t.categories.id, category), eq(t.categories.parentId, category))))
       : undefined,
     q.tag
-      ? inArray(e.id, db.select({ id: t.expenseTags.expenseId }).from(t.expenseTags).innerJoin(t.tags, eq(t.tags.id, t.expenseTags.tagId)).where(eq(t.tags.name, q.tag)))
+      ? inArray(e.id, db.select({ id: t.transactionTags.transactionId }).from(t.transactionTags).innerJoin(t.tags, eq(t.tags.id, t.transactionTags.tagId)).where(eq(t.tags.name, q.tag)))
       : undefined,
     q.currency ? eq(e.currency, q.currency) : undefined,
     q.status ? eq(e.status, q.status) : undefined,
@@ -59,8 +59,8 @@ export function expenseFilter(db: Db, q: z.infer<typeof expenseQuery>, base = vi
   );
 }
 
-export function readExpense(raw: unknown, db: Db, today: string, fallback: string, category: number, pending = false) {
-  const parsed = valid(expenseInput, raw);
+export function readTransaction(raw: unknown, db: Db, today: string, fallback: string, category: number, pending = false) {
+  const parsed = valid(transactionInput, raw);
   if ("error" in parsed) return parsed;
   const { note, currency = fallback, date = today, categoryId = category, tags = [], unit } = parsed.data;
   if (currency !== fallback && !knownCurrencies.has(currency)) return { error: "Invalid currency" };
@@ -72,15 +72,15 @@ export function readExpense(raw: unknown, db: Db, today: string, fallback: strin
   return { note, amount, currency, date, categoryId, tags: [...new Set(tags)] };
 }
 
-type ExpenseFields = Exclude<ReturnType<typeof readExpense>, { error: string }>;
+type TransactionFields = Exclude<ReturnType<typeof readTransaction>, { error: string }>;
 
 const attachment = z.object({ attachmentId: z.number().int().optional(), requestId: z.uuid().optional() });
 
-export function addExpense(db: Db, now: string, { tags, ...fields }: ExpenseFields, createdBy: number, status = "normal", attachmentId?: number) {
+export function addTransaction(db: Db, now: string, { tags, ...fields }: TransactionFields, createdBy: number, status = "normal", attachmentId?: number) {
   const { id } = db.insert(e).values({ ...fields, status, createdBy, createdAt: now, updatedAt: now }).returning({ id: e.id }).get();
   saveTags(db, id, tags);
-  if (attachmentId) db.update(t.attachments).set({ expenseId: id }).where(and(eq(t.attachments.id, attachmentId), isNull(t.attachments.expenseId))).run();
-  return expenses(db, eq(e.id, id)).get();
+  if (attachmentId) db.update(t.attachments).set({ transactionId: id }).where(and(eq(t.attachments.id, attachmentId), isNull(t.attachments.transactionId))).run();
+  return transactions(db, eq(e.id, id)).get();
 }
 
 export function suggestions(db: Db, prefix: string) {
@@ -102,32 +102,32 @@ export function suggestions(db: Db, prefix: string) {
 }
 
 export function saveTags(db: Db, id: number, tags: string[]) {
-  db.delete(t.expenseTags).where(eq(t.expenseTags.expenseId, id)).run();
+  db.delete(t.transactionTags).where(eq(t.transactionTags.transactionId, id)).run();
   for (const name of tags) {
     const { tagId } = db.insert(t.tags).values({ name }).onConflictDoUpdate({ target: t.tags.name, set: { name } }).returning({ tagId: t.tags.id }).get();
-    db.insert(t.expenseTags).values({ expenseId: id, tagId }).run();
+    db.insert(t.transactionTags).values({ transactionId: id, tagId }).run();
   }
 }
 
-export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
-  const valued = async (id: number) => (await value([expenses(db, eq(e.id, id)).get()!]))[0];
+export function transactionRoutes({ db, clock }: Ctx, value: Valuer) {
+  const valued = async (id: number) => (await value([transactions(db, eq(e.id, id)).get()!]))[0];
   const app = new Hono<Env>();
 
-  app.get("/api/expenses", async (c) => {
-    const q = query(c, expenseQuery);
+  app.get("/api/transactions", async (c) => {
+    const q = query(c, transactionQuery);
     if ("error" in q) return c.json(q, 400);
-    return c.json(await value(expenses(db, expenseFilter(db, q.data)).orderBy(...newest).all()));
+    return c.json(await value(transactions(db, transactionFilter(db, q.data)).orderBy(...newest).all()));
   });
 
   app.get("/api/notes", (c) => c.json(suggestions(db, c.req.query("prefix") ?? "")));
 
-  app.get("/api/bin", (c) => c.json(expenses(db, isNotNull(e.deletedAt)).orderBy(desc(e.deletedAt), desc(e.id)).all()));
+  app.get("/api/bin", (c) => c.json(transactions(db, isNotNull(e.deletedAt)).orderBy(desc(e.deletedAt), desc(e.id)).all()));
 
-  app.post("/api/expenses", async (c) => {
+  app.post("/api/transactions", async (c) => {
     const now = clock().toISOString();
     const { lastCurrency } = settings(db);
     const raw = await json(c);
-    const body = readExpense(raw, db, today(clock), lastCurrency, uncategorised(db));
+    const body = readTransaction(raw, db, today(clock), lastCurrency, uncategorised(db));
     if ("error" in body) return c.json(body, 400);
     const link = valid(attachment, raw);
     if ("error" in link) return c.json(link, 400);
@@ -135,19 +135,19 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     const id = db.transaction(() => {
       const existing = key && db.select({ id: e.id }).from(e).where(eq(e.clientRequestId, key)).get();
       if (existing) return existing.id;
-      const row = addExpense(db, now, body, c.get("user").id, "normal", link.data.attachmentId)!;
+      const row = addTransaction(db, now, body, c.get("user").id, "normal", link.data.attachmentId)!;
       if (key) db.update(e).set({ clientRequestId: key }).where(eq(e.id, row.id)).run();
       return row.id;
     });
     return c.json(await valued(id), 201);
   });
 
-  app.put("/api/expenses/:id", async (c) => {
+  app.put("/api/transactions/:id", async (c) => {
     const now = clock().toISOString();
     const id = Number(c.req.param("id"));
     const old = db.select({ currency: e.currency, categoryId: e.categoryId }).from(e).where(and(eq(e.id, id), visible)).get();
     if (!old) return c.json({ error: "Not found" }, 404);
-    const body = readExpense(await json(c), db, today(clock), old.currency, old.categoryId ?? uncategorised(db));
+    const body = readTransaction(await json(c), db, today(clock), old.currency, old.categoryId ?? uncategorised(db));
     if ("error" in body) return c.json(body, 400);
     const { tags, ...fields } = body;
     db.update(e).set({ ...fields, updatedAt: now }).where(eq(e.id, id)).run();
@@ -155,20 +155,20 @@ export function expenseRoutes({ db, clock }: Ctx, value: Valuer) {
     return c.json(await valued(id));
   });
 
-  const setExpense = async (c: Context, set: Partial<typeof e.$inferInsert>, where: SQL) => {
+  const setTransaction = async (c: Context, set: Partial<typeof e.$inferInsert>, where: SQL) => {
     const id = Number(c.req.param("id"));
     return db.update(e).set(set).where(and(eq(e.id, id), where)).returning({ id: e.id }).get()
       ? c.json(await valued(id))
       : c.json({ error: "Not found" }, 404);
   };
 
-  app.delete("/api/expenses/:id", (c) => {
-    if (c.req.query("purge") === undefined) return setExpense(c, { deletedAt: clock().toISOString() }, visible);
+  app.delete("/api/transactions/:id", (c) => {
+    if (c.req.query("purge") === undefined) return setTransaction(c, { deletedAt: clock().toISOString() }, visible);
     const row = db.delete(e).where(eq(e.id, Number(c.req.param("id")))).returning({ id: e.id }).get();
     return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   });
-  app.post("/api/expenses/:id/confirm", (c) => setExpense(c, { status: "normal" }, visible));
-  app.post("/api/bin/:id/restore", (c) => setExpense(c, { deletedAt: null }, isNotNull(e.deletedAt)));
+  app.post("/api/transactions/:id/confirm", (c) => setTransaction(c, { status: "normal" }, visible));
+  app.post("/api/bin/:id/restore", (c) => setTransaction(c, { deletedAt: null }, isNotNull(e.deletedAt)));
 
   app.delete("/api/bin", (c) => {
     db.delete(e).where(isNotNull(e.deletedAt)).run();

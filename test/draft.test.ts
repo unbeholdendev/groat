@@ -12,7 +12,7 @@ function provider(read: (body: any) => unknown) {
     requests.push(body);
     const args = read(body);
     return Response.json({
-      choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "expense", arguments: typeof args === "string" ? args : JSON.stringify(args) } }] } }],
+      choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: typeof args === "string" ? args : JSON.stringify(args) } }] } }],
     });
   };
   return { handler, requests };
@@ -31,8 +31,8 @@ test("text becomes a draft with a category from the household's list, saving not
   expect(res.status).toBe(200);
   expect(res.body).toEqual({ note: "Lunch with Sam", amount: 1840, currency: "GBP", date: "2026-10-09", categoryId: food.id, tags: ["work", "friends"] });
   expect(draft.safeParse(res.body).error).toBeUndefined();
-  expect(ai.requests[0].tool_choice).toEqual({ type: "function", function: { name: "expense" } });
-  expect((await call("GET", "/api/expenses")).body).toEqual([]);
+  expect(ai.requests[0].tool_choice).toEqual({ type: "function", function: { name: "transaction" } });
+  expect((await call("GET", "/api/transactions")).body).toEqual([]);
 });
 
 test("an unknown category, currency or future date falls back instead of failing", async () => {
@@ -54,7 +54,7 @@ test("capture with unsure text saves the AI's read as pending; sure text skips t
   const ai = provider(() => ({ note: "Parking", amount: "6", categoryId: 1 }));
   const h = setup(undefined, ai.handler, config);
   const food = (await h.call("POST", "/api/categories", { name: "Snacks", icon: "x", color: "#f00" })).body;
-  await h.call("POST", "/api/expenses", { note: "Crisps", amount: "1", categoryId: food.id });
+  await h.call("POST", "/api/transactions", { note: "Crisps", amount: "1", categoryId: food.id });
   const { token } = (await h.call("POST", "/api/tokens", { name: "Phone" })).body;
   const capture = async (text: string) =>
     (await h.app.request("/api/capture", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ text }) })).json();

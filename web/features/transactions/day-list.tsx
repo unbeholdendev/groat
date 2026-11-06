@@ -3,12 +3,12 @@ import { panel } from "../../components/styles";
 import { useSettings } from "../../lib/api";
 import { dayLabel } from "../../lib/dates";
 import { money } from "../../lib/money";
-import type { Expense } from "../../lib/schemas";
+import type { Transaction } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
 import { inBase } from "./queries";
 import { SwipeRow } from "./swipe-row";
 
-export function DayList({ days, newest }: { days: Map<string, Expense[]>; newest: number }) {
+export function DayList({ days, newest }: { days: Map<string, Transaction[]>; newest: number }) {
   const base = useSettings()!.baseCurrency;
   const [unit] = useContext(UnitContext);
   return (
@@ -26,7 +26,7 @@ export function DayList({ days, newest }: { days: Map<string, Expense[]>; newest
           </h2>
           <ul>
             {rows.map((e) => (
-              <SwipeRow key={e.id} expense={e} fresh={e.id > newest || e.id < 0} />
+              <SwipeRow key={e.id} transaction={e} fresh={e.id > newest || e.id < 0} />
             ))}
           </ul>
         </section>

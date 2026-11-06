@@ -1,17 +1,17 @@
 import { and, eq, getTableColumns, isNull, type SQL } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
-import { expenseInput, isoDate } from "../shared/schema";
+import { transactionInput, isoDate } from "../shared/schema";
 import type { Ctx } from "./app";
 import { settings, today, uncategorised } from "./db";
-import { readExpense, saveTags } from "./expenses";
+import { readTransaction, saveTags } from "./transactions";
 import { json, valid } from "./request";
 import * as t from "./schema";
 
-const e = t.expenses;
+const e = t.transactions;
 const r = t.recurring;
 
-const schedule = expenseInput.omit({ date: true }).extend({
+const schedule = transactionInput.omit({ date: true }).extend({
   period: z.enum(["day", "week", "month", "year"], "Invalid schedule"),
   every: z.number("Invalid schedule").int("Invalid schedule").min(1, "Invalid schedule"),
   startDate: isoDate.optional(),
@@ -28,7 +28,7 @@ export function recurringRoutes({ db, clock }: Ctx) {
   const readTemplate = (raw: unknown, fallback: string, category: number) => {
     const input = valid(schedule, raw);
     if ("error" in input) return input;
-    const e = readExpense({ ...input.data, date: today(clock) }, db, today(clock), fallback, category);
+    const e = readTransaction({ ...input.data, date: today(clock) }, db, today(clock), fallback, category);
     if ("error" in e) return e;
     const { period, every, startDate = today(clock), endDate, needsConfirmation } = input.data;
     const { note, amount, currency, categoryId, tags } = e;

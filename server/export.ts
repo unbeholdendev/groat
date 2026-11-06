@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { formatAmount } from "../shared/amount";
 import { categories } from "./categories";
 import { countable, type Db, settings } from "./db";
-import { expenseFilter, expenseQuery, expenses, newest } from "./expenses";
+import { transactionFilter, transactionQuery, transactions, newest } from "./transactions";
 import type { Valuer } from "./rates";
 import { query } from "./request";
 
@@ -10,9 +10,9 @@ export function exportRoutes(db: Db, value: Valuer) {
   const app = new Hono();
 
   app.get("/api/export", async (c) => {
-    const q = query(c, expenseQuery);
+    const q = query(c, transactionQuery);
     if ("error" in q) return c.json(q, 400);
-    const rows = expenses(db, expenseFilter(db, q.data, countable)).orderBy(...newest).all();
+    const rows = transactions(db, transactionFilter(db, q.data, countable)).orderBy(...newest).all();
     const { baseCurrency } = settings(db);
     const cats = new Map(categories(db).all().map((r) => [r.id, r]));
     const cell = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v);

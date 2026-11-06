@@ -10,7 +10,7 @@ import { useApi, useCategories, useSend } from "../../lib/api";
 import { money } from "../../lib/money";
 import { template, type Template } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
-import { rowClass } from "./expense-row";
+import { rowClass } from "./transaction-row";
 
 export function Recurring({ onEdit }: { onEdit: (t: Template) => void }) {
   const query = useApi(z.array(template), ["/api/recurring"], { throwOnError: false });

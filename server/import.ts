@@ -6,7 +6,7 @@ import { formatAmount } from "../shared/amount";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
 import { type Db, settings, today, uncategorised } from "./db";
-import { addExpense, readExpense } from "./expenses";
+import { addTransaction, readTransaction } from "./transactions";
 import { valid } from "./request";
 import * as t from "./schema";
 
@@ -75,7 +75,7 @@ function plan(db: Db, text: string, date: string) {
       ? { error: "Invalid date" }
       : !input.currency
         ? { error: "Invalid currency" }
-        : readExpense(input, db, date, baseCurrency, fallback);
+        : readTransaction(input, db, date, baseCurrency, fallback);
     if ("error" in read) {
       rejected.push({ line, error: read.error });
       continue;
@@ -104,7 +104,7 @@ function plan(db: Db, text: string, date: string) {
 export function importRoutes({ db, clock }: Ctx) {
   const app = new Hono<Env>();
   const used = "Import only works before any expenses are added";
-  const empty = () => !db.$client.query("SELECT 1 FROM expenses UNION ALL SELECT 1 FROM recurring UNION ALL SELECT 1 FROM tags").get();
+  const empty = () => !db.$client.query("SELECT 1 FROM transactions UNION ALL SELECT 1 FROM recurring UNION ALL SELECT 1 FROM tags").get();
 
   const limit = bodyLimit({ maxSize: 20 * 1024 * 1024, onError: (c) => c.json({ error: "That file is too large" }, 413) });
 
@@ -142,7 +142,7 @@ export function importRoutes({ db, clock }: Ctx) {
         const { id } = db.insert(cat).values({ name: sub ?? name, icon: "🏷️", color, parentId, sort }).returning({ id: cat.id }).get();
         existing.set(sub ? key(name, sub) : key(name), id);
       }
-      for (const { at, ...row } of rows) addExpense(db, now, { ...row, categoryId: at ? existing.get(at)! : row.categoryId }, userId);
+      for (const { at, ...row } of rows) addTransaction(db, now, { ...row, categoryId: at ? existing.get(at)! : row.categoryId }, userId);
     });
     return c.json({ imported: rows.length });
   });

@@ -8,14 +8,14 @@ import { useSend, useSession, useSettings } from "../../../lib/api";
 import type { Draft } from "../../../lib/schemas";
 import { UnitContext } from "../../../lib/unit";
 import { useZodForm } from "../../../lib/use-zod-form";
-import { useExpenses, usePending } from "../queries";
-import { blank, expenseForm, filled, fromTemplate, type ExpenseValues } from "../schema";
+import { useTransactions, usePending } from "../queries";
+import { blank, transactionForm, filled, fromTemplate, type TransactionValues } from "../schema";
 import { route, useList } from "../use-month";
 import { CategoryChips, DateChips } from "./chips";
 import { FormHeader } from "./form-header";
 import { RepeatFields } from "./repeat-fields";
 
-export function ExpenseForm() {
+export function TransactionForm() {
   const settings = useSettings()!;
   const [unit, setUnit] = useContext(UnitContext);
   const { draft, template } = useLocation().state;
@@ -24,13 +24,13 @@ export function ExpenseForm() {
   const navigate = route.useNavigate();
   const cache = useQueryClient();
   const owner = useSession()?.user?.username;
-  const draftKey = ["expense-draft", owner, editing ? `edit:${editing}` : template ? `recurring:${template.id}` : "new"];
-  const [recovered] = useState(() => draft ? undefined : cache.getQueryData<{ values: ExpenseValues; recurring?: number; unit: typeof unit }>(draftKey));
-  const form = useZodForm(expenseForm(unit), recovered?.values ?? (template ? fromTemplate(template, unit) : blank(settings.lastCurrency)));
+  const draftKey = ["transaction-draft", owner, editing ? `edit:${editing}` : template ? `recurring:${template.id}` : "new"];
+  const [recovered] = useState(() => draft ? undefined : cache.getQueryData<{ values: TransactionValues; recurring?: number; unit: typeof unit }>(draftKey));
+  const form = useZodForm(transactionForm(unit), recovered?.values ?? (template ? fromTemplate(template, unit) : blank(settings.lastCurrency)));
   const { watch, setValue, handleSubmit } = form;
   const [categoryId, date] = watch(["categoryId", "date"]);
-  const editRow = [...(useExpenses() ?? []), ...usePending()].find((e) => e.id === editing);
-  const saving = useSend("expense", () => close(true));
+  const editRow = [...(useTransactions() ?? []), ...usePending()].find((e) => e.id === editing);
+  const saving = useSend("transaction", () => close(true));
   const repeating = useSend(undefined, () => close(true));
   const [recurring, setRecurring] = useState(recovered?.recurring ?? template?.id);
 
@@ -84,7 +84,7 @@ export function ExpenseForm() {
     if (period)
       repeating.mutate([recurring ? "PUT" : "POST", recurring ? `/api/recurring/${recurring}` : "/api/recurring", { ...body, period, every: Number(every), endDate: endDate || null, needsConfirmation, startDate: v.date }]);
     else if (recurring) repeating.mutate(["DELETE", `/api/recurring/${recurring}`]);
-    else saving.mutate([editing ? "PUT" : "POST", editing ? `/api/expenses/${editing}` : "/api/expenses", body]);
+    else saving.mutate([editing ? "PUT" : "POST", editing ? `/api/transactions/${editing}` : "/api/transactions", body]);
   });
 
   return (
@@ -120,7 +120,7 @@ export function ExpenseForm() {
       {!editing && <RepeatFields form={form} stops={!!recurring} />}
       <FormError error={saving.error ?? repeating.error} className="mt-4" />
       {editing && (
-        <Button variant="link" tone="up" className="mt-6 self-start text-sm" onClick={() => saving.mutate(["DELETE", `/api/expenses/${editing}`])}>
+        <Button variant="link" tone="up" className="mt-6 self-start text-sm" onClick={() => saving.mutate(["DELETE", `/api/transactions/${editing}`])}>
           Move to bin
         </Button>
       )}

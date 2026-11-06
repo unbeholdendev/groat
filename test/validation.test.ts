@@ -7,13 +7,13 @@ test("malformed input gets a readable 400 on every route family", async () => {
   const { call, request } = setup(undefined, undefined, ai);
   const category = (await call("POST", "/api/categories", { name: "Food", icon: "🍽️", color: "#f00" })).body.id;
   const cases: [string, string, unknown, string][] = [
-    ["POST", "/api/expenses", { note: "x", amount: 5 }, "Invalid amount"],
-    ["GET", "/api/expenses?from=yesterday", undefined, "Invalid date"],
+    ["POST", "/api/transactions", { note: "x", amount: 5 }, "Invalid amount"],
+    ["GET", "/api/transactions?from=yesterday", undefined, "Invalid date"],
     ["GET", "/api/export?category=abc", undefined, "Invalid category"],
     ["POST", "/api/categories", { name: " ", icon: "x", color: "#f00" }, "Enter a name, emoji and colour"],
     ["PUT", "/api/categories/order", { ids: [1] }, "Expected a list of category IDs"],
     ["PUT", "/api/categories/order", [1, "2"], "Expected a list of category IDs"],
-    ["POST", "/api/expenses", { note: "x", amount: "5", tags: ["ok", " "] }, "Invalid tags"],
+    ["POST", "/api/transactions", { note: "x", amount: "5", tags: ["ok", " "] }, "Invalid tags"],
     ["DELETE", `/api/categories/${category}?moveTo=abc`, undefined, "Invalid category to move to"],
     ["PUT", "/api/tags/1", { name: 3 }, "Enter a name"],
     ["POST", "/api/recurring", { note: "rent", amount: "5", period: "fortnight", every: 1 }, "Invalid schedule"],
@@ -24,7 +24,7 @@ test("malformed input gets a readable 400 on every route family", async () => {
   ];
   for (const [method, path, body, error] of cases) expect([method, path, await call(method, path, body)]).toEqual([method, path, { status: 400, body: { error } }]);
 
-  const res = await request("/api/expenses", { method: "POST", headers: { "content-type": "application/json" }, body: "{not json" });
+  const res = await request("/api/transactions", { method: "POST", headers: { "content-type": "application/json" }, body: "{not json" });
   expect([res.status, await res.json()]).toEqual([400, { error: "Invalid request" }]);
 });
 

@@ -30,12 +30,12 @@ test("a fresh install asks for setup, which creates the admin and signs them in,
 test("an upgraded install keeps its data after setup, added by the admin", async () => {
   const { db, call, post, get, session } = anonymous();
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
-  await call("POST", "/api/expenses", { note: "Coffee", amount: "3" });
-  db.run("UPDATE expenses SET created_by = NULL");
+  await call("POST", "/api/transactions", { note: "Coffee", amount: "3" });
+  db.run("UPDATE transactions SET created_by = NULL");
   db.run("DELETE FROM sessions");
   db.run("DELETE FROM users");
   const res = await post("/api/setup", { username: "ann", password: "hunter22" });
-  const rows: { note: string; addedBy: string }[] = await (await get("/api/expenses", session(res))).json();
+  const rows: { note: string; addedBy: string }[] = await (await get("/api/transactions", session(res))).json();
   expect(rows.map((e) => [e.note, e.addedBy])).toEqual([["Coffee", "ann"]]);
 });
 
@@ -45,7 +45,7 @@ test("login takes a good password and refuses a bad one", async () => {
   expect((await post("/api/login", { username: "nobody", password: "secret" })).status).toBe(401);
   const res = await post("/api/login", { username: "admin", password: "secret" });
   expect(res.status).toBe(200);
-  expect((await get("/api/expenses", session(res))).status).toBe(200);
+  expect((await get("/api/transactions", session(res))).status).toBe(200);
 });
 
 test("cookies are Secure over HTTPS", async () => {
@@ -61,35 +61,35 @@ test("sessions slide forward with use and expire when idle", async () => {
   const { clock, post, get, session } = anonymous();
   const cookie = session(await post("/api/login", { username: "admin", password: "secret" }));
   clock.now = new Date("2026-11-05T12:00:00Z");
-  expect((await get("/api/expenses", cookie)).status).toBe(200);
+  expect((await get("/api/transactions", cookie)).status).toBe(200);
   clock.now = new Date("2026-12-01T12:00:00Z");
-  expect((await get("/api/expenses", cookie)).status).toBe(200);
+  expect((await get("/api/transactions", cookie)).status).toBe(200);
   clock.now = new Date("2027-01-01T12:00:00Z");
-  expect((await get("/api/expenses", cookie)).status).toBe(401);
+  expect((await get("/api/transactions", cookie)).status).toBe(401);
 });
 
 test("logout ends the session", async () => {
   const { post, get, session } = anonymous();
   const cookie = session(await post("/api/login", { username: "admin", password: "secret" }));
   expect((await post("/api/logout", {}, cookie)).status).toBe(200);
-  expect((await get("/api/expenses", cookie)).status).toBe(401);
+  expect((await get("/api/transactions", cookie)).status).toBe(401);
   expect(await (await get("/api/session", cookie)).json()).toEqual({ setup: false, user: null });
 });
 
 test("without a session the API refuses everything else", async () => {
   const { get, post } = anonymous();
-  for (const path of ["/api/expenses", "/api/categories", "/api/stats", "/api/export", "/api/chats", "/api/nope"])
+  for (const path of ["/api/transactions", "/api/categories", "/api/stats", "/api/export", "/api/chats", "/api/nope"])
     expect((await get(path)).status).toBe(401);
-  expect((await post("/api/expenses", { note: "x", amount: "1" })).status).toBe(401);
+  expect((await post("/api/transactions", { note: "x", amount: "1" })).status).toBe(401);
   expect((await post("/api/logout")).status).toBe(401);
-  expect((await get("/api/expenses", "session=forged")).status).toBe(401);
+  expect((await get("/api/transactions", "session=forged")).status).toBe(401);
 });
 
 test("a queued write cannot run under a different signed-in user", async () => {
   const { request, call } = setup();
-  const res = await request("/api/expenses", { method: "POST", headers: { "content-type": "application/json", "x-expense-user": "someone-else" }, body: JSON.stringify({ note: "Wrong owner", amount: "2" }) });
+  const res = await request("/api/transactions", { method: "POST", headers: { "content-type": "application/json", "x-transaction-user": "someone-else" }, body: JSON.stringify({ note: "Wrong owner", amount: "2" }) });
   expect(res.status).toBe(409);
-  expect((await call("GET", "/api/expenses")).body).toHaveLength(0);
+  expect((await call("GET", "/api/transactions")).body).toHaveLength(0);
 });
 
 test("queued writes support Unicode usernames", async () => {
@@ -97,7 +97,7 @@ test("queued writes support Unicode usernames", async () => {
   await call("POST", "/api/users", { username: "用户", password: "secret" });
   const login = await app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "用户", password: "secret" }) });
   const cookie = login.headers.get("set-cookie")!.split(";")[0];
-  const res = await app.request("/api/expenses", { method: "POST", headers: { cookie, "content-type": "application/json", "x-expense-user": encodeURIComponent("用户") }, body: JSON.stringify({ note: "Lunch", amount: "2" }) });
+  const res = await app.request("/api/transactions", { method: "POST", headers: { cookie, "content-type": "application/json", "x-transaction-user": encodeURIComponent("用户") }, body: JSON.stringify({ note: "Lunch", amount: "2" }) });
   expect(res.status).toBe(201);
   expect((await res.json()).addedBy).toBe("用户");
 });

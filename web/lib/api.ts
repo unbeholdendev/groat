@@ -7,7 +7,7 @@ import { isLocallySignedOut } from "./device";
 const failure = z.object({ error: z.string() }).partial();
 
 export async function send(method: string, path: string, body?: unknown, owner?: string): Promise<unknown> {
-  const init = body instanceof FormData ? { body } : { headers: { "content-type": "application/json", ...(owner ? { "x-expense-user": encodeURIComponent(owner) } : {}) }, body: JSON.stringify(body) };
+  const init = body instanceof FormData ? { body } : { headers: { "content-type": "application/json", ...(owner ? { "x-transaction-user": encodeURIComponent(owner) } : {}) }, body: JSON.stringify(body) };
   const res = await fetch(path, { method, ...init }).catch(() => {
     throw new Error("Couldn’t reach the server. Check your connection and try again.");
   });

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { credentials } from "../web/features/auth/schema";
 import { categoryForm, tagForm } from "../web/features/categories/schema";
-import { blank, expenseForm, filled, fromTemplate } from "../web/features/expenses/schema";
+import { blank, transactionForm, filled, fromTemplate } from "../web/features/transactions/schema";
 import { fields, review } from "../web/features/quick-add/schema";
 import { newPassword, tokenName } from "../web/features/settings/schema";
 import { today } from "../web/lib/dates";
@@ -12,16 +12,16 @@ const errors = (r: z.ZodSafeParseResult<unknown>) => (r.success ? [] : r.error.i
 const values = { ...blank("GBP"), note: "Coffee", amount: "3.50", date: "2026-05-01" };
 
 test("expense form parses tags and checks note and amount", () => {
-  const r = expenseForm("BTC").safeParse({ ...values, tags: " work, ,trip " });
+  const r = transactionForm("BTC").safeParse({ ...values, tags: " work, ,trip " });
   expect(r.success && r.data.tags).toEqual(["work", "trip"]);
-  expect(errors(expenseForm("BTC").safeParse({ ...values, note: " ", amount: "3.505" }))).toEqual(["note", "amount"]);
-  expect(errors(expenseForm("BTC").safeParse({ ...values, amount: "0" }))).toEqual(["amount"]);
-  expect(errors(expenseForm("sats").safeParse({ ...values, currency: "BTC", amount: "1.5" }))).toEqual(["amount"]);
-  expect(errors(expenseForm("sats").safeParse({ ...values, currency: "BTC", amount: "5000" }))).toEqual([]);
+  expect(errors(transactionForm("BTC").safeParse({ ...values, note: " ", amount: "3.505" }))).toEqual(["note", "amount"]);
+  expect(errors(transactionForm("BTC").safeParse({ ...values, amount: "0" }))).toEqual(["amount"]);
+  expect(errors(transactionForm("sats").safeParse({ ...values, currency: "BTC", amount: "1.5" }))).toEqual(["amount"]);
+  expect(errors(transactionForm("sats").safeParse({ ...values, currency: "BTC", amount: "5000" }))).toEqual([]);
 });
 
 test("repeat rules apply only with a period", () => {
-  const form = expenseForm("BTC");
+  const form = transactionForm("BTC");
   expect(errors(form.safeParse({ ...values, every: "0", endDate: "2020-01-01" }))).toEqual([]);
   const repeat = { ...values, period: "month" };
   expect(errors(form.safeParse({ ...repeat, every: "2", endDate: "2026-05-01" }))).toEqual([]);
