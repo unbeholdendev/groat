@@ -12,7 +12,7 @@ IMAGE="ghcr.io/unbeholden/groat:$VERSION"
 docker pull "$IMAGE"
 ```
 
-Choose a published version; `vX.Y.Z` is a placeholder. Use a version tag or digest for an installation. The `latest` tag moves on each release. Check the GitHub Actions release run for the published digest. The first release version has not been chosen yet.
+Choose a published version; `vX.Y.Z` is a placeholder. Use a version tag or digest for an installation. The `latest` tag moves on stable releases only. Prerelease tags such as `v0.1.0-alpha.1` publish only their versioned image; use that exact tag to test an early build. Check the GitHub Actions release run for the published digest. The first release version has not been chosen yet.
 
 ## Build from source instead
 
@@ -100,7 +100,7 @@ Migrations run automatically at startup. Sign in and check the saved expense, se
 
 ## Maintainer release checklist
 
-Groat uses Apache-2.0; see [LICENSE](../LICENSE). Releases follow unbeholden-wallet: create a version tag on Forgejo, mirror it to GitHub, then build and publish the image with GitHub Actions. The workflow publishes the exact tag and `latest` to `ghcr.io/unbeholden/groat`, initially for `linux/amd64`. The first release version still needs a maintainer decision.
+Groat uses Apache-2.0; see [LICENSE](../LICENSE). Releases follow unbeholden-wallet: create a version tag on Forgejo, mirror it to GitHub, then build and publish the image with GitHub Actions. The workflow publishes the exact tag to `ghcr.io/unbeholden/groat`, initially for `linux/amd64`. Tags containing a hyphen are prereleases and do not update `latest`. The first release version still needs a maintainer decision.
 
 Before tagging, verify that the Forgejo push mirror targets the GitHub repository `unbeholden/groat` and includes tags. Enable Actions on the GitHub mirror and allow its workflow token to write packages. The workflow uses GitHub's built-in `GITHUB_TOKEN`; no separate registry token is needed. After the first push, make the GHCR package public so installations can pull it without signing in.
 
