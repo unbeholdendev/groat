@@ -113,6 +113,7 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
       "Binned (deleted_at set) and pending (status 'pending') expenses are not spending: leave them out unless the user asks for them.",
       "Each category has a kind, expense or income; subcategories share their parent's. A transaction's kind is its category's. Amounts are always positive: income is money in, never spending. Net is income minus spending; savings rate is net divided by income.",
       "Amounts are integers in the currency's smallest unit (pence, cents, whole yen, sats for BTC).",
+      "Totals with unconverted > 0 are incomplete; say so and do not present comparisons as complete. A null baseAmount means a missing rate. Use fixed tools for currency conversion; SQL sums of original amounts mix currencies.",
       `Categories: ${JSON.stringify(cats)}`,
     ].join("\n");
   };

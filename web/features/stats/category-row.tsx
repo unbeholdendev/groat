@@ -9,6 +9,7 @@ import { list, row, type Slice } from "./types";
 
 export function CategoryRow(props: {
   slice: Slice;
+  compare: boolean;
   index: number;
   total: number;
   before?: Slice;
@@ -31,7 +32,7 @@ export function CategoryRow(props: {
           <span className="truncate font-medium">{c.name}</span>
           {subs && <Chevron className={`size-3.5 shrink-0 self-center text-ink3 transition-transform ${open ? "rotate-180" : ""}`} />}
           <span className="num ml-auto">{show(c.total)}</span>
-          <Delta now={c.total} before={before?.total ?? 0} pad={pad} />
+          {props.compare && <Delta now={c.total} before={before?.total ?? 0} pad={pad} />}
         </span>
         <span className="mt-2 flex items-center gap-2.5">
           <ShareBar share={share} color={c.color} builtin={t?.builtin} index={props.index} className="h-1.5 flex-1" />
@@ -59,7 +60,7 @@ export function CategoryRow(props: {
                 <Tile category={tile(k.id) ?? k} small />
                 <span className="min-w-0 flex-1 truncate">{k.id === c.id ? `${k.name}, general` : k.name}</span>
                 <span className="num">{show(k.total)}</span>
-                <Delta now={k.total} before={before?.children.find((b) => b.id === k.id)?.total ?? 0} pad={pad} />
+                {props.compare && <Delta now={k.total} before={before?.children.find((b) => b.id === k.id)?.total ?? 0} pad={pad} />}
               </>
             );
             return (

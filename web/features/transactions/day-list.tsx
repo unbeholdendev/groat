@@ -27,7 +27,7 @@ export function DayList({ days, newest }: { days: Map<string, Transaction[]>; ne
                   {kind === "income" && "+"}
                   {money(inBase(counted, base), base, unit)}
                   {counted.some((e) => e.baseAmount === null) && (
-                    <span className="font-sans"> + {counted.filter((e) => e.baseAmount === null).length} unconverted</span>
+                    <span className="font-sans"> + {counted.filter((e) => e.baseAmount === null).length} without rates · incomplete</span>
                   )}
                 </span>
               )}

@@ -18,8 +18,8 @@ test("an expense without a rate shows as unconverted and stays out of the day to
     { note: "Tea", amount: "2" },
   ]);
   await page.reload();
-  await expect(page.getByRole("listitem").filter({ hasText: "Sushi" })).toContainText("Unconverted");
-  await expect(page.getByText("£2.00 + 1 unconverted")).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Sushi" })).toContainText("Missing rate");
+  await expect(page.getByText("£2.00 + 1 without rates · incomplete")).toBeVisible();
 });
 
 test("/ focuses the bar", async ({ app: page, isMobile }) => {

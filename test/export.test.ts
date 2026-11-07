@@ -25,9 +25,9 @@ test("export lists live expenses as CSV with base values, categories and escapin
   await call("DELETE", `/api/transactions/${binned.body.id}`);
   expect(await exported(request)).toBe(
     [
-      "date,type,note,amount,currency,base amount,base currency,category,subcategory,tags",
-      "2026-10-03,expense,Dinner,12.50,GBP,12.50,GBP,Food,,",
-      '2026-10-02,expense,"Milk, ""organic""",10.00,EUR,9.50,GBP,Food,Groceries,"a, b"',
+      "date,type,note,amount,currency,base amount,base currency,category,subcategory,tags,conversion status,original rate date,original rate source,base rate date,base rate source",
+      "2026-10-03,expense,Dinner,12.50,GBP,12.50,GBP,Food,,,complete,,,,",
+      '2026-10-02,expense,"Milk, ""organic""",10.00,EUR,9.50,GBP,Food,Groceries,"a, b",complete,2026-10-02,frankfurter,2026-10-02,frankfurter',
       "",
     ].join("\r\n"),
   );
@@ -40,7 +40,7 @@ test("export respects the list filters and leaves base amount blank without a ra
   await call("POST", "/api/transactions", { note: "Bus", amount: "2", currency: "GBP", date: "2026-10-01", tags: ["hols"] });
   await call("POST", "/api/transactions", { note: "Sushi", amount: "900", currency: "JPY", date: "2026-10-05", tags: ["hols"] });
   expect((await exported(request, "tag=hols&currency=JPY&to=2026-10-02")).split("\r\n").slice(1)).toEqual([
-    "2026-10-01,expense,Ramen,1200,JPY,,GBP,Uncategorised,,hols",
+    "2026-10-01,expense,Ramen,1200,JPY,,GBP,Uncategorised,,hols,incomplete,,,,",
     "",
   ]);
 });
@@ -49,5 +49,5 @@ test("export shows bitcoin amounts in BTC to 8 decimals", async () => {
   const { request, call } = setup();
   await call("POST", "/api/onboarding", { baseCurrency: "BTC" });
   await call("POST", "/api/transactions", { note: "Pizza", amount: "0.0012345", currency: "BTC", date: "2026-10-01" });
-  expect((await exported(request)).split("\r\n")[1]).toBe("2026-10-01,expense,Pizza,0.00123450,BTC,0.00123450,BTC,Uncategorised,,");
+  expect((await exported(request)).split("\r\n")[1]).toBe("2026-10-01,expense,Pizza,0.00123450,BTC,0.00123450,BTC,Uncategorised,,,complete,,,,");
 });

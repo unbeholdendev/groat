@@ -16,7 +16,8 @@ function Change({ now, before, points }: { now: number | null; before: number | 
 }
 
 export function IncomeRow({ now, prev, show }: { now: Period; prev: Period; show: (n: number) => string }) {
-  const saved = rate(now);
+  const compare = !now.unconverted && !prev.unconverted;
+  const saved = now.unconverted ? null : rate(now);
   const cells = [
     { name: "Income", value: show(now.income.total), now: now.income.total, before: prev.income.total },
     { name: "Net", value: show(now.income.total - now.total), now: now.income.total - now.total, before: prev.income.total - prev.total },
@@ -29,7 +30,7 @@ export function IncomeRow({ now, prev, show }: { now: Period; prev: Period; show
           <dt className="text-[12px] font-medium text-ink2">{c.name}</dt>
           <dd className="num truncate text-[15px] font-medium">{c.value}</dd>
           <dd>
-            <Change now={c.now} before={c.before} points={c.points} />
+            {compare && <Change now={c.now} before={c.before} points={c.points} />}
           </dd>
         </div>
       ))}

@@ -13,7 +13,7 @@ import { transactionRoutes } from "./transactions";
 import { memberRoutes } from "./members";
 import { exportRoutes } from "./export";
 import { importRoutes } from "./import";
-import { valuer } from "./rates";
+import { rateRoutes, valuer } from "./rates";
 import { recurringRoutes } from "./recurring";
 import { settingsRoutes } from "./settings";
 import { statsRoutes } from "./stats";
@@ -54,6 +54,7 @@ export function createApp(deps: Deps) {
   app.route("/", tokenRoutes(ctx));
   app.route("/", settingsRoutes(db, deps.config));
   app.route("/", categoryRoutes(db));
+  app.route("/", rateRoutes(ctx, value));
   app.route("/", transactionRoutes(ctx, value));
   app.route("/", draftRoutes(ctx));
   app.route("/", voiceRoutes(ctx));

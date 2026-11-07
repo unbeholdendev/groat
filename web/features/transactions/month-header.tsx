@@ -62,7 +62,7 @@ export function MonthHeader({ rows, showFilters, onFilters }: { rows: Transactio
             <Total amount={inBase(counted, base)} currency={base} unit={unit} />
           </p>
           <p className="mt-2.5 text-[13px] font-medium text-ink2">
-            {shown.length} matching{unrated > 0 && ` + ${unrated} unconverted`}
+            {shown.length} matching{unrated > 0 && ` + ${unrated} without rates · incomplete`}
           </p>
         </>
       ) : (

@@ -11,6 +11,7 @@ export const transaction = z.object({
   categoryId: z.number().nullable(),
   tags: z.array(z.string()),
   baseAmount: z.number().nullish(),
+  conversion: z.object({ date: z.string(), from: z.object({ currency: z.string(), rate: z.number(), source: z.string(), rateDate: z.string().nullable() }).nullable(), to: z.object({ currency: z.string(), rate: z.number(), source: z.string(), rateDate: z.string().nullable() }).nullable() }).nullish(),
   status: z.enum(["normal", "pending"]).optional(),
   recurringId: z.number().nullish(),
   addedBy: z.string().nullish(),

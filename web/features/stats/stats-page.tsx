@@ -62,7 +62,8 @@ export function StatsPage() {
   const running = s.end > s.range[1];
   const n = days(...s.range);
   const vs = preset !== "Custom" ? s.name : n === 1 ? "the day before" : `the ${n} days before`;
-  const d = change(now.total, ref.total);
+  const incomplete = now.unconverted > 0 || ref.unconverted > 0 || full.unconverted > 0;
+  const d = !incomplete && change(now.total, ref.total);
 
   return (
     <>
@@ -70,7 +71,7 @@ export function StatsPage() {
         {head}
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="mt-7 block" />
         <p className="mt-2.5 flex min-h-[26px] flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-ink2">
-          {scrubbed ?? (d ? (
+          {incomplete ? "Incomplete totals · comparison unavailable" : scrubbed ?? (d ? (
             <>
               <Pill d={d} />
               vs {vs}
@@ -89,11 +90,11 @@ export function StatsPage() {
           full={s.full}
           max={Math.max(now.total, full.total)}
           label={`${s.name} ${show(full.total)}`}
-          ghost={full.total > 0}
+          ghost={!incomplete && full.total > 0}
           show={show}
           name={s.name}
           onScrub={setScrubbed}
-          aria={`${show(now.total)} ${running ? "so far" : "in total"}. ${preset === "Custom" ? "The period before" : s.name} was at ${show(ref.total)} by this point and ended at ${show(full.total)}.`}
+          aria={incomplete ? "Incomplete totals. Expenses without rates are excluded; comparison unavailable." : `${show(now.total)} ${running ? "so far" : "in total"}. ${preset === "Custom" ? "The period before" : s.name} was at ${show(ref.total)} by this point and ended at ${show(full.total)}.`}
         />
       </section>
       {now.unconverted > 0 && <p className="mt-3 text-[13px] text-amber">{now.unconverted === 1 ? "1 entry has no rate and is left out." : `${now.unconverted} entries have no rate and are left out.`}</p>}

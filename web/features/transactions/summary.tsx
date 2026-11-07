@@ -16,7 +16,8 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
   const [hover, setHover] = useState<string>();
   useEffect(() => setHover(undefined), [month]);
   if (!now) return <div className="h-[222px]" />;
-  const d = ref && change(now.total, ref.total);
+  const incomplete = now.unconverted > 0 || !!ref?.unconverted;
+  const d = !incomplete && ref && change(now.total, ref.total);
   const share = (n: number) => `${Math.round((n / now.total) * 100)}%`;
   const builtin = (id: number | null) => !id || categories.find((c) => c.id === id)?.builtin;
   const name = (id: number | null) => categories.find((c) => c.id === id)?.name ?? "Uncategorised";
@@ -42,6 +43,7 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
       <p className="mt-4">
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} />
       </p>
+      {incomplete && <p className="mt-2 text-[13px] text-amber">Incomplete totals: expenses without rates are excluded. Comparison unavailable. Add a manual rate in Settings.</p>}
       <p aria-live="polite" className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] font-medium text-ink2">
         {shown ? (
           <>

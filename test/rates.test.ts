@@ -81,7 +81,7 @@ test("today's rates are reused for ten minutes, never stored", async () => {
   expect(fetches.length).toBe(4);
 });
 
-test("a failed fetch is not retried until restart", async () => {
+test("a failed fetch is not retried within ten minutes; restart also retries", async () => {
   const { call, fetches, restart } = await onboarded("GBP", () => new Response("down", { status: 503 }));
   await call("POST", "/api/transactions", { note: "Lunch", amount: "10", currency: "EUR", date: "2026-10-02" });
   await call("GET", "/api/transactions");

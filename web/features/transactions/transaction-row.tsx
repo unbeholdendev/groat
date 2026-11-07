@@ -41,7 +41,7 @@ export function TransactionRow({ transaction: e, dated }: { transaction: Transac
           {[dated && `${dayLabel(e.date)} ·`, category?.name, ...e.tags.map((t) => `#${t}`), e.addedBy && e.addedBy !== me && `by ${e.addedBy}`].filter(Boolean).join("  ")}
         </span>
       </span>
-      <span className="num text-right text-[15px] font-medium whitespace-nowrap">
+      <span title={e.conversion ? [e.conversion.date, ...[e.conversion.from, e.conversion.to].map(q => q ? `${q.currency}: ${q.source}, rate date ${q.rateDate ?? "unknown"}` : "Missing rate")].join(" · ") : undefined} className="num text-right text-[15px] font-medium whitespace-nowrap">
         <span className={income ? "text-down" : undefined}>
           {income && "+"}
           {foreign && e.baseAmount != null ? show(e.baseAmount, settings.baseCurrency) : show(e.amount, e.currency)}
@@ -49,7 +49,7 @@ export function TransactionRow({ transaction: e, dated }: { transaction: Transac
         {e.id < 0 && <span className="block font-sans text-xs text-ink3">Will sync</span>}
         {foreign && (
           <span className="block text-xs text-ink3">
-            {e.baseAmount === null ? <span className="font-sans text-amber">Unconverted</span> : show(e.amount, e.currency)}
+            {e.baseAmount === null ? <span className="font-sans text-amber">Missing rate</span> : show(e.amount, e.currency)}
           </span>
         )}
       </span>

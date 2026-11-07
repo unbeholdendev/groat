@@ -131,9 +131,11 @@ test.skipIf(readMigrationFiles({ migrationsFolder }).length < 2)("a backup from 
   const old = new Database(tempFile(new Uint8Array()));
   migrate(drizzle(old), { migrationsFolder: folder });
   old.run("INSERT INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')", [Bun.password.hashSync("old", { algorithm: "argon2id", memoryCost: 8, timeCost: 1 })]);
+  old.run("INSERT INTO rates (date, currency, rate, source) VALUES ('2026-10-02', 'EUR', 0.8, 'frankfurter')");
   old.close();
 
   const target = fresh();
   expect((await target.restore(readFileSync(old.filename))).status).toBe(200);
   expect((await target.login("admin", "old")).status).toBe(200);
+  expect(target.db.query("SELECT rate, rate_date FROM rates WHERE currency = 'EUR'").get()).toEqual({ rate: 0.8, rate_date: null });
 });

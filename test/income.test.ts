@@ -96,8 +96,8 @@ test("CSV export has a type column", async () => {
   await add("Pay", "3000", "Salary", "2026-09-06");
   const csv = await (await request("/api/export")).text();
   expect(csv.split("\r\n").slice(0, 3)).toEqual([
-    "date,type,note,amount,currency,base amount,base currency,category,subcategory,tags",
-    "2026-09-06,income,Pay,3000.00,GBP,3000.00,GBP,Salary,,",
-    "2026-09-05,expense,Shop,10.00,GBP,10.00,GBP,Food,Groceries,",
+    "date,type,note,amount,currency,base amount,base currency,category,subcategory,tags,conversion status,original rate date,original rate source,base rate date,base rate source",
+    "2026-09-06,income,Pay,3000.00,GBP,3000.00,GBP,Salary,,,complete,,,,",
+    "2026-09-05,expense,Shop,10.00,GBP,10.00,GBP,Food,Groceries,,complete,,,,",
   ]);
 });

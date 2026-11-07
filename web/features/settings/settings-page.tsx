@@ -4,6 +4,7 @@ import { Chevron, paths } from "../../components/icon";
 import { linkRow, panel, sectionHead } from "../../components/styles";
 import { useSession, useSettings } from "../../lib/api";
 import { Backup } from "./backup";
+import { Rates } from "./rates";
 import { Household } from "./household";
 import { PasswordForm } from "./password-form";
 import { SettingsForm } from "./settings-form";
@@ -27,6 +28,7 @@ export function SettingsPage() {
   return (
     <>
       <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" />
+      <Rates />
       {admin && <Household />}
       {admin && <Backup />}
       <h2 className={sectionHead}>More</h2>

@@ -47,6 +47,7 @@ export const rates = sqliteTable(
     currency: text().notNull(),
     rate: real().notNull(),
     source: text().notNull(),
+    rateDate: text(),
   },
   (t) => [primaryKey({ columns: [t.date, t.currency] })],
 );
