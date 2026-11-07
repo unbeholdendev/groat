@@ -1,0 +1,105 @@
+# Install Groat with Docker
+
+You need Docker Engine, Git and a host with disk space for your household's database and backups. You pay for that host and its storage. Optional AI providers may charge for text, receipt photos and audio; check their prices and spending limits before enabling them. A public demo is a separate, disposable instance. This installation creates your own household server, not an account on a hosted service.
+
+## Build a versioned image
+
+No release image is published by these instructions. Build from a reviewed source tag or full commit ID. Replace `SOURCE_REF` below with that ref; do not use a moving branch for a production install.
+
+```sh
+git clone https://git.home.unbeholden.dev/unbeholden/groat.git
+cd groat
+git checkout SOURCE_REF
+REVISION=$(git rev-parse HEAD)
+VERSION=$REVISION
+docker build --pull --build-arg VERSION="$VERSION" \
+  --build-arg REVISION="$REVISION" -t "groat:$VERSION" .
+```
+
+The Dockerfile pins the Bun base image by digest and installs dependencies from `bun.lock` with `--frozen-lockfile`. Both stages use the same base. Keep the source revision and image tag with your deployment records. A maintainer can use a release tag as `VERSION` instead of the commit ID. This fixes the build inputs; it does not promise byte-identical image output.
+
+## Start and set up
+
+Run these commands in the same shell as the build. Create an empty environment file even if you do not use AI. Keep it outside the source checkout and out of version control.
+
+```sh
+install -m 600 /dev/null "$HOME/groat.env"
+docker volume create groat-data
+docker run -d --name groat --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 \
+  --mount source=groat-data,target=/data \
+  --env-file "$HOME/groat.env" "groat:$VERSION"
+docker logs groat
+curl --fail http://127.0.0.1:3000/api/session
+```
+
+A fresh instance returns `{"setup":true,"user":null}`. Open `http://localhost:3000` on the Docker host, create the first account and check that it is an admin. For a remote host, use an SSH tunnel before exposing the server:
+
+```sh
+ssh -L 3000:127.0.0.1:3000 your-server
+```
+
+Anyone who reaches an unconfigured instance can create its first admin. Complete setup before opening access. Add other household members after signing in. To test persistence, add an expense, run `docker restart groat`, then sign in and check that the expense remains.
+
+The named volume survives container removal. Do not remove `groat-data` during an upgrade. The database includes receipt attachments; no second attachment mount is needed.
+
+| Setting | Default and use |
+|---|---|
+| Volume | Mount persistent storage at `/data`. |
+| `DB_PATH` | `/data/expenses.db`. Keep any custom path inside the persistent mount. |
+| `PORT` | `3000` inside the container. If changed, change the container side of the port mapping too. |
+| `NODE_ENV` | `production` in the image. |
+| `AI_*` | Unset; AI is optional. See [AI features](../README.md#ai-features) for the variables. |
+
+Edit `groat.env` to set environment variables, one `NAME=value` per line. Recreate the container with the same volume and `--env-file` to apply changes. Restarting alone does not reload the file. Keep a protected copy of the environment alongside your backups; the app's backup omits it.
+
+## HTTPS and reverse proxy
+
+For access from phones or outside the host, put a reverse proxy with a valid HTTPS certificate in front of port 3000. HTTPS is needed for browser microphone access and service workers outside localhost. Point your domain at the host and allow HTTPS through its firewall. Keep port 3000 on loopback; expose only the proxy.
+
+For Caddy running on the same host, replace the hostname in this Caddyfile entry:
+
+```caddyfile
+expenses.example.com {
+    reverse_proxy 127.0.0.1:3000
+}
+```
+
+If the proxy runs in Docker, connect both containers to a private Docker network and proxy to `groat:3000` instead. The proxy must forward the original host and set `X-Forwarded-Proto: https` for HTTPS requests, overwriting any client-supplied value. Groat uses that header to set secure session cookies. Check sign-in through the HTTPS address before sharing it. Allow request bodies of at least 128 MB if you intend to restore backups through the proxy.
+
+## Back up and upgrade
+
+Use the [backup and restore instructions](../README.md#backup-and-restore), tracked in [#102](https://git.home.unbeholden.dev/unbeholden/groat/issues/102). Download an admin backup before every upgrade and record the current image tag and environment. Keep backups on separate storage and test restoring one into an empty volume.
+
+Build the new source ref as above, then replace the container using the new `VERSION`:
+
+```sh
+docker stop groat
+docker rm groat
+docker run -d --name groat --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 \
+  --mount source=groat-data,target=/data \
+  --env-file "$HOME/groat.env" "groat:$VERSION"
+docker logs groat
+```
+
+Migrations run automatically at startup. Sign in and check the saved expense, settings and any receipt photos. Check that first-admin setup stays closed. If an upgrade fails, stop it and preserve its volume for diagnosis. Restore the pre-upgrade backup into a separate empty volume with the old image and saved environment; do not run an older image against a database the new image has migrated.
+
+## Maintainer release checklist
+
+Groat uses Apache-2.0; see [LICENSE](../LICENSE). Registry location, release version and supported architectures need a maintainer decision. Do not announce a release until those decisions and the checks below are complete.
+
+On a clean Docker host, follow this guide from the chosen source ref. Check first-admin setup, a second setup refusal, an expense with a receipt photo, restart persistence, and a restore to an empty volume. Upgrade from the previous release with that data and verify it again. For the first release, record that no previous released version exists and test container replacement against the candidate image.
+
+After approval, tag the reviewed commit and publish the source tag and image. Set `VERSION` to the approved tag, `REVISION` to its full commit ID, and `IMAGE` to the approved registry/repository name. Authenticate with `docker login` first. Build and test on each advertised architecture before publishing it; the commands below publish only the builder's native architecture.
+
+```sh
+git tag "$VERSION" "$REVISION"
+git push origin "refs/tags/$VERSION"
+docker build --pull --build-arg VERSION="$VERSION" \
+  --build-arg REVISION="$REVISION" -t "$IMAGE:$VERSION" .
+docker push "$IMAGE:$VERSION"
+docker buildx imagetools inspect "$IMAGE:$VERSION"
+```
+
+Record the pushed digest in the release notes, along with the source commit, supported architecture, checks performed and upgrade limitations. Add the published image reference to this guide, using a version tag and digest. Keep existing release tags unchanged.

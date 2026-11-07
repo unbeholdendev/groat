@@ -2,3 +2,6 @@ node_modules
 dist
 *.db*
 .git
+.env
+.env.*
+*.sqlite*

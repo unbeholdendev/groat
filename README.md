@@ -1,6 +1,6 @@
 # Groat
 
-Groat is a self-hosted expense tracker. Run it with Docker; data lives in `/data`, the app on port 3000.
+Groat is a self-hosted expense tracker. [Install with Docker](docs/install.md). Data lives in `/data`, the app on port 3000.
 
 ## Capture from your phone
 
@@ -40,6 +40,8 @@ Off until you point the app at an OpenAI-compatible API (anything that serves `/
 Set them in the container's environment, or in `.env` when running from source.
 
 ## Backup and restore
+
+See [backup and restore #102](https://git.home.unbeholden.dev/unbeholden/groat/issues/102) for the requirements and discussion.
 
 An admin downloads a backup from Settings, under Backup and import. It is one SQLite file, taken consistently while the app runs, with every expense (pending and binned too), category, tag, recurring schedule, rate, photo, setting and account. Password hashes are kept, so everyone signs in as before. Sign-ins, API tokens and chats are left out: after a restore, sign in again and make new tokens.
 
@@ -94,23 +96,6 @@ docker start expenses
 
 Enter the admin username and the new password twice. Password input is hidden and never passed as a command argument. Recovery keeps expenses and API tokens, and signs out all sessions for that admin. If you set a custom `DB_PATH`, pass the same value to the recovery container with `-e DB_PATH=...`. For a source install, stop the server and run `DB_PATH=/path/to/expenses.db bun server/recover-admin.ts`.
 
-## Backup and restore
+## Licence
 
-Stop the container before copying data. Back up the whole `/data` directory, including attachments and any SQLite journal files, with ownership and permissions intact. Keep the image version with the backup.
-
-```sh
-docker stop expenses
-docker cp -a expenses:/data ./expenses-backup
-docker start expenses
-```
-
-To restore, stop the container, move its existing data aside, and copy the backup contents into its empty data volume. For a bind mount, replace `/srv/expenses` below with the host directory mounted at `/data`:
-
-```sh
-docker stop expenses
-sudo mv /srv/expenses /srv/expenses.before-restore
-sudo cp -a ./expenses-backup /srv/expenses
-docker start expenses
-```
-
-For a named volume, use a temporary container with that volume mounted to replace its contents while the app is stopped. Preserve numeric ownership and permissions. Start with the image version recorded with the backup, then sign in and check expenses and attachments before upgrading. Do not copy a single database file from a running server.
+Groat is licensed under the [Apache License 2.0](LICENSE).
