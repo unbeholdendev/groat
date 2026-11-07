@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy and data flows · Groat</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; line-height: 1.6; }
+    body { max-width: 48rem; margin: auto; padding: 1.5rem; overflow-wrap: anywhere; }
+    h1, h2, h3 { line-height: 1.25; }
+    a { color: light-dark(#174d9b, #91bdff); }
+    code { font-size: 0.9em; }
+  </style>
+</head>
+<body>
+<main>
+  <a href="/settings">Back to Settings</a>
+  <h1>Privacy and data flows</h1>
+  <p>Groat stores a shared household ledger on the server running this instance. Configured AI services and exchange-rate services receive some data. Ask the server operator which endpoints they use and how they protect the server, its logs and backups. Self-hosting alone does not keep AI requests local.</p>
+
+  <h2>Household access</h2>
+  <p>Separate sign-ins use the same dataset. Every signed-in member can read, add, edit, bin, restore and permanently delete other members’ expenses, see receipt attachments, manage shared categories and recurring entries, and export the ledger as CSV. Chats and their saved messages are also shared: members can read, continue and delete each other’s chats. The name shown on an expense records who added it; it does not restrict access.</p>
+  <p>Admins can add or remove members, reset their passwords and download a database backup. Removing a member revokes their sessions and capture tokens but keeps their expenses. Each user manages their own capture tokens. A capture token can submit entries to the shared ledger; it cannot read the ledger through the normal expense API.</p>
+
+  <h2>AI requests</h2>
+  <p>AI is enabled only when the operator sets <code>AI_BASE_URL</code>, <code>AI_API_KEY</code> and <code>AI_MODEL</code>. Requests go from the browser to the Groat server, then from the server to the configured endpoint. The API key is sent by the server as a bearer credential. The endpoint may be a hosted provider or a locally hosted compatible model. A local endpoint keeps these requests local only if that service and its infrastructure do so. Groat provides no on-device AI or end-to-end encryption guarantee; the server and the receiving service can read request contents. Transport protection depends on the configured URLs and hosting setup.</p>
+  <p>Retention, logging, use for training, deletion and any charges depend on the provider, account terms and operator configuration. Groat cannot promise that a provider discards requests. Hosted AI and speech services may charge separately, including for repeated requests and chat tool rounds.</p>
+
+  <h3>Text capture and receipts</h3>
+  <p>When AI is enabled, submitting an unclear quick-add line sends the submitted text to <code>AI_BASE_URL/chat/completions</code> with <code>AI_MODEL</code>. Confidently parsed lines and saves through the full form skip AI. Draft requests include today’s date, recent currencies, and expense-category IDs, names and parent IDs. Text may include notes, amounts, dates and tags. Drafts are shown for review before saving.</p>
+  <p>Token capture at <code>/api/capture</code> also uses AI for uncertain text when configured. It saves AI results as pending entries for review. Confident entries skip AI; failed AI extraction falls back to the built-in parser.</p>
+  <p>Selecting, pasting, dropping or sharing a receipt photo starts extraction. The browser converts it to JPEG, with a longest edge of at most 1,600 pixels, and uploads it to Groat. The server sends the image as a base64 data URL to the same chat-completions endpoint, with the same date, currency and category context. It uses <code>AI_VISION_MODEL</code> if set, otherwise <code>AI_MODEL</code>. The image can reveal everything visible on the receipt, beyond the fields extracted into the expense. A successful extraction stores the uploaded image on the server even before you save the draft.</p>
+
+  <h3>Voice</h3>
+  <p>Dictation requires AI plus <code>AI_STT_MODEL</code>. After recording, the browser uploads the audio to Groat. The server sends the recording and model name to <code>AI_STT_BASE_URL/audio/transcriptions</code>, using <code>AI_STT_KEY</code>. If either setting is absent, its base URL or key falls back to the corresponding main AI setting. The transcript then goes to the main chat-completions endpoint for expense extraction, with the text context described above. Two services may therefore receive parts of a voice entry. Groat does not save raw recordings or transcripts as separate database records; extracted expense fields are saved when you accept the draft.</p>
+
+  <h3>Questions and tool results</h3>
+  <p>Submitting a question with <code>?</code> or in a chat sends it to the main chat-completions endpoint. Each request includes the saved history of that chat, previous tool calls and results, today’s date, base currency, all category IDs, names, parent IDs and expense/income kinds, and tool definitions containing the database table schema.</p>
+  <p>The model can request expense lists, category totals, period comparisons, expense drafts and read-only SQL queries. Groat runs these on the server and sends the results back in subsequent requests. Results can include notes, amounts, currencies, dates, tags, categories, attribution and converted amounts. Lists and SQL results are limited to 200 rows per call; one question can cause several calls.</p>
+  <p>The SQL tool can query the whole database, including pending and binned entries, chats, receipt bytes, user records with password hashes, sessions and hashed capture tokens. Its read-only restriction prevents writes, but does not restrict which tables it reads. Do not assume that a spending question exposes only spending totals. Groat saves the conversation, including tool calls and results, in the shared database. Deleting a chat removes its saved messages from Groat, but does not retract requests already sent to a provider.</p>
+
+  <h2>Browser storage and sign-out</h2>
+  <p>The browser persists fetched app data and drafts in localStorage, alongside queued or failed offline changes. This can include expenses, categories, settings, session identity and fetched chats. It lets a previously loaded app show cached data offline. Queued entries are device-local until the server accepts them; closing the tab is not proof that they were saved on the server. Browser storage can fail or be cleared. Keep the tab open and reconnect if Groat reports a storage failure.</p>
+  <p>Queued changes retain the original username. They resume when connectivity returns and require that account to sync. Interrupted changes may need a manual retry. A saved queue prevents a different account from signing in until the original user syncs it or the unsent changes are cleared. AI extraction, receipt reading and dictation require a connection.</p>
+  <p>Sign-out waits for active changes and asks before discarding unsent changes. It removes Groat’s localStorage data cache, queued changes and in-memory app data, then marks the device signed out. It attempts server logout; if offline or unreachable, server-session invalidation is delayed until a later successful logout request. Sign-out does not delete server records, downloaded exports or backups, browser history, or other tabs’ already loaded data.</p>
+  <p>The service worker separately caches the app shell and same-origin pages and assets, excluding API requests. A shared image is held in a separate browser cache until the app consumes it. Sign-out does not clear these service-worker caches or the theme preference. Clear this site’s browser data to remove remaining local storage, including an unconsumed shared image. Groat does not encrypt its browser cache.</p>
+
+  <h2>Server storage and rate lookups</h2>
+  <p>The server uses SQLite at <code>DB_PATH</code> (default <code>data.db</code>; the Docker image uses <code>/data/expenses.db</code>). It holds expenses, tags, categories, recurring schedules, settings, exchange rates, receipt image bytes, chats, user records, sessions and capture-token metadata. Passwords and capture tokens are hashed. Groat does not add database encryption; access to the server, database files and backups remains an operator responsibility.</p>
+  <p>Binning keeps an expense and its attachment until permanently deleted. Unattached receipt images older than 24 hours are cleaned up on a later successful photo extraction, rather than by a timed job. The app’s downloadable backup includes account password hashes and photos, but excludes sessions, capture tokens and chats. A raw database copy can include all of them. Deletion does not remove older copies held in backups or provider systems.</p>
+  <p>Converting foreign-currency expenses for lists, totals, exports or AI tools can trigger server-side rate requests, even with AI disabled. Fiat rates come from <code>api.frankfurter.dev/v2/rates</code>, with the expense date, USD base and required currency codes. Bitcoin rates come from <code>mempool.space/api/v1/historical-price</code>, with USD and the date’s end-of-day timestamp; <code>api.coinbase.com/v2/prices/BTC-USD/spot</code> with the date is the fallback.</p>
+  <p>These rate requests send dates and currencies, rather than expense notes, amounts, account names, receipts or audio. The services also see the server’s network address. Groat caches historical rates in SQLite and keeps current-day rates briefly in memory to reduce requests. Same-currency entries need no conversion request; unavailable rates leave converted amounts unknown.</p>
+
+  <h2>Using Groat without AI</h2>
+  <p>Leave the AI settings unset to use quick-add parsing, the full expense form, editing, categories, tags, recurring entries, token capture, exports and spending summaries without an AI provider. Unclear text can be completed in the form; uncertain token captures remain pending for review. Asking questions, AI text extraction, receipt reading and dictation require configured AI. Core expense capture does not require an AI subscription. Foreign-currency conversion can still contact the rate services described above.</p>
+</main>
+</body>
+</html>

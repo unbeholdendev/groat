@@ -14,7 +14,7 @@ self.addEventListener("fetch", (e) => {
         .then(() => Response.redirect("/", 303)),
     );
   if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
-  const key = e.request.mode === "navigate" ? "/" : e.request;
+  const key = e.request.mode === "navigate" && url.pathname !== "/privacy.html" ? "/" : e.request;
   e.respondWith(
     caches.open("shell").then(async (cache) => {
       const cached = await cache.match(key);

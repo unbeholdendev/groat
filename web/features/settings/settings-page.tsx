@@ -45,6 +45,9 @@ export function SettingsPage() {
         <a href="/api/export" download="expenses.csv" className={linkRow}>
           <Go d="M12 4v11m-4-4 4 4 4-4M5 19h14">Export all as CSV</Go>
         </a>
+        <a href="/privacy.html" className={linkRow}>
+          <Go d="M12 3 4 6v6c0 4 8 9 8 9s8-5 8-9V6z">Privacy and data flows</Go>
+        </a>
       </nav>
       <Tokens />
       <PasswordForm />
