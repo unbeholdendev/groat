@@ -2,9 +2,21 @@
 
 You need Docker Engine, Git and a host with disk space for your household's database and backups. You pay for that host and its storage. Optional AI providers may charge for text, receipt photos and audio; check their prices and spending limits before enabling them. A public demo is a separate, disposable instance. This installation creates your own household server, not an account on a hosted service.
 
-## Build a versioned image
+## Use a release image
 
-No release image is published by these instructions. Build from a reviewed source tag or full commit ID. Replace `SOURCE_REF` below with that ref; do not use a moving branch for a production install.
+The release workflow publishes images to `ghcr.io/unbeholden/groat` for `linux/amd64`. After a release is published, set `VERSION` to its exact `vX.Y.Z` tag and pull it:
+
+```sh
+VERSION=vX.Y.Z
+IMAGE="ghcr.io/unbeholden/groat:$VERSION"
+docker pull "$IMAGE"
+```
+
+Choose a published version; `vX.Y.Z` is a placeholder. Use a version tag or digest for an installation. The `latest` tag moves on each release. Check the GitHub Actions release run for the published digest. The first release version has not been chosen yet.
+
+## Build from source instead
+
+To build locally, use a reviewed source tag or full commit ID. Replace `SOURCE_REF` below with that ref; do not use a moving branch for a production install.
 
 ```sh
 git clone https://git.home.unbeholden.dev/unbeholden/groat.git
@@ -12,15 +24,16 @@ cd groat
 git checkout SOURCE_REF
 REVISION=$(git rev-parse HEAD)
 VERSION=$REVISION
+IMAGE="groat:$VERSION"
 docker build --pull --build-arg VERSION="$VERSION" \
-  --build-arg REVISION="$REVISION" -t "groat:$VERSION" .
+  --build-arg REVISION="$REVISION" -t "$IMAGE" .
 ```
 
 The Dockerfile pins the Bun base image by digest and installs dependencies from `bun.lock` with `--frozen-lockfile`. Both stages use the same base. Keep the source revision and image tag with your deployment records. A maintainer can use a release tag as `VERSION` instead of the commit ID. This fixes the build inputs; it does not promise byte-identical image output.
 
 ## Start and set up
 
-Run these commands in the same shell as the build. Create an empty environment file even if you do not use AI. Keep it outside the source checkout and out of version control.
+Run these commands in the same shell as the pull or build. Create an empty environment file even if you do not use AI. Keep it outside the source checkout and out of version control.
 
 ```sh
 install -m 600 /dev/null "$HOME/groat.env"
@@ -28,7 +41,7 @@ docker volume create groat-data
 docker run -d --name groat --restart unless-stopped \
   -p 127.0.0.1:3000:3000 \
   --mount source=groat-data,target=/data \
-  --env-file "$HOME/groat.env" "groat:$VERSION"
+  --env-file "$HOME/groat.env" "$IMAGE"
 docker logs groat
 curl --fail http://127.0.0.1:3000/api/session
 ```
@@ -71,7 +84,7 @@ If the proxy runs in Docker, connect both containers to a private Docker network
 
 Use the [backup and restore instructions](../README.md#backup-and-restore), tracked in [#102](https://git.home.unbeholden.dev/unbeholden/groat/issues/102). Download an admin backup before every upgrade and record the current image tag and environment. Keep backups on separate storage and test restoring one into an empty volume.
 
-Build the new source ref as above, then replace the container using the new `VERSION`:
+Pull the new release image (or build the new source ref) as above, updating `VERSION` and `IMAGE`, then replace the container:
 
 ```sh
 docker stop groat
@@ -79,7 +92,7 @@ docker rm groat
 docker run -d --name groat --restart unless-stopped \
   -p 127.0.0.1:3000:3000 \
   --mount source=groat-data,target=/data \
-  --env-file "$HOME/groat.env" "groat:$VERSION"
+  --env-file "$HOME/groat.env" "$IMAGE"
 docker logs groat
 ```
 
@@ -87,19 +100,23 @@ Migrations run automatically at startup. Sign in and check the saved expense, se
 
 ## Maintainer release checklist
 
-Groat uses Apache-2.0; see [LICENSE](../LICENSE). Registry location, release version and supported architectures need a maintainer decision. Do not announce a release until those decisions and the checks below are complete.
+Groat uses Apache-2.0; see [LICENSE](../LICENSE). Releases follow unbeholden-wallet: create a version tag on Forgejo, mirror it to GitHub, then build and publish the image with GitHub Actions. The workflow publishes the exact tag and `latest` to `ghcr.io/unbeholden/groat`, initially for `linux/amd64`. The first release version still needs a maintainer decision.
 
-On a clean Docker host, follow this guide from the chosen source ref. Check first-admin setup, a second setup refusal, an expense with a receipt photo, restart persistence, and a restore to an empty volume. Upgrade from the previous release with that data and verify it again. For the first release, record that no previous released version exists and test container replacement against the candidate image.
+Before tagging, verify that the Forgejo push mirror targets the GitHub repository `unbeholden/groat` and includes tags. Enable Actions on the GitHub mirror and allow its workflow token to write packages. The workflow uses GitHub's built-in `GITHUB_TOKEN`; no separate registry token is needed. After the first push, make the GHCR package public so installations can pull it without signing in.
 
-After approval, tag the reviewed commit and publish the source tag and image. Set `VERSION` to the approved tag, `REVISION` to its full commit ID, and `IMAGE` to the approved registry/repository name. Authenticate with `docker login` first. Build and test on each advertised architecture before publishing it; the commands below publish only the builder's native architecture.
+On a clean Docker host, follow this guide from the chosen source ref. Check first-admin setup, a second setup refusal, an expense with a receipt photo, restart persistence, and a restore to an empty volume. Upgrade from the previous release with that data and verify it again. For the first release, record that no previous released version exists and test container replacement against the candidate image. Do not announce the release until these checks pass.
+
+After the release workflow is merged, set `VERSION` to the approved `vX.Y.Z` tag and `REVISION` to the reviewed commit on Forgejo, then push only the tag:
 
 ```sh
 git tag "$VERSION" "$REVISION"
 git push origin "refs/tags/$VERSION"
-docker build --pull --build-arg VERSION="$VERSION" \
-  --build-arg REVISION="$REVISION" -t "$IMAGE:$VERSION" .
-docker push "$IMAGE:$VERSION"
-docker buildx imagetools inspect "$IMAGE:$VERSION"
 ```
 
-Record the pushed digest in the release notes, along with the source commit, supported architecture, checks performed and upgrade limitations. Add the published image reference to this guide, using a version tag and digest. Keep existing release tags unchanged.
+The mirrored tag triggers `.github/workflows/release.yml` on GitHub. It runs API tests and typecheck, builds the app inside the Docker build, then publishes the image. Read the digest from that run's summary and verify it with:
+
+```sh
+docker buildx imagetools inspect "ghcr.io/unbeholden/groat:$VERSION"
+```
+
+Record the digest, source commit, architecture, checks performed and upgrade limitations in the release notes. A successful image build does not prove the clean-host and upgrade checks above. Keep existing release tags unchanged.
