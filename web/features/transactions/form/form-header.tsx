@@ -43,6 +43,11 @@ export function FormHeader({ form, title, submit, pending, editing, row, onCance
     setUnit(next);
   }
 
+  function showResult(text: string) {
+    const result = /[-+*/×÷]/.test(text) && parseAmount(text, currency, unit);
+    if (result) setValue("amount", formatAmount(result, currency, unit));
+  }
+
   function pickNote(value: string) {
     const match = suggestions.find((s) => s.note === value);
     if (!match || editing) return;
@@ -76,7 +81,7 @@ export function FormHeader({ form, title, submit, pending, editing, row, onCance
           inputMode="decimal"
           autoFocus={!!note && !amount}
           {...invalid("amount")}
-          {...register("amount")}
+          {...register("amount", { onBlur: (e) => showResult(e.target.value) })}
         />
         </div>
         <Picker className={`${chip} relative shrink-0 gap-0.5`} chevron={<Chevron className="size-3 stroke-2 text-ink3" />}>

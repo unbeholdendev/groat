@@ -50,6 +50,7 @@ test("a guessed currency no longer offered falls back instead of failing", async
   await call("POST", "/api/transactions", { note: "Tea", amount: "1", currency: "GBP" });
 
   expect((await capture("croissant 3")).body).toMatchObject({ note: "croissant", amount: 300, currency: "GBP" });
+  expect((await capture("croissant 2*1.75")).body).toMatchObject({ note: "croissant", amount: 350 });
 });
 
 test("unsure text waits as pending until confirmed", async () => {

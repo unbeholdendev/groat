@@ -9,13 +9,15 @@ export function parse(text: string, recent: string[]) {
   const tags: string[] = [];
   const words: string[] = [];
   const parts: Part[] = [];
-  for (const w of text.split(/(\s+)/)) {
+  const chunks = text.split(/(\s+)/);
+  const pick = chunks.find((w) => /^\d+([.,]\d+)?$/.test(w)) ?? chunks.find((w) => /^\(*\d[\d.,()]*([-+*/×÷][\d.,()]+)+$/.test(w));
+  for (const w of chunks) {
     const code = w.toUpperCase();
     if (/^#\S+$/.test(w)) {
       tags.push(w.slice(1));
       parts.push([w, "tag"]);
-    } else if (!amount && /^\d+([.,]\d+)?$/.test(w)) {
-      amount = w.replace(",", ".");
+    } else if (!amount && w === pick) {
+      amount = w.replace(/,/g, ".");
       parts.push([w, "amount"]);
     } else if (!currency && (recent.includes(code) || code === "SATS" || (w === code && knownCurrencies.has(code)))) {
       currency = code === "SATS" ? "BTC" : code;

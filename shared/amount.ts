@@ -16,12 +16,51 @@ export function decimals(currency: string, unit?: Unit) {
   return new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits ?? 2;
 }
 
+type Fraction = [bigint, bigint];
+
+function evaluate(text: string, d: number): Fraction | null {
+  const tokens = text.replace(/×/g, "*").replace(/÷/g, "/").match(/\d+(?:\.\d+)?|\S/g) ?? [];
+  const scale = 10n ** BigInt(d);
+  let i = 0;
+  const factor = (): Fraction | null => {
+    const t = tokens[i++] ?? "";
+    if (t === "(") {
+      const v = sum();
+      return tokens[i++] === ")" ? v : null;
+    }
+    const [whole, fraction = ""] = t.split(".");
+    return /^\d/.test(t) && fraction.length <= d ? [BigInt(whole + fraction.padEnd(d, "0")), 1n] : null;
+  };
+  const product = () => {
+    let v = factor();
+    while (v && (tokens[i] === "*" || tokens[i] === "/")) {
+      const times = tokens[i++] === "*";
+      const w = factor();
+      if (!w || (!times && !w[0])) return null;
+      v = times ? [v[0] * w[0], v[1] * w[1] * scale] : [v[0] * w[1] * scale, v[1] * w[0]];
+    }
+    return v;
+  };
+  const sum = () => {
+    let v = product();
+    while (v && (tokens[i] === "+" || tokens[i] === "-")) {
+      const sign = tokens[i++] === "+" ? 1n : -1n;
+      const w = product();
+      if (!w) return null;
+      v = [v[0] * w[1] + sign * w[0] * v[1], v[1] * w[1]];
+    }
+    return v;
+  };
+  const v = sum();
+  return v && i === tokens.length ? v : null;
+}
+
 export function parseAmount(text: string, currency: string, unit?: Unit): number | null {
-  const match = /^(\d+)(?:\.(\d+))?$/.exec(text.trim());
-  const d = decimals(currency, unit);
-  if (!match || (match[2] ?? "").length > d) return null;
-  const amount = Number(match[1] + (match[2] ?? "").padEnd(d, "0"));
-  return amount > 0 && Number.isSafeInteger(amount) ? amount : null;
+  const v = evaluate(text, decimals(currency, unit));
+  if (!v) return null;
+  const [n, q] = v[1] < 0n ? [-v[0], -v[1]] : v;
+  const amount = Number((2n * n + q) / (2n * q));
+  return n > 0n && amount > 0 && Number.isSafeInteger(amount) ? amount : null;
 }
 
 export function formatAmount(amount: number, currency: string, unit?: Unit) {

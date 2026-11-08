@@ -43,6 +43,27 @@ test("past notes fill amount and category", async ({ app: page }) => {
   await expect(page.getByRole("listitem").filter({ hasText: "ramen" })).toContainText("Groceries");
 });
 
+test("a line's amount can be a sum", async ({ app: page }) => {
+  await bar(page).fill("ramen 12+3.5");
+  await expect(page.locator("form[aria-label='Quick add']").getByText("12+3.5")).toBeVisible();
+  await bar(page).press("Enter");
+  await expect(page.getByRole("listitem").filter({ hasText: "ramen" })).toContainText("£15.50");
+});
+
+test("the full form's amount can be a sum", async ({ app: page }) => {
+  await page.getByRole("button", { name: "Full form" }).click();
+  await page.getByLabel("Amount").fill("3-5");
+  await page.getByLabel("Note").fill("Pizza");
+  await expect(page.getByLabel("Amount")).toHaveValue("3-5");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByText("Enter an amount")).toBeVisible();
+  await page.getByLabel("Amount").fill("100/3");
+  await page.getByLabel("Note").click();
+  await expect(page.getByLabel("Amount")).toHaveValue("33.33");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("listitem").filter({ hasText: "Pizza" })).toContainText("£33.33");
+});
+
 test("a line without an amount opens the full form", async ({ app: page }) => {
   await bar(page).fill("#nope");
   await bar(page).press("Enter");
