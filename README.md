@@ -31,9 +31,9 @@ Set these as environment variables, e.g. in `groat.env` (`NAME=value` per line) 
 | Variable | Default | Use |
 |---|---|---|
 | `PORT` | `3000` | Port to listen on. |
-| `DB_PATH` | `/data/expenses.db` (`data.db` from source) | SQLite database, including receipt photos. |
+| `DB_PATH` | `data.db` | SQLite database, including receipt photos. The image sets `/data/expenses.db`; change it only if your host forces a different mount path. |
 | `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` | unset | Any OpenAI-compatible API. Turns on asking (start the add bar with `?`) and AI reading of unclear lines. |
-| `AI_VISION_MODEL` | unset | Adding from receipt photos. |
+| `AI_VISION_MODEL` | `AI_MODEL` | Adding from receipt photos. |
 | `AI_STT_MODEL` | unset | Dictation. |
 | `AI_STT_BASE_URL`, `AI_STT_KEY` | the `AI_*` values | A separate speech-to-text provider. |
 
@@ -73,7 +73,7 @@ docker run --rm -it --volumes-from groat --entrypoint bun \
 docker start groat
 ```
 
-With a custom `DB_PATH`, pass it to the recovery container too: `-e DB_PATH=...`. From source: `DB_PATH=/path/to/expenses.db bun server/recover-admin.ts`.
+If you changed `DB_PATH`, add the same `-e DB_PATH=...` to the recovery container. From source: `bun server/recover-admin.ts`.
 
 ## Development
 
