@@ -96,3 +96,28 @@ test("a CSV previews and imports into an empty instance", async ({ app: page }) 
   await page.goto("/?q=Kibble");
   await expect(page.getByText("Kibble").first()).toBeVisible();
 });
+
+test.describe("with several AI models", () => {
+  test.use({ ai: ["gpt-4o", "gpt-4o-mini", "whisper-1", "gpt-4o-transcribe"] });
+
+  test("an admin picks models in Settings and AI turns on without a restart", async ({ app: page }) => {
+    await expect(bar(page)).toHaveAccessibleName("Add an expense");
+    await page.getByRole("link", { name: "Settings" }).click();
+    await expect(page.getByText("Choose a chat model to turn on asking")).toBeVisible();
+    await page.getByLabel("Chat", { exact: true }).selectOption("gpt-4o-mini");
+    await expect(page.getByLabel("Receipt photos")).toHaveValue("gpt-4o-mini");
+    await expect(page.getByText("Choose a dictation model")).toBeVisible();
+    await page.getByLabel("Dictation", { exact: true }).selectOption("gpt-4o-transcribe");
+    await expect(page.getByText("Models come from your AI provider.")).toBeVisible();
+    await page.getByRole("link", { name: "Expenses" }).click();
+    await expect(bar(page)).toHaveAccessibleName("Add an expense, or start with ? to ask");
+  });
+
+  test("members don't see the AI models", async ({ app: page }) => {
+    await page.request.post("/api/users", { data: { username: "sam", password: "pw" } });
+    await page.request.post("/api/login", { data: { username: "sam", password: "pw" } });
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { name: "Members" })).toBeHidden();
+    await expect(page.getByRole("heading", { name: "AI models" })).toBeHidden();
+  });
+});

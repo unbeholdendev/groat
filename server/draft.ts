@@ -4,7 +4,7 @@ import { z } from "zod";
 import { knownCurrencies } from "../shared/amount";
 import { parse } from "../shared/parse";
 import { isoDate } from "../shared/schema";
-import { aiEnabled, complete } from "./ai";
+import { complete } from "./ai";
 import type { Ctx } from "./app";
 import { settings, today, uncategorised } from "./db";
 import { readTransaction } from "./transactions";
@@ -82,7 +82,7 @@ export function draftRoutes(ctx: Ctx) {
   const app = new Hono();
 
   app.post("/api/drafts", async (c) => {
-    if (!aiEnabled(ctx.config)) return c.json({ error: "AI isn’t set up" }, 403);
+    if (!(await ctx.models.chat())) return c.json({ error: "AI isn’t set up" }, 403);
     const parsed = await body(c, textInput);
     if ("error" in parsed) return c.json(parsed, 400);
     return c.json(await extract(ctx, parsed.data.text));

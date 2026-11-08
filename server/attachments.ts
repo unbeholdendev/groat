@@ -2,7 +2,6 @@ import { and, eq, isNull, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import { visionModel } from "./ai";
 import type { Ctx } from "./app";
 import { extract } from "./draft";
 import { valid } from "./request";
@@ -16,7 +15,7 @@ export function attachmentRoutes(ctx: Ctx) {
   const app = new Hono();
 
   app.post("/api/drafts/photo", bodyLimit({ maxSize, onError: (c) => c.json({ error: "That image is too large" }, 413) }), async (c) => {
-    const model = visionModel(ctx.config);
+    const model = await ctx.models.vision();
     if (!model) return c.json({ error: "Photo reading isn’t set up" }, 403);
     const parsed = valid(photo, await c.req.parseBody().catch(() => undefined));
     if ("error" in parsed) return c.json(parsed, 400);

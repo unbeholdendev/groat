@@ -1,12 +1,13 @@
 import { expect, test } from "bun:test";
-import { frankfurter, setup } from "./harness";
+import { frankfurter, models, setup } from "./harness";
 
-const config = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test", aiModel: "test-model" };
+const config = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
+const listed = models(["test-model"]);
 
 function provider(script: Record<string, unknown>[] = []) {
   const requests: { auth: string | null; body: any }[] = [];
   const handler = (url: URL, init?: RequestInit) => {
-    if (url.href !== "https://ai.test/v1/chat/completions") return;
+    if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
     requests.push({ auth: new Headers(init?.headers).get("authorization"), body: JSON.parse(String(init?.body)) });
     return Response.json({ choices: [{ message: { role: "assistant", content: null, ...script.shift() } }] });
   };
@@ -51,9 +52,9 @@ test("a chat is answered, saved with a title from the first question, listed and
   expect((await call("GET", `/api/chats/${chat.body.id}`)).status).toBe(404);
 });
 
-test("AI needs base URL and model as well as the key", async () => {
-  for (const missing of ["aiBaseUrl", "aiModel"]) {
-    const { call } = setup(undefined, undefined, { ...config, [missing]: undefined });
+test("AI needs the base URL as well as the key", async () => {
+  for (const missing of ["aiBaseUrl", "aiApiKey"]) {
+    const { call } = setup(undefined, listed, { ...config, [missing]: undefined });
     expect((await call("GET", "/api/settings")).body.ai).toBe(false);
     expect((await call("GET", "/api/chats")).status).toBe(403);
   }

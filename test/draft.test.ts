@@ -1,13 +1,14 @@
 import { expect, test } from "bun:test";
 import { draft } from "../web/lib/schemas";
-import { setup } from "./harness";
+import { models, setup } from "./harness";
 
-const config = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test", aiModel: "test-model" };
+const config = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
+const listed = models(["test-model"]);
 
 function provider(read: (body: any) => unknown) {
   const requests: any[] = [];
   const handler = (url: URL, init?: RequestInit) => {
-    if (url.href !== "https://ai.test/v1/chat/completions") return;
+    if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
     const body = JSON.parse(String(init?.body));
     requests.push(body);
     const args = read(body);

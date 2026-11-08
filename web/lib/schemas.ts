@@ -36,6 +36,10 @@ export const settings = z.object({
 });
 export type Settings = z.infer<typeof settings>;
 
+const choice = z.object({ models: z.array(z.string()), model: z.string().nullable(), error: z.string().optional() });
+export const models = z.object({ chat: choice, vision: choice, stt: choice }).nullable();
+export type Models = NonNullable<z.infer<typeof models>>;
+
 const role = z.enum(["admin", "member"]);
 export const session = z.object({ setup: z.boolean(), user: z.object({ username: z.string(), role }).nullable() });
 export const member = z.object({ id: z.number(), username: z.string(), role });

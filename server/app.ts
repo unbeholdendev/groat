@@ -11,6 +11,7 @@ import { type Db, migrationsFolder } from "./db";
 import { draftRoutes } from "./draft";
 import { transactionRoutes } from "./transactions";
 import { memberRoutes } from "./members";
+import { aiModels, type Models } from "./models";
 import { exportRoutes } from "./export";
 import { importRoutes } from "./import";
 import { rateRoutes, valuer } from "./rates";
@@ -24,16 +25,17 @@ export type Deps = {
   db: Database;
   clock: () => Date;
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-  config: { aiBaseUrl?: string; aiApiKey?: string; aiModel?: string; aiVisionModel?: string; sttBaseUrl?: string; sttKey?: string; sttModel?: string };
+  config: { aiBaseUrl?: string; aiApiKey?: string; sttBaseUrl?: string; sttKey?: string };
 };
 
-export type Ctx = Omit<Deps, "db"> & { db: Db };
+export type Ctx = Omit<Deps, "db"> & { db: Db; models: Models };
 
 export function createApp(deps: Deps) {
   deps.db.run("PRAGMA foreign_keys = ON");
   const db = drizzle(deps.db, { casing: "snake_case" });
   migrate(db, { migrationsFolder });
-  const ctx = { ...deps, db };
+  const models = aiModels(db, deps.fetch, deps.config);
+  const ctx = { ...deps, db, models };
   const app = new Hono();
   const value = valuer(ctx);
   const recurring = recurringRoutes(ctx);
@@ -52,7 +54,8 @@ export function createApp(deps: Deps) {
   app.route("/", auth(db, deps.clock));
   app.route("/", memberRoutes(db, deps.clock));
   app.route("/", tokenRoutes(ctx));
-  app.route("/", settingsRoutes(db, deps.config));
+  app.route("/", models.routes);
+  app.route("/", settingsRoutes(db, models));
   app.route("/", categoryRoutes(db));
   app.route("/", rateRoutes(ctx, value));
   app.route("/", transactionRoutes(ctx, value));

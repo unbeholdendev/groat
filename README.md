@@ -32,12 +32,10 @@ Set these as environment variables, e.g. in `groat.env` (`NAME=value` per line) 
 |---|---|---|
 | `PORT` | `3000` | Port to listen on. |
 | `DB_PATH` | `data.db` | SQLite database, including receipt photos. The image sets `/data/expenses.db`; change it only if your host forces a different mount path. |
-| `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` | unset | Any OpenAI-compatible API. Turns on asking (start the add bar with `?`) and AI reading of unclear lines. |
-| `AI_VISION_MODEL` | `AI_MODEL` | Adding from receipt photos. |
-| `AI_STT_MODEL` | unset | Dictation. |
+| `AI_BASE_URL`, `AI_API_KEY` | unset | Any OpenAI-compatible API. Turns on asking (start the add bar with `?`), AI reading of unclear lines, receipt photos and dictation. |
 | `AI_STT_BASE_URL`, `AI_STT_KEY` | the `AI_*` values | A separate speech-to-text provider. |
 
-All AI features are optional and need the first three AI variables.
+All AI features are optional and need `AI_BASE_URL` and `AI_API_KEY`. An admin picks the chat, receipt photo and dictation models in Settings → AI models, from the list the provider returns. If the provider offers only one chat model, or one speech-to-text model, Groat uses it until an admin picks another.
 
 ## Backup and restore
 

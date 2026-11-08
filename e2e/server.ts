@@ -6,8 +6,9 @@ import { frankfurter, mempool } from "../test/harness";
 const rates = frankfurter({ "2000-01-01": { EUR: 0.9, GBP: 0.8, USD: 1 } });
 const btc = mempool({ "2000-01-01": 60000 });
 
-function provider(url: URL, init?: RequestInit) {
+function provider(url: URL, init: RequestInit | undefined, models: string[]) {
   if (url.host !== "ai.test") return;
+  if (url.pathname === "/v1/models") return Response.json({ object: "list", data: models.map((id) => ({ id })) });
   const body = JSON.parse(String(init?.body));
   const last = body.messages.at(-1).content;
   const message = body.tool_choice
@@ -16,15 +17,15 @@ function provider(url: URL, init?: RequestInit) {
   return Response.json({ choices: [{ message: { role: "assistant", ...message } }] });
 }
 
-function build(ai = false) {
+function build(models?: string[]) {
   const app = createApp({
     db: new Database(":memory:"),
     clock: () => new Date(),
     fetch: async (input, init) => {
       const url = new URL(String(input));
-      return rates(url) ?? btc(url) ?? provider(url, init) ?? new Response("not found", { status: 404 });
+      return rates(url) ?? btc(url) ?? (models && provider(url, init, models)) ?? new Response("not found", { status: 404 });
     },
-    config: !ai ? {} : { aiBaseUrl: "https://ai.test/v1", aiApiKey: "k", aiModel: "m", aiVisionModel: "m" },
+    config: models ? { aiBaseUrl: "https://ai.test/v1", aiApiKey: "k" } : {},
   });
   app.use("*", serveStatic({ root: "./dist" }));
   app.get("*", serveStatic({ path: "./dist/index.html" }));
@@ -37,6 +38,6 @@ export default {
   port: Number(process.env.PORT ?? 3100),
   fetch: (req: Request) => {
     const url = new URL(req.url);
-    return url.pathname === "/__reset" ? ((app = build(url.searchParams.has("ai"))), new Response("ok")) : app.fetch(req);
+    return url.pathname === "/__reset" ? ((app = build(url.searchParams.get("ai")?.split(",").filter(Boolean))), new Response("ok")) : app.fetch(req);
   },
 };

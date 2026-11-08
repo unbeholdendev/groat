@@ -1,15 +1,16 @@
 import { expect, test } from "bun:test";
 import { draft, transaction, settings } from "../web/lib/schemas";
 import type { Deps } from "../server/app";
-import { setup } from "./harness";
+import { models, setup } from "./harness";
 
-const config: Deps["config"] = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test", aiModel: "text-model" };
+const config: Deps["config"] = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
 const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
 
-function provider() {
+function provider(ids = ["text-model"]) {
   const requests: any[] = [];
+  const listed = models(ids);
   const handler = (url: URL, init?: RequestInit) => {
-    if (url.href !== "https://ai.test/v1/chat/completions") return;
+    if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
     requests.push(JSON.parse(String(init?.body)));
     const args = JSON.stringify({ note: "Tesco", amount: "23.45", date: "2026-10-09" });
     return Response.json({ choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: args } }] } }] });
@@ -23,8 +24,8 @@ const form = (bytes: BlobPart, type = "image/jpeg") => {
   return body;
 };
 
-function photos(cfg = config) {
-  const ai = provider();
+function photos(cfg = config, ids?: string[]) {
+  const ai = provider(ids);
   const h = setup(undefined, ai.handler, cfg);
   const upload = async (body = form(jpeg)) => {
     const res = await h.request("/api/drafts/photo", { method: "POST", body });
@@ -34,7 +35,8 @@ function photos(cfg = config) {
 }
 
 test("a photo becomes a draft with an attachment, read by the vision model", async () => {
-  const { ai, upload, call } = photos({ ...config, aiVisionModel: "vision-model" });
+  const { ai, upload, call } = photos(config, ["text-model", "vision-model"]);
+  await call("PUT", "/api/models", { chat: "text-model", vision: "vision-model" });
   const res = await upload();
   expect(res.status).toBe(200);
   expect(res.body).toMatchObject({ note: "Tesco", amount: 2345, date: "2026-10-09" });
@@ -45,15 +47,15 @@ test("a photo becomes a draft with an attachment, read by the vision model", asy
   expect(settings.parse((await call("GET", "/api/settings")).body).vision).toBe(true);
 });
 
-test("the vision model falls back to the AI model, and an empty one turns photos off", async () => {
+test("the vision model defaults to the chat model, and photos are off without one", async () => {
   const on = photos();
   await on.upload();
   expect(on.ai.requests[0].model).toBe("text-model");
 
-  const off = photos({ ...config, aiVisionModel: "" });
+  const off = photos(config, ["text-model", "other-model"]);
   expect((await off.upload()).status).toBe(403);
   expect((await off.call("GET", "/api/settings")).body.vision).toBe(false);
-  expect((await photos({ aiBaseUrl: "", aiApiKey: "", aiModel: "", aiVisionModel: "" }).upload()).status).toBe(403);
+  expect((await photos({}).upload()).status).toBe(403);
 });
 
 test("saving links the image, served only to signed-in users, and purging the expense deletes it", async () => {

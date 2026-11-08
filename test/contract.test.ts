@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test";
 import { z } from "zod";
-import { apiToken, category, chat, transaction, member, period, session, settings, suggestion, tag, template } from "../web/lib/schemas";
-import { setup } from "./harness";
+import { apiToken, category, chat, transaction, member, models, period, session, settings, suggestion, tag, template } from "../web/lib/schemas";
+import { models as listing, setup } from "./harness";
 
 test("web schemas accept what the server sends", async () => {
-  const ai = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "k", aiModel: "m" };
+  const ai = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "k" };
   const reply = { choices: [{ message: { role: "assistant", content: "hi" } }] };
-  const { call } = setup(undefined, (url) => (url.host === "ai.test" ? Response.json(reply) : undefined), ai);
+  const { call } = setup(undefined, (url) => listing(["m"])(url) ?? (url.host === "ai.test" ? Response.json(reply) : undefined), ai);
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const food = (await call("POST", "/api/categories", { name: "Food", icon: "x", color: "#f00" })).body;
   const row = (await call("POST", "/api/transactions", { note: "milk", amount: "1.20", tags: ["a"], categoryId: food.id })).body;
@@ -22,6 +22,7 @@ test("web schemas accept what the server sends", async () => {
     [session, (await call("GET", "/api/session")).body],
     [z.array(member), (await call("GET", "/api/users")).body],
     [settings, (await call("GET", "/api/settings")).body],
+    [models, (await call("GET", "/api/models")).body],
     [z.array(category), (await call("GET", "/api/categories")).body],
     [z.array(transaction), (await call("GET", "/api/transactions")).body],
     [z.array(transaction), (await call("GET", "/api/bin")).body],

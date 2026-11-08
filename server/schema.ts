@@ -25,6 +25,9 @@ export const settings = sqliteTable(
     baseCurrency: text().notNull(),
     theme: text().notNull(),
     onboarded: integer({ mode: "boolean" }).notNull(),
+    chatModel: text(),
+    visionModel: text(),
+    sttModel: text(),
   },
   (t) => [check("single_row", sql`${t.id} = 1`)],
 );

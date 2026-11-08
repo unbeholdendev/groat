@@ -1,10 +1,11 @@
 import { expect, test } from "bun:test";
-import { setup } from "./harness";
+import { models, setup } from "./harness";
 
-const ai = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test", aiModel: "test-model" };
+const ai = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
+const listed = models(["test-model"]);
 
 test("malformed input gets a readable 400 on every route family", async () => {
-  const { call, request } = setup(undefined, undefined, ai);
+  const { call, request } = setup(undefined, listed, ai);
   const category = (await call("POST", "/api/categories", { name: "Food", icon: "🍽️", color: "#f00" })).body.id;
   const cases: [string, string, unknown, string][] = [
     ["POST", "/api/transactions", { note: "x", amount: 5 }, "Invalid amount"],
@@ -29,6 +30,6 @@ test("malformed input gets a readable 400 on every route family", async () => {
 });
 
 test("an unexpected AI provider reply is a clear error, not a crash", async () => {
-  const { call } = setup(undefined, (url) => (url.host === "ai.test" ? Response.json({ choices: [] }) : undefined), ai);
+  const { call } = setup(undefined, (url) => listed(url) ?? (url.host === "ai.test" ? Response.json({ choices: [] }) : undefined), ai);
   expect(await call("POST", "/api/chats", { message: "hi" })).toEqual({ status: 502, body: { error: "The AI provider sent an unexpected reply" } });
 });

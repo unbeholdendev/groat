@@ -12,11 +12,8 @@ const app = createApp({
   config: {
     aiBaseUrl: process.env.AI_BASE_URL,
     aiApiKey: process.env.AI_API_KEY,
-    aiModel: process.env.AI_MODEL,
-    aiVisionModel: process.env.AI_VISION_MODEL,
     sttBaseUrl: process.env.AI_STT_BASE_URL,
     sttKey: process.env.AI_STT_KEY,
-    sttModel: process.env.AI_STT_MODEL,
   },
 });
 setInterval(app.generate, 86_400_000);

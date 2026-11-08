@@ -27,15 +27,11 @@ const tool = <T extends z.ZodType>(description: string, input: T, run: (args: z.
   run: (args: unknown) => run(input.parse(args)),
 });
 
-export const aiEnabled = ({ aiApiKey, aiBaseUrl, aiModel }: Deps["config"]) => !!(aiApiKey && aiBaseUrl && aiModel);
-
-export const visionModel = (config: Deps["config"]) => (aiEnabled(config) && (config.aiVisionModel ?? config.aiModel)) || undefined;
-
-export async function complete({ fetch, config }: Pick<Ctx, "fetch" | "config">, request: object) {
+export async function complete({ fetch, config, models }: Pick<Ctx, "fetch" | "config" | "models">, request: object) {
   const res = await fetch(`${config.aiBaseUrl}/chat/completions`, {
     method: "POST",
     headers: { authorization: `Bearer ${config.aiApiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({ model: config.aiModel, ...request }),
+    body: JSON.stringify({ model: await models.chat(), ...request }),
   });
   if (!res.ok) throw new Error(`The AI provider returned an error (${res.status})`);
   const reply = completion.safeParse(await res.json().catch(() => undefined));
@@ -43,9 +39,9 @@ export async function complete({ fetch, config }: Pick<Ctx, "fetch" | "config">,
   return reply.data.choices[0].message;
 }
 
-export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
+export function chats({ db, clock, fetch, config, models }: Ctx, value: Valuer) {
   const app = new Hono();
-  app.use("*", async (c, next) => (aiEnabled(config) ? next() : c.json({ error: "AI isn’t set up" }, 403)));
+  app.use("*", async (c, next) => ((await models.chat()) ? next() : c.json({ error: "AI isn’t set up" }, 403)));
 
   const save = (chatId: number, message: object) => db.insert(chatMessages).values({ chatId, message }).run();
 
@@ -123,7 +119,7 @@ export function chats({ db, clock, fetch, config }: Ctx, value: Valuer) {
     const added: Message[] = [{ role: "user", content: message }];
     for (let turn = 0; turn < 10; turn++) {
       const reply = await complete(
-        { fetch, config },
+        { fetch, config, models },
         {
           messages: [{ role: "system", content: system() }, ...history, ...added],
           tools: Object.entries(tools).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),

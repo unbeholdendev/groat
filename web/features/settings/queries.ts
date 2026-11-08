@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { refresh } from "../../lib/api";
-import { type ApiToken, apiToken, type Request, settings } from "../../lib/schemas";
+import { type ApiToken, apiToken, models, type Request, settings } from "../../lib/schemas";
 
 export function syncSettings(client: QueryClient, data: unknown) {
   const next = settings.parse(data);
@@ -14,3 +14,8 @@ export function syncToken(client: QueryClient, data: unknown, [method]: Request)
 }
 
 export const syncUsers = (client: QueryClient) => refresh(client, "/api/users");
+
+export function syncModels(client: QueryClient, data: unknown) {
+  client.setQueryData(["/api/models"], models.parse(data));
+  return refresh(client, "/api/settings");
+}

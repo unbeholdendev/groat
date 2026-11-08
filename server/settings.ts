@@ -1,11 +1,9 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { knownCurrencies } from "../shared/amount";
-import { aiEnabled, visionModel } from "./ai";
-import type { Deps } from "./app";
 import { type Db, settings as stored } from "./db";
+import type { Models } from "./models";
 import { body } from "./request";
-import { voiceEnabled } from "./voice";
 import * as t from "./schema";
 
 const defaultCategories: [string, string, string, [string, string][]?][] = [
@@ -24,23 +22,23 @@ const currency = z.string("Invalid currency").refine((c) => knownCurrencies.has(
 const onboarding = z.object({ baseCurrency: currency });
 const update = onboarding.extend({ theme: z.enum(["system", "light", "dark"], "Invalid theme") }).partial();
 
-export function settingsRoutes(db: Db, config: Deps["config"]) {
+export function settingsRoutes(db: Db, models: Models) {
   const app = new Hono();
   const cat = t.categories;
-  const settings = () => ({ ...stored(db), ai: aiEnabled(config), vision: !!visionModel(config), voice: voiceEnabled(config) });
+  const settings = async () => ({ ...stored(db), ai: !!(await models.chat()), vision: !!(await models.vision()), voice: !!(await models.stt()) });
 
-  app.get("/api/settings", (c) => c.json(settings()));
+  app.get("/api/settings", async (c) => c.json(await settings()));
 
   app.put("/api/settings", async (c) => {
     const input = await body(c, update);
     if ("error" in input) return c.json(input, 400);
-    const { baseCurrency, theme } = { ...settings(), ...input.data };
+    const { baseCurrency, theme } = { ...stored(db), ...input.data };
     db.update(t.settings).set({ baseCurrency, theme }).run();
-    return c.json(settings());
+    return c.json(await settings());
   });
 
   app.post("/api/onboarding", async (c) => {
-    if (settings().onboarded) return c.json({ error: "Setup is already done" }, 409);
+    if (stored(db).onboarded) return c.json({ error: "Setup is already done" }, 409);
     const input = await body(c, onboarding);
     if ("error" in input) return c.json(input, 400);
     db.transaction(() => {
@@ -50,7 +48,7 @@ export function settingsRoutes(db: Db, config: Deps["config"]) {
         children.forEach(([child, childIcon], j) => db.insert(cat).values({ name: child, icon: childIcon, color, parentId: id, sort: j }).run());
       });
     });
-    return c.json(settings());
+    return c.json(await settings());
   });
 
   return app;

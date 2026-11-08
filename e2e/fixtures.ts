@@ -1,12 +1,12 @@
 import { test as base, expect, type Page } from "@playwright/test";
 
-export const test = base.extend<{ ai: boolean; fresh: Page; app: Page }>({
+export const test = base.extend<{ ai: boolean | string[]; fresh: Page; app: Page }>({
   ai: [false, { option: true }],
   fresh: async ({ page, ai }, use) => {
     const errors: string[] = [];
     // WebKit rejects fetches and imports cut off by a reload or navigation with these.
     page.on("pageerror", (e) => !/due to access control checks\.$|^Context is stopped$/.test(e.message) && errors.push(e.message));
-    await page.request.post(ai ? "/__reset?ai" : "/__reset");
+    await page.request.post(ai ? `/__reset?ai=${ai === true ? "m" : ai.join(",")}` : "/__reset");
     await use(page);
     expect(errors).toEqual([]);
   },

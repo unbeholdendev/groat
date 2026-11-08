@@ -28,6 +28,10 @@ export function mempool(usd: Record<string, number>): Handler {
   };
 }
 
+export function models(ids: (string | object)[], base = "https://ai.test/v1"): Handler {
+  return (url) => (url.href === `${base}/models` ? Response.json({ object: "list", data: ids.map((m) => (typeof m === "string" ? { id: m } : m)) }) : undefined);
+}
+
 export function setup(now = "2026-10-10T12:00:00Z", handler: Handler = () => undefined, config: Deps["config"] = {}) {
   const clock = { now: new Date(now) };
   const fetches: string[] = [];
