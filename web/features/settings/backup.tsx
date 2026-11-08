@@ -69,7 +69,7 @@ export function Backup({ admin }: { admin: boolean }) {
       <div className={panel}>
         {admin && (
           <a href="/api/backup" download className={row}>
-            <Row d="M12 4v11m-4-4 4 4 4-4M5 19h14" hint="The whole server, except sign-ins, API tokens and chats. Restore it on a new server’s welcome screen.">
+            <Row d="M12 4v11m-4-4 4 4 4-4M5 19h14" hint="The whole server, except sign-ins, API tokens, chats and the AI provider. Restore it on a new server’s welcome screen.">
               Download backup
             </Row>
           </a>

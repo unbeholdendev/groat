@@ -97,6 +97,24 @@ test("a CSV previews and imports into an empty instance", async ({ app: page }) 
   await expect(page.getByText("Kibble").first()).toBeVisible();
 });
 
+test("an admin connects an AI provider in Settings and AI turns on without a restart", async ({ app: page }) => {
+  await expect(bar(page)).toHaveAccessibleName("Add an expense");
+  await page.getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByRole("heading", { name: "AI models" })).toBeHidden();
+  await page.getByLabel("Base URL").fill("https://ai.test/v1/");
+  await page.getByLabel("API key", { exact: true }).fill("sk-wrong");
+  await page.getByRole("button", { name: "Save provider" }).click();
+  await expect(page.getByRole("alert")).toHaveText("The AI provider refused the key (401)");
+  await page.getByLabel("API key", { exact: true }).fill("sk-e2e-key-0000");
+  await page.getByRole("button", { name: "Save provider" }).click();
+  await expect(page.getByText("Saved key ends in 0000.")).toBeVisible();
+  await expect(page.getByLabel("API key", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Base URL")).toHaveValue("https://ai.test/v1");
+  await expect(page.getByLabel("Chat", { exact: true })).toHaveValue("gpt-4o-mini");
+  await page.getByRole("link", { name: "Expenses" }).click();
+  await expect(bar(page)).toHaveAccessibleName("Add an expense, or start with ? to ask");
+});
+
 test.describe("with several AI models", () => {
   test.use({ ai: ["gpt-4o", "gpt-4o-mini", "whisper-1", "gpt-4o-transcribe"] });
 
@@ -118,6 +136,16 @@ test.describe("with several AI models", () => {
     await page.request.post("/api/login", { data: { username: "sam", password: "pw" } });
     await page.goto("/settings");
     await expect(page.getByRole("heading", { name: "Members" })).toBeHidden();
+    await expect(page.getByRole("heading", { name: "AI models" })).toBeHidden();
+    await expect(page.getByRole("heading", { name: "AI provider" })).toBeHidden();
+  });
+
+  test("clearing the base URL turns AI off", async ({ app: page }) => {
+    await page.getByRole("link", { name: "Settings" }).click();
+    await expect(page.getByText("Saved key ends in 0000.")).toBeVisible();
+    await page.getByLabel("Base URL").fill("");
+    await page.getByRole("button", { name: "Save provider" }).click();
+    await expect(page.getByText("Saved key ends in 0000.")).toBeHidden();
     await expect(page.getByRole("heading", { name: "AI models" })).toBeHidden();
   });
 });

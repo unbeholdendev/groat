@@ -6,7 +6,7 @@ import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import { migrationsFolder } from "../server/db";
-import { frankfurter, setup } from "./harness";
+import { frankfurter, models, setup } from "./harness";
 
 const kept = ["transactions", "settings", "categories", "category_order", "rates", "tags", "transaction_tags", "recurring", "users", "attachments"];
 const dump = (db: Database, table: string) => db.query(`SELECT * FROM ${table} ORDER BY rowid`).all();
@@ -25,8 +25,10 @@ function fresh() {
   return { ...h, restore, login };
 }
 
+const ai = { baseUrl: "https://ai.test/v1", key: "sk-live-backup-secret-1", sttBaseUrl: "https://stt.test/v1", sttKey: "stt-live-backup-secret-2" };
+
 async function household() {
-  const h = setup("2026-10-10T12:00:00Z", frankfurter({ "2026-10-01": { EUR: 0.9, GBP: 0.8 } }));
+  const h = setup("2026-10-10T12:00:00Z", (url) => frankfurter({ "2026-10-01": { EUR: 0.9, GBP: 0.8 } })(url) ?? models(["gpt-4o-mini"])(url), ai);
   const { call, db } = h;
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   await call("POST", "/api/users", { username: "bob", password: "pw" });
@@ -62,7 +64,9 @@ test("a backup restores into a fresh instance with its financial data and accoun
 
   const target = fresh();
   expect(await target.restore(bytes)).toEqual({ status: 200, body: {} });
-  for (const table of kept) expect([table, dump(target.db, table)]).toEqual([table, dump(source.db, table)]);
+  const blank = (db: Database) => dump(db, "settings").map((row) => ({ ...(row as object), ai_base_url: null, ai_key: null, stt_base_url: null, stt_key: null }));
+  for (const table of kept.filter((t) => t !== "settings")) expect([table, dump(target.db, table)]).toEqual([table, dump(source.db, table)]);
+  expect(dump(target.db, "settings")).toEqual(blank(source.db));
   for (const table of ["sessions", "api_tokens", "chats", "chat_messages"]) expect(dump(target.db, table)).toEqual([]);
   expect(dump(target.db, "transactions").length).toBe(3);
 
@@ -70,6 +74,18 @@ test("a backup restores into a fresh instance with its financial data and accoun
   expect((await target.login("bob", "pw")).status).toBe(200);
   const image = await target.request("/api/attachments/1");
   expect(new Uint8Array(await image.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3, 0, 255]));
+});
+
+test("a backup leaves out the AI provider, so a restore leaves AI off until it is set again", async () => {
+  const source = await household();
+  expect((await source.call("GET", "/api/settings")).body.ai).toBe(true);
+  const bytes = Buffer.from(await download(source));
+  for (const secret of Object.values(ai)) expect([secret, bytes.includes(secret)]).toEqual([secret, false]);
+
+  const target = fresh();
+  expect((await target.restore(bytes)).status).toBe(200);
+  expect((await target.call("GET", "/api/ai")).body).toEqual({ baseUrl: null, keyEnding: null, sttBaseUrl: null, sttKeyEnding: null });
+  expect((await target.call("GET", "/api/settings")).body).toMatchObject({ ai: false, vision: false, voice: false });
 });
 
 test("only admins can download a backup", async () => {

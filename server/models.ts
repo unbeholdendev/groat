@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import { z } from "zod";
 import type { Deps } from "./app";
 import type { Env } from "./auth";
@@ -35,43 +35,79 @@ const speechModels = (list: Listed) => list.map((m) => m.id).filter((id) => spee
 const sttModels = (list: Listed) => (speechModels(list).length ? speechModels(list) : list.map((m) => m.id));
 const only = (ids: string[]) => (ids.length === 1 ? ids[0] : null);
 
+const admin: MiddlewareHandler<Env> = async (c, next) => {
+  if (c.get("user").role !== "admin") return c.json({ error: "Only admins can do that" }, 403);
+  await next();
+};
+
 export type Models = ReturnType<typeof aiModels>;
 
-export function aiModels(db: Db, fetch: Deps["fetch"], config: Deps["config"]) {
-  const chatProvider = config.aiBaseUrl && config.aiApiKey ? { base: config.aiBaseUrl, key: config.aiApiKey } : undefined;
-  const sttProvider = chatProvider && { base: config.sttBaseUrl || chatProvider.base, key: config.sttKey || chatProvider.key };
-  const cached = new Map<Provider, Listed>();
+type Saved = Pick<typeof t.settings.$inferSelect, "aiBaseUrl" | "aiKey" | "sttBaseUrl" | "sttKey">;
 
-  const fetchList = async ({ base, key }: Provider) => {
-    const res = await fetch(`${base}/models`, { headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(5000) });
-    if (!res.ok) throw new Error(`The AI provider returned an error (${res.status}) listing models`);
+const providers = (s: Saved | undefined) => {
+  const chat = s?.aiBaseUrl && s.aiKey ? { base: s.aiBaseUrl, key: s.aiKey } : undefined;
+  return { chat, stt: chat && { base: s?.sttBaseUrl || chat.base, key: s?.sttKey || chat.key } };
+};
+const ending = (key: string | null) => key && (key.length > 8 ? key.slice(-4) : "");
+
+const url = z
+  .string("Enter the base URL")
+  .trim()
+  .transform((s) => s.replace(/\/+$/, ""))
+  .pipe(z.union([z.literal(""), z.url({ protocol: /^https?$/, error: "Enter a URL starting with http:// or https://" })]));
+const secret = z.string("Invalid key").trim().optional();
+const providerInput = z.object({ baseUrl: url, key: secret, sttBaseUrl: url.default(""), sttKey: secret });
+
+export function aiModels(db: Db, fetch: Deps["fetch"]) {
+  const cached = new Map<string, Listed>();
+  const id = ({ base, key }: Provider) => `${base}\n${key}`;
+
+  const fetchList = async ({ base, key }: Provider, name = "AI provider") => {
+    const res = await fetch(`${base}/models`, { headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(5000) }).catch(() => {
+      throw new Error(`Couldn’t reach ${base}`);
+    });
+    if (res.status === 401 || res.status === 403) throw new Error(`The ${name} refused the key (${res.status})`);
+    if (!res.ok) throw new Error(`The ${name} returned an error (${res.status}) listing models`);
     const parsed = listing.safeParse(await res.json().catch(() => undefined));
-    if (!parsed.success) throw new Error("The AI provider sent an unexpected model list");
+    if (!parsed.success) throw new Error(`The ${name} sent an unexpected model list`);
     return parsed.data.data;
   };
   const list = async (p: Provider) => {
     try {
       const fresh = await fetchList(p);
-      cached.set(p, fresh);
+      cached.set(id(p), fresh);
       return fresh;
     } catch (e) {
-      const last = cached.get(p);
+      const last = cached.get(id(p));
       if (!last) throw e;
       return last;
     }
   };
-  const known = async (p: Provider) => cached.get(p) ?? list(p).catch((): Listed => []);
-  const stored = () => db.select({ chat: t.settings.chatModel, vision: t.settings.visionModel, stt: t.settings.sttModel }).from(t.settings).get();
+  const known = async (p: Provider) => cached.get(id(p)) ?? list(p).catch((): Listed => []);
+  const saved = () => db.select().from(t.settings).get();
+  const current = () => providers(saved());
 
-  const chat = async () => (chatProvider ? (stored()?.chat ?? only(chatModels(await known(chatProvider)))) : null);
-  const vision = async () => {
-    const used = await chat();
-    return used && (stored()?.vision ?? used);
+  const chatModel = async () => {
+    const p = current().chat;
+    return p ? (saved()?.chatModel ?? only(chatModels(await known(p)))) : null;
   };
-  const sttModel = async () => (sttProvider ? (stored()?.stt ?? only(speechModels(await known(sttProvider)))) : null);
+  const chat = async () => {
+    const p = current().chat;
+    const model = await chatModel();
+    return p && model ? { ...p, model } : null;
+  };
+  const vision = async () => {
+    const used = await chatModel();
+    return used && (saved()?.visionModel ?? used);
+  };
+  const sttModel = async () => {
+    const p = current().stt;
+    return p ? (saved()?.sttModel ?? only(speechModels(await known(p)))) : null;
+  };
   const stt = async () => {
-    const used = (await chat()) && (await sttModel());
-    return used && sttProvider ? { ...sttProvider, model: used } : null;
+    const p = current().stt;
+    const used = (await chatModel()) && (await sttModel());
+    return used && p ? { ...p, model: used } : null;
   };
 
   const options = (p: Provider, pick: (l: Listed) => string[]) =>
@@ -80,30 +116,69 @@ export function aiModels(db: Db, fetch: Deps["fetch"], config: Deps["config"]) {
       (e: Error) => ({ models: [], error: e.message }),
     );
   const view = async () => {
+    const { chat: chatProvider, stt: sttProvider } = current();
     if (!chatProvider || !sttProvider) return null;
     const [chats, heard] = await Promise.all([options(chatProvider, chatModels), options(sttProvider, sttModels)]);
-    return { chat: { ...chats, model: await chat() }, vision: { ...chats, model: await vision() }, stt: { ...heard, model: await sttModel() } };
+    return { chat: { ...chats, model: await chatModel() }, vision: { ...chats, model: await vision() }, stt: { ...heard, model: await sttModel() } };
   };
   const listed = async (model: string | undefined, p: Provider, pick: (l: Listed) => string[]) => !model || pick(await list(p)).includes(model);
+  const provider = () => {
+    const s = saved();
+    return { baseUrl: s?.aiBaseUrl ?? null, keyEnding: ending(s?.aiKey ?? null), sttBaseUrl: s?.sttBaseUrl ?? null, sttKeyEnding: ending(s?.sttKey ?? null) };
+  };
 
   const routes = new Hono<Env>();
 
-  routes.use("/api/models", async (c, next) => {
-    if (c.get("user").role !== "admin") return c.json({ error: "Only admins can do that" }, 403);
-    await next();
-  });
+  routes.use("/api/models", admin);
+  routes.use("/api/ai", admin);
 
   routes.get("/api/models", async (c) => c.json(await view()));
 
   routes.put("/api/models", async (c) => {
     const input = await body(c, choice);
     if ("error" in input) return c.json(input, 400);
+    const { chat: chatProvider, stt: sttProvider } = current();
     if (!chatProvider || !sttProvider) return c.json({ error: "AI isn’t set up" }, 400);
     const { chat: chatModel, vision: visionModel, stt: sttChoice } = input.data;
     const known = (await listed(chatModel, chatProvider, chatModels)) && (await listed(visionModel, chatProvider, chatModels)) && (await listed(sttChoice, sttProvider, sttModels));
     if (!known) return c.json({ error: "Pick a model from the list" }, 400);
+    const now = current();
+    if (!now.chat || !now.stt || id(now.chat) !== id(chatProvider) || id(now.stt) !== id(sttProvider)) return c.json({ error: "The AI provider changed. Try again." }, 409);
     db.update(t.settings).set({ chatModel, visionModel, sttModel: sttChoice }).run();
     return c.json(await view());
+  });
+
+  routes.get("/api/ai", (c) => c.json(provider()));
+
+  routes.put("/api/ai", async (c) => {
+    const input = await body(c, providerInput);
+    if ("error" in input) return c.json(input, 400);
+    const { baseUrl, key, sttBaseUrl, sttKey } = input.data;
+    const before = saved();
+    if (!baseUrl) {
+      db.update(t.settings).set({ aiBaseUrl: null, aiKey: null, sttBaseUrl: null, sttKey: null }).run();
+      return c.json(provider());
+    }
+    const next = { aiBaseUrl: baseUrl, aiKey: (key ?? before?.aiKey) || null, sttBaseUrl: sttBaseUrl || null, sttKey: (sttKey ?? before?.sttKey) || null };
+    const { chat: chatProvider, stt: sttProvider } = providers(next);
+    const was = providers(before);
+    // A saved key only goes where it was already sent; a key typed in this request may go anywhere.
+    const allowed = (p: Provider) => p.key === key || p.key === sttKey || [was.chat, was.stt].some((w) => w && id(w) === id(p));
+    if (!chatProvider || !sttProvider || !allowed(chatProvider)) return c.json({ error: "Enter the API key" }, 400);
+    if (!allowed(sttProvider)) return c.json({ error: "Enter the speech-to-text key" }, 400);
+    const lists = await Promise.all([fetchList(chatProvider), id(sttProvider) === id(chatProvider) ? null : fetchList(sttProvider, "speech-to-text provider")]).catch((e: Error) => e);
+    if (lists instanceof Error) return c.json({ error: lists.message }, 400);
+    const [chats, separate] = lists;
+    const heard = separate ?? chats;
+    const keep = (model: string | null | undefined, ids: string[]) => (model && ids.includes(model) ? model : null);
+    const chosen = saved();
+    cached.clear();
+    cached.set(id(chatProvider), chats);
+    cached.set(id(sttProvider), heard);
+    db.update(t.settings)
+      .set({ ...next, chatModel: keep(chosen?.chatModel, chatModels(chats)), visionModel: keep(chosen?.visionModel, chatModels(chats)), sttModel: keep(chosen?.sttModel, sttModels(heard)) })
+      .run();
+    return c.json(provider());
   });
 
   routes.onError((e, c) => c.json({ error: e.message }, 502));

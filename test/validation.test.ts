@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { models, setup } from "./harness";
 
-const ai = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
+const ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 const listed = models(["test-model"]);
 
 test("malformed input gets a readable 400 on every route family", async () => {

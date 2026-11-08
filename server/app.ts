@@ -25,7 +25,6 @@ export type Deps = {
   db: Database;
   clock: () => Date;
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-  config: { aiBaseUrl?: string; aiApiKey?: string; sttBaseUrl?: string; sttKey?: string };
 };
 
 export type Ctx = Omit<Deps, "db"> & { db: Db; models: Models };
@@ -34,7 +33,7 @@ export function createApp(deps: Deps) {
   deps.db.run("PRAGMA foreign_keys = ON");
   const db = drizzle(deps.db, { casing: "snake_case" });
   migrate(db, { migrationsFolder });
-  const models = aiModels(db, deps.fetch, deps.config);
+  const models = aiModels(db, deps.fetch);
   const ctx = { ...deps, db, models };
   const app = new Hono();
   const value = valuer(ctx);

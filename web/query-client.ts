@@ -4,7 +4,7 @@ import { isLocallySignedOut, lockDevice, storeCache, unlockDevice } from "./lib/
 import { transaction, request, type Request } from "./lib/schemas";
 import { syncCategory } from "./features/categories/queries";
 import { syncTransaction } from "./features/transactions/queries";
-import { syncModels, syncSettings, syncToken, syncUsers } from "./features/settings/queries";
+import { syncAi, syncModels, syncSettings, syncToken, syncUsers } from "./features/settings/queries";
 
 let endingSession: Promise<unknown> = Promise.resolve();
 const endSession = () => (endingSession = fetch("/api/logout", { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => {}));
@@ -83,6 +83,7 @@ sync(["send", "settings"], syncSettings);
 sync(["send", "token"], syncToken);
 sync(["send", "users"], syncUsers);
 sync(["send", "models"], syncModels);
+sync(["send", "ai"], syncAi);
 
 try {
   const cache = JSON.parse(localStorage.getItem("cache") ?? "null");

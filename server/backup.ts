@@ -30,7 +30,8 @@ export function backupRoutes(db: Db, clock: () => Date) {
       const copy = new Database(path);
       copy.run("PRAGMA journal_mode = DELETE");
       for (const table of scrubbed) copy.run(`DELETE FROM ${table}`);
-      // Without this the deleted session ids would survive in free pages.
+      copy.run("UPDATE settings SET ai_base_url = NULL, ai_key = NULL, stt_base_url = NULL, stt_key = NULL");
+      // Without this the deleted session ids and AI keys would survive in free pages.
       copy.run("VACUUM");
       copy.close();
       return c.body(await Bun.file(path).bytes(), 200, {

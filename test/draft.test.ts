@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { draft } from "../web/lib/schemas";
 import { models, setup } from "./harness";
 
-const config = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
+const config = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 const listed = models(["test-model"]);
 
 function provider(read: (body: any) => unknown) {

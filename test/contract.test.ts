@@ -4,7 +4,7 @@ import { apiToken, category, chat, transaction, member, models, period, session,
 import { models as listing, setup } from "./harness";
 
 test("web schemas accept what the server sends", async () => {
-  const ai = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "k" };
+  const ai = { baseUrl: "https://ai.test/v1", key: "k" };
   const reply = { choices: [{ message: { role: "assistant", content: "hi" } }] };
   const { call } = setup(undefined, (url) => listing(["m"])(url) ?? (url.host === "ai.test" ? Response.json(reply) : undefined), ai);
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });

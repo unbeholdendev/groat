@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { createApp, type Deps } from "../server/app";
+import { createApp } from "../server/app";
 import { hashCost } from "../server/auth";
 
 type Handler = (url: URL, init?: RequestInit) => Response | undefined | Promise<Response>;
@@ -32,7 +32,9 @@ export function models(ids: (string | object)[], base = "https://ai.test/v1"): H
   return (url) => (url.href === `${base}/models` ? Response.json({ object: "list", data: ids.map((m) => (typeof m === "string" ? { id: m } : m)) }) : undefined);
 }
 
-export function setup(now = "2026-10-10T12:00:00Z", handler: Handler = () => undefined, config: Deps["config"] = {}) {
+export type Ai = { baseUrl?: string; key?: string; sttBaseUrl?: string; sttKey?: string };
+
+export function setup(now = "2026-10-10T12:00:00Z", handler: Handler = () => undefined, ai: Ai = {}) {
   const clock = { now: new Date(now) };
   const fetches: string[] = [];
   const db = new Database(":memory:");
@@ -44,9 +46,9 @@ export function setup(now = "2026-10-10T12:00:00Z", handler: Handler = () => und
         fetches.push(String(input));
         return (await handler(new URL(String(input)), init)) ?? new Response("not found", { status: 404 });
       },
-      config,
     });
   let app = build();
+  db.run("UPDATE settings SET ai_base_url = ?, ai_key = ?, stt_base_url = ?, stt_key = ?", [ai.baseUrl ?? null, ai.key ?? null, ai.sttBaseUrl ?? null, ai.sttKey ?? null]);
   db.run("INSERT INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')", [Bun.password.hashSync("secret", hashCost)]);
   const restart = () => (app = build());
   const request = (path: string, init: RequestInit = {}) => {

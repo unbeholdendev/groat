@@ -1,9 +1,8 @@
 import { expect, test } from "bun:test";
 import { models as modelChoice } from "../web/lib/schemas";
-import type { Deps } from "../server/app";
-import { models, setup } from "./harness";
+import { models, setup, type Ai } from "./harness";
 
-const config: Deps["config"] = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
+const config: Ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 
 function provider(ids: (string | object)[], stt?: { ids: string[]; base: string }) {
   const used: { chat: unknown[]; stt: unknown[] } = { chat: [], stt: [] };
@@ -108,7 +107,7 @@ test("a separate speech-to-text provider lists all its models when none look lik
 });
 
 test("without a base URL and key there is nothing to choose, and a failing list keeps AI off", async () => {
-  const none = setup(undefined, provider(["gpt-4o-mini"]).handler, { aiBaseUrl: "https://ai.test/v1" });
+  const none = setup(undefined, provider(["gpt-4o-mini"]).handler, { baseUrl: "https://ai.test/v1" });
   expect((await none.call("GET", "/api/models")).body).toBeNull();
   expect((await none.call("PUT", "/api/models", { chat: "gpt-4o-mini" })).status).toBe(400);
   expect(await flags(none.call)).toEqual({ ai: false, vision: false, voice: false });

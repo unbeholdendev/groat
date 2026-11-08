@@ -4,6 +4,7 @@ import { Chevron, paths } from "../../components/icon";
 import { linkRow, panel, sectionHead } from "../../components/styles";
 import { useSession, useSettings } from "../../lib/api";
 import { AiModels } from "./ai-models";
+import { AiProvider } from "./ai-provider";
 import { Backup } from "./backup";
 import { Rates } from "./rates";
 import { Members } from "./members";
@@ -31,6 +32,7 @@ export function SettingsPage() {
       <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" />
       <Rates />
       {admin && <Members />}
+      {admin && <AiProvider />}
       {admin && <AiModels />}
       <Backup admin={admin} />
       <h2 className={sectionHead}>More</h2>

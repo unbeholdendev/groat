@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { transactionInput, isoDate } from "../shared/schema";
-import type { Ctx, Deps } from "./app";
+import type { Ctx } from "./app";
 import { countable, settings, today, uncategorised } from "./db";
 import { transactionFilter, transactionQuery, transactions, newest, readTransaction } from "./transactions";
 import { body } from "./request";
@@ -27,11 +27,14 @@ const tool = <T extends z.ZodType>(description: string, input: T, run: (args: z.
   run: (args: unknown) => run(input.parse(args)),
 });
 
-export async function complete({ fetch, config, models }: Pick<Ctx, "fetch" | "config" | "models">, request: object) {
-  const res = await fetch(`${config.aiBaseUrl}/chat/completions`, {
+export async function complete({ fetch, models }: Pick<Ctx, "fetch" | "models">, request: object) {
+  const provider = await models.chat();
+  if (!provider) throw new Error("AI isn’t set up");
+  const { base, key, model } = provider;
+  const res = await fetch(`${base}/chat/completions`, {
     method: "POST",
-    headers: { authorization: `Bearer ${config.aiApiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({ model: await models.chat(), ...request }),
+    headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({ model, ...request }),
   });
   if (!res.ok) throw new Error(`The AI provider returned an error (${res.status})`);
   const reply = completion.safeParse(await res.json().catch(() => undefined));
@@ -39,7 +42,7 @@ export async function complete({ fetch, config, models }: Pick<Ctx, "fetch" | "c
   return reply.data.choices[0].message;
 }
 
-export function chats({ db, clock, fetch, config, models }: Ctx, value: Valuer) {
+export function chats({ db, clock, fetch, models }: Ctx, value: Valuer) {
   const app = new Hono();
   app.use("*", async (c, next) => ((await models.chat()) ? next() : c.json({ error: "AI isn’t set up" }, 403)));
 
@@ -119,7 +122,7 @@ export function chats({ db, clock, fetch, config, models }: Ctx, value: Valuer) 
     const added: Message[] = [{ role: "user", content: message }];
     for (let turn = 0; turn < 10; turn++) {
       const reply = await complete(
-        { fetch, config, models },
+        { fetch, models },
         {
           messages: [{ role: "system", content: system() }, ...history, ...added],
           tools: Object.entries(tools).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),

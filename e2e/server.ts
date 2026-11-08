@@ -8,6 +8,7 @@ const btc = mempool({ "2000-01-01": 60000 });
 
 function provider(url: URL, init: RequestInit | undefined, models: string[]) {
   if (url.host !== "ai.test") return;
+  if (new Headers(init?.headers).get("authorization") !== "Bearer sk-e2e-key-0000") return Response.json({ error: "bad key" }, { status: 401 });
   if (url.pathname === "/v1/models") return Response.json({ object: "list", data: models.map((id) => ({ id })) });
   const body = JSON.parse(String(init?.body));
   const last = body.messages.at(-1).content;
@@ -18,15 +19,16 @@ function provider(url: URL, init: RequestInit | undefined, models: string[]) {
 }
 
 function build(models?: string[]) {
+  const db = new Database(":memory:");
   const app = createApp({
-    db: new Database(":memory:"),
+    db,
     clock: () => new Date(),
     fetch: async (input, init) => {
       const url = new URL(String(input));
-      return rates(url) ?? btc(url) ?? (models && provider(url, init, models)) ?? new Response("not found", { status: 404 });
+      return rates(url) ?? btc(url) ?? provider(url, init, models ?? ["gpt-4o-mini", "whisper-1"]) ?? new Response("not found", { status: 404 });
     },
-    config: models ? { aiBaseUrl: "https://ai.test/v1", aiApiKey: "k" } : {},
   });
+  if (models) db.run("UPDATE settings SET ai_base_url = 'https://ai.test/v1', ai_key = 'sk-e2e-key-0000'");
   app.use("*", serveStatic({ root: "./dist" }));
   app.get("*", serveStatic({ path: "./dist/index.html" }));
   return app;

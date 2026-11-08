@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { draft } from "../web/lib/schemas";
 import { models, setup } from "./harness";
 
-const ai = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
+const ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 
 function providers(text: string, listed = models(["test-model", "whisper-1"])) {
   const heard: { url: string; auth: string | null; model: unknown; file: unknown }[] = [];

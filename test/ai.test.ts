@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { frankfurter, models, setup } from "./harness";
 
-const config = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
+const config = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 const listed = models(["test-model"]);
 
 function provider(script: Record<string, unknown>[] = []) {
@@ -53,7 +53,7 @@ test("a chat is answered, saved with a title from the first question, listed and
 });
 
 test("AI needs the base URL as well as the key", async () => {
-  for (const missing of ["aiBaseUrl", "aiApiKey"]) {
+  for (const missing of ["baseUrl", "key"]) {
     const { call } = setup(undefined, listed, { ...config, [missing]: undefined });
     expect((await call("GET", "/api/settings")).body.ai).toBe(false);
     expect((await call("GET", "/api/chats")).status).toBe(403);

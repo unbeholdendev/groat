@@ -1,9 +1,8 @@
 import { expect, test } from "bun:test";
 import { draft, transaction, settings } from "../web/lib/schemas";
-import type { Deps } from "../server/app";
-import { models, setup } from "./harness";
+import { models, setup, type Ai } from "./harness";
 
-const config: Deps["config"] = { aiBaseUrl: "https://ai.test/v1", aiApiKey: "sk-test" };
+const config: Ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
 
 function provider(ids = ["text-model"]) {

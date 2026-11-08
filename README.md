@@ -32,16 +32,16 @@ Set these as environment variables, e.g. in `groat.env` (`NAME=value` per line) 
 |---|---|---|
 | `PORT` | `3000` | Port to listen on. |
 | `DB_PATH` | `data.db` | SQLite database, including receipt photos. The image sets `/data/expenses.db`; change it only if your host forces a different mount path. |
-| `AI_BASE_URL`, `AI_API_KEY` | unset | Any OpenAI-compatible API. Turns on asking (start the add bar with `?`), AI reading of unclear lines, receipt photos and dictation. |
-| `AI_STT_BASE_URL`, `AI_STT_KEY` | the `AI_*` values | A separate speech-to-text provider. |
 
-All AI features are optional and need `AI_BASE_URL` and `AI_API_KEY`. An admin picks the chat, receipt photo and dictation models in Settings → AI models, from the list the provider returns. If the provider offers only one chat model, or one speech-to-text model, Groat uses it until an admin picks another.
+All AI features are optional. To turn them on, an admin enters the base URL and API key of any OpenAI-compatible API in Settings → AI provider, plus a speech-to-text URL and key if dictation uses another service. That turns on asking (start the add bar with `?`), AI reading of unclear lines, receipt photos and dictation, with no restart. Saving checks the URL and key by listing the provider's models. Groat stores keys as plain text in the database and shows only their last 4 characters.
+
+An admin then picks the chat, receipt photo and dictation models in Settings → AI models, from the list the provider returns. If the provider offers only one chat model, or one speech-to-text model, Groat uses it until an admin picks another.
 
 ## Backup and restore
 
-An admin downloads a backup from Settings → Backup and import: one SQLite file with all data and password hashes, but not sign-ins, API tokens, chats or the environment. Keep it private.
+An admin downloads a backup from Settings → Backup and import: one SQLite file with all data and password hashes, but not sign-ins, API tokens, chats or the AI provider URLs and keys. Keep it private. After a restore, an admin enters the AI provider again.
 
-To restore, start the app on an empty `/data` with the same or a newer version, choose **Restore from a backup** on the welcome screen, then sign in. For scheduled backups:
+To restore, start the app on an empty `/data` with the same or a newer version, choose **Restore from a backup** on the welcome screen, then sign in. For scheduled backups, which also copy the AI keys:
 
 ```sh
 sqlite3 /path/to/expenses.db ".backup '/backups/groat-$(date +%F).sqlite'"

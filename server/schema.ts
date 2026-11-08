@@ -28,6 +28,10 @@ export const settings = sqliteTable(
     chatModel: text(),
     visionModel: text(),
     sttModel: text(),
+    aiBaseUrl: text(),
+    aiKey: text(),
+    sttBaseUrl: text(),
+    sttKey: text(),
   },
   (t) => [check("single_row", sql`${t.id} = 1`)],
 );

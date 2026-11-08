@@ -39,6 +39,8 @@ export type Settings = z.infer<typeof settings>;
 const choice = z.object({ models: z.array(z.string()), model: z.string().nullable(), error: z.string().optional() });
 export const models = z.object({ chat: choice, vision: choice, stt: choice }).nullable();
 export type Models = NonNullable<z.infer<typeof models>>;
+export const aiProvider = z.object({ baseUrl: z.string().nullable(), keyEnding: z.string().nullable(), sttBaseUrl: z.string().nullable(), sttKeyEnding: z.string().nullable() });
+export type AiProvider = z.infer<typeof aiProvider>;
 
 const role = z.enum(["admin", "member"]);
 export const session = z.object({ setup: z.boolean(), user: z.object({ username: z.string(), role }).nullable() });

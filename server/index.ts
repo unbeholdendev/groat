@@ -9,12 +9,6 @@ const app = createApp({
   db,
   clock: () => new Date(),
   fetch,
-  config: {
-    aiBaseUrl: process.env.AI_BASE_URL,
-    aiApiKey: process.env.AI_API_KEY,
-    sttBaseUrl: process.env.AI_STT_BASE_URL,
-    sttKey: process.env.AI_STT_KEY,
-  },
 });
 setInterval(app.generate, 86_400_000);
 app.use("*", serveStatic({ root: "./dist" }));
