@@ -34,7 +34,7 @@ test("the admin adds, lists, resets and removes members", async () => {
   expect((await call("PUT", "/api/users/99/password", { password: "x" })).status).toBe(404);
 });
 
-test("members can't manage the household", async () => {
+test("members can't manage other members", async () => {
   const { call, as, login } = household();
   const { body } = await call("POST", "/api/users", { username: "bob", password: "pw" });
   const bob = await login("bob", "pw");

@@ -17,7 +17,7 @@ test("change password and sign in with the new password", async ({ app: page }) 
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
 });
 
-for (const [name, path, route] of [["Bin", "/api/bin", "/?view=bin"], ["Recurring", "/api/recurring", "/?view=recurring"], ["Household", "/api/users", "/settings"], ["API tokens", "/api/tokens", "/settings"]]) {
+for (const [name, path, route] of [["Bin", "/api/bin", "/?view=bin"], ["Recurring", "/api/recurring", "/?view=recurring"], ["Members", "/api/users", "/settings"], ["API tokens", "/api/tokens", "/settings"]]) {
   test(`${name} shows a failed load and retries`, async ({ app: page }) => {
     await page.route(`**${path}`, (r) => r.fulfill({ status: 400, json: { error: "Load failed" } }));
     await page.goto(route);
@@ -46,7 +46,7 @@ test("currency save reports failure, rolls back and can be retried", async ({ ap
   await expect(page.getByLabel("Base currency")).toHaveValue("EUR");
 });
 
-for (const [path, route, message] of [["/api/bin", "/?view=bin", "Loading bin"], ["/api/recurring", "/?view=recurring", "Loading recurring"], ["/api/users", "/settings", "Loading household"], ["/api/tokens", "/settings", "Loading tokens"]]) {
+for (const [path, route, message] of [["/api/bin", "/?view=bin", "Loading bin"], ["/api/recurring", "/?view=recurring", "Loading recurring"], ["/api/users", "/settings", "Loading members"], ["/api/tokens", "/settings", "Loading tokens"]]) {
   test(`${message} appears before empty content`, async ({ app: page }) => {
     let release!: () => void;
     const waiting = new Promise<void>((resolve) => { release = resolve; });

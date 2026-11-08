@@ -17,7 +17,7 @@ test("missing rates mark totals incomplete and shared manual rates can be edited
   await page.goto("/");
   await expect(page.getByText("Incomplete totals:")).toBeHidden();
   await page.getByRole("button", { name: "Unconverted dinner", exact: true }).click();
-  await expect(page.getByText(/1 USD = 100 JPY · manual/)).toBeVisible();
+  await expect(page.getByText(/1 USD = 100 JPY/)).toBeVisible();
   await page.goto("/settings");
   await page.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(page.getByLabel("Units per 1 USD")).toHaveValue("100");

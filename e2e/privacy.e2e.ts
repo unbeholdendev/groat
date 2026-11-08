@@ -9,7 +9,7 @@ test("capture without AI and find the privacy document from Settings", async ({ 
   await page.getByRole("link", { name: "Privacy and data flows" }).click();
   await expect(page).toHaveURL(/\/privacy\.html$/);
   await expect(page.getByRole("heading", { name: "Privacy and data flows", exact: true })).toBeVisible();
-  for (const name of ["Household access", "AI requests", "Browser storage and sign-out", "Server storage and rate lookups", "Using Groat without AI"]) {
+  for (const name of ["Member access", "AI requests", "Browser storage and sign-out", "Server storage and rate lookups", "Using Groat without AI"]) {
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -16,19 +16,24 @@ export function CategoryChips({ kind, value, onChange }: { kind: Kind; value: nu
   const branch = picked?.parentId ?? picked?.id;
   const kids = categories.filter((c) => c.parentId !== null && c.parentId === branch);
   const tops = categories.filter((c) => c.parentId === null && !c.builtin && c.kind === kind);
+  const parents = new Set(categories.map((c) => c.parentId));
   const toggle = (c: Category) => onChange(value === c.id ? null : c.id);
   const cells = tops.map((c) => (
     <button
       type="button"
       key={c.id}
       aria-pressed={value === c.id}
+      aria-expanded={parents.has(c.id) ? c.id === branch : undefined}
       onClick={() => toggle(c)}
       className={`press flex min-w-0 flex-col items-center gap-1 rounded-tile py-1 text-[11px] font-medium ${c.id === branch ? "text-ink" : "text-ink2"}`}
     >
-      <span className={`rounded-[13px] p-0.5 outline-2 ${value === c.id ? "outline-accent" : "outline-transparent"}`}>
+      <span className={`rounded-[calc(var(--radius-tile)+3px)] p-[3px] outline-2 ${value === c.id ? "outline-accent" : "outline-transparent"}`}>
         <Tile category={c} />
       </span>
-      <span className="w-full truncate text-center">{c.name}</span>
+      <span className="flex w-full items-center justify-center gap-0.5">
+        <span className="truncate">{c.name}</span>
+        {parents.has(c.id) && <Chevron className={`size-2.5 shrink-0 stroke-[2.5] text-ink3 transition-transform ${c.id === branch ? "rotate-180" : ""}`} />}
+      </span>
     </button>
   ));
   if (kids.length)

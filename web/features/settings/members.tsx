@@ -8,7 +8,7 @@ import { member, type Request } from "../../lib/schemas";
 import { AddMember } from "./add-member";
 import { MemberRow } from "./member-row";
 
-export function Household() {
+export function Members() {
   const query = useApi(z.array(member), ["/api/users"], { throwOnError: false });
   const members = query.data ?? [];
   const mutation = useSendNow("users");
@@ -18,8 +18,8 @@ export function Household() {
 
   return (
     <section>
-      <h2 className={sectionHead}>Household</h2>
-      {query.isPending && <p role="status">Loading household…</p>}
+      <h2 className={sectionHead}>Members</h2>
+      {query.isPending && <p role="status">Loading members…</p>}
       <FormError error={query.error} />
       {query.isError && <button type="button" className="press text-accent" onClick={() => void query.refetch()}>Try again</button>}
       {query.data && <ul className={panel}>

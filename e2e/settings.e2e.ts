@@ -39,7 +39,7 @@ test("pending recurring expenses confirm from Home", async ({ app: page }) => {
   await expect(page.locator("header").getByText("£900.00").first()).toBeVisible();
 });
 
-test("household members and API tokens", async ({ app: page }) => {
+test("members and API tokens", async ({ app: page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
   await page.getByRole("button", { name: "Add member" }).click();
   await page.getByPlaceholder("Username").fill("sam");
@@ -58,6 +58,15 @@ test("household members and API tokens", async ({ app: page }) => {
   await expect(bar(page)).toBeVisible();
   await expect(page.getByText("milk")).toBeVisible();
 });
+test("members export CSV but cannot back up or import", async ({ app: page }) => {
+  await page.request.post("/api/users", { data: { username: "sam", password: "pw" } });
+  await page.request.post("/api/login", { data: { username: "sam", password: "pw" } });
+  await page.goto("/settings");
+  await expect(page.getByRole("link", { name: "Export all as CSV" })).toHaveAttribute("href", "/api/export");
+  await expect(page.getByRole("link", { name: "Download backup" })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Import from CSV" })).toBeHidden();
+});
+
 test("browser chrome colour follows the chosen theme", async ({ app: page }) => {
   const color = () => page.locator("meta[name=theme-color]").getAttribute("content");
   await page.request.put("/api/settings", { data: { theme: "dark" } });

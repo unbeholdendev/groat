@@ -18,7 +18,7 @@ function provider(read: (body: any) => unknown) {
   return { handler, requests };
 }
 
-test("text becomes a draft with a category from the household's list, saving nothing", async () => {
+test("text becomes a draft with a category from the shared list, saving nothing", async () => {
   const ai = provider((body) => {
     const food = JSON.parse(body.messages[0].content.match(/Categories: (.*)/)[1]).find((c: { name: string }) => c.name === "Food");
     return { note: "Lunch with Sam", amount: "18.40", date: "2026-10-09", categoryId: food.id, tags: ["friends"] };

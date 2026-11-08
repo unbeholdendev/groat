@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "../../components/button";
 import { FormError } from "../../components/form";
-import { panel, sectionHead, linkRow } from "../../components/styles";
+import { divide, panel, sectionHead } from "../../components/styles";
 import { send } from "../../lib/api";
 import { SettingsIcon } from "./settings-icon";
 
@@ -22,16 +22,21 @@ const post = (path: string, file: File) => {
   return send("POST", path, form);
 };
 
-const Row = ({ d, children }: { d: string; children: string }) => (
+const row = `press relative flex min-h-[62px] w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface2 ${divide}`;
+
+const Row = ({ d, children, hint }: { d: string; children: string; hint: string }) => (
   <>
     <SettingsIcon>
       <path d={d} />
     </SettingsIcon>
-    <span className="flex-1">{children}</span>
+    <span className="flex-1">
+      <span className="block font-medium">{children}</span>
+      <span className="block text-xs text-ink2">{hint}</span>
+    </span>
   </>
 );
 
-export function Backup() {
+export function Backup({ admin }: { admin: boolean }) {
   const picker = useRef<HTMLInputElement>(null);
   const client = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
@@ -45,11 +50,8 @@ export function Backup() {
 
   return (
     <section>
-      <h2 className={sectionHead}>Backup and import</h2>
-      <p className="-mt-1 mb-3 px-1 text-[13px] text-ink2">
-        One file with every expense, category, schedule, rate, photo and account. Sign-ins, API tokens and chats are left out. Restore it on a new server’s welcome screen.
-      </p>
-      <input
+      <h2 className={sectionHead}>Backup and export</h2>
+      {admin && <input
         ref={picker}
         type="file"
         accept=".csv,text/csv"
@@ -63,16 +65,28 @@ export function Backup() {
           setFile(f);
           check.mutate(f);
         }}
-      />
+      />}
       <div className={panel}>
-        <a href="/api/backup" download className={linkRow}>
-          <Row d="M12 4v11m-4-4 4 4 4-4M5 19h14">Download backup</Row>
+        {admin && (
+          <a href="/api/backup" download className={row}>
+            <Row d="M12 4v11m-4-4 4 4 4-4M5 19h14" hint="The whole server, except sign-ins, API tokens and chats. Restore it on a new server’s welcome screen.">
+              Download backup
+            </Row>
+          </a>
+        )}
+        <a href="/api/export" download="expenses.csv" className={row}>
+          <Row d="M12 4v11m-4-4 4 4 4-4M5 19h14" hint="Transactions only, for spreadsheets. Import reads this format.">
+            Export all as CSV
+          </Row>
         </a>
-        <button type="button" className={linkRow} disabled={check.isPending || run.isPending} onClick={() => picker.current?.click()}>
-          <Row d="M12 15V4m-4 4 4-4 4 4M5 19h14">{check.isPending ? "Checking file…" : "Import from CSV"}</Row>
-        </button>
+        {admin && (
+          <button type="button" className={row} disabled={check.isPending || run.isPending} onClick={() => picker.current?.click()}>
+            <Row d="M12 15V4m-4 4 4-4 4 4M5 19h14" hint="Into an empty ledger only. Needs date, note, amount and currency; type, category, subcategory and tags are optional.">
+              {check.isPending ? "Checking file…" : "Import from CSV"}
+            </Row>
+          </button>
+        )}
       </div>
-      <p className="mt-2 px-1 text-[13px] text-ink2">Import works once, before any expenses are added. Columns: date, note, amount, currency, and optionally type (expense or income), category, subcategory and tags.</p>
       <FormError error={check.error ?? run.error} className="mt-2 px-1" />
       {run.data && <p role="status" className="mt-2 px-1 text-sm">Imported {run.data.imported} expenses.</p>}
       {plan && (

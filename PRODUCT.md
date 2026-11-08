@@ -10,7 +10,7 @@ Installable PWA, used mostly on a phone; desktop browser also works.
 
 ## Users
 
-Primarily the author, as a personal tool. It will be open-sourced and self-hostable, so anyone running their own instance is a user too. One instance serves one household. An admin adds members; everyone signs in and shares a ledger, categories and settings.
+Primarily the author, as a personal tool. It will be open-sourced and self-hostable, so anyone running their own instance is a user too. One instance holds one shared ledger. An admin adds members; everyone signs in and shares its categories and settings.
 
 ## Jobs
 

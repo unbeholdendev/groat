@@ -1,6 +1,6 @@
 # Groat
 
-A self-hosted expense tracker for a household.
+A self-hosted expense tracker for one person or a group sharing a ledger.
 
 ## Run
 
@@ -64,7 +64,7 @@ curl -X POST https://your-host/api/capture \
 
 ## Lost admin password
 
-Other members ask an admin to reset theirs under Household. If the admin is locked out:
+Other members ask an admin to reset theirs under Members. If the admin is locked out:
 
 ```sh
 docker stop groat

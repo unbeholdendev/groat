@@ -43,3 +43,13 @@ test("rename and delete a tag", async ({ app: page }) => {
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("No tags yet.")).toBeVisible();
 });
+
+test("parents with subcategories show they expand", async ({ app: page }) => {
+  await page.getByRole("button", { name: "Full form" }).click();
+  const grid = page.getByRole("group", { name: "Category", exact: true });
+  await expect(grid.getByRole("button", { name: "Subscriptions" })).not.toHaveAttribute("aria-expanded");
+  await expect(grid.getByRole("button", { name: "Food" })).toHaveAttribute("aria-expanded", "false");
+  await grid.getByRole("button", { name: "Food" }).click();
+  await page.getByRole("group", { name: "Subcategory" }).getByRole("button", { name: "Groceries" }).click();
+  await expect(grid.getByRole("button", { name: "Food" })).toHaveAttribute("aria-expanded", "true");
+});

@@ -16,9 +16,9 @@
 <main>
   <a href="/settings">Back to Settings</a>
   <h1>Privacy and data flows</h1>
-  <p>Groat stores a shared household ledger on the server running this instance. Configured AI services and exchange-rate services receive some data. Ask the server operator which endpoints they use and how they protect the server, its logs and backups. Self-hosting alone does not keep AI requests local.</p>
+  <p>Groat stores a shared ledger on the server running this instance. Configured AI services and exchange-rate services receive some data. Ask the server operator which endpoints they use and how they protect the server, its logs and backups. Self-hosting alone does not keep AI requests local.</p>
 
-  <h2>Household access</h2>
+  <h2>Member access</h2>
   <p>Separate sign-ins use the same dataset. Every signed-in member can read, add, edit, bin, restore and permanently delete other members’ expenses, see receipt attachments, manage shared categories and recurring entries, and export the ledger as CSV. Chats and their saved messages are also shared: members can read, continue and delete each other’s chats. The name shown on an expense records who added it; it does not restrict access.</p>
   <p>Admins can add or remove members, reset their passwords and download a database backup. Removing a member revokes their sessions and capture tokens but keeps their expenses. Each user manages their own capture tokens. A capture token can submit entries to the shared ledger; it cannot read the ledger through the normal expense API.</p>
 

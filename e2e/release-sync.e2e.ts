@@ -61,7 +61,7 @@ test("discarding a paused entry never posts it after reconnecting", async ({ app
   expect((await (await page.request.get("/api/transactions")).json()).map((r: { note: string }) => r.note)).toEqual(["keep me"]);
 });
 
-test("expired-session entries cannot replay as another household member", async ({ app: page, context }) => {
+test("expired-session entries cannot replay as another member", async ({ app: page, context }) => {
   await page.request.post("/api/users", { data: { username: "partner", password: "secret" } });
   await expect(bar(page)).toBeVisible();
   await context.setOffline(true);

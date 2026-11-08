@@ -5,7 +5,7 @@ import { linkRow, panel, sectionHead } from "../../components/styles";
 import { useSession, useSettings } from "../../lib/api";
 import { Backup } from "./backup";
 import { Rates } from "./rates";
-import { Household } from "./household";
+import { Members } from "./members";
 import { PasswordForm } from "./password-form";
 import { SettingsForm } from "./settings-form";
 import { SettingsIcon } from "./settings-icon";
@@ -29,8 +29,8 @@ export function SettingsPage() {
     <>
       <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" />
       <Rates />
-      {admin && <Household />}
-      {admin && <Backup />}
+      {admin && <Members />}
+      <Backup admin={admin} />
       <h2 className={sectionHead}>More</h2>
       <nav className={panel}>
         <Link to="/" search={{ view: "recurring" }} className={linkRow}>
@@ -44,9 +44,6 @@ export function SettingsPage() {
         <Link to="/" search={{ view: "bin" }} className={linkRow}>
           <Go d={paths.bin}>Bin</Go>
         </Link>
-        <a href="/api/export" download="expenses.csv" className={linkRow}>
-          <Go d="M12 4v11m-4-4 4 4 4-4M5 19h14">Export all as CSV</Go>
-        </a>
         <a href="/privacy.html" className={linkRow}>
           <Go d="M12 3 4 6v6c0 4 8 9 8 9s8-5 8-9V6z">Privacy and data flows</Go>
         </a>

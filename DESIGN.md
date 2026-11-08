@@ -344,7 +344,7 @@ One centred column, 448px max, 20px gutters, on phone and desktop. At `lg` the t
 5. **By tag**: same panel and row, a `track` tile with a drawn hash icon, no share track.
 
 ### Settings and secondary screens
-Same grammar as Home: Title section heads ("Currencies", "Theme", "Household", "More", "API tokens"), each over one Level 1 panel of 62px rows. A row leads with a 36px `track` tile holding a drawn icon (or the member's initial on `accent-soft`), ends with a drawn chevron when it navigates, and destructive or secondary actions are Label text buttons. Settings save as they change; there is no Save button outside onboarding. Theme is the shared segmented control. Sign out is its own panel, `up` text. Recurring, Bin and Chats lists use the same panels and category tiles.
+Same grammar as Home: Title section heads ("Currencies", "Theme", "Members", "Backup and export", "More", "API tokens"), each over one Level 1 panel of 62px rows. A row leads with a 36px `track` tile holding a drawn icon (or the member's initial on `accent-soft`), ends with a drawn chevron when it navigates, and destructive or secondary actions are Label text buttons. Settings save as they change; there is no Save button outside onboarding. Theme is the shared segmented control. Sign out is its own panel, `up` text. Recurring, Bin and Chats lists use the same panels and category tiles.
 
 ## Elevation & Depth
 
