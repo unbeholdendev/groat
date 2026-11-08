@@ -66,8 +66,31 @@ test("the full form's amount can be a sum", async ({ app: page }) => {
 
 test("a line without an amount opens the full form", async ({ app: page }) => {
   await bar(page).fill("#nope");
-  await bar(page).press("Enter");
+  await expect(page.getByRole("button", { name: "Full form" })).toHaveCount(1);
+  await page.getByRole("button", { name: "Full form" }).click();
   await expect(page.getByRole("heading", { name: "New expense" })).toBeVisible();
+});
+
+test("Enter on an empty bar does nothing; the plus opens the full form", async ({ app: page }) => {
+  await bar(page).press("Enter");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("button", { name: "Full form" })).toHaveCount(1);
+  await page.getByRole("button", { name: "Full form" }).click();
+  await expect(page.getByRole("heading", { name: "New expense" })).toBeVisible();
+});
+
+test("Cancel returns to the page the form was opened from", async ({ app: page }) => {
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Full form" }).click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page).toHaveURL(/\/settings$/);
+});
+
+test("Cancel on a directly opened form goes to the list", async ({ app: page }) => {
+  await page.goto("/?new=1");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText("Nothing this month yet")).toBeVisible();
 });
 
 test("full form adds, edits, bins and restores", async ({ app: page }) => {

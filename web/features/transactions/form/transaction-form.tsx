@@ -2,7 +2,7 @@ import { Button } from "../../../components/button";
 import { useContext, useEffect, useRef, useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { persistCache } from "../../../query-client";
-import { useBlocker, useLocation } from "@tanstack/react-router";
+import { useBlocker, useCanGoBack, useLocation, useRouter } from "@tanstack/react-router";
 import { Field, FormError, Input } from "../../../components/form";
 import { kinds } from "../../../../shared/schema";
 import { Segmented } from "../../../components/segmented";
@@ -24,6 +24,8 @@ export function TransactionForm() {
   const editing = Number(route.useSearch().edit) || null;
   const list = useList();
   const navigate = route.useNavigate();
+  const { history } = useRouter();
+  const back = useCanGoBack();
   const cache = useQueryClient();
   const owner = useSession()?.user?.username;
   const draftKey = ["transaction-draft", owner, editing ? `edit:${editing}` : template ? `recurring:${template.id}` : "new"];
@@ -72,7 +74,8 @@ export function TransactionForm() {
 
   function close(saved = false) {
     if (saved || !dirty) cache.removeQueries({ queryKey: draftKey, exact: true });
-    navigate({ search: list, replace: true, ignoreBlocker: saved });
+    if (back) history.back({ ignoreBlocker: saved });
+    else navigate({ search: list, replace: true, ignoreBlocker: saved });
   }
 
   function fill(e: Draft) {

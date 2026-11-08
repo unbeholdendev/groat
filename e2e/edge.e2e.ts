@@ -25,6 +25,8 @@ test("an expense without a rate shows as unconverted and stays out of the day to
 test("/ focuses the bar", async ({ app: page, isMobile }) => {
   test.skip(isMobile, "keyboard only");
   await expect(bar(page)).toBeVisible();
+  await expect(bar(page)).toHaveAttribute("aria-keyshortcuts", "/");
+  await expect(page.locator("kbd").filter({ hasText: /^\/$/ })).toHaveCount(0);
   await page.locator("body").press("/");
   await expect(bar(page)).toBeFocused();
 });
@@ -47,7 +49,6 @@ test("a recurring expense can be edited", async ({ app: page }) => {
   await expect(page.getByRole("heading", { name: "Edit recurring" })).toBeVisible();
   await page.getByLabel("Amount").fill("32");
   await page.getByRole("button", { name: "Save" }).click();
-  await page.goto("/?view=recurring");
   await expect(page.getByText("£32.00 every month")).toBeVisible();
 });
 
@@ -57,7 +58,6 @@ test("clearing Repeat stops a recurring expense", async ({ app: page }) => {
   await page.getByRole("button", { name: /Gym/ }).click();
   await page.getByLabel("Repeat").selectOption("");
   await page.getByRole("button", { name: "Save" }).click();
-  await page.goto("/?view=recurring");
   await expect(page.getByText("Nothing repeats yet.", { exact: false })).toBeVisible();
 });
 

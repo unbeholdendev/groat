@@ -40,6 +40,7 @@ export function LineInput(props: {
         aria-label={props.label}
         className="absolute inset-0 w-full bg-transparent leading-10 text-transparent caret-accent outline-none [word-spacing:inherit] focus-visible:outline-none placeholder:font-normal placeholder:text-ink3"
         placeholder={props.placeholder}
+        aria-keyshortcuts="/"
         autoComplete="off"
         enterKeyHint={ask ? "send" : "done"}
         value={text}

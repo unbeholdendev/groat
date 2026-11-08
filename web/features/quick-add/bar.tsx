@@ -3,7 +3,7 @@ import { useMutationState } from "@tanstack/react-query";
 import { parseAmount, type Unit } from "../../../shared/amount";
 import { confident, parse } from "../../../shared/parse";
 import { useSend } from "../../lib/api";
-import { Icon } from "../../components/icon";
+import { Icon, paths } from "../../components/icon";
 import { today } from "../../lib/dates";
 import { useOnline } from "../../lib/online";
 import type { Category, Draft, Settings, Suggestion } from "../../lib/schemas";
@@ -77,13 +77,14 @@ export function Bar(props: {
     e.preventDefault();
     if (ask) return question && asking.mutate(question, { onSuccess: (c) => inChat && (clear(), props.onChat(c.id)) });
     if (reviewing) return drafting.isSuccess && save();
-    if (!text.trim()) return props.onForm(seed());
+    if (!text.trim()) return;
     if (settings.ai && !confident(p, category?.id)) return drafting.mutate(text.trim());
     if (!p.amount) return props.onForm(seed());
     adding.mutate(["POST", "/api/transactions", { note: p.note, amount: p.amount, currency, unit: p.unit ?? unit, date, categoryId: category?.id, tags: p.tags }]);
   }
 
-  const key = ask ? "Ask" : text.trim() && (p.amount || settings.ai) ? "Add" : "Full form";
+  const key = ask ? "Ask" : p.amount || settings.ai ? "Add" : "Full form";
+  const empty = !text.trim() && !inChat && !reviewing;
 
   return (
     <>
@@ -138,21 +139,16 @@ export function Bar(props: {
             onAccept={() => fill(fills[0])}
             onFocus={setFocused}
           />
-          {!focused && !text && !inChat && (
-            <kbd aria-hidden className="hidden rounded-token border border-line2 px-1.5 text-[11px] font-medium text-ink3 pointer-fine:inline">
-              /
-            </kbd>
-          )}
           {!text && !inChat && !reviewing && (
             <PhotoButton online={online} onPhoto={photo} off={settings.vision ? undefined : "Receipt photos aren't set up on this server. See AI features in the README."} onOff={setCaptureError} />
           )}
           {!text && !inChat && !reviewing && !settings.voice && <Mic onAudio={() => {}} onError={setCaptureError} off="Dictation isn't set up on this server. See AI features in the README." />}
-          {!text && !inChat && !reviewing && settings.voice && online ? (
-            <Mic onAudio={(audio) => (setCaptureError(null), drafting.mutate({ audio }))} onError={setCaptureError} />
+          {!text && !inChat && !reviewing && settings.voice && online && <Mic onAudio={(audio) => (setCaptureError(null), drafting.mutate({ audio }))} onError={setCaptureError} />}
+          {empty ? (
+            <button type="button" aria-label="Full form" title="Full form" onMouseDown={(e) => e.preventDefault()} onClick={() => props.onForm(seed())} className="press grid size-11 shrink-0 place-items-center rounded-chip text-ink2"><Icon d={paths.plus} className="size-5" /></button>
           ) : (
             <SubmitButton name={key} dim={!text.trim() && !inChat} disabled={adding.isPending || asking.isPending || drafting.isPending || (inChat && !question)} />
           )}
-          {settings.voice && online && !text && !inChat && !reviewing && <button type="button" aria-label="Full form" title="Full form" onClick={() => props.onForm(seed())} className="press grid size-11 shrink-0 place-items-center rounded-chip text-ink2"><Icon d="M12 5v14M5 12h14" className="size-5" /></button>}
         </div>
         <span role="status" className="sr-only">
           {receipt.text}

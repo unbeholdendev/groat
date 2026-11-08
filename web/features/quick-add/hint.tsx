@@ -87,7 +87,7 @@ export function Hint(props: {
         )
       ) : (
         !ask &&
-        (!text || p.amount) && (
+        p.amount && (
           <button
             type="button"
             aria-label="Full form"
