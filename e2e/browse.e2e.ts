@@ -15,7 +15,7 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   const header = page.locator("header");
   await expect(header.getByText("£42.00").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Next month" })).toBeDisabled();
-  await page.getByLabel("Spending day").selectOption(today());
+  await page.getByRole("button", { name: "Show selected day's expenses" }).press("End");
   await expect(header.locator("p").filter({ hasText: "Today ·" }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Previous month" }).click();
@@ -76,6 +76,40 @@ test("swiping the hero steps months", async ({ app: page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(month(0));
   await drag(260, 40);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(month(0));
+});
+
+test("the skyline steps through days from the keyboard", async ({ app: page }) => {
+  await seed(page, [{ note: "Old lunch", amount: "8", categoryId: 6, date: lastMonth() }]);
+  await page.getByRole("button", { name: "Previous month" }).click();
+  const chart = page.getByRole("button", { name: "Show selected day's expenses" });
+  const readout = page.locator("header p[aria-live]");
+  const month = new Date(`${lastMonth()}T00:00`).toLocaleDateString("en-GB", { month: "short" });
+  await chart.press("Home");
+  await expect(readout).toContainText(` 1 ${month} ·`);
+  for (let i = 0; i < 4; i++) await chart.press("ArrowRight");
+  await expect(readout).toContainText(` 5 ${month} ·£8.00`);
+  await chart.press("ArrowLeft");
+  await expect(readout).toContainText(` 4 ${month} ·`);
+  await chart.press("ArrowRight");
+  await chart.press("Enter");
+  await expect(page.getByRole("button", { name: "Old lunch" })).toBeInViewport();
+});
+
+test("the desktop sidebar opens Recurring and Bin", async ({ app: page }, info) => {
+  const nav = page.getByRole("navigation", { name: "Main" });
+  if (info.project.name === "phone") {
+    await expect(nav.getByRole("link", { name: "Bin", exact: true })).toBeHidden();
+    await page.goto("/?view=bin");
+    await expect(nav.getByRole("link", { name: "Settings", exact: true })).toHaveAttribute("aria-current", "page");
+    return;
+  }
+  for (const name of ["Recurring", "Bin"]) {
+    await nav.getByRole("link", { name, exact: true }).click();
+    await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
+    await expect(nav.getByRole("link", { name, exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "Settings", exact: true })).toHaveCount(1);
+  }
 });
 
 test("scrubbing the spend line reads out a day", async ({ app: page }) => {

@@ -1,4 +1,4 @@
-import { type PointerEvent, useEffect, useState } from "react";
+import { type KeyboardEvent, type PointerEvent, useEffect, useState } from "react";
 import type { Unit } from "../../../shared/amount";
 import { Icon } from "../../components/icon";
 import { Pill, Total } from "../../components/total";
@@ -33,11 +33,19 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
   });
   const max = Math.max(...days.map((day) => day.total));
   const shown = days.find((day) => day.date === hover);
+  const past = dates.filter((date) => date <= today());
   const selectDay = (e: PointerEvent<HTMLButtonElement>) => {
         const bounds = e.currentTarget.getBoundingClientRect();
         const index = Math.min(days.length - 1, Math.max(0, Math.floor((e.clientX - bounds.left) / bounds.width * days.length)));
         if (days[index].date <= today()) setHover(days[index].date);
       };
+  const stepDay = (e: KeyboardEvent<HTMLButtonElement>) => {
+    const i = hover ? past.indexOf(hover) : past.length - 1;
+    const next = { ArrowLeft: past[Math.max(0, i - 1)], ArrowRight: past[Math.min(past.length - 1, i + 1)], Home: past[0], End: past.at(-1) }[e.key];
+    if (!next) return;
+    e.preventDefault();
+    setHover(next);
+  };
   return (
     <>
       <p className="mt-4">
@@ -67,7 +75,7 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
           "this month"
         )}
       </p>
-      <button type="button" aria-label="Show selected day's expenses" onClick={() => document.getElementById(`day-${hover ?? days.filter((day) => day.date <= today()).at(-1)?.date}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} onPointerDown={selectDay} onPointerMove={selectDay} className="mt-5 grid h-28 w-full items-end gap-[3px] rounded-token focus-visible:outline-2 focus-visible:outline-accent" style={{ gridTemplateColumns: `repeat(${dates.length}, 1fr)` }}>
+      <button type="button" aria-label="Show selected day's expenses" aria-keyshortcuts="ArrowLeft ArrowRight Home End" onClick={() => document.getElementById(`day-${hover ?? past.at(-1)}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} onKeyDown={stepDay} onPointerDown={selectDay} onPointerMove={selectDay} className="mt-5 grid h-28 w-full items-end gap-[3px] rounded-token focus-visible:outline-2 focus-visible:outline-accent" style={{ gridTemplateColumns: `repeat(${dates.length}, 1fr)` }}>
         {days.map((day, i) =>
           day.date > today() ? (
             <i key={day.date} aria-hidden className="mx-auto size-[3px] rounded-full bg-line2" />
@@ -89,12 +97,6 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
         <span>1</span>
         <span>{dates.length}</span>
       </p>
-      <label className="mt-3 flex items-center gap-3 text-[13px] text-ink2">
-        Spending day
-        <select aria-label="Spending day" value={hover ?? (end ? dates.at(-1) : today())} onChange={(e) => setHover(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-token bg-surface2 px-3 text-ink">
-          {days.filter((day) => day.date <= today()).map((day) => <option key={day.date} value={day.date}>{dayLabel(day.date)} · {money(day.total, now.baseCurrency, unit)}</option>)}
-        </select>
-      </label>
       {now.total > 0 && (
         <p role="img" className="mt-3 flex flex-wrap gap-x-3.5 gap-y-1 text-xs font-medium text-ink2" aria-label={`By category: ${parts.map((c) => `${c.name} ${share(c.total)}`).join(", ")}`}>
           {parts.map((c) => (

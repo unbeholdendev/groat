@@ -16,13 +16,6 @@ test("dirty expense navigation can stay or discard", async ({ app: page }) => {
   await expect(page.getByRole("heading", { name: "New expense" })).toBeHidden();
 });
 
-test("skyline uses one large target and a day selector", async ({ app: page }) => {
-  await seed(page, [{ note: "Train", amount: "12" }]);
-  await page.reload();
-  await expect(page.getByRole("button", { name: "Show selected day's expenses" })).toBeVisible();
-  await expect(page.getByLabel("Spending day")).toBeVisible();
-});
-
 test("stats comparisons have a keyboard accessible table and legend", async ({ app: page }) => {
   await seed(page, [{ note: "Train", amount: "12" }]);
   await page.getByRole("link", { name: "Stats", exact: true }).click();
