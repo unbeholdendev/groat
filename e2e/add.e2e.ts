@@ -99,3 +99,10 @@ test("without AI the camera and mic show dimmed and say why", async ({ app: page
   await bar(page).fill("?where");
   await expect(page.getByText("Asking isn't set up on this server.")).toBeVisible();
 });
+
+test("saves over plain HTTP, where crypto.randomUUID is missing", async ({ app: page }) => {
+  await page.addInitScript(() => delete (Crypto.prototype as Partial<Crypto>).randomUUID);
+  await page.reload();
+  await add(page, "coffee 3.20");
+  await expect(page.getByRole("button", { name: "coffee" })).toBeVisible();
+});

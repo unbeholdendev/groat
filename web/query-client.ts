@@ -26,9 +26,17 @@ function signedOut(e: Error & { status?: number }) {
 function identify(r: [string, string, ...unknown[]]): Request {
   if (r[0] === "POST" && r[1] === "/api/transactions") {
     const body = r[2] as Record<string, unknown>;
-    r[2] = { ...body, requestId: body.requestId ?? crypto.randomUUID() };
+    r[2] = { ...body, requestId: body.requestId ?? uuid() };
   }
   return [r[0], r[1], r[2]];
+}
+// crypto.randomUUID only exists on HTTPS and localhost.
+function uuid() {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
 // In mutationFn, not onSuccess: a hook's onSuccess replaces the default, and only defaults survive a reload.
