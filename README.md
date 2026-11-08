@@ -1,10 +1,59 @@
 # Groat
 
-Groat is a self-hosted expense tracker. [Install with Docker](docs/install.md). Data lives in `/data`, the app on port 3000.
+A self-hosted expense tracker for a household.
+
+## Run
+
+```sh
+touch groat.env
+docker volume create groat-data
+docker run -d --name groat --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 \
+  --mount source=groat-data,target=/data \
+  --env-file groat.env \
+  ghcr.io/unbeholdendev/groat:vX.Y.Z
+```
+
+Use a released version tag; `latest` follows stable releases. To build the image yourself: `docker build -t groat .` in a checkout.
+
+Open `http://localhost:3000` and create the first account, which becomes the admin. Anyone who reaches a fresh instance can do this, so finish setup before exposing it.
+
+For phones or remote access, put an HTTPS reverse proxy in front of port 3000 that sets `X-Forwarded-Proto: https`. The microphone and offline mode need HTTPS.
+
+Without Docker: `bun install && bun run build && bun start`.
+
+To upgrade, download a backup, then replace the container with the new image on the same volume. Migrations run at startup.
+
+## Configuration
+
+Set these as environment variables, e.g. in `groat.env` (`NAME=value` per line) or `.env` from source. Recreate the container to apply changes.
+
+| Variable | Default | Use |
+|---|---|---|
+| `PORT` | `3000` | Port to listen on. |
+| `DB_PATH` | `/data/expenses.db` (`data.db` from source) | SQLite database, including receipt photos. |
+| `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` | unset | Any OpenAI-compatible API. Turns on asking (start the add bar with `?`) and AI reading of unclear lines. |
+| `AI_VISION_MODEL` | unset | Adding from receipt photos. |
+| `AI_STT_MODEL` | unset | Dictation. |
+| `AI_STT_BASE_URL`, `AI_STT_KEY` | the `AI_*` values | A separate speech-to-text provider. |
+
+All AI features are optional and need the first three AI variables.
+
+## Backup and restore
+
+An admin downloads a backup from Settings → Backup and import: one SQLite file with all data and password hashes, but not sign-ins, API tokens, chats or the environment. Keep it private.
+
+To restore, start the app on an empty `/data` with the same or a newer version, choose **Restore from a backup** on the welcome screen, then sign in. For scheduled backups:
+
+```sh
+sqlite3 /path/to/expenses.db ".backup '/backups/groat-$(date +%F).sqlite'"
+```
+
+On a new instance with no expenses yet, an admin can import a CSV in the export format from Settings → Backup and import.
 
 ## Capture from your phone
 
-Create a token in Settings, under API tokens. A token can only add expenses, as the user who made it. Post text to `/api/capture`:
+Create a token in Settings → API tokens, then post text to `/api/capture`, e.g. from an iOS Shortcut or Tasker:
 
 ```sh
 curl -X POST https://your-host/api/capture \
@@ -13,89 +62,30 @@ curl -X POST https://your-host/api/capture \
   -d '{"text": "coffee 4.50"}'
 ```
 
-The text is read like the add bar. If it has an amount and the note matches a past expense, it saves straight away. Otherwise it waits on Home as pending, for you to check and confirm.
+## Lost admin password
 
-### iOS Shortcut
-
-1. New shortcut. Add **Dictate Text** (or **Ask for Input** to type).
-2. Add **Get Contents of URL**:
-   - URL: `https://your-host/api/capture`
-   - Method: POST
-   - Headers: `Authorization` = `Bearer et_...`
-   - Request Body: JSON, with key `text` set to the dictated text.
-3. Add it to the Home Screen or run it with "Hey Siri".
-
-On Android, Tasker's **HTTP Request** action does the same.
-
-## AI features
-
-Off until you point the app at an OpenAI-compatible API (anything that serves `/chat/completions`). Until then the camera and mic in the add bar are dimmed, and tapping one says what is missing.
-
-| Variable | Turns on |
-|---|---|
-| `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` | Asking: start the add bar with `?`. Unclear lines are read by AI for you to check. |
-| `AI_VISION_MODEL` | Adding from a receipt photo. Needs the three above. |
-| `AI_STT_MODEL` | Dictation. Needs the three above. Set `AI_STT_BASE_URL` and `AI_STT_KEY` if speech-to-text uses another provider. |
-
-Set them in the container's environment, or in `.env` when running from source.
-
-## Backup and restore
-
-See [backup and restore #102](https://git.home.unbeholden.dev/unbeholden/groat/issues/102) for the requirements and discussion.
-
-An admin downloads a backup from Settings, under Backup and import. It is one SQLite file, taken consistently while the app runs, with every expense (pending and binned too), category, tag, recurring schedule, rate, photo, setting and account. Password hashes are kept, so everyone signs in as before. Sign-ins, API tokens and chats are left out: after a restore, sign in again and make new tokens.
-
-The file holds the household's spending and password hashes. Keep it private, e.g. `chmod 600`, and encrypt it if it leaves your machine.
-
-The backup does not hold the container's environment: the `AI_*` variables, `PORT` and `DB_PATH`. Keep those, such as your compose file or `.env`, with the backup.
-
-To restore:
-
-1. Start the app with an empty `/data` volume, the same image version as the backup or newer.
-2. Open it. On the welcome screen, choose **Restore from a backup** and pick the file.
-3. Sign in with an account from the backup.
-
-Restore only works before anyone signs up, so it can't overwrite a server in use. A file that isn't a backup, is damaged, or comes from a newer version of the app is refused and changes nothing. Backups from older versions are upgraded as they are restored. Uploads are limited to 128 MB.
-
-For scheduled backups, copy the database from the host with SQLite's own tools, e.g. from cron:
+Other members ask an admin to reset theirs under Household. If the admin is locked out:
 
 ```sh
-sqlite3 /path/to/data/expenses.db ".backup '/backups/expenses-$(date +%F).sqlite'"
+docker stop groat
+docker run --rm -it --volumes-from groat --entrypoint bun \
+  "$(docker inspect --format '{{.Config.Image}}' groat)" server/recover-admin.ts
+docker start groat
 ```
 
-A copy made this way still has sign-ins and tokens in it.
-
-## Importing expenses
-
-On a new instance, before any expenses are added, an admin can import a CSV in the export format from Settings, under Backup and import. It shows a preview first. To move from Lofextra, see [docs/import-lofextra.md](docs/import-lofextra.md).
+With a custom `DB_PATH`, pass it to the recovery container too: `-e DB_PATH=...`. From source: `DB_PATH=/path/to/expenses.db bun server/recover-admin.ts`.
 
 ## Development
 
 ```sh
 bun install
 bun run dev    # API on :3000, the app on :38697
-bun test       # server tests
-bun run e2e    # browser tests (Playwright, phone and desktop)
+bun test
+bun run e2e    # first time: bunx playwright install --with-deps chromium webkit
 ```
 
-The first `bun run e2e` needs the browsers: `bunx playwright install --with-deps chromium webkit`.
-
-## Password recovery
-
-Change your own password in Settings. If you forget it, ask a household admin to reset it under Household. There is no email reset.
-
-If the admin is locked out, stop the container and run the offline recovery command against the same data volume. Replace `expenses` with your container name; use the same image as the stopped container:
-
-```sh
-docker stop expenses
-docker run --rm -it --volumes-from expenses \
-  --entrypoint bun "$(docker inspect --format '{{.Config.Image}}' expenses)" \
-  server/recover-admin.ts
-docker start expenses
-```
-
-Enter the admin username and the new password twice. Password input is hidden and never passed as a command argument. Recovery keeps expenses and API tokens, and signs out all sessions for that admin. If you set a custom `DB_PATH`, pass the same value to the recovery container with `-e DB_PATH=...`. For a source install, stop the server and run `DB_PATH=/path/to/expenses.db bun server/recover-admin.ts`.
+Releases: [docs/release.md](docs/release.md).
 
 ## Licence
 
-Groat is licensed under the [Apache License 2.0](LICENSE).
+[Apache License 2.0](LICENSE).

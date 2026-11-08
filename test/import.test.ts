@@ -32,7 +32,7 @@ async function onboarded() {
   return { ...h, upload, listed, kinds };
 }
 
-const lofextra = [
+const sample = [
   "note,date,amount,currency,category,subcategory,tags",
   '"Pizza, large",2025-03-01,0.00012345,BTC,Food,Eating out,',
   "Ramen,2025-03-02,1200.00,JPY,food,groceries,",
@@ -43,7 +43,7 @@ const lofextra = [
 
 test("a preview counts rows, totals each currency and lists the categories it will create", async () => {
   const h = await onboarded();
-  expect(await h.upload("/api/import/preview", lofextra)).toEqual({
+  expect(await h.upload("/api/import/preview", sample)).toEqual({
     status: 200,
     body: {
       count: 5,
@@ -62,7 +62,7 @@ test("a preview counts rows, totals each currency and lists the categories it wi
 
 test("confirming imports exact amounts, matches categories by name and creates the rest", async () => {
   const h = await onboarded();
-  expect(await h.upload("/api/import", lofextra)).toEqual({ status: 200, body: { imported: 5 } });
+  expect(await h.upload("/api/import", sample)).toEqual({ status: 200, body: { imported: 5 } });
   expect(await h.listed()).toEqual([
     { date: "2025-03-05", note: "Gum", amount: 100, currency: "GBP", category: "Uncategorised", tags: [] },
     { date: "2025-03-04", note: "Kibble", amount: 2000, currency: "EUR", category: "Pets", tags: ["dog"] },
@@ -119,7 +119,7 @@ test("import only runs on an instance with no expenses, schedules or tags", asyn
     await add(h);
     const before = await h.listed();
     for (const path of ["/api/import/preview", "/api/import"])
-      expect(await h.upload(path, lofextra)).toEqual({ status: 409, body: { error: "Import only works before any expenses are added" } });
+      expect(await h.upload(path, sample)).toEqual({ status: 409, body: { error: "Import only works before any expenses are added" } });
     expect(await h.listed()).toEqual(before);
   }
 });
@@ -129,7 +129,7 @@ test("only admins can import", async () => {
   await h.call("POST", "/api/users", { username: "bob", password: "pw" });
   const login = await h.app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "bob", password: "pw" }) });
   const cookie = login.headers.get("set-cookie")!.split(";")[0];
-  expect((await h.upload("/api/import", lofextra, cookie)).status).toBe(403);
+  expect((await h.upload("/api/import", sample, cookie)).status).toBe(403);
 });
 
 test("an export imports back into a fresh instance", async () => {
@@ -160,7 +160,7 @@ test("an unclosed quote fails the whole file instead of swallowing later rows", 
 
 test("two imports at once add the rows only once", async () => {
   const h = await onboarded();
-  const results = await Promise.all([h.upload("/api/import", lofextra), h.upload("/api/import", lofextra)]);
+  const results = await Promise.all([h.upload("/api/import", sample), h.upload("/api/import", sample)]);
   expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
   expect((await h.listed()).length).toBe(5);
 });

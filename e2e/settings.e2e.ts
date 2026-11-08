@@ -70,7 +70,7 @@ test("browser chrome colour follows the chosen theme", async ({ app: page }) => 
 
 test("a CSV previews and imports into an empty instance", async ({ app: page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
-  const csv = (rows: string[]) => ({ name: "lofextra.csv", mimeType: "text/csv", buffer: Buffer.from(["date,note,amount,currency,category", ...rows].join("\n")) });
+  const csv = (rows: string[]) => ({ name: "expenses.csv", mimeType: "text/csv", buffer: Buffer.from(["date,note,amount,currency,category", ...rows].join("\n")) });
 
   await page.getByLabel("CSV file").setInputFiles(csv(["2025-03-01,Kibble,20.00,GBP,Pets", "2025-03-02,Bad,1,XYZ,"]));
   const preview = page.getByLabel("Import preview");
@@ -78,7 +78,7 @@ test("a CSV previews and imports into an empty instance", async ({ app: page }) 
   await expect(preview.getByRole("button", { name: "Import 1" })).toBeDisabled();
 
   await page.getByLabel("CSV file").setInputFiles(csv(["2025-03-01,Kibble,20.00,GBP,Pets", "2025-03-02,Pizza,0.00012345,BTC,Food"]));
-  await expect(preview).toContainText("2 expenses in lofextra.csv");
+  await expect(preview).toContainText("2 expenses in expenses.csv");
   await expect(preview).toContainText("0.00012345 BTC · 20.00 GBP");
   await expect(preview).toContainText("New categories: Pets");
   await preview.getByRole("button", { name: "Import 2" }).click();
