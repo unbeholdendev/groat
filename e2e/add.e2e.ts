@@ -116,7 +116,7 @@ test("full form adds, edits, bins and restores", async ({ app: page }) => {
   await expect(row).toBeHidden();
 
   await page.getByRole("link", { name: "Settings" }).click();
-  await page.getByRole("link", { name: "Bin" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Bin" }).click();
   await page.getByRole("button", { name: "Restore" }).click();
   await expect(page.getByText("The bin is empty.")).toBeVisible();
   await page.getByRole("link", { name: "Expenses" }).click();

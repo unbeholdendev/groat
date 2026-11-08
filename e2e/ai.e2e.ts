@@ -27,3 +27,14 @@ test("? asks, and the answer continues in chat", async ({ app: page }) => {
   await page.getByRole("button", { name: "Chats" }).click();
   await expect(page.getByRole("button", { name: "where does it go" })).toBeVisible();
 });
+
+test("past chats remain readable after the AI provider is removed", async ({ app: page }) => {
+  const response = await page.request.post("/api/chats", { data: { message: "Saved question" } });
+  expect(response.status()).toBe(201);
+  expect((await page.request.put("/api/ai", { data: { baseUrl: "" } })).ok()).toBe(true);
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Past chats" }).click();
+  await page.getByRole("button", { name: "Saved question" }).click();
+  await expect(page.getByRole("heading", { name: "Saved question" })).toBeVisible();
+  await expect(page.getByText("Mostly on food.")).toBeVisible();
+});

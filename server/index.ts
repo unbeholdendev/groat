@@ -1,3 +1,4 @@
+import { chmodSync, closeSync, openSync } from "node:fs";
 import { Database } from "bun:sqlite";
 import { serveStatic } from "hono/bun";
 import { createApp } from "./app";
@@ -5,7 +6,11 @@ import { createApp } from "./app";
 const db = new Database(process.env.DB_PATH ?? "data.db", { create: true });
 db.run("PRAGMA journal_mode = WAL");
 
+const credentialPath = `${process.env.DB_PATH ?? "data.db"}.chatgpt`;
+closeSync(openSync(credentialPath, "a", 0o600));
+chmodSync(credentialPath, 0o600);
 const app = createApp({
+  credentials: new Database(credentialPath, { create: true }),
   db,
   clock: () => new Date(),
   fetch,

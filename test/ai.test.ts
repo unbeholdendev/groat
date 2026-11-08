@@ -18,10 +18,10 @@ const call = (name: string, args: unknown) => ({
   tool_calls: [{ id: `call-${name}`, type: "function", function: { name, arguments: JSON.stringify(args) } }],
 });
 
-test("without a key the AI is hidden and its endpoints refuse", async () => {
+test("without a key inference refuses but shared history remains available", async () => {
   const s = setup();
   expect((await s.call("GET", "/api/settings")).body.ai).toBe(false);
-  expect((await s.call("GET", "/api/chats")).status).toBe(403);
+  expect((await s.call("GET", "/api/chats")).status).toBe(200);
   expect((await s.call("POST", "/api/chats", { message: "hi" })).status).toBe(403);
 });
 
@@ -56,7 +56,7 @@ test("AI needs the base URL as well as the key", async () => {
   for (const missing of ["baseUrl", "key"]) {
     const { call } = setup(undefined, listed, { ...config, [missing]: undefined });
     expect((await call("GET", "/api/settings")).body.ai).toBe(false);
-    expect((await call("GET", "/api/chats")).status).toBe(403);
+    expect((await call("GET", "/api/chats")).status).toBe(200);
   }
 });
 

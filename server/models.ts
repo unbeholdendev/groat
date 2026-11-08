@@ -58,7 +58,7 @@ const url = z
 const secret = z.string("Invalid key").trim().optional();
 const providerInput = z.object({ baseUrl: url, key: secret, sttBaseUrl: url.default(""), sttKey: secret });
 
-export function aiModels(db: Db, fetch: Deps["fetch"]) {
+export function aiModels(db: Db, fetch: Deps["fetch"], personal?: () => Promise<{ base: string; key: string; model: string; responses: true } | undefined>) {
   const cached = new Map<string, Listed>();
   const id = ({ base, key }: Provider) => `${base}\n${key}`;
 
@@ -92,11 +92,15 @@ export function aiModels(db: Db, fetch: Deps["fetch"]) {
     return p ? (saved()?.chatModel ?? only(chatModels(await known(p)))) : null;
   };
   const chat = async () => {
+    const own = await personal?.();
+    if (own) return own;
     const p = current().chat;
     const model = await chatModel();
     return p && model ? { ...p, model } : null;
   };
   const vision = async () => {
+    const own = await personal?.();
+    if (own) return own.model;
     const used = await chatModel();
     return used && (saved()?.visionModel ?? used);
   };
@@ -119,7 +123,7 @@ export function aiModels(db: Db, fetch: Deps["fetch"]) {
     const { chat: chatProvider, stt: sttProvider } = current();
     if (!chatProvider || !sttProvider) return null;
     const [chats, heard] = await Promise.all([options(chatProvider, chatModels), options(sttProvider, sttModels)]);
-    return { chat: { ...chats, model: await chatModel() }, vision: { ...chats, model: await vision() }, stt: { ...heard, model: await sttModel() } };
+    return { chat: { ...chats, model: await chatModel() }, vision: { ...chats, model: saved()?.visionModel ?? await chatModel() }, stt: { ...heard, model: await sttModel() } };
   };
   const listed = async (model: string | undefined, p: Provider, pick: (l: Listed) => string[]) => !model || pick(await list(p)).includes(model);
   const provider = () => {

@@ -25,7 +25,7 @@ const update = onboarding.extend({ theme: z.enum(["system", "light", "dark"], "I
 export function settingsRoutes(db: Db, models: Models) {
   const app = new Hono();
   const cat = t.categories;
-  const settings = async () => ({ ...stored(db), ai: !!(await models.chat()), vision: !!(await models.vision()), voice: !!(await models.stt()) });
+  const settings = async () => ({ ...stored(db), ai: !!(await models.chat().catch(() => null)), vision: !!(await models.vision().catch(() => null)), voice: !!(await models.stt()) });
 
   app.get("/api/settings", async (c) => c.json(await settings()));
 

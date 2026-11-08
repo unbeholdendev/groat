@@ -4,7 +4,7 @@ import type { Chat } from "../../lib/schemas";
 
 export const ChatList = ({ chats, onOpen }: { chats: Chat[]; onOpen: (id: number) => void }) =>
   chats.length === 0 ? (
-    <p className="text-ink3">No chats yet. Ask below to start one.</p>
+    <p className="text-ink3">No chats yet.</p>
   ) : (
     <ul className={panel}>
       {chats.map((c) => (

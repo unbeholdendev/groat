@@ -6,3 +6,6 @@ playwright-report
 .impeccable/critique
 .impeccable/mocks
 .impeccable/questions
+
+*.chatgpt
+*.chatgpt-*

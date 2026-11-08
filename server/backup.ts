@@ -65,7 +65,7 @@ function prepare(path: string) {
   }
 }
 
-export function restoreRoutes(db: Db) {
+export function restoreRoutes(db: Db, resetCredentials: () => void = () => {}) {
   const app = new Hono();
   const live = db.$client;
   const fresh = () => !live.query("SELECT 1 FROM users UNION ALL SELECT 1 FROM transactions").get();
@@ -100,6 +100,7 @@ export function restoreRoutes(db: Db) {
       } finally {
         live.run("DETACH backup");
       }
+      resetCredentials();
       return c.json({});
     } finally {
       await remove(path);

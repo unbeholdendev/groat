@@ -7,6 +7,7 @@ import { countable, settings, today, uncategorised } from "./db";
 import { transactionFilter, transactionQuery, transactions, newest, readTransaction } from "./transactions";
 import { body } from "./request";
 import type { Valuer } from "./rates";
+import { responses } from "./responses";
 import { categories, chatMessages, chats as chatTable } from "./schema";
 import { period } from "./stats";
 
@@ -27,14 +28,15 @@ const tool = <T extends z.ZodType>(description: string, input: T, run: (args: z.
   run: (args: unknown) => run(input.parse(args)),
 });
 
-export async function complete({ fetch, models }: Pick<Ctx, "fetch" | "models">, request: object) {
+export async function complete({ fetch, models }: Pick<Ctx, "fetch" | "models">, request: { messages: Record<string, unknown>[]; [key: string]: unknown }) {
   const provider = await models.chat();
   if (!provider) throw new Error("AI isn’t set up");
+  if ("responses" in provider) return responses(fetch, provider, request);
   const { base, key, model } = provider;
   const res = await fetch(`${base}/chat/completions`, {
     method: "POST",
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-    body: JSON.stringify({ model, ...request }),
+    body: JSON.stringify({ model, ...request, messages: request.messages.map(({ responseItems, ...message }) => message) }),
   });
   if (!res.ok) throw new Error(`The AI provider returned an error (${res.status})`);
   const reply = completion.safeParse(await res.json().catch(() => undefined));
@@ -44,7 +46,7 @@ export async function complete({ fetch, models }: Pick<Ctx, "fetch" | "models">,
 
 export function chats({ db, clock, fetch, models }: Ctx, value: Valuer) {
   const app = new Hono();
-  app.use("*", async (c, next) => ((await models.chat()) ? next() : c.json({ error: "AI isn’t set up" }, 403)));
+  app.use("*", async (c, next) => (c.req.method !== "POST" || (await models.chat()) ? next() : c.json({ error: "AI isn’t set up" }, 403)));
 
   const save = (chatId: number, message: object) => db.insert(chatMessages).values({ chatId, message }).run();
 
@@ -139,7 +141,7 @@ export function chats({ db, clock, fetch, models }: Ctx, value: Valuer) {
     }
     return db.transaction(() => {
       const id = chatId ?? db.insert(chatTable).values({ title: message.slice(0, 60) }).returning().get().id;
-      for (const m of added) save(id, m);
+      for (const { responseItems, ...message } of added) save(id, message);
       return chat(id);
     });
   };

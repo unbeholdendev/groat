@@ -149,3 +149,17 @@ test.describe("with several AI models", () => {
     await expect(page.getByRole("heading", { name: "AI models" })).toBeHidden();
   });
 });
+
+test("ChatGPT manual connection shows the sign-in link and recovers from a bad callback", async ({ app: page }, testInfo) => {
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Connect ChatGPT", exact: true }).click();
+  const link = page.getByRole("link", { name: "Continue with ChatGPT" });
+  await expect(link).toHaveAttribute("href", /^https:\/\/auth.openai.com\/api\/accounts\/authorize\?/);
+  await expect(page.getByText(/your browser will fail to open 127.0.0.1/)).toBeVisible();
+  await page.getByLabel("Callback URL").fill("http://127.0.0.1:1455/auth/callback?state=bad&code=bad");
+  await page.getByRole("button", { name: "Finish connection" }).click();
+  await expect(page.getByText("ChatGPT needs you to sign in again. Open Settings and reconnect.")).toBeVisible();
+  await expect(page.getByLabel("Callback URL")).toHaveValue("");
+  await page.getByRole("heading", { name: "ChatGPT subscription" }).scrollIntoViewIfNeeded();
+  await page.getByRole("heading", { name: "ChatGPT subscription" }).locator("..").screenshot({ path: testInfo.outputPath("chatgpt-settings.png") });
+});
