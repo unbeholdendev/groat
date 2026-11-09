@@ -1,11 +1,11 @@
 import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, or, type SQL, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
-import { knownCurrencies, parseAmount } from "../shared/amount";
-import { transactionInput, isoDate, kind } from "../shared/schema";
+import { isoDate, kind } from "../shared/schema";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
-import { type Db, kindOf, settings, today, uncategorised, visible } from "./db";
+import { type Db, kindOf, visible } from "./db";
+import { readTransaction, type TransactionFields } from "./read-transaction";
 import type { Valuer } from "./rates";
 import { json, query, valid } from "./request";
 import * as t from "./schema";
@@ -61,21 +61,6 @@ export function transactionFilter(db: Db, q: z.infer<typeof transactionQuery>, b
   );
 }
 
-export function readTransaction(raw: unknown, db: Db, today: string, fallback: string, category: number, pending = false) {
-  const parsed = valid(transactionInput, raw);
-  if ("error" in parsed) return parsed;
-  const { note, currency = fallback, date = today, categoryId = category, tags = [], unit } = parsed.data;
-  if (currency !== fallback && !knownCurrencies.has(currency)) return { error: "Invalid currency" };
-  const amount = pending && parsed.data.amount === "0" ? 0 : parseAmount(parsed.data.amount, currency, unit);
-  if (amount === null) return { error: "Invalid amount" };
-  // today is UTC; the user's local date can be a day ahead
-  if (date > new Date(Date.parse(today) + 864e5).toISOString().slice(0, 10)) return { error: "Date can’t be in the future" };
-  if (!db.select().from(t.categories).where(eq(t.categories.id, categoryId)).get()) return { error: "Invalid category" };
-  return { note, amount, currency, date, categoryId, tags: [...new Set(tags)] };
-}
-
-type TransactionFields = Exclude<ReturnType<typeof readTransaction>, { error: string }>;
-
 const attachment = z.object({ attachmentId: z.number().int().optional(), requestId: z.uuid().optional() });
 
 export function addTransaction(db: Db, now: string, { tags, ...fields }: TransactionFields, createdBy: number, status = "normal", attachmentId?: number) {
@@ -111,7 +96,8 @@ export function saveTags(db: Db, id: number, tags: string[]) {
   }
 }
 
-export function transactionRoutes({ db, clock }: Ctx, value: Valuer) {
+export function transactionRoutes(ctx: Ctx, value: Valuer) {
+  const { db, clock } = ctx;
   const valued = async (id: number) => (await value([transactions(db, eq(e.id, id)).get()!]))[0];
   const app = new Hono<Env>();
 
@@ -127,9 +113,8 @@ export function transactionRoutes({ db, clock }: Ctx, value: Valuer) {
 
   app.post("/api/transactions", async (c) => {
     const now = clock().toISOString();
-    const { lastCurrency } = settings(db);
     const raw = await json(c);
-    const body = readTransaction(raw, db, today(clock), lastCurrency, uncategorised(db));
+    const body = readTransaction(ctx, raw, { intent: "add" });
     if ("error" in body) return c.json(body, 400);
     const link = valid(attachment, raw);
     if ("error" in link) return c.json(link, 400);
@@ -149,7 +134,7 @@ export function transactionRoutes({ db, clock }: Ctx, value: Valuer) {
     const id = Number(c.req.param("id"));
     const old = db.select({ currency: e.currency, categoryId: e.categoryId }).from(e).where(and(eq(e.id, id), visible)).get();
     if (!old) return c.json({ error: "Not found" }, 404);
-    const body = readTransaction(await json(c), db, today(clock), old.currency, old.categoryId ?? uncategorised(db));
+    const body = readTransaction(ctx, await json(c), { intent: "edit", old });
     if ("error" in body) return c.json(body, 400);
     const { tags, ...fields } = body;
     db.update(e).set({ ...fields, updatedAt: now }).where(eq(e.id, id)).run();

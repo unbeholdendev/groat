@@ -6,8 +6,8 @@ import { formatAmount } from "../shared/amount";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
 import { kind, type Kind } from "../shared/schema";
-import { builtin, type Db, settings, today } from "./db";
-import { addTransaction, readTransaction } from "./transactions";
+import { readTransaction } from "./read-transaction";
+import { addTransaction } from "./transactions";
 import { valid } from "./request";
 import * as t from "./schema";
 import { log } from "./logging";
@@ -50,7 +50,8 @@ function parseCsv(text: string) {
 const trimZeros = (amount: string) => (amount.includes(".") ? amount.replace(/0+$/, "").replace(/\.$/, "") : amount);
 const key = (...names: string[]) => names.map((n) => n.toLowerCase()).join("\n");
 
-function plan(db: Db, text: string, date: string) {
+function plan(ctx: Pick<Ctx, "db" | "clock">, text: string) {
+  const { db } = ctx;
   const csv = parseCsv(text.replace(/^﻿/, ""));
   if (csv.error !== undefined) return { error: csv.error };
   const [header, ...lines] = csv.rows;
@@ -65,8 +66,6 @@ function plan(db: Db, text: string, date: string) {
     existing.set(parent ? key(parent.name, c.name) : key(c.name), c.id);
     if (!parent) kinds.set(key(c.name), c.kind);
   }
-  const fallback = { expense: builtin(db, "expense"), income: builtin(db, "income") };
-  const { baseCurrency } = settings(db);
   const created = new Map<string, [string, string?]>();
   const rows = [];
   const rejected = [];
@@ -86,7 +85,7 @@ function plan(db: Db, text: string, date: string) {
           ? { error: "Invalid type" }
           : category && rowKind !== (kinds.get(key(category)) ?? rowKind)
             ? { error: `${category} isn’t an ${rowKind} category` }
-            : readTransaction(input, db, date, baseCurrency, fallback[rowKind]);
+            : readTransaction(ctx, input, { intent: "import", kind: rowKind });
     if ("error" in read) {
       rejected.push({ line, error: read.error });
       continue;
@@ -126,7 +125,7 @@ export function importRoutes({ db, clock }: Ctx) {
     if ("error" in parsed) return c.json({ error: "Choose a CSV file" }, 400);
     const text = await parsed.data.file.text();
     if (!empty()) return c.json({ error: used }, 409);
-    const result = plan(db, text, today(clock));
+    const result = plan({ db, clock }, text);
     if ("error" in result) return c.json(result, 400);
     return result;
   };

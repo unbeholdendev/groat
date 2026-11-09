@@ -22,7 +22,6 @@ const seeded = <T>(row: T | undefined) => {
 export const builtin = (db: Db, kind: Kind) =>
   seeded(db.select({ id: t.categories.id }).from(t.categories).where(and(eq(t.categories.builtin, true), eq(t.categories.kind, kind))).get()).id;
 
-export const uncategorised = (db: Db) => builtin(db, "expense");
 export function settings(db: Db) {
   const { baseCurrency, theme, onboarded } = seeded(db.select().from(t.settings).get());
   const last = db

@@ -5,8 +5,8 @@ import { knownCurrencies } from "../shared/amount";
 import { parse } from "../shared/parse";
 import { isoDate } from "../shared/schema";
 import type { Ctx } from "./app";
-import { settings, today, uncategorised } from "./db";
-import { readTransaction } from "./transactions";
+import { settings, today } from "./db";
+import { readTransaction } from "./read-transaction";
 import { body } from "./request";
 import { categories } from "./schema";
 
@@ -35,7 +35,7 @@ type Photo = { image: string };
 export async function extract(ctx: Ctx, input: string | Photo) {
   const { db, clock } = ctx;
   const text = typeof input === "string" ? input : "";
-  const { lastCurrency, recentCurrencies } = settings(db);
+  const { recentCurrencies } = settings(db);
   const day = today(clock);
   const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).where(eq(categories.kind, "expense")).all();
   const message = await ctx.ai.complete({
@@ -58,19 +58,16 @@ export async function extract(ctx: Ctx, input: string | Photo) {
   const { note, amount, currency, date, categoryId, tags = [] } = read.data;
   const code = currency?.toUpperCase();
   const draft = readTransaction(
+    ctx,
     {
       note: note.trim() || text || "Receipt",
       amount: amount ?? "0",
       currency: code && knownCurrencies.has(code) ? code : undefined,
       date: isoDate.safeParse(date).success && date && date <= day ? date : undefined,
-      categoryId: cats.some((c) => c.id === categoryId) ? categoryId : undefined,
+      categoryId,
       tags: [...parse(text, recentCurrencies).tags, ...tags],
     },
-    db,
-    day,
-    lastCurrency,
-    uncategorised(db),
-    true,
+    { intent: "extract" },
   );
   if ("error" in draft) throw new Error("The AI provider sent an unexpected reply");
   return draft;

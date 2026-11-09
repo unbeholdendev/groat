@@ -5,8 +5,9 @@ import { knownCurrencies } from "../shared/amount";
 import { confident, parse } from "../shared/parse";
 import type { Ctx } from "./app";
 import type { Env } from "./auth";
-import { settings, today, uncategorised } from "./db";
-import { addTransaction, readTransaction, suggestions } from "./transactions";
+import { settings } from "./db";
+import { readTransaction } from "./read-transaction";
+import { addTransaction, suggestions } from "./transactions";
 import { body } from "./request";
 import { apiTokens } from "./schema";
 import { extract, textInput } from "./draft";
@@ -26,7 +27,7 @@ export function captureRoutes(ctx: Ctx) {
     const parsed = await body(c, textInput);
     if ("error" in parsed) return c.json(parsed, 400);
     const { text } = parsed.data;
-    const { lastCurrency, recentCurrencies } = settings(db);
+    const { recentCurrencies } = settings(db);
     const p = parse(text, recentCurrencies);
     const guess = p.note.length > 1 ? suggestions(db, p.note)[0] : undefined;
     const input = {
@@ -40,7 +41,7 @@ export function captureRoutes(ctx: Ctx) {
     const sure = confident(p, guess?.categoryId);
     const read = !sure && (await extract(ctx, text).catch(() => undefined));
     if (read) return c.json(addTransaction(db, now, read, owner.userId, "pending"), 201);
-    const row = readTransaction(input, db, today(clock), lastCurrency, uncategorised(db), !sure);
+    const row = readTransaction(ctx, input, { intent: "capture", pending: !sure });
     if ("error" in row) return c.json(row, 400);
     return c.json(addTransaction(db, now, row, owner.userId, sure ? "normal" : "pending"), 201);
   });

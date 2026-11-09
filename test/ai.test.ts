@@ -194,6 +194,19 @@ test("drafting an expense resolves it against categories and currencies but save
   expect((await api("GET", "/api/transactions")).body).toHaveLength(before.length + 1);
 });
 
+test("a chat draft without a currency uses the last-used currency", async () => {
+  const ai = provider();
+  const s = setup(undefined, ai.handler, config);
+  await s.call("POST", "/api/onboarding", { baseCurrency: "GBP" });
+  await s.call("POST", "/api/transactions", { note: "Cafe", amount: "8", currency: "EUR", date: "2026-10-02" });
+  ai.script.push(call("draft_transaction", { note: "Lunch", amount: "12" }), { content: "Check the draft" });
+  const chat = await s.call("POST", "/api/chats", { message: "lunch 12" });
+  const [result] = chat.body.messages.filter((m: { role: string }) => m.role === "tool").map((m: { content: string }) => JSON.parse(m.content));
+  expect(result.draft).toMatchObject({ amount: 1200, currency: "EUR" });
+  const tool = ai.requests[0].body.tools.find((t: any) => t.function.name === "draft_transaction");
+  expect(tool.function.parameters.properties.currency.description).toContain("defaults to the last used");
+});
+
 test("the AI knows category kinds, and drafts only expenses", async () => {
   const { ask, id, ai } = await withSpending();
   const [salary] = await ask("I got paid", call("draft_transaction", { note: "Pay", amount: "3000", categoryId: id("Salary") }), { content: "No" });

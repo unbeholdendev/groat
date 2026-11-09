@@ -3,8 +3,9 @@ import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { transactionInput, isoDate } from "../shared/schema";
 import type { Ctx } from "./app";
-import { settings, today, uncategorised } from "./db";
-import { readTransaction, saveTags } from "./transactions";
+import { today } from "./db";
+import { readTransaction, type Intent } from "./read-transaction";
+import { saveTags } from "./transactions";
 import { json, valid } from "./request";
 import * as t from "./schema";
 import { errorKind, log } from "./logging";
@@ -20,16 +21,17 @@ export const schedule = transactionInput.omit({ date: true }).extend({
   needsConfirmation: z.boolean().default(false),
 });
 
-export function recurringRoutes({ db, clock }: Ctx) {
+export function recurringRoutes(ctx: Ctx) {
+  const { db, clock } = ctx;
   const app = new Hono();
 
   const { deletedAt: _, ...templateColumns } = getTableColumns(r);
   const templates = (where?: SQL) => db.select(templateColumns).from(r).where(and(isNull(r.deletedAt), where));
 
-  const readTemplate = (raw: unknown, fallback: string, category: number) => {
+  const readTemplate = (raw: unknown, intent: Intent) => {
     const input = valid(schedule, raw);
     if ("error" in input) return input;
-    const e = readTransaction({ ...input.data, date: today(clock) }, db, today(clock), fallback, category);
+    const e = readTransaction(ctx, input.data, intent);
     if ("error" in e) return e;
     const { period, every, startDate = today(clock), endDate, needsConfirmation } = input.data;
     const { note, amount, currency, categoryId, tags } = e;
@@ -72,7 +74,7 @@ export function recurringRoutes({ db, clock }: Ctx) {
   app.get("/api/recurring", (c) => c.json(templates().orderBy(r.id).all()));
 
   app.post("/api/recurring", async (c) => {
-    const t = readTemplate(await json(c), settings(db).lastCurrency, uncategorised(db));
+    const t = readTemplate(await json(c), { intent: "add" });
     if ("error" in t) return c.json(t, 400);
     const { id } = db.insert(r).values(t).returning({ id: r.id }).get();
     generate();
@@ -83,7 +85,7 @@ export function recurringRoutes({ db, clock }: Ctx) {
     const id = Number(c.req.param("id"));
     const old = templates(eq(r.id, id)).get();
     if (!old) return c.json({ error: "Not found" }, 404);
-    const t = readTemplate(await json(c), old.currency, old.categoryId);
+    const t = readTemplate(await json(c), { intent: "edit", old });
     if ("error" in t) return c.json(t, 400);
     db.update(r).set(t).where(eq(r.id, id)).run();
     generate();
