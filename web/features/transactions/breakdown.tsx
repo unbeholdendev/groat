@@ -18,7 +18,7 @@ export function Breakdown({ unit, end }: { unit: Unit; end?: Date }) {
   return (
     <aside className="fixed top-6 left-[calc(50%+248px)] hidden max-h-[calc(100dvh-48px)] w-72 overflow-y-auto xl:block">
       <div className="flex items-center justify-between gap-3 px-1 pb-3">
-        <h2 className="text-[20px] font-[650] tracking-[-0.02em]">By category</h2>
+        <h2 className="legend text-[13px] font-semibold text-ink2">By category</h2>
         <div className="w-36">
           <Segmented label="Show" options={["Amount", "Share"]} value={show} onChange={setShow} />
         </div>

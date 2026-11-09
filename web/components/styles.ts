@@ -2,5 +2,5 @@ export const chip = "relative inline-flex shrink-0 items-center whitespace-nowra
 export const divide = "relative not-last:after:absolute not-last:after:inset-x-0 not-last:after:bottom-0 not-last:after:ml-16 not-last:after:h-px not-last:after:bg-line";
 export const panel = "overflow-hidden rounded-panel bg-surface shadow-panel";
 export const subHead = "mt-4 px-1 font-semibold";
-export const sectionHead = "mt-7 mb-3 px-1 text-[20px] font-[650] tracking-[-0.02em]";
+export const sectionHead = "legend mt-7 mb-3 px-1 text-[13px] font-semibold text-ink2";
 export const linkRow = `press relative flex h-[62px] w-full items-center gap-3 px-4 text-left font-medium hover:bg-surface2 ${divide}`;

@@ -71,10 +71,10 @@ test("browser chrome colour follows the chosen theme", async ({ app: page }) => 
   const color = () => page.locator("meta[name=theme-color]").getAttribute("content");
   await page.request.put("/api/settings", { data: { theme: "dark" } });
   await page.reload();
-  await expect.poll(color).toBe("rgb(13, 15, 21)");
+  await expect.poll(color).toBe("rgb(16, 28, 23)");
   await page.getByRole("link", { name: "Settings" }).click();
   await page.getByRole("radio", { name: "Light" }).click();
-  await expect.poll(color).toBe("rgb(245, 247, 251)");
+  await expect.poll(color).toBe("rgb(227, 232, 221)");
 });
 
 test("a CSV previews and imports into an empty instance", async ({ app: page }) => {

@@ -48,7 +48,7 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
   };
   return (
     <>
-      <p className="mt-4">
+      <p className="engraving mt-6">
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} />
       </p>
       {incomplete && <p className="mt-2 text-[13px] text-amber">Incomplete totals: expenses without rates are excluded. Comparison unavailable.</p>}

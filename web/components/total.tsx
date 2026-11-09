@@ -44,7 +44,7 @@ export function Total({ amount, currency, unit, className = "" }: { amount: numb
   const final = money(amount, currency, unit);
   const [whole, part] = money(useCountUp(amount), currency, unit).split(/(?=\.\d+$)/);
   return (
-    <b className={`font-semibold tracking-[-0.04em] whitespace-nowrap ${numeralSize(final.length)} leading-none ${className}`}>
+    <b className={`denomination font-bold tracking-[-0.02em] whitespace-nowrap ${numeralSize(final.length)} leading-none ${className}`}>
       <span className="sr-only">{final}</span>
       <span aria-hidden>
         {whole}

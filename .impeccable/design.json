@@ -1,242 +1,112 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-19T21:36:21.335Z",
-  "title": "Design System: Expenses",
+  "generatedAt": "2026-11-09T18:27:18.038Z",
+  "title": "Groat: banknote engraving",
   "extensions": {
     "colorMeta": {
       "ground": {
         "role": "neutral",
-        "displayName": "Cool Ground",
-        "canonical": "#f5f7fb",
+        "displayName": "Banknote paper",
+        "canonical": "#e3e8dd",
         "cssVar": "--bg",
         "darkToken": "ground-dark",
-        "darkValue": "#0d0f15",
-        "tonalRamp": [
-          "oklch(15% 0.006 265)",
-          "oklch(26% 0.006 265)",
-          "oklch(38% 0.006 265)",
-          "oklch(50% 0.006 265)",
-          "oklch(62% 0.006 265)",
-          "oklch(74% 0.006 265)",
-          "oklch(85% 0.006 265)",
-          "oklch(95% 0.006 265)"
-        ]
+        "darkValue": "#101c17"
       },
       "surface": {
         "role": "neutral",
-        "displayName": "Panel White",
-        "canonical": "#ffffff",
+        "displayName": "Paper panel",
+        "canonical": "#f4f6ef",
         "cssVar": "--surface",
         "darkToken": "surface-dark",
-        "darkValue": "#171920",
-        "tonalRamp": [
-          "oklch(15% 0.000 90)",
-          "oklch(26% 0.000 90)",
-          "oklch(38% 0.000 90)",
-          "oklch(50% 0.000 90)",
-          "oklch(62% 0.000 90)",
-          "oklch(74% 0.000 90)",
-          "oklch(85% 0.000 90)",
-          "oklch(95% 0.000 90)"
-        ]
+        "darkValue": "#1a2a22"
       },
       "surface-2": {
         "role": "neutral",
         "displayName": "Well",
-        "canonical": "#eef0f6",
+        "canonical": "#e9ede3",
         "cssVar": "--surface2",
         "darkToken": "surface-2-dark",
-        "darkValue": "#21242c",
-        "tonalRamp": [
-          "oklch(15% 0.008 271)",
-          "oklch(26% 0.008 271)",
-          "oklch(38% 0.008 271)",
-          "oklch(50% 0.008 271)",
-          "oklch(62% 0.008 271)",
-          "oklch(74% 0.008 271)",
-          "oklch(85% 0.008 271)",
-          "oklch(95% 0.008 271)"
-        ]
+        "darkValue": "#24372c"
       },
       "ink": {
         "role": "neutral",
         "displayName": "Ink",
-        "canonical": "#12161f",
+        "canonical": "#13261e",
         "cssVar": "--ink",
         "darkToken": "ink-dark",
-        "darkValue": "#f4f5f9",
-        "tonalRamp": [
-          "oklch(15% 0.019 266)",
-          "oklch(26% 0.019 266)",
-          "oklch(38% 0.019 266)",
-          "oklch(50% 0.019 266)",
-          "oklch(62% 0.019 266)",
-          "oklch(74% 0.019 266)",
-          "oklch(85% 0.019 266)",
-          "oklch(95% 0.019 266)"
-        ]
+        "darkValue": "#edf2e5"
       },
       "ink-2": {
         "role": "neutral",
         "displayName": "Ink 2",
-        "canonical": "#4e525e",
+        "canonical": "#3e5148",
         "cssVar": "--ink2",
         "darkToken": "ink-2-dark",
-        "darkValue": "#b7bac3",
-        "tonalRamp": [
-          "oklch(15% 0.020 271)",
-          "oklch(26% 0.020 271)",
-          "oklch(38% 0.020 271)",
-          "oklch(50% 0.020 271)",
-          "oklch(62% 0.020 271)",
-          "oklch(74% 0.020 271)",
-          "oklch(85% 0.020 271)",
-          "oklch(95% 0.020 271)"
-        ]
+        "darkValue": "#c3d1c3"
       },
       "ink-3": {
         "role": "neutral",
         "displayName": "Ink 3",
-        "canonical": "#676c77",
+        "canonical": "#53655c",
         "cssVar": "--ink3",
         "darkToken": "ink-3-dark",
-        "darkValue": "#91959e",
-        "tonalRamp": [
-          "oklch(15% 0.018 266)",
-          "oklch(26% 0.018 266)",
-          "oklch(38% 0.018 266)",
-          "oklch(50% 0.018 266)",
-          "oklch(62% 0.018 266)",
-          "oklch(74% 0.018 266)",
-          "oklch(85% 0.018 266)",
-          "oklch(95% 0.018 266)"
-        ]
+        "darkValue": "#a1b5a5"
       },
       "hairline": {
         "role": "neutral",
         "displayName": "Hairline",
-        "canonical": "#e4e6ec",
+        "canonical": "#d3dbcd",
         "cssVar": "--line",
         "darkToken": "hairline-dark",
-        "darkValue": "#272a31",
-        "tonalRamp": [
-          "oklch(15% 0.008 271)",
-          "oklch(26% 0.008 271)",
-          "oklch(38% 0.008 271)",
-          "oklch(50% 0.008 271)",
-          "oklch(62% 0.008 271)",
-          "oklch(74% 0.008 271)",
-          "oklch(85% 0.008 271)",
-          "oklch(95% 0.008 271)"
-        ]
+        "darkValue": "#304638"
       },
       "hairline-strong": {
         "role": "neutral",
         "displayName": "Strong Hairline",
-        "canonical": "#d3d6dd",
+        "canonical": "#b8c5b5",
         "cssVar": "--line2",
         "darkToken": "hairline-strong-dark",
-        "darkValue": "#373a43",
-        "tonalRamp": [
-          "oklch(15% 0.010 267)",
-          "oklch(26% 0.010 267)",
-          "oklch(38% 0.010 267)",
-          "oklch(50% 0.010 267)",
-          "oklch(62% 0.010 267)",
-          "oklch(74% 0.010 267)",
-          "oklch(85% 0.010 267)",
-          "oklch(95% 0.010 267)"
-        ]
+        "darkValue": "#486350"
       },
       "track": {
         "role": "neutral",
         "displayName": "Track",
-        "canonical": "#e9ebf1",
+        "canonical": "#d3dbcd",
         "cssVar": "--track",
         "darkToken": "track-dark",
-        "darkValue": "#23262e",
-        "tonalRamp": [
-          "oklch(15% 0.008 271)",
-          "oklch(26% 0.008 271)",
-          "oklch(38% 0.008 271)",
-          "oklch(50% 0.008 271)",
-          "oklch(62% 0.008 271)",
-          "oklch(74% 0.008 271)",
-          "oklch(85% 0.008 271)",
-          "oklch(95% 0.008 271)"
-        ]
+        "darkValue": "#2a4032"
       },
       "accent": {
         "role": "primary",
-        "displayName": "Cobalt",
-        "canonical": "#3250f0",
+        "displayName": "Banknote green",
+        "canonical": "#1d5a43",
         "cssVar": "--accent",
         "darkToken": "accent-dark",
-        "darkValue": "#779bff",
-        "tonalRamp": [
-          "oklch(15% 0.240 268)",
-          "oklch(26% 0.240 268)",
-          "oklch(38% 0.240 268)",
-          "oklch(50% 0.240 268)",
-          "oklch(62% 0.240 268)",
-          "oklch(74% 0.240 268)",
-          "oklch(85% 0.240 268)",
-          "oklch(95% 0.240 268)"
-        ]
+        "darkValue": "#a6d6b2"
       },
       "accent-soft": {
         "role": "primary",
-        "displayName": "Cobalt Wash",
-        "canonical": "#e0ebff",
+        "displayName": "Green wash",
+        "canonical": "#cddfce",
         "cssVar": "--accent-soft",
         "darkToken": "accent-soft-dark",
-        "darkValue": "#21305b",
-        "tonalRamp": [
-          "oklch(15% 0.030 263)",
-          "oklch(26% 0.030 263)",
-          "oklch(38% 0.030 263)",
-          "oklch(50% 0.030 263)",
-          "oklch(62% 0.030 263)",
-          "oklch(74% 0.030 263)",
-          "oklch(85% 0.030 263)",
-          "oklch(95% 0.030 263)"
-        ]
+        "darkValue": "#2e4c3b"
       },
       "on-accent": {
         "role": "primary",
-        "displayName": "On Cobalt",
-        "canonical": "#ffffff",
+        "displayName": "On Banknote green",
+        "canonical": "#f2f6ee",
         "cssVar": "--on-accent",
         "darkToken": "on-accent-dark",
-        "darkValue": "#070d25",
-        "tonalRamp": [
-          "oklch(15% 0.000 90)",
-          "oklch(26% 0.000 90)",
-          "oklch(38% 0.000 90)",
-          "oklch(50% 0.000 90)",
-          "oklch(62% 0.000 90)",
-          "oklch(74% 0.000 90)",
-          "oklch(85% 0.000 90)",
-          "oklch(95% 0.000 90)"
-        ]
+        "darkValue": "#10271b"
       },
       "amber": {
         "role": "tertiary",
         "displayName": "Amber",
-        "canonical": "#9a5a00",
+        "canonical": "#8f5300",
         "cssVar": "--amber",
         "darkToken": "amber-dark",
-        "darkValue": "#eca851",
-        "tonalRamp": [
-          "oklch(15% 0.119 64)",
-          "oklch(26% 0.119 64)",
-          "oklch(38% 0.119 64)",
-          "oklch(50% 0.119 64)",
-          "oklch(62% 0.119 64)",
-          "oklch(74% 0.119 64)",
-          "oklch(85% 0.119 64)",
-          "oklch(95% 0.119 64)"
-        ]
+        "darkValue": "#eca851"
       },
       "amber-line": {
         "role": "tertiary",
@@ -244,17 +114,7 @@
         "canonical": "#efca9f",
         "cssVar": "--amber-line",
         "darkToken": "amber-line-dark",
-        "darkValue": "#573c1c",
-        "tonalRamp": [
-          "oklch(15% 0.070 71)",
-          "oklch(26% 0.070 71)",
-          "oklch(38% 0.070 71)",
-          "oklch(50% 0.070 71)",
-          "oklch(62% 0.070 71)",
-          "oklch(74% 0.070 71)",
-          "oklch(85% 0.070 71)",
-          "oklch(95% 0.070 71)"
-        ]
+        "darkValue": "#573c1c"
       },
       "amber-soft": {
         "role": "tertiary",
@@ -262,191 +122,71 @@
         "canonical": "#fdf0de",
         "cssVar": "--amber-soft",
         "darkToken": "amber-soft-dark",
-        "darkValue": "#2e2214",
-        "tonalRamp": [
-          "oklch(15% 0.028 76)",
-          "oklch(26% 0.028 76)",
-          "oklch(38% 0.028 76)",
-          "oklch(50% 0.028 76)",
-          "oklch(62% 0.028 76)",
-          "oklch(74% 0.028 76)",
-          "oklch(85% 0.028 76)",
-          "oklch(95% 0.028 76)"
-        ]
+        "darkValue": "#2e2214"
       },
       "up": {
         "role": "tertiary",
         "displayName": "Over",
-        "canonical": "#d02b31",
+        "canonical": "#a3262a",
         "cssVar": "--up",
         "darkToken": "up-dark",
-        "darkValue": "#fc7a79",
-        "tonalRamp": [
-          "oklch(15% 0.200 25)",
-          "oklch(26% 0.200 25)",
-          "oklch(38% 0.200 25)",
-          "oklch(50% 0.200 25)",
-          "oklch(62% 0.200 25)",
-          "oklch(74% 0.200 25)",
-          "oklch(85% 0.200 25)",
-          "oklch(95% 0.200 25)"
-        ]
+        "darkValue": "#fc7a79"
       },
       "down": {
         "role": "tertiary",
         "displayName": "Under",
-        "canonical": "#007840",
+        "canonical": "#1d5a43",
         "cssVar": "--down",
         "darkToken": "down-dark",
-        "darkValue": "#59d38c",
-        "tonalRamp": [
-          "oklch(15% 0.127 154)",
-          "oklch(26% 0.127 154)",
-          "oklch(38% 0.127 154)",
-          "oklch(50% 0.127 154)",
-          "oklch(62% 0.127 154)",
-          "oklch(74% 0.127 154)",
-          "oklch(85% 0.127 154)",
-          "oklch(95% 0.127 154)"
-        ]
+        "darkValue": "#59d38c"
       },
       "glass": {
         "role": "neutral",
         "displayName": "Glass",
-        "canonical": "rgb(255 255 255 / 0.72)",
+        "canonical": "rgb(244 246 239 / 0.94)",
         "cssVar": "--glass",
         "darkToken": "glass-dark",
-        "darkValue": "rgb(23 25 32 / 0.7)",
-        "tonalRamp": [
-          "oklch(15% 0.000 90)",
-          "oklch(26% 0.000 90)",
-          "oklch(38% 0.000 90)",
-          "oklch(50% 0.000 90)",
-          "oklch(62% 0.000 90)",
-          "oklch(74% 0.000 90)",
-          "oklch(85% 0.000 90)",
-          "oklch(95% 0.000 90)"
-        ]
+        "darkValue": "rgb(26 42 34 / 0.94)"
       },
       "cat-rose": {
         "role": "secondary",
         "displayName": "Rose",
-        "canonical": "#f16f7e",
-        "tonalRamp": [
-          "oklch(15% 0.160 15)",
-          "oklch(26% 0.160 15)",
-          "oklch(38% 0.160 15)",
-          "oklch(50% 0.160 15)",
-          "oklch(62% 0.160 15)",
-          "oklch(74% 0.160 15)",
-          "oklch(85% 0.160 15)",
-          "oklch(95% 0.160 15)"
-        ]
+        "canonical": "#f16f7e"
       },
       "cat-tangerine": {
         "role": "secondary",
         "displayName": "Tangerine",
-        "canonical": "#f98942",
-        "tonalRamp": [
-          "oklch(15% 0.160 50)",
-          "oklch(26% 0.160 50)",
-          "oklch(38% 0.160 50)",
-          "oklch(50% 0.160 50)",
-          "oklch(62% 0.160 50)",
-          "oklch(74% 0.160 50)",
-          "oklch(85% 0.160 50)",
-          "oklch(95% 0.160 50)"
-        ]
+        "canonical": "#f98942"
       },
       "cat-sun": {
         "role": "secondary",
         "displayName": "Sun",
-        "canonical": "#f4bf3f",
-        "tonalRamp": [
-          "oklch(15% 0.150 85)",
-          "oklch(26% 0.150 85)",
-          "oklch(38% 0.150 85)",
-          "oklch(50% 0.150 85)",
-          "oklch(62% 0.150 85)",
-          "oklch(74% 0.150 85)",
-          "oklch(85% 0.150 85)",
-          "oklch(95% 0.150 85)"
-        ]
+        "canonical": "#f4bf3f"
       },
       "cat-lime": {
         "role": "secondary",
         "displayName": "Lime",
-        "canonical": "#99d352",
-        "tonalRamp": [
-          "oklch(15% 0.170 130)",
-          "oklch(26% 0.170 130)",
-          "oklch(38% 0.170 130)",
-          "oklch(50% 0.170 130)",
-          "oklch(62% 0.170 130)",
-          "oklch(74% 0.170 130)",
-          "oklch(85% 0.170 130)",
-          "oklch(95% 0.170 130)"
-        ]
+        "canonical": "#99d352"
       },
       "cat-jade": {
         "role": "secondary",
         "displayName": "Jade",
-        "canonical": "#3fbe90",
-        "tonalRamp": [
-          "oklch(15% 0.130 165)",
-          "oklch(26% 0.130 165)",
-          "oklch(38% 0.130 165)",
-          "oklch(50% 0.130 165)",
-          "oklch(62% 0.130 165)",
-          "oklch(74% 0.130 165)",
-          "oklch(85% 0.130 165)",
-          "oklch(95% 0.130 165)"
-        ]
+        "canonical": "#3fbe90"
       },
       "cat-aqua": {
         "role": "secondary",
         "displayName": "Aqua",
-        "canonical": "#26c0cf",
-        "tonalRamp": [
-          "oklch(15% 0.120 205)",
-          "oklch(26% 0.120 205)",
-          "oklch(38% 0.120 205)",
-          "oklch(50% 0.120 205)",
-          "oklch(62% 0.120 205)",
-          "oklch(74% 0.120 205)",
-          "oklch(85% 0.120 205)",
-          "oklch(95% 0.120 205)"
-        ]
+        "canonical": "#26c0cf"
       },
       "cat-orchid": {
         "role": "secondary",
         "displayName": "Orchid",
-        "canonical": "#bf73df",
-        "tonalRamp": [
-          "oklch(15% 0.171 315)",
-          "oklch(26% 0.171 315)",
-          "oklch(38% 0.171 315)",
-          "oklch(50% 0.171 315)",
-          "oklch(62% 0.171 315)",
-          "oklch(74% 0.171 315)",
-          "oklch(85% 0.171 315)",
-          "oklch(95% 0.171 315)"
-        ]
+        "canonical": "#bf73df"
       },
       "cat-pink": {
         "role": "secondary",
         "displayName": "Pink",
-        "canonical": "#e977bb",
-        "tonalRamp": [
-          "oklch(15% 0.161 345)",
-          "oklch(26% 0.161 345)",
-          "oklch(38% 0.161 345)",
-          "oklch(50% 0.161 345)",
-          "oklch(62% 0.161 345)",
-          "oklch(74% 0.161 345)",
-          "oklch(85% 0.161 345)",
-          "oklch(95% 0.161 345)"
-        ]
+        "canonical": "#e977bb"
       }
     },
     "typographyMeta": {
@@ -488,47 +228,47 @@
       },
       "amount": {
         "displayName": "Amount",
-        "purpose": "Row amounts and category totals, Geist Mono."
+        "purpose": "Row amounts and category totals, Source Sans 3."
       },
       "amount-sm": {
         "displayName": "Amount small",
-        "purpose": "Deltas, shares, day totals, chart and skyline labels, Geist Mono 11-13px."
+        "purpose": "Deltas, shares, day totals, chart and skyline labels, Source Sans 3 11-13px."
       }
     },
     "shadows": [
       {
         "name": "panel",
-        "value": "0 1px 2px rgb(18 22 31 / 0.04), 0 4px 16px -6px rgb(18 22 31 / 0.08)",
+        "value": "0 1px 2px rgb(19 38 30 / 0.04), 0 4px 16px -6px rgb(19 38 30 / 0.08)",
         "dark": "0 1px 0 rgb(255 255 255 / 0.04) inset",
         "purpose": "Level 1 panels."
       },
       {
         "name": "dock",
-        "value": "0 1px 0 rgb(255 255 255 / 0.6) inset, 0 12px 36px -12px rgb(18 22 31 / 0.28)",
+        "value": "0 1px 0 rgb(255 255 255 / 0.6) inset, 0 12px 36px -12px rgb(19 38 30 / 0.28)",
         "dark": "0 1px 0 rgb(255 255 255 / 0.07) inset, 0 16px 40px -12px rgb(0 0 0 / 0.7)",
         "purpose": "The dock and glass chips."
       },
       {
         "name": "bar-rest",
-        "value": "0 1px 2px rgb(18 22 31 / 0.06)",
+        "value": "0 1px 2px rgb(19 38 30 / 0.06)",
         "dark": "0 1px 0 rgb(255 255 255 / 0.04) inset",
         "purpose": "Bar well at rest."
       },
       {
         "name": "bar-active",
-        "value": "0 0 0 3px var(--accent-soft), 0 1px 2px rgb(18 22 31 / 0.06)",
+        "value": "0 0 0 3px var(--accent-soft), 0 1px 2px rgb(19 38 30 / 0.06)",
         "dark": "0 0 0 3px var(--accent-soft)",
         "purpose": "Bar while focused or holding text, with an accent border."
       },
       {
         "name": "lift",
-        "value": "0 18px 48px -16px rgb(18 22 31 / 0.32)",
+        "value": "0 18px 48px -16px rgb(19 38 30 / 0.32)",
         "dark": "0 1px 0 rgb(255 255 255 / 0.06) inset, 0 18px 48px -16px rgb(0 0 0 / 0.8)",
         "purpose": "Answer card."
       },
       {
         "name": "thumb",
-        "value": "0 1px 2px rgb(18 22 31 / 0.1), 0 2px 8px -2px rgb(18 22 31 / 0.12)",
+        "value": "0 1px 2px rgb(19 38 30 / 0.1), 0 2px 8px -2px rgb(19 38 30 / 0.12)",
         "dark": "0 1px 0 rgb(255 255 255 / 0.06) inset, 0 2px 8px -2px rgb(0 0 0 / 0.6)",
         "purpose": "Segmented thumb."
       },
@@ -603,16 +343,16 @@
       "kind": "custom",
       "refersTo": "day-skyline",
       "description": "Signature: the Home month as one stacked category-colour column per day, under the total; tap a day to scroll to it.",
-      "html": "<div class=\"ds-sky\"><button class=\"ds-sky-day\" style=\"height:40%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#bf73df\"></i></button><i class=\"ds-sky-empty\"></i><button class=\"ds-sky-day\" style=\"height:72%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#26c0cf\"></i><i style=\"flex:1;background:#676c77\"></i></button><button class=\"ds-sky-day\" style=\"height:18%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i></button><i class=\"ds-sky-empty\"></i><button class=\"ds-sky-day\" style=\"height:100%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#3fbe90\"></i><i style=\"flex:1;background:#26c0cf\"></i></button><button class=\"ds-sky-day\" style=\"height:30%\" aria-label=\"Day\"><i style=\"flex:3;background:#26c0cf\"></i></button><button class=\"ds-sky-day\" style=\"height:55%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#bf73df\"></i></button><i class=\"ds-sky-empty\"></i><button class=\"ds-sky-day\" style=\"height:24%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i></button><button class=\"ds-sky-day ds-sky-today\" style=\"height:64%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#26c0cf\"></i></button><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i></div><p class=\"ds-sky-axis\"><span>1</span><span>31</span></p><p class=\"ds-legend\"><span><i style=\"background:#f98942\"></i>Food<b>48%</b></span><span><i style=\"background:#26c0cf\"></i>Transport<b>22%</b></span><span><i style=\"background:#bf73df\"></i>Subscriptions<b>14%</b></span><span><svg viewBox=\"0 0 24 24\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 12h.01M12 12h.01M18 12h.01\"/></svg>Other<b>16%</b></span></p>",
-      "css": ".ds-sky { display: grid; grid-template-columns: repeat(31, 1fr); gap: 3px; align-items: end; height: 112px; } .ds-sky-day { display: flex; flex-direction: column-reverse; gap: 1px; padding: 0; border: 0; background: none; border-radius: 3px; transform-origin: bottom; animation: ds-lift 640ms cubic-bezier(0.16, 1, 0.3, 1) both; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-sky-day:active { scale: 0.97; } .ds-sky-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-sky-day i { min-height: 2px; border-radius: 2.5px; } .ds-sky-today { outline: 1.5px solid var(--ink); outline-offset: 2px; } .ds-sky-empty { height: 2px; border-radius: 9999px; background: var(--line2); } .ds-sky-future { justify-self: center; width: 3px; height: 3px; border-radius: 9999px; background: var(--line2); } .ds-sky-axis { font-family: \"Geist Mono Variable\", ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; display: flex; justify-content: space-between; margin: 8px 0 0; font-size: 11px; color: var(--ink3); } .ds-legend { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 12px 0 0; font-size: 12px; font-weight: 500; color: var(--ink2); } .ds-legend span { display: flex; align-items: center; gap: 6px; } .ds-legend i { width: 8px; height: 8px; border-radius: 2px; } .ds-legend b { font-family: \"Geist Mono Variable\", ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; font-weight: 500; color: var(--ink3); } @keyframes ds-lift { from { scale: 1 0; } }"
+      "html": "<div class=\"ds-sky\"><button class=\"ds-sky-day\" style=\"height:40%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#bf73df\"></i></button><i class=\"ds-sky-empty\"></i><button class=\"ds-sky-day\" style=\"height:72%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#26c0cf\"></i><i style=\"flex:1;background:#53655c\"></i></button><button class=\"ds-sky-day\" style=\"height:18%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i></button><i class=\"ds-sky-empty\"></i><button class=\"ds-sky-day\" style=\"height:100%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#3fbe90\"></i><i style=\"flex:1;background:#26c0cf\"></i></button><button class=\"ds-sky-day\" style=\"height:30%\" aria-label=\"Day\"><i style=\"flex:3;background:#26c0cf\"></i></button><button class=\"ds-sky-day\" style=\"height:55%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#bf73df\"></i></button><i class=\"ds-sky-empty\"></i><button class=\"ds-sky-day\" style=\"height:24%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i></button><button class=\"ds-sky-day ds-sky-today\" style=\"height:64%\" aria-label=\"Day\"><i style=\"flex:3;background:#f98942\"></i><i style=\"flex:2;background:#26c0cf\"></i></button><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i><i class=\"ds-sky-future\"></i></div><p class=\"ds-sky-axis\"><span>1</span><span>31</span></p><p class=\"ds-legend\"><span><i style=\"background:#f98942\"></i>Food<b>48%</b></span><span><i style=\"background:#26c0cf\"></i>Transport<b>22%</b></span><span><i style=\"background:#bf73df\"></i>Subscriptions<b>14%</b></span><span><svg viewBox=\"0 0 24 24\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 12h.01M12 12h.01M18 12h.01\"/></svg>Other<b>16%</b></span></p>",
+      "css": ".ds-sky { display: grid; grid-template-columns: repeat(31, 1fr); gap: 3px; align-items: end; height: 112px; } .ds-sky-day { display: flex; flex-direction: column-reverse; gap: 1px; padding: 0; border: 0; background: none; border-radius: 3px; transform-origin: bottom; animation: ds-lift 640ms cubic-bezier(0.16, 1, 0.3, 1) both; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-sky-day:active { scale: 0.97; } .ds-sky-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-sky-day i { min-height: 2px; border-radius: 2.5px; } .ds-sky-today { outline: 1.5px solid var(--ink); outline-offset: 2px; } .ds-sky-empty { height: 2px; border-radius: 9999px; background: var(--line2); } .ds-sky-future { justify-self: center; width: 3px; height: 3px; border-radius: 9999px; background: var(--line2); } .ds-sky-axis { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; display: flex; justify-content: space-between; margin: 8px 0 0; font-size: 11px; color: var(--ink3); } .ds-legend { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 12px 0 0; font-size: 12px; font-weight: 500; color: var(--ink2); } .ds-legend span { display: flex; align-items: center; gap: 6px; } .ds-legend i { width: 8px; height: 8px; border-radius: 2px; } .ds-legend b { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; font-weight: 500; color: var(--ink3); } @keyframes ds-lift { from { scale: 1 0; } }"
     },
     {
       "name": "Home Header",
       "kind": "custom",
       "refersTo": "hero-numeral",
-      "description": "Month steppers, filter, the 60px total in ink and the plain mono delta, all on the ground.",
+      "description": "Month steppers, filter, the 60px total in ink and the plain tabular figures delta, all on the ground.",
       "html": "<header class=\"ds-head\"><div class=\"ds-head-row\"><button class=\"ds-step\" aria-label=\"Previous month\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m15 6-6 6 6 6\"/></svg></button><h1>October</h1><button class=\"ds-step\" aria-label=\"Next month\" disabled><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 6 6 6-6 6\"/></svg></button><button class=\"ds-step ds-filter\" aria-label=\"Filters, 2 on\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M7 12h10M10 17h4\"/></svg><b>2</b></button></div><p class=\"ds-total\">£1,209<small>.55</small></p><p class=\"ds-vs\"><span class=\"ds-delta\"><svg viewBox=\"0 0 24 24\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 19V5m-6 6 6-6 6 6\"/></svg>12%</span>vs Sept by today</p></header>",
-      "css": ".ds-head { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--ink); } .ds-head-row { display: flex; align-items: center; gap: 4px; color: var(--ink2); } .ds-head-row h1 { margin: 0; font-size: 15px; font-weight: 600; } .ds-step { position: relative; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 9999px; background: none; color: inherit; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-step:hover { background: var(--surface2); } .ds-step:active:not(:disabled) { scale: 0.97; } .ds-step:disabled { opacity: 0.3; } .ds-step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-filter { margin-left: auto; } .ds-filter b { font-family: \"Geist Mono Variable\", ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; position: absolute; top: -4px; right: -4px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 9999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600; box-shadow: 0 0 0 2px var(--bg); } .ds-total { margin: 16px 0 0; font-size: 60px; font-weight: 600; line-height: 1; letter-spacing: -0.04em; } .ds-total small { font-size: 0.5em; font-weight: 500; opacity: 0.65; } .ds-vs { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; font-size: 13px; font-weight: 500; color: var(--ink2); } .ds-delta { font-family: \"Geist Mono Variable\", ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--up); }"
+      "css": ".ds-head { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--ink); } .ds-head-row { display: flex; align-items: center; gap: 4px; color: var(--ink2); } .ds-head-row h1 { margin: 0; font-size: 15px; font-weight: 600; } .ds-step { position: relative; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 9999px; background: none; color: inherit; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-step:hover { background: var(--surface2); } .ds-step:active:not(:disabled) { scale: 0.97; } .ds-step:disabled { opacity: 0.3; } .ds-step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-filter { margin-left: auto; } .ds-filter b { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; position: absolute; top: -4px; right: -4px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 9999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600; box-shadow: 0 0 0 2px var(--bg); } .ds-total { margin: 16px 0 0; font-size: 60px; font-weight: 600; line-height: 1; letter-spacing: -0.04em; } .ds-total small { font-size: 0.5em; font-weight: 500; opacity: 0.65; } .ds-vs { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; font-size: 13px; font-weight: 500; color: var(--ink2); } .ds-delta { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--up); } .ds-head-row h1 { font-family: Cinzel, Georgia, serif; text-transform: uppercase; letter-spacing: .06em; } .ds-total { font-family: Libre Caslon Text, Georgia, serif; font-weight: 700; letter-spacing: -.02em; }"
     },
     {
       "name": "Dock",
@@ -620,7 +360,7 @@
       "refersTo": "dock",
       "description": "Signature: one frosted surface holding the one-line bar and the four tabs.",
       "html": "<div class=\"ds-dock\"><div class=\"ds-bar\"><span class=\"ds-bar-text\">ramen <span class=\"ds-tok-amt\">24.50</span> <span class=\"ds-tok-tag\">#friends</span></span><button class=\"ds-bar-go\" aria-label=\"Add\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 10 4 15l5 5M20 4v7a4 4 0 0 1-4 4H4\"/></svg></button></div><nav class=\"ds-tabs\"><a class=\"ds-tab\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 3.5h12v17l-2.5-1.5-2 1.5-1.5-1-1.5 1-2-1.5L6 20.5zM9.5 8.5h5M9.5 12h5M9.5 15.5h3\"/></svg>Expenses</a><a class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m4 17 5-5 3.5 3L20 7.5M15 7.5h5v5\"/></svg>Stats</a><a class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5.5 4h4A1.5 1.5 0 0 1 11 5.5v4A1.5 1.5 0 0 1 9.5 11h-4A1.5 1.5 0 0 1 4 9.5v-4A1.5 1.5 0 0 1 5.5 4zM14.5 4h4A1.5 1.5 0 0 1 20 5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 13 9.5v-4A1.5 1.5 0 0 1 14.5 4zM5.5 13h4a1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 1 9.5 20h-4A1.5 1.5 0 0 1 4 18.5v-4A1.5 1.5 0 0 1 5.5 13zM14.5 13h4a1.5 1.5 0 0 1 1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a1.5 1.5 0 0 1-1.5-1.5v-4a1.5 1.5 0 0 1 1.5-1.5z\"/></svg>Categories</a><a class=\"ds-tab\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 8h9M19 8h1M4 16h1M11 16h9M19 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM11 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z\"/></svg>Settings</a></nav></div>",
-      "css": ".ds-dock { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 8px; padding: 8px; border: 1px solid var(--glass-line); border-radius: 26px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: var(--dock); } .ds-bar { display: flex; align-items: center; gap: 8px; height: 48px; padding: 4px 4px 4px 14px; border: 1px solid var(--accent); border-radius: 14px; background: var(--surface); box-shadow: var(--bar-active); } .ds-bar-text { flex: 1; font-size: 17px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink); } .ds-tok-amt { border-radius: 4px; background: var(--accent-soft); color: var(--accent); } .ds-tok-tag { border-radius: 4px; background: var(--track); color: var(--ink2); } .ds-bar-go { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 9999px; background: var(--accent); color: var(--on-accent); transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-bar-go:active { scale: 0.97; } .ds-bar-go:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-tabs { display: grid; grid-template-columns: repeat(4, 1fr); } .ds-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 52px; font-size: 11px; font-weight: 600; color: var(--ink3); text-decoration: none; } .ds-tab[aria-current] { color: var(--ink); } .ds-tab[aria-current] svg { color: var(--accent); } .ds-tab:hover { color: var(--ink); } .ds-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+      "css": ".ds-dock { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 8px; padding: 8px; border: 1px solid var(--glass-line); border-radius: 8px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: var(--dock); } .ds-bar { display: flex; align-items: center; gap: 8px; height: 48px; padding: 4px 4px 4px 14px; border: 1px solid var(--accent); border-radius: 6px; background: var(--surface); box-shadow: var(--bar-active); } .ds-bar-text { flex: 1; font-size: 17px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink); } .ds-tok-amt { border-radius: 4px; background: var(--accent-soft); color: var(--accent); } .ds-tok-tag { border-radius: 4px; background: var(--track); color: var(--ink2); } .ds-bar-go { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 9999px; background: var(--accent); color: var(--on-accent); transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-bar-go:active { scale: 0.97; } .ds-bar-go:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-tabs { display: grid; grid-template-columns: repeat(4, 1fr); } .ds-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 52px; font-size: 11px; font-weight: 600; color: var(--ink3); text-decoration: none; } .ds-tab[aria-current] { color: var(--ink); } .ds-tab[aria-current] svg { color: var(--accent); } .ds-tab:hover { color: var(--ink); } .ds-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
     },
     {
       "name": "Primary Button",
@@ -628,7 +368,7 @@
       "refersTo": "button-primary",
       "description": "The one committing action per view.",
       "html": "<button class=\"ds-btn-primary\">Save</button>",
-      "css": ".ds-btn-primary { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; height: 44px; padding: 0 20px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 600; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:active:not(:disabled) { scale: 0.97; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; }"
+      "css": ".ds-btn-primary { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; height: 44px; padding: 0 20px; border: 0; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 600; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:active:not(:disabled) { scale: 0.97; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; }"
     },
     {
       "name": "Quiet Button",
@@ -636,7 +376,7 @@
       "refersTo": "button-quiet",
       "description": "Secondary actions: unit toggle, restore, pause.",
       "html": "<button class=\"ds-btn-quiet\">Pause</button>",
-      "css": ".ds-btn-quiet { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; height: 44px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--surface2); color: var(--ink); font-size: 15px; font-weight: 500; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-quiet:active { scale: 0.97; } .ds-btn-quiet:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+      "css": ".ds-btn-quiet { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; height: 44px; padding: 0 16px; border: 0; border-radius: 6px; background: var(--surface2); color: var(--ink); font-size: 15px; font-weight: 500; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-quiet:active { scale: 0.97; } .ds-btn-quiet:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
     },
     {
       "name": "Input",
@@ -644,7 +384,7 @@
       "refersTo": "input",
       "description": "Form and filter fields with a label above.",
       "html": "<label class=\"ds-label\">Note<input class=\"ds-input\" placeholder=\"What was it for?\"></label>",
-      "css": ".ds-label { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink2); } .ds-input { font: inherit; height: 44px; padding: 0 14px; border: 1px solid var(--line2); border-radius: 14px; background: var(--surface); color: var(--ink); font-size: 15px; appearance: none; } .ds-input::placeholder { color: var(--ink3); } .ds-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }"
+      "css": ".ds-label { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink2); } .ds-input { font: inherit; height: 44px; padding: 0 14px; border: 1px solid var(--line2); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 15px; appearance: none; } .ds-input::placeholder { color: var(--ink3); } .ds-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }"
     },
     {
       "name": "Suggestion Chip",
@@ -652,15 +392,15 @@
       "refersTo": "chip",
       "description": "Glass pills that rise above the dock while typing.",
       "html": "<button class=\"ds-chip\"><span class=\"ds-tile-sm\" style=\"--c:#f98942\">🍜</span>Food</button>",
-      "css": ".ds-chip { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--glass-line); border-radius: 9999px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: var(--dock); color: var(--ink); font-size: 13px; font-weight: 500; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-chip:active { scale: 0.97; } .ds-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-tile-sm { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; font-size: 12px; line-height: 1; background: color-mix(in oklab, var(--c) var(--tile-mix, 16%), var(--surface)); }"
+      "css": ".ds-chip { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--glass-line); border-radius: 9999px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: var(--dock); color: var(--ink); font-size: 13px; font-weight: 500; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-chip:active { scale: 0.97; } .ds-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-tile-sm { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; font-size: 12px; line-height: 1; background: color-mix(in oklab, var(--c) var(--tile-mix, 16%), var(--surface)); }"
     },
     {
       "name": "Expense Row",
       "kind": "card",
       "refersTo": "expense-row",
-      "description": "Day group in a Level 1 panel: tinted tile, note over category, mono amount, inset hairline.",
+      "description": "Day group in a Level 1 panel: tinted tile, note over category, tabular amount, inset hairline.",
       "html": "<section class=\"ds-panel\"><h2>Yesterday<span>£57.80</span></h2><button class=\"ds-row\"><span class=\"ds-tile\" style=\"--c:#f98942\">🍜</span><span class=\"ds-text\"><b>Ramen</b><small>Food · #friends</small></span><span class=\"ds-amt\">£24.50</span></button><button class=\"ds-row\"><span class=\"ds-tile\" style=\"--c:#26c0cf\">🚆</span><span class=\"ds-text\"><b>Train to Leeds</b><small>Transport</small></span><span class=\"ds-amt\">€38.90<small>£33.30</small></span></button></section>",
-      "css": ".ds-panel { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; overflow: hidden; border-radius: 22px; background: var(--surface); box-shadow: var(--panel); color: var(--ink); } .ds-panel h2 { display: flex; justify-content: space-between; margin: 0; padding: 14px 16px 2px; font-size: 13px; font-weight: 600; color: var(--ink2); } .ds-panel h2 span { font-family: \"Geist Mono Variable\", ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--ink3); } .ds-row { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; height: 62px; padding: 0 16px; border: 0; background: none; color: inherit; font: inherit; text-align: left; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-row:hover { background: var(--surface2); } .ds-row:active { scale: 0.97; } .ds-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-row:not(:last-child)::after { content: \"\"; position: absolute; left: 64px; right: 0; bottom: 0; height: 1px; background: var(--line); } .ds-tile { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; font-size: 19px; line-height: 1; background: color-mix(in oklab, var(--c) var(--tile-mix, 16%), var(--surface)); } .ds-text { display: flex; flex: 1; min-width: 0; flex-direction: column; } .ds-text b { font-size: 15px; font-weight: 500; } .ds-text small, .ds-amt small { font-size: 12px; font-weight: 500; color: var(--ink3); } .ds-amt { font-family: \"Geist Mono Variable\", ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; display: flex; flex-direction: column; align-items: flex-end; font-size: 15px; font-weight: 500; }"
+      "css": ".ds-panel { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; overflow: hidden; border-radius: 4px; background: var(--surface); box-shadow: var(--panel); color: var(--ink); } .ds-panel h2 { display: flex; justify-content: space-between; margin: 0; padding: 14px 16px 2px; font-size: 13px; font-weight: 600; color: var(--ink2); } .ds-panel h2 span { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--ink3); } .ds-row { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; height: 62px; padding: 0 16px; border: 0; background: none; color: inherit; font: inherit; text-align: left; transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-row:hover { background: var(--surface2); } .ds-row:active { scale: 0.97; } .ds-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-row:not(:last-child)::after { content: \"\"; position: absolute; left: 64px; right: 0; bottom: 0; height: 1px; background: var(--line); } .ds-tile { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; font-size: 19px; line-height: 1; background: color-mix(in oklab, var(--c) var(--tile-mix, 16%), var(--surface)); } .ds-text { display: flex; flex: 1; min-width: 0; flex-direction: column; } .ds-text b { font-size: 15px; font-weight: 500; } .ds-text small, .ds-amt small { font-size: 12px; font-weight: 500; color: var(--ink3); } .ds-amt { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; display: flex; flex-direction: column; align-items: flex-end; font-size: 15px; font-weight: 500; } .ds-panel h2 { font-family: Cinzel, Georgia, serif; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }"
     },
     {
       "name": "Segmented Control",
@@ -668,18 +408,18 @@
       "refersTo": "segmented",
       "description": "Stats period presets and Theme; track well, surface thumb.",
       "html": "<div class=\"ds-seg\" role=\"radiogroup\"><button class=\"ds-seg-on\" role=\"radio\" aria-checked=\"true\">This month</button><button role=\"radio\">Last month</button><button role=\"radio\">Year</button><button role=\"radio\">Custom</button></div>",
-      "css": ".ds-seg { font-family: \"Geist Variable\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; height: 40px; padding: 4px; border-radius: 9999px; background: var(--track); } .ds-seg button { flex: 1; border: 0; border-radius: 9999px; background: none; font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; color: var(--ink2); transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-seg .ds-seg-on { background: var(--surface); color: var(--ink); box-shadow: var(--thumb); } .ds-seg button:active { scale: 0.97; } .ds-seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+      "css": ".ds-seg { font-family: \"Source Sans 3\", system-ui, sans-serif; font-variant-numeric: tabular-nums; display: flex; height: 40px; padding: 4px; border-radius: 9999px; background: var(--track); } .ds-seg button { flex: 1; border: 0; border-radius: 9999px; background: none; font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; color: var(--ink2); transition: scale 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-seg .ds-seg-on { background: var(--surface); color: var(--ink); box-shadow: var(--thumb); } .ds-seg button:active { scale: 0.97; } .ds-seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "The Denomination",
-    "overview": "A banknote says what it is worth in one huge numeral. This app does the same with your month: Home and Stats open on the ground with one number set big and sure in ink. Under it on Home the month is told as a skyline of days, one column per day, stacked in category colour. The rest of the screen hands that number its detail: what changed, where it went, and the rows behind it.\n\nIt is bold consumer fintech held to a precise standard. One committed hue (Cobalt) marks what is live or commits; it paints no field. Eight curated category hues give every expense an identity in a tinted tile and every day its colour in the skyline. Figures that line up in a column are set in Geist Mono; the one headline figure is set in Geist at 60px. Things move: totals count up, the skyline lifts, rows grow in, the spend line draws itself, the dock is frosted glass at thumb reach.\n\nDark is the hero theme, the one screenshots and reviews start from: a cool near-black ground, lifted surfaces, a bright cobalt accent. Light is its full twin, not an afterthought: cool off-white ground, white panels, a deeper cobalt. Theme follows the system by default.\n\nThe one-line bar is still the way in. Nothing about its parsing, ghost completion, chips, receipt or undo changes; only its clothes do.",
+    "overview": "Banknote engraving for a phone-first expense tracker: green paper in light mode, forest surfaces in dark, Cinzel Roman capitals for headings and Libre Caslon Text for the main total. Source Sans 3 keeps notes, controls and tabular amounts readable. A faint static guilloche sits behind Home and Stats totals. Keep the one-line entry bar, skyline and existing interactions. Avoid grain, double frames and dotted coin rims.",
     "keyCharacteristics": [
       "A 60px total in ink on the ground at the top of Home and Stats; no coloured field.",
       "The Day skyline under the Home total: one stacked column per day.",
-      "Grouped panels on a cool ground; inset hairlines inside a panel, none between panels.",
+      "Grouped panels on a green paper ground; inset hairlines inside a panel, none between panels.",
       "Category emoji in tinted tiles; category colour in tiles, the skyline, its legend, share tracks and nowhere else.",
-      "Geist for words and the hero numeral; Geist Mono for every other amount, delta and axis label.",
+      "Cinzel headings, Libre Caslon Text totals, Source Sans 3 words and tabular figures.",
       "One frosted dock: bar and tabs as one surface.",
       "Motion with a job: rise, press, count-up, lift, grow-in, draw."
     ],
@@ -691,7 +431,7 @@
       },
       {
         "name": "The Accent Rule",
-        "body": "Cobalt marks what is live or what commits, plus this period's line on Stats. Never category data, never headings, never a background.",
+        "body": "Banknote green marks what is live or what commits, plus this period's line on Stats. Never category data, never headings, never a background.",
         "section": "colors"
       },
       {
@@ -705,20 +445,20 @@
         "section": "colors"
       },
       {
-        "name": "Sentence case",
-        "body": "No uppercase or letter-spaced labels. No eyebrow above a heading or above the hero numeral; context follows the figure, it never precedes it.",
+        "name": "Roman headings",
+        "body": "Cinzel capitals for headings only. Controls, notes and prose stay in sentence case.",
         "section": "typography"
       },
       {
         "name": "Tabular everywhere",
-        "body": "`tabular-nums` is on `body`; `num` adds Geist Mono.",
+        "body": "Use lining tabular figures on body text and the num utility.",
         "section": "typography"
       }
     ],
     "dos": [
       "**Do** open Home and Stats on the ground with the 60px numeral in Ink; let context follow it.",
       "**Do** tell the Home month as the Day skyline: one column per day, stacked in category colour, tappable to its day.",
-      "**Do** set every non-hero amount, delta, share and axis label in Geist Mono (`num`).",
+      "**Do** set every non-hero amount, delta, share and axis label in Source Sans 3 (`num`).",
       "**Do** give every category row a tinted tile; use the eight-hue palette for defaults and swatches.",
       "**Do** group rows in Level 1 panels with inset hairlines.",
       "**Do** draw the cumulative spend line with the previous period as a ghost, and a today marker while the period runs.",
@@ -731,9 +471,9 @@
       "**Don't** add donuts or pies. Bars, lines, tracks and the skyline are the chart vocabulary.",
       "**Don't** add a floating action button or a multi-field form as the way in.",
       "**Don't** put the headline figure on a coloured field or card, or fill the delta as a pill.",
-      "**Don't** use Cobalt for decoration or as a background behind content.",
+      "**Don't** use Banknote green for decoration or as a background behind content.",
       "**Don't** colour text, buttons or backgrounds with category colours beyond tiles, the skyline and its legend, and tracks.",
-      "**Don't** put an eyebrow label above a heading or the numeral, or use uppercase labels.",
+      "**Don't** put an eyebrow label above a heading or the numeral, or uppercase controls and body copy.",
       "**Don't** use Unicode glyphs as icons (arrows, hashes, chevrons); draw them. Emoji are category content, not icons.",
       "**Don't** use gradient text, glass anywhere but the dock and chips, or zero-offset glows.",
       "**Don't** animate without a job, or skip the reduced-motion guard."

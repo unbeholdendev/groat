@@ -1,58 +1,63 @@
 @import "tailwindcss";
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist-mono";
+@import "@fontsource/cinzel/600.css";
+@import "@fontsource/cinzel/700.css";
+@import "@fontsource/libre-caslon-text/700.css";
+@import "@fontsource/source-sans-3/400.css";
+@import "@fontsource/source-sans-3/500.css";
+@import "@fontsource/source-sans-3/600.css";
+@import "@fontsource/source-sans-3/700.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg: #f5f7fb;
-  --surface: #ffffff;
-  --surface2: #eef0f6;
-  --ink: #12161f;
-  --ink2: #4e525e;
-  --ink3: #676c77;
-  --line: #e4e6ec;
-  --line2: #d3d6dd;
-  --track: #e9ebf1;
-  --accent: #3250f0;
-  --accent-soft: #e0ebff;
-  --on-accent: #ffffff;
-  --amber: #9a5a00;
+  --bg: #e3e8dd;
+  --surface: #f4f6ef;
+  --surface2: #e9ede3;
+  --ink: #13261e;
+  --ink2: #3e5148;
+  --ink3: #53655c;
+  --line: #d3dbcd;
+  --line2: #b8c5b5;
+  --track: #d3dbcd;
+  --accent: #1d5a43;
+  --accent-soft: #cddfce;
+  --on-accent: #f2f6ee;
+  --amber: #8f5300;
   --amber-line: #efca9f;
   --amber-soft: #fdf0de;
-  --up: #d02b31;
-  --down: #007840;
-  --glass: rgb(255 255 255 / 0.72);
-  --glass-line: rgb(18 22 31 / 0.07);
+  --up: #a3262a;
+  --down: #1d5a43;
+  --glass: rgb(244 246 239 / 0.94);
+  --glass-line: rgb(19 38 30 / 0.08);
   --tile-mix: 16%;
-  --panel: 0 1px 2px rgb(18 22 31 / 0.04), 0 4px 16px -6px rgb(18 22 31 / 0.08);
-  --dock: 0 1px 0 rgb(255 255 255 / 0.6) inset, 0 12px 36px -12px rgb(18 22 31 / 0.28);
-  --bar-rest: 0 1px 2px rgb(18 22 31 / 0.06);
-  --bar-active: 0 0 0 3px var(--accent-soft), 0 1px 2px rgb(18 22 31 / 0.06);
-  --lift: 0 18px 48px -16px rgb(18 22 31 / 0.32);
-  --thumb: 0 1px 2px rgb(18 22 31 / 0.1), 0 2px 8px -2px rgb(18 22 31 / 0.12);
-  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23676c77' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --panel: 0 1px 2px rgb(19 38 30 / 0.04), 0 4px 16px -6px rgb(19 38 30 / 0.08);
+  --dock: 0 1px 0 rgb(255 255 255 / 0.6) inset, 0 12px 36px -12px rgb(19 38 30 / 0.28);
+  --bar-rest: 0 1px 2px rgb(19 38 30 / 0.06);
+  --bar-active: 0 0 0 3px var(--accent-soft), 0 1px 2px rgb(19 38 30 / 0.06);
+  --lift: 0 18px 48px -16px rgb(19 38 30 / 0.32);
+  --thumb: 0 1px 2px rgb(19 38 30 / 0.1), 0 2px 8px -2px rgb(19 38 30 / 0.12);
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2353655c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 .dark {
-  --bg: #0d0f15;
-  --surface: #171920;
-  --surface2: #21242c;
-  --ink: #f4f5f9;
-  --ink2: #b7bac3;
-  --ink3: #91959e;
-  --line: #272a31;
-  --line2: #373a43;
-  --track: #23262e;
-  --accent: #779bff;
-  --accent-soft: #21305b;
-  --on-accent: #070d25;
+  --bg: #101c17;
+  --surface: #1a2a22;
+  --surface2: #24372c;
+  --ink: #edf2e5;
+  --ink2: #c3d1c3;
+  --ink3: #a1b5a5;
+  --line: #304638;
+  --line2: #486350;
+  --track: #2a4032;
+  --accent: #a6d6b2;
+  --accent-soft: #2e4c3b;
+  --on-accent: #10271b;
   --amber: #eca851;
   --amber-line: #573c1c;
   --amber-soft: #2e2214;
   --up: #fc7a79;
   --down: #59d38c;
-  --glass: rgb(23 25 32 / 0.7);
-  --glass-line: rgb(255 255 255 / 0.08);
+  --glass: rgb(26 42 34 / 0.94);
+  --glass-line: rgb(237 242 229 / 0.08);
   --tile-mix: 24%;
   --panel: 0 1px 0 rgb(255 255 255 / 0.04) inset;
   --dock: 0 1px 0 rgb(255 255 255 / 0.07) inset, 0 16px 40px -12px rgb(0 0 0 / 0.7);
@@ -60,13 +65,14 @@
   --bar-active: 0 0 0 3px var(--accent-soft);
   --lift: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 18px 48px -16px rgb(0 0 0 / 0.8);
   --thumb: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 2px 8px -2px rgb(0 0 0 / 0.6);
-  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2391959e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1b5a5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: "Geist Variable", system-ui, sans-serif;
-  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+  --font-sans: "Source Sans 3", system-ui, sans-serif;
+  --font-heading: "Cinzel", Georgia, serif;
+  --font-serif: "Libre Caslon Text", Georgia, serif;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface2: var(--surface2);
@@ -94,14 +100,14 @@
   --shadow-thumb: var(--thumb);
   --text-display: 34px;
   --text-display--line-height: 1.1;
-  --text-display--letter-spacing: -0.035em;
+  --text-display--letter-spacing: 0.03em;
   --radius-token: 4px;
   --radius-chip: 9999px;
   --radius-tile: 11px;
-  --radius-field: 14px;
-  --radius-panel: 22px;
-  --radius-card: 24px;
-  --radius-dock: 26px;
+  --radius-field: 6px;
+  --radius-panel: 4px;
+  --radius-card: 8px;
+  --radius-dock: 8px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --animate-draw: draw 900ms var(--ease-out) both;
   --animate-fill: fill 640ms var(--ease-out) both;
@@ -171,9 +177,7 @@
   @apply press h-11 rounded-field bg-surface2 px-4 text-[15px] font-medium text-ink;
 }
 @utility num {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 @utility glass {
   background: var(--glass);
@@ -196,10 +200,19 @@
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  border-radius: var(--radius-tile);
+  border-radius: 50%;
   background: color-mix(in oklab, var(--c, var(--ink3)) var(--tile-mix), var(--surface));
   line-height: 1;
   user-select: none;
+}
+@utility legend {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+@utility denomination {
+  font-family: var(--font-serif);
+  font-variant-numeric: lining-nums tabular-nums;
 }
 @utility hit {
   position: relative;
@@ -221,7 +234,8 @@ html {
   scrollbar-color: var(--line2) transparent;
 }
 body {
-  @apply bg-bg font-sans text-[15px] leading-snug text-ink antialiased tabular-nums;
+  @apply bg-bg font-sans text-[15px] leading-snug text-ink antialiased;
+  font-variant-numeric: lining-nums tabular-nums;
   caret-color: var(--accent);
   -webkit-tap-highlight-color: transparent;
 }
@@ -230,6 +244,12 @@ body {
   color: var(--ink);
 }
 @layer base {
+  h1,
+  h2 {
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
@@ -299,5 +319,21 @@ html:active-view-transition-type(back) {
   }
   :active {
     scale: none !important;
+  }
+}
+
+@utility engraving {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    inset: -30px 0 auto;
+    height: 170px;
+    background: var(--accent);
+    opacity: 0.35;
+    mask: url("./guilloche.svg") center / 100% 100% no-repeat;
   }
 }

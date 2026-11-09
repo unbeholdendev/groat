@@ -27,7 +27,7 @@ export function CategoryChips({ kind, value, onChange }: { kind: Kind; value: nu
       onClick={() => toggle(c)}
       className={`press flex min-w-0 flex-col items-center gap-1 rounded-tile py-1 text-[11px] font-medium ${c.id === branch ? "text-ink" : "text-ink2"}`}
     >
-      <span className={`rounded-[calc(var(--radius-tile)+3px)] p-[3px] outline-2 ${value === c.id ? "outline-accent" : "outline-transparent"}`}>
+      <span className={`rounded-full p-[3px] outline-2 ${value === c.id ? "outline-accent" : "outline-transparent"}`}>
         <Tile category={c} />
       </span>
       <span className="flex w-full items-center justify-center gap-0.5">

@@ -6,7 +6,7 @@ import { Icon } from "./icon";
 export const Tile = ({ category, small }: { category?: { icon: string; color: string; builtin?: boolean }; small?: boolean }) => (
   <span
     aria-hidden
-    className={`tile ${small ? "size-7 rounded-[9px] text-[15px]" : "size-9 text-[19px]"}`}
+    className={`tile ${small ? "size-7 text-[15px]" : "size-9 text-[19px]"}`}
     style={{ "--c": category && !category.builtin ? category.color : undefined } as CSSProperties}
   >
     {category && !category.builtin ? (

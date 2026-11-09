@@ -20,7 +20,7 @@ export function DayList({ days, newest }: { days: Map<string, Transaction[]>; ne
         const counted = rows.filter((e) => kindOf(e) === (kind ?? "expense"));
         return (
           <section key={date} id={`day-${date}`} className="scroll-mt-4 not-first:border-t not-first:border-line">
-            <h2 className="flex justify-between px-4 pt-3.5 pb-0.5 text-[13px] font-semibold text-ink2">
+            <h2 className="flex justify-between px-4 pt-3.5 pb-0.5 text-[12px] font-semibold text-ink2 legend">
               {dayLabel(date)}
               {counted.length > 1 && (
                 <span className="num font-medium text-ink3">
