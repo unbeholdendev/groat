@@ -3,15 +3,15 @@ import { useState } from "react";
 import { Confirm } from "../../components/confirm";
 import { Chevron } from "../../components/icon";
 
-export function ChatHeader({ open, onBack, onDelete }: { open: boolean; onBack: () => void; onDelete: () => void }) {
+export function ChatHeader({ back, onBack, onDelete }: { back: string; onBack: () => void; onDelete?: () => void }) {
   const [confirming, setConfirming] = useState(false);
   return (
     <div className="flex items-center justify-between">
       <button type="button" className="hit inline-flex items-center gap-1 text-ink2" onClick={onBack}>
         <Chevron className="size-4 rotate-90 text-ink2" />
-        {open ? "Chats" : "Settings"}
+        {back}
       </button>
-      {open &&
+      {onDelete &&
         (confirming ? (
           <Confirm ask="Delete this chat?" yes="Delete" onYes={() => (setConfirming(false), onDelete())} onNo={() => setConfirming(false)} />
         ) : (

@@ -38,7 +38,7 @@ export function captureRoutes(ctx: Ctx) {
       tags: p.tags,
     };
     const sure = confident(p, guess?.categoryId);
-    const read = !sure && (await ctx.models.chat()) && (await extract(ctx, text).catch(() => undefined));
+    const read = !sure && (await ctx.models.chat().catch(() => null)) && (await extract(ctx, text).catch(() => undefined));
     if (read) return c.json(addTransaction(db, now, read, owner.userId, "pending"), 201);
     const row = readTransaction(input, db, today(clock), lastCurrency, uncategorised(db), !sure);
     if ("error" in row) return c.json(row, 400);

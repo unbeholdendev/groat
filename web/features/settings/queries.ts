@@ -20,6 +20,8 @@ export function syncAi(client: QueryClient, data: unknown) {
   return Promise.all([refresh(client, "/api/models"), refresh(client, "/api/settings")]);
 }
 
+export const syncChatgpt = (client: QueryClient) => Promise.all([refresh(client, "/api/chatgpt"), refresh(client, "/api/models"), refresh(client, "/api/settings")]);
+
 export function syncModels(client: QueryClient, data: unknown) {
   client.setQueryData(["/api/models"], models.parse(data));
   return refresh(client, "/api/settings");

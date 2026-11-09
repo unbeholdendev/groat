@@ -1,7 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { AsyncLocalStorage } from "node:async_hooks";
 import { Hono } from "hono";
 import { chats } from "./ai";
 import { attachmentRoutes } from "./attachments";
@@ -36,17 +35,18 @@ export function createApp(deps: Deps) {
   deps.db.run("PRAGMA foreign_keys = ON");
   const db = drizzle(deps.db, { casing: "snake_case" });
   migrate(db, { migrationsFolder });
-  const personal = chatgpt(deps, deps.credentials);
-  if (!deps.db.query("SELECT 1 FROM users LIMIT 1").get()) personal.reset();
-  const actor = new AsyncLocalStorage<number>();
-  const models = aiModels(db, deps.fetch, async () => {
-    const user = actor.getStore();
-    if (user === undefined) return;
-    const saved = await personal.credential(user);
-    if (!saved) return;
-    const model = saved.model ?? (await personal.catalogue(user))[0]?.slug;
-    if (!model) throw new Error("Choose a ChatGPT model in Settings");
-    return { base: "https://api.openai.com/v1", key: saved.access_token, model, responses: true as const };
+  const subscription = chatgpt(deps, deps.credentials);
+  if (!deps.db.query("SELECT 1 FROM users LIMIT 1").get()) subscription.reset();
+  subscription.adopt(deps.db.query<{ id: number }, []>("SELECT id FROM users WHERE deleted_at IS NULL ORDER BY role = 'admin' DESC, id").all().map((u) => u.id));
+  const models = aiModels(db, deps.fetch, {
+    connected: subscription.connected,
+    provider: async () => {
+      const saved = await subscription.credential();
+      if (!saved) return;
+      const model = saved.model ?? (await subscription.catalogue())[0]?.slug;
+      if (!model) throw new Error("Choose a ChatGPT model in Settings");
+      return { base: "https://api.openai.com/v1", key: saved.access_token, model, responses: true as const };
+    },
   });
   const ctx = { ...deps, db, models };
   const app = new Hono<Env>();
@@ -63,13 +63,9 @@ export function createApp(deps: Deps) {
   });
 
   app.route("/", captureRoutes(ctx));
-  app.route("/", restoreRoutes(db, personal.reset));
+  app.route("/", restoreRoutes(db, subscription.reset));
   app.route("/", auth(db, deps.clock));
-  app.use("/api/*", async (c, next) => {
-    const user = c.get("user");
-    await actor.run(user.id, next);
-  });
-  app.route("/", personal.routes);
+  app.route("/", subscription.routes);
   app.route("/", memberRoutes(db, deps.clock));
   app.route("/", tokenRoutes(ctx));
   app.route("/", models.routes);

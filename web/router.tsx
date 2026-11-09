@@ -27,5 +27,6 @@ declare module "@tanstack/react-router" {
   interface HistoryState {
     draft?: Draft;
     template?: Template;
+    fromList?: boolean;
   }
 }

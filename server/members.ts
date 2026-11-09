@@ -2,7 +2,7 @@ import { and, count, eq, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { z } from "zod";
-import { active, credentials, type Env, hashCost } from "./auth";
+import { active, admin, credentials, type Env, hashCost } from "./auth";
 import type { Db } from "./db";
 import { body } from "./request";
 import { apiTokens, sessions, users } from "./schema";
@@ -31,10 +31,7 @@ export function memberRoutes(db: Db, clock: () => Date) {
     return changed ? c.json({}) : c.json({ error: "Account changed. Try again." }, 409);
   });
 
-  app.use("/api/users/*", async (c, next) => {
-    if (c.get("user").role !== "admin") return c.json({ error: "Only admins can do that" }, 403);
-    await next();
-  });
+  app.use("/api/users/*", admin);
 
   app.get("/api/users", (c) => c.json(list()));
 

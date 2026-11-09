@@ -1,14 +1,24 @@
 import { useStorageWarning } from "../../lib/device";
 import { Button } from "../../components/button";
 import { Fragment } from "react";
+import { Link } from "@tanstack/react-router";
 import type { Unit } from "../../../shared/amount";
 import { confident, parse } from "../../../shared/parse";
 import { Tile } from "../../components/category";
 import { Icon } from "../../components/icon";
+import { useSession } from "../../lib/api";
 import { money } from "../../lib/money";
 import type { Category, Settings } from "../../lib/schemas";
 import { Tokens } from "./tokens";
 import type { Receipt } from "./use-receipt";
+
+export function aiOff(s: Settings, admin: boolean, feature: "ai" | "voice") {
+  if (s.aiProblem) return s.aiProblem;
+  if (!s.aiSource) return admin ? "AI isn’t set up yet. Turn it on in Settings." : "AI isn’t set up. Ask an admin to turn it on.";
+  if (!s.ai) return admin ? "AI needs a chat model. Choose one in Settings." : "AI isn’t finished setting up. Ask an admin to choose a chat model.";
+  if (feature === "voice") return admin ? "Dictation needs a speech-to-text model. Add one in Settings." : "Dictation isn’t set up. Ask an admin to add it.";
+  return "";
+}
 
 export function Hint(props: {
   settings: Settings;
@@ -27,6 +37,7 @@ export function Hint(props: {
   const { settings, text, ask, p, receipt } = props;
   const shown = receipt.shown;
   const storageWarning = useStorageWarning();
+  const admin = useSession()?.user?.role === "admin";
   const other = settings.recentCurrencies.find((c) => c !== "BTC" && c !== settings.lastCurrency);
   const examples = [other && `12 ${other.toLowerCase()}`, settings.recentCurrencies.includes("BTC") && "5000 sats", "#work"].filter((e) => typeof e === "string");
   return (
@@ -42,7 +53,17 @@ export function Hint(props: {
       ) : ask ? (
         <span>Answers come from your own data. Expenses are only added once you review them.</span>
       ) : !settings.ai && text.startsWith("?") ? (
-        <span>Asking isn't set up on this server. See AI features in the README.</span>
+        <span>
+          {aiOff(settings, admin, "ai")}
+          {admin && (
+            <>
+              {" "}
+              <Link to="/settings" className="font-medium text-accent">
+                Open Settings
+              </Link>
+            </>
+          )}
+        </span>
       ) : text && settings.ai && !confident(p, props.category?.id) ? (
         <span>Press Enter and AI reads it for you to check.</span>
       ) : text && !p.amount ? (

@@ -1,10 +1,12 @@
 import { Chevron } from "../../components/icon";
 import { divide, panel } from "../../components/styles";
+import { useSettings } from "../../lib/api";
 import type { Chat } from "../../lib/schemas";
 
-export const ChatList = ({ chats, onOpen }: { chats: Chat[]; onOpen: (id: number) => void }) =>
-  chats.length === 0 ? (
-    <p className="text-ink3">No chats yet.</p>
+export function ChatList({ chats, onOpen }: { chats: Chat[]; onOpen: (id: number) => void }) {
+  const ai = useSettings()?.ai;
+  return chats.length === 0 ? (
+    <p className="text-ink3">{ai ? "No chats yet. Ask about your spending in the bar below. On other pages, start a line with ? to ask." : "No chats yet."}</p>
   ) : (
     <ul className={panel}>
       {chats.map((c) => (
@@ -17,3 +19,4 @@ export const ChatList = ({ chats, onOpen }: { chats: Chat[]; onOpen: (id: number
       ))}
     </ul>
   );
+}

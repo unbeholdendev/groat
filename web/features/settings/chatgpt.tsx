@@ -1,124 +1,120 @@
 import { useState } from "react";
+import { paths } from "../../components/icon";
 import { z } from "zod";
 import { Button } from "../../components/button";
 import { Field, FormError, Input } from "../../components/form";
-import { sectionHead } from "../../components/styles";
+import { panel, subHead } from "../../components/styles";
 import { useApi, useSendNow } from "../../lib/api";
+import { SelectRow } from "./select-row";
 
-const status = z.object({ connected: z.boolean(), email: z.string().nullable(), model: z.string().nullable(), needsSignIn: z.boolean() });
+const status = z.object({ connected: z.boolean(), email: z.string().nullable(), model: z.string().nullable(), needsSignIn: z.boolean(), signIn: z.string().nullable() });
 const listing = z.object({ models: z.array(z.object({ slug: z.string(), display_name: z.string() })) });
 
-export function Chatgpt() {
+export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
   const query = useApi(status, ["/api/chatgpt"], { throwOnError: false });
-  const models = useApi(listing, ["/api/chatgpt/models"], { enabled: !!query.data?.connected && !query.data.needsSignIn, throwOnError: false });
+  const usable = !!query.data?.connected && !query.data.needsSignIn;
+  const models = useApi(listing, ["/api/chatgpt/models"], { enabled: usable, throwOnError: false });
   const mutation = useSendNow("chatgpt");
-  const [url, setUrl] = useState("");
   const [callback, setCallback] = useState("");
   const [notice, setNotice] = useState("");
+  const [confirming, setConfirming] = useState(false);
   const busy = mutation.isPending;
+  const data = query.data;
+  const signIn = data?.signIn;
+  const run = (...args: Parameters<typeof mutation.mutate>) => (setNotice(""), mutation.mutate(...args));
+  const chosen = models.data?.models.find((m) => m.slug === data?.model) ?? models.data?.models[0];
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className={sectionHead}>ChatGPT subscription</h2>
-      <p className="text-sm text-ink2">Use your ChatGPT plan for your own questions and receipt reading. Dictation needs a separate speech-to-text API provider.</p>
-      {query.data?.connected && (
-        <p className="text-sm">
-          Connected as {query.data.email}. {query.data.needsSignIn && "Sign in again to continue."}
-        </p>
-      )}
-      {notice && (
-        <p role="status" className="text-sm text-ink2">
-          {notice}
-        </p>
-      )}
-      <FormError error={query.error ?? mutation.error ?? models.error} />
-      <Button
-        disabled={busy}
-        onClick={() =>
-          mutation.mutate(["POST", "/api/chatgpt/start"], {
-            onSuccess: (data) => {
-              setUrl(z.object({ url: z.string() }).parse(data).url);
-              setCallback("");
-            },
-          })
-        }
-      >
-        {busy ? "Working…" : query.data?.connected ? "Reconnect ChatGPT" : "Connect ChatGPT"}
-      </Button>
-      {url && (
-        <>
-          <a className="text-accent underline" href={url} target="_blank" rel="noreferrer">
-            Continue with ChatGPT
-          </a>
-          <p className="text-sm text-ink2">
-            After signing in, your browser will fail to open 127.0.0.1. Copy that page’s full address and paste it below within ten minutes. Keep this Groat tab open.
-          </p>
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const value = callback;
-              setCallback("");
-              mutation.mutate(["POST", "/api/chatgpt/callback", { callback: value }], {
-                onSuccess: () => {
-                  setUrl("");
-                  void query.refetch();
-                  void models.refetch();
-                },
-              });
-            }}
-          >
-            <Field label="Callback URL">
-              <Input autoComplete="off" autoCapitalize="none" spellCheck={false} type="password" value={callback} onChange={(e) => setCallback(e.target.value)} />
-            </Field>
-            <Button type="submit" variant="primary" disabled={busy || !callback}>
-              Finish connection
-            </Button>
-          </form>
-        </>
-      )}
-      {query.data?.connected && !!models.data?.models.length && (
-        <Field label="ChatGPT model">
-          <select
-            className="w-full rounded-xl bg-panel p-3 text-ink"
-            value={query.data?.model ?? models.data.models[0].slug}
-            disabled={busy}
-            onChange={(e) =>
-              mutation.mutate(["PUT", "/api/chatgpt/model", { model: e.target.value }], {
-                onSuccess: () => {
-                  void query.refetch();
-                },
-              })
-            }
+    <div className="flex flex-col gap-3">
+      <h3 className={subHead}>ChatGPT plan</h3>
+      <p className="px-1 text-sm text-ink2">
+        {!data?.connected
+          ? keyInUse
+            ? "Connecting a ChatGPT plan moves asking and receipts to it for everyone. The API key stays for dictation."
+            : "Connect a ChatGPT plan and everyone on this server can ask questions and read receipts with it."
+          : data.needsSignIn
+            ? `The sign-in for ${data.email} has expired, so AI is off. Reconnect to turn it back on.`
+            : `Connected as ${data.email}. Everyone on this server uses this plan.`}
+      </p>
+      {notice && <p role="status" className="px-1 text-sm text-ink2">{notice}</p>}
+      {usable && !!models.data?.models.length && chosen && (
+        <div className={panel}>
+          <SelectRow
+            label="Model"
+            icon={<path d={paths.chat} />}
+            value={chosen.slug}
+            shown={chosen.display_name}
+            onChange={(model) => run(["PUT", "/api/chatgpt/model", { model }])}
           >
             {models.data.models.map((m) => (
               <option key={m.slug} value={m.slug}>
                 {m.display_name}
               </option>
             ))}
-          </select>
-        </Field>
+          </SelectRow>
+        </div>
       )}
-      {query.data?.connected && (
-        <Button
-          disabled={busy}
-          onClick={() =>
-            mutation.mutate(["DELETE", "/api/chatgpt"], {
-              onSuccess: (data) => {
-                setUrl("");
-                setCallback("");
-                setNotice(
-                  z.object({ revocationConfirmed: z.boolean() }).parse(data).revocationConfirmed
-                    ? "ChatGPT disconnected."
-                    : "Disconnected here. Revocation could not be confirmed; remove Groat in ChatGPT Settings to end remote access.",
-                );
-                void query.refetch();
-              },
-            })
-          }
+      <FormError error={query.error ?? mutation.error ?? models.error} className="px-1" />
+      {signIn ? (
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            run(["POST", "/api/chatgpt/callback", { callback }], { onSuccess: () => setCallback("") });
+          }}
         >
-          Disconnect ChatGPT
-        </Button>
+          <ol className="flex list-decimal flex-col gap-1.5 pl-6 text-sm text-ink2">
+            <li>
+              <a className="font-medium text-accent underline underline-offset-2" href={signIn} target="_blank" rel="noreferrer">
+                Sign in to ChatGPT
+              </a>{" "}
+              in a new tab.
+            </li>
+            <li>Afterwards the browser shows an error page at 127.0.0.1. That’s expected.</li>
+            <li>Copy that page’s whole address and paste it here within ten minutes.</li>
+          </ol>
+          <Field label="Address of the error page">
+            <Input autoComplete="off" autoCapitalize="none" spellCheck={false} inputMode="url" placeholder="http://127.0.0.1:1455/auth/callback?…" value={callback} onChange={(e) => (mutation.reset(), setCallback(e.target.value))} />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => run(["DELETE", "/api/chatgpt/start"])} disabled={busy}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" disabled={busy || !callback.trim()}>
+              {busy ? "Connecting…" : "Finish connecting"}
+            </Button>
+          </div>
+        </form>
+      ) : confirming ? (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <p className="mr-auto px-1 text-sm">Disconnect ChatGPT? AI turns off for everyone until you connect again.</p>
+          <Button onClick={() => setConfirming(false)}>Keep it</Button>
+          <Button
+            tone="up"
+            disabled={busy}
+            onClick={() =>
+              run(["DELETE", "/api/chatgpt"], {
+                onSuccess: (result) => {
+                  setConfirming(false);
+                  setNotice(
+                    z.object({ revocationConfirmed: z.boolean() }).parse(result).revocationConfirmed
+                      ? "ChatGPT disconnected."
+                      : "Disconnected here, but ChatGPT didn’t confirm it. Remove Groat in ChatGPT’s settings to end its access.",
+                  );
+                },
+              })
+            }
+          >
+            Disconnect
+          </Button>
+        </div>
+      ) : (
+        <div className="flex justify-end gap-2">
+          {data?.connected && <Button onClick={() => setConfirming(true)}>Disconnect</Button>}
+          <Button variant={(data?.connected && !data.needsSignIn) || keyInUse ? "text" : "primary"} tone="accent" disabled={busy || !data} onClick={() => run(["POST", "/api/chatgpt/start"])}>
+            {busy ? "Starting…" : data?.connected ? "Reconnect" : "Connect ChatGPT"}
+          </Button>
+        </div>
       )}
-    </section>
+    </div>
   );
 }

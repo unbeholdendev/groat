@@ -30,6 +30,8 @@ export const settings = z.object({
   theme,
   onboarded: z.boolean(),
   ai: z.boolean(),
+  aiSource: z.enum(["chatgpt", "key"]).nullable(),
+  aiProblem: z.string().nullable(),
   vision: z.boolean(),
   voice: z.boolean(),
   income: z.boolean(),

@@ -3,6 +3,9 @@ import { Database } from "bun:sqlite";
 import { serveStatic } from "hono/bun";
 import { createApp } from "./app";
 
+const ignored = Object.keys(process.env).filter((k) => k.startsWith("AI_"));
+if (ignored.length) console.warn(`Groat ignores ${ignored.join(", ")}. Set up AI in Settings instead.`);
+
 const db = new Database(process.env.DB_PATH ?? "data.db", { create: true });
 db.run("PRAGMA journal_mode = WAL");
 

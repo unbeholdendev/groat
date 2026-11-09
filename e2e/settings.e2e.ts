@@ -100,19 +100,21 @@ test("a CSV previews and imports into an empty instance", async ({ app: page }) 
 test("an admin connects an AI provider in Settings and AI turns on without a restart", async ({ app: page }) => {
   await expect(bar(page)).toHaveAccessibleName("Add an expense");
   await page.getByRole("link", { name: "Settings" }).click();
-  await expect(page.getByRole("heading", { name: "AI models" })).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Models" })).toBeHidden();
   await page.getByLabel("Base URL").fill("https://ai.test/v1/");
   await page.getByLabel("API key", { exact: true }).fill("sk-wrong");
-  await page.getByRole("button", { name: "Save provider" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText("The AI provider refused the key (401)");
   await page.getByLabel("API key", { exact: true }).fill("sk-e2e-key-0000");
-  await page.getByRole("button", { name: "Save provider" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("Saved key ends in 0000.")).toBeVisible();
   await expect(page.getByLabel("API key", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("Base URL")).toHaveValue("https://ai.test/v1");
   await expect(page.getByLabel("Chat", { exact: true })).toHaveValue("gpt-4o-mini");
   await page.getByRole("link", { name: "Expenses" }).click();
   await expect(bar(page)).toHaveAccessibleName("Add an expense, or start with ? to ask");
+  await page.getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByText("Asking and receipts", { exact: true }).locator("..")).toContainText("API key");
 });
 
 test.describe("with several AI models", () => {
@@ -126,7 +128,7 @@ test.describe("with several AI models", () => {
     await expect(page.getByLabel("Receipt photos")).toHaveValue("gpt-4o-mini");
     await expect(page.getByText("Choose a dictation model")).toBeVisible();
     await page.getByLabel("Dictation", { exact: true }).selectOption("gpt-4o-transcribe");
-    await expect(page.getByText("Models come from your AI provider.")).toBeVisible();
+    await expect(page.getByText("Models come from the API key above.")).toBeVisible();
     await page.getByRole("link", { name: "Expenses" }).click();
     await expect(bar(page)).toHaveAccessibleName("Add an expense, or start with ? to ask");
   });
@@ -136,30 +138,37 @@ test.describe("with several AI models", () => {
     await page.request.post("/api/login", { data: { username: "sam", password: "pw" } });
     await page.goto("/settings");
     await expect(page.getByRole("heading", { name: "Members" })).toBeHidden();
-    await expect(page.getByRole("heading", { name: "AI models" })).toBeHidden();
-    await expect(page.getByRole("heading", { name: "AI provider" })).toBeHidden();
+    await expect(page.getByRole("heading", { name: "Models" })).toBeHidden();
+    await expect(page.getByRole("heading", { name: "API key" })).toBeHidden();
+    await expect(page.getByText("AI isn’t finished setting up. Ask an admin to choose a chat model.")).toBeVisible();
   });
 
   test("clearing the base URL turns AI off", async ({ app: page }) => {
     await page.getByRole("link", { name: "Settings" }).click();
     await expect(page.getByText("Saved key ends in 0000.")).toBeVisible();
     await page.getByLabel("Base URL").fill("");
-    await page.getByRole("button", { name: "Save provider" }).click();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByText("Saved key ends in 0000.")).toBeHidden();
-    await expect(page.getByRole("heading", { name: "AI models" })).toBeHidden();
+    await expect(page.getByRole("heading", { name: "Models" })).toBeHidden();
   });
 });
 
 test("ChatGPT manual connection shows the sign-in link and recovers from a bad callback", async ({ app: page }, testInfo) => {
   await page.getByRole("link", { name: "Settings" }).click();
   await page.getByRole("button", { name: "Connect ChatGPT", exact: true }).click();
-  const link = page.getByRole("link", { name: "Continue with ChatGPT" });
+  const link = page.getByRole("link", { name: "Sign in to ChatGPT" });
   await expect(link).toHaveAttribute("href", /^https:\/\/auth.openai.com\/api\/accounts\/authorize\?/);
-  await expect(page.getByText(/your browser will fail to open 127.0.0.1/)).toBeVisible();
-  await page.getByLabel("Callback URL").fill("http://127.0.0.1:1455/auth/callback?state=bad&code=bad");
-  await page.getByRole("button", { name: "Finish connection" }).click();
-  await expect(page.getByText("ChatGPT needs you to sign in again. Open Settings and reconnect.")).toBeVisible();
-  await expect(page.getByLabel("Callback URL")).toHaveValue("");
-  await page.getByRole("heading", { name: "ChatGPT subscription" }).scrollIntoViewIfNeeded();
-  await page.getByRole("heading", { name: "ChatGPT subscription" }).locator("..").screenshot({ path: testInfo.outputPath("chatgpt-settings.png") });
+  await page.reload();
+  await expect(link).toBeVisible();
+  const address = page.getByLabel("Address of the error page");
+  await address.fill("https://example.com/");
+  await page.getByRole("button", { name: "Finish connecting" }).click();
+  await expect(page.getByRole("alert")).toContainText("That isn’t the address of the page that failed to load.");
+  await address.fill("http://127.0.0.1:1455/auth/callback?state=bad&code=bad");
+  await page.getByRole("button", { name: "Finish connecting" }).click();
+  await expect(page.getByRole("alert")).toHaveText("This sign-in attempt has expired. Select Connect ChatGPT to start again.");
+  await page.getByRole("heading", { name: "ChatGPT plan" }).scrollIntoViewIfNeeded();
+  await page.getByRole("heading", { name: "ChatGPT plan" }).locator("..").screenshot({ path: testInfo.outputPath("chatgpt-settings.png") });
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("button", { name: "Connect ChatGPT", exact: true })).toBeVisible();
 });

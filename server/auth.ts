@@ -1,5 +1,5 @@
 import { and, eq, gt, isNull } from "drizzle-orm";
-import { type Context, Hono } from "hono";
+import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
 import type { Db } from "./db";
@@ -11,6 +11,11 @@ export const active = isNull(users.deletedAt);
 export const hashCost = Bun.env.NODE_ENV === "test" ? ({ algorithm: "argon2id", memoryCost: 8, timeCost: 1 } as const) : undefined;
 
 export type Env = { Variables: { user: { id: number; role: string } } };
+
+export const admin: MiddlewareHandler<Env> = async (c, next) => {
+  if (c.get("user").role !== "admin") return c.json({ error: "Only admins can do that" }, 403);
+  await next();
+};
 
 export function auth(db: Db, clock: () => Date) {
   const app = new Hono<Env>();

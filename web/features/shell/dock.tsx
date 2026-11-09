@@ -48,7 +48,7 @@ export function Dock({ settings, guide, onGuided }: { settings: Settings; guide:
           onGuided={onGuided}
           chat={path === "/chat" ? Number(search.id) || 0 : undefined}
           onForm={(draft) => navigate({ to: "/", search: { new: "1" }, state: { draft } })}
-          onChat={(id) => navigate({ to: "/chat", search: { id: String(id) } })}
+          onChat={(id) => id !== Number(search.id) && navigate({ to: "/chat", search: { id: String(id) }, state: { fromList: path === "/chat" } })}
         />
       )}
       <TabBar />

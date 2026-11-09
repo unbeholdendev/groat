@@ -136,12 +136,15 @@ test("the total counts up through real amounts", async ({ app: page }) => {
 });
 
 test("without AI the camera and mic show dimmed and say why", async ({ app: page }) => {
+  const off = page.getByText("AI isn’t set up yet. Turn it on in Settings.");
   await page.getByRole("button", { name: "Dictate" }).click({ force: true });
-  await expect(page.getByText("Dictation isn't set up on this server.")).toBeVisible();
+  await expect(off).toBeVisible();
   await page.getByRole("button", { name: "Add from a photo" }).click({ force: true });
-  await expect(page.getByText("Receipt photos aren't set up on this server.")).toBeVisible();
+  await expect(off).toBeVisible();
   await bar(page).fill("?where");
-  await expect(page.getByText("Asking isn't set up on this server.")).toBeVisible();
+  await expect(off).toBeVisible();
+  await page.getByRole("link", { name: "Open Settings" }).click();
+  await expect(page).toHaveURL(/\/settings$/);
 });
 
 test("saves over plain HTTP, where crypto.randomUUID is missing", async ({ app: page }) => {

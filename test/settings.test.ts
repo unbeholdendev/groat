@@ -27,6 +27,8 @@ test("settings changes persist", async () => {
     theme: "dark",
     income: false,
     ai: false,
+    aiSource: null,
+    aiProblem: null,
     vision: false,
     voice: false,
   });

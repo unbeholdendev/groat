@@ -2,14 +2,14 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useMutationState } from "@tanstack/react-query";
 import { parseAmount, type Unit } from "../../../shared/amount";
 import { confident, parse } from "../../../shared/parse";
-import { useSend } from "../../lib/api";
+import { useSend, useSession } from "../../lib/api";
 import { Icon, paths } from "../../components/icon";
 import { today } from "../../lib/dates";
 import { useOnline } from "../../lib/online";
 import type { Category, Draft, Settings, Suggestion } from "../../lib/schemas";
 import { AnswerCard } from "./answer-card";
 import { Chips } from "./chips";
-import { Hint } from "./hint";
+import { aiOff, Hint } from "./hint";
 import { Incoming, useShared } from "./incoming";
 import { LineInput } from "./line-input";
 import { Mic } from "./mic";
@@ -48,6 +48,7 @@ export function Bar(props: {
   const category = categories.find((c) => c.id === (categoryId ?? guess?.categoryId));
   const currency = p.currency ?? guess?.currency ?? settings.lastCurrency;
   const online = useOnline();
+  const admin = useSession()?.user?.role === "admin";
   const seed = (): Draft => ({
     note: p.note,
     amount: (p.amount && parseAmount(p.amount, currency, p.unit ?? unit)) || 0,
@@ -140,9 +141,9 @@ export function Bar(props: {
             onFocus={setFocused}
           />
           {!text && !inChat && !reviewing && (
-            <PhotoButton online={online} onPhoto={photo} off={settings.vision ? undefined : "Receipt photos aren't set up on this server. See AI features in the README."} onOff={setCaptureError} />
+            <PhotoButton online={online} onPhoto={photo} off={settings.vision ? undefined : aiOff(settings, admin, "ai")} onOff={setCaptureError} />
           )}
-          {!text && !inChat && !reviewing && !settings.voice && <Mic onAudio={() => {}} onError={setCaptureError} off="Dictation isn't set up on this server. See AI features in the README." />}
+          {!text && !inChat && !reviewing && !settings.voice && <Mic onAudio={() => {}} onError={setCaptureError} off={aiOff(settings, admin, "voice")} />}
           {!text && !inChat && !reviewing && settings.voice && online && <Mic onAudio={(audio) => (setCaptureError(null), drafting.mutate({ audio }))} onError={setCaptureError} />}
           {empty ? (
             <button type="button" aria-label="Full form" title="Full form" onMouseDown={(e) => e.preventDefault()} onClick={() => props.onForm(seed())} className="press grid size-11 shrink-0 place-items-center rounded-chip text-ink2"><Icon d={paths.plus} className="size-5" /></button>

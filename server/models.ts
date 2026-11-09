@@ -1,7 +1,7 @@
-import { Hono, type MiddlewareHandler } from "hono";
+import { Hono } from "hono";
 import { z } from "zod";
 import type { Deps } from "./app";
-import type { Env } from "./auth";
+import { admin, type Env } from "./auth";
 import type { Db } from "./db";
 import { body } from "./request";
 import * as t from "./schema";
@@ -35,11 +35,6 @@ const speechModels = (list: Listed) => list.map((m) => m.id).filter((id) => spee
 const sttModels = (list: Listed) => (speechModels(list).length ? speechModels(list) : list.map((m) => m.id));
 const only = (ids: string[]) => (ids.length === 1 ? ids[0] : null);
 
-const admin: MiddlewareHandler<Env> = async (c, next) => {
-  if (c.get("user").role !== "admin") return c.json({ error: "Only admins can do that" }, 403);
-  await next();
-};
-
 export type Models = ReturnType<typeof aiModels>;
 
 type Saved = Pick<typeof t.settings.$inferSelect, "aiBaseUrl" | "aiKey" | "sttBaseUrl" | "sttKey">;
@@ -58,7 +53,9 @@ const url = z
 const secret = z.string("Invalid key").trim().optional();
 const providerInput = z.object({ baseUrl: url, key: secret, sttBaseUrl: url.default(""), sttKey: secret });
 
-export function aiModels(db: Db, fetch: Deps["fetch"], personal?: () => Promise<{ base: string; key: string; model: string; responses: true } | undefined>) {
+type Subscription = { connected: () => boolean; provider: () => Promise<{ base: string; key: string; model: string; responses: true } | undefined> };
+
+export function aiModels(db: Db, fetch: Deps["fetch"], subscription?: Subscription) {
   const cached = new Map<string, Listed>();
   const id = ({ base, key }: Provider) => `${base}\n${key}`;
 
@@ -92,14 +89,14 @@ export function aiModels(db: Db, fetch: Deps["fetch"], personal?: () => Promise<
     return p ? (saved()?.chatModel ?? only(chatModels(await known(p)))) : null;
   };
   const chat = async () => {
-    const own = await personal?.();
+    const own = await subscription?.provider();
     if (own) return own;
     const p = current().chat;
     const model = await chatModel();
     return p && model ? { ...p, model } : null;
   };
   const vision = async () => {
-    const own = await personal?.();
+    const own = await subscription?.provider();
     if (own) return own.model;
     const used = await chatModel();
     return used && (saved()?.visionModel ?? used);
@@ -110,9 +107,10 @@ export function aiModels(db: Db, fetch: Deps["fetch"], personal?: () => Promise<
   };
   const stt = async () => {
     const p = current().stt;
-    const used = (await chatModel()) && (await sttModel());
-    return used && p ? { ...p, model: used } : null;
+    const model = p && (await sttModel());
+    return p && model && (await chat()) ? { ...p, model } : null;
   };
+  const source = () => (subscription?.connected() ? "chatgpt" : current().chat ? "key" : null);
 
   const options = (p: Provider, pick: (l: Listed) => string[]) =>
     list(p).then(
@@ -187,5 +185,5 @@ export function aiModels(db: Db, fetch: Deps["fetch"], personal?: () => Promise<
 
   routes.onError((e, c) => c.json({ error: e.message }, 502));
 
-  return { chat, vision, stt, routes };
+  return { chat, vision, stt, source, routes };
 }

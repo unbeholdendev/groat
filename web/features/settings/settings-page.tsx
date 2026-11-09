@@ -3,9 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Chevron, paths } from "../../components/icon";
 import { linkRow, panel, sectionHead } from "../../components/styles";
 import { useSession, useSettings } from "../../lib/api";
-import { Chatgpt } from "./chatgpt";
-import { AiModels } from "./ai-models";
-import { AiProvider } from "./ai-provider";
+import { Ai } from "./ai";
 import { Backup } from "./backup";
 import { Members } from "./members";
 import { PasswordForm } from "./password-form";
@@ -30,10 +28,8 @@ export function SettingsPage() {
   return (
     <>
       <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" />
-      <Chatgpt />
+      <Ai admin={admin} />
       {admin && <Members />}
-      {admin && <AiProvider />}
-      {admin && <AiModels />}
       <Backup admin={admin} />
       <h2 className={sectionHead}>More</h2>
       <nav className={panel}>
@@ -41,7 +37,7 @@ export function SettingsPage() {
           <Go d={paths.repeat}>Recurring</Go>
         </Link>
         <Link to="/chat" className={linkRow}>
-          <Go d="M5 18.5V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H8.5z">Past chats</Go>
+          <Go d={paths.chat}>Past chats</Go>
         </Link>
         <Link to="/" search={{ view: "bin" }} className={linkRow}>
           <Go d={paths.bin}>Bin</Go>

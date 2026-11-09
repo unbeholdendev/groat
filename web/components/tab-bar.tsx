@@ -27,8 +27,9 @@ const tabs: [string, string, ReactNode][] = [
 ];
 
 const views = [
-  ["recurring", "Recurring", paths.repeat],
-  ["bin", "Bin", paths.bin],
+  ["recurring", "Recurring", paths.repeat, { to: "/", search: { view: "recurring" } }],
+  ["/chat", "Chats", paths.chat, { to: "/chat" }],
+  ["bin", "Bin", paths.bin, { to: "/", search: { view: "bin" } }],
 ] as const;
 
 const lg = () => matchMedia("(min-width: 64rem)");
@@ -42,7 +43,7 @@ export function TabBar() {
   const path = useLocation().pathname;
   const { view } = useSearch({ strict: false });
   const wide = useSyncExternalStore(onResize, () => lg().matches);
-  const current = path === "/chat" || (view && !wide) ? "/settings" : (view ?? path);
+  const current = view && !wide ? "/settings" : (view ?? path);
   return (
     <nav aria-label="Main" className="grid grid-cols-4 lg:[view-transition-name:tabs] lg:fixed lg:top-6 lg:left-[calc(50%-432px)] lg:flex lg:w-44 lg:flex-col lg:gap-1">
       {tabs.map(([to, label, icon]) => (
@@ -59,16 +60,15 @@ export function TabBar() {
         </Link>
       ))}
       <hr className="mx-3 my-2 hidden border-line lg:block" />
-      {views.map(([to, label, d]) => (
+      {views.map(([id, label, d, link]) => (
         <Link
-          key={to}
+          key={id}
           viewTransition
-          to="/"
-          search={{ view: to }}
-          aria-current={current === to ? "page" : undefined}
-          className={`press hidden h-10 items-center gap-3.5 rounded-field px-3 text-[14px] font-medium lg:flex ${current === to ? "bg-surface2 text-ink" : "text-ink3 hover:bg-surface2 hover:text-ink"}`}
+          {...link}
+          aria-current={current === id ? "page" : undefined}
+          className={`press hidden h-10 items-center gap-3.5 rounded-field px-3 text-[14px] font-medium lg:flex ${current === id ? "bg-surface2 text-ink" : "text-ink3 hover:bg-surface2 hover:text-ink"}`}
         >
-          <Icon d={d} className={`ml-0.5 size-[18px] stroke-2 ${current === to ? "text-accent" : ""}`} />
+          <Icon d={d} className={`ml-0.5 size-[18px] stroke-2 ${current === id ? "text-accent" : ""}`} />
           {label}
         </Link>
       ))}

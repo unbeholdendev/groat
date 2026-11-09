@@ -57,6 +57,7 @@ async function fixture() {
           scope: bad === "scope" ? "openid" : "openid profile email offline_access resource.invoke chatgpt.tokens.use.direct",
         });
       }
+      if (url === "https://ai.test/v1/models") return Response.json({ data: [{ id: "gpt-a" }, { id: "gpt-b" }, { id: "whisper-1" }] });
       if (url.endsWith("/models")) return Response.json({ models: [{ slug: "chat-test", display_name: "Test model", visibility: "list" }] });
       if (url.endsWith("/responses")) {
         auths.push(new Headers(init?.headers).get("authorization")!);
@@ -112,22 +113,27 @@ function sse(type: string, response = {}) {
 test("manual callback validates ownership, session and single use without fetching the pasted URL", async () => {
   const f = await fixture();
   const callback = await f.start();
-  for (const session of ["two", "other"]) expect((await f.call("POST", "/api/chatgpt/callback", { callback }, session)).status).toBe(400);
+  expect((await f.call("POST", "/api/chatgpt/callback", { callback }, "two")).status).toBe(403);
+  expect((await f.call("GET", "/api/chatgpt", undefined, "other")).body.signIn).toBe(null);
+  expect((await f.call("GET", "/api/chatgpt")).body.signIn).toStartWith("https://auth.openai.com/");
+  expect((await f.call("POST", "/api/chatgpt/callback", { callback }, "other")).status).toBe(400);
   expect((await f.call("POST", "/api/chatgpt/callback", { callback })).status).toBe(200);
   expect((await f.call("POST", "/api/chatgpt/callback", { callback })).status).toBe(400);
   expect(f.calls()).toBe(1);
   expect(f.fetches.some((u) => u.includes("127.0.0.1"))).toBe(false);
   expect((await f.call("GET", "/api/chatgpt")).body).toMatchObject({ connected: true, email: "me@example.test" });
-  expect((await f.call("GET", "/api/chatgpt", undefined, "two")).body.connected).toBe(false);
-  expect((await f.call("POST", "/api/chats", { message: "hi" }, "two")).status).toBe(403);
-  expect((await f.call("POST", "/api/chats", { message: "hi" })).body.messages.at(-1).content).toBe("Hello");
+  expect((await f.call("GET", "/api/chatgpt")).body.signIn).toBe(null);
+  expect((await f.call("GET", "/api/chatgpt", undefined, "two")).status).toBe(403);
+  expect((await f.call("POST", "/api/chats", { message: "hi" }, "two")).body.messages.at(-1).content).toBe("Hello");
+  expect((await f.call("GET", "/api/settings", undefined, "two")).body).toMatchObject({ ai: true, aiSource: "chatgpt", aiProblem: null });
 });
 
 test("rejects malformed URLs, mismatched state, expired attempts and denied consent", async () => {
   const f = await fixture();
   const callback = await f.start();
-  for (const value of ["invalid", callback.replace("127.0.0.1", "evil.test"), callback.replace("state=", "state=wrong"), `${callback}&state=duplicate`])
-    expect((await f.call("POST", "/api/chatgpt/callback", { callback: value })).status).toBe(400);
+  for (const value of ["invalid", callback.replace("127.0.0.1", "evil.test"), `${callback}&state=duplicate`])
+    expect((await f.call("POST", "/api/chatgpt/callback", { callback: value })).body.error).toStartWith("That isn’t the address");
+  expect((await f.call("POST", "/api/chatgpt/callback", { callback: callback.replace("state=", "state=wrong") })).body.error).toStartWith("This sign-in attempt has expired");
   expect(f.calls()).toBe(0);
   expect((await f.call("POST", "/api/chatgpt/callback", { callback: callback.replace("code=private-code", "error=access_denied") })).status).toBe(400);
   expect(f.calls()).toBe(0);
@@ -155,9 +161,17 @@ test("refresh is single flight; revoked credentials give reconnect recovery and 
   f.bad("revoked");
   expect((await f.call("GET", "/api/chatgpt/models")).status).toBe(400);
   expect((await f.call("GET", "/api/chatgpt")).body.needsSignIn).toBe(true);
-  expect((await f.call("GET", "/api/settings")).status).toBe(200);
+  expect((await f.call("GET", "/api/settings", undefined, "two")).body).toMatchObject({ ai: false, aiSource: "chatgpt", aiProblem: "ChatGPT sign-in has expired. Reconnect ChatGPT in Settings." });
   await f.call("DELETE", "/api/chatgpt");
   expect((await f.call("GET", "/api/chatgpt")).body.connected).toBe(false);
+});
+
+test("with ChatGPT connected, a shared key only adds dictation", async () => {
+  const f = await fixture();
+  await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
+  expect((await f.call("GET", "/api/settings")).body).toMatchObject({ ai: true, vision: true, voice: false });
+  f.db.run("UPDATE settings SET ai_base_url = 'https://ai.test/v1', ai_key = 'sk-shared'");
+  expect((await f.call("GET", "/api/settings")).body).toMatchObject({ ai: true, aiSource: "chatgpt", vision: true, voice: true });
 });
 
 test("credentials and host are outside the backup and SQL database", async () => {
@@ -237,14 +251,37 @@ test("download excludes private credentials and restore clears existing host and
   expect(f.store.query("SELECT value FROM private WHERE key = 'host'").get()).not.toEqual(host);
 });
 
-test("parallel authenticated requests use each user's personal credential", async () => {
+test("an earlier personal connection becomes the instance's, preferring an admin's", async () => {
   const f = await fixture();
   await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
-  const row = f.store.query<{ value: string }, []>("SELECT value FROM private WHERE key = 'user:1'").get()!;
-  f.store.run("INSERT INTO private VALUES ('user:2', ?)", [JSON.stringify({ ...JSON.parse(row.value), subject: "second", access_token: "second-private-token" })]);
-  const results = await Promise.all([f.call("POST", "/api/chats", { message: "first" }, "one"), f.call("POST", "/api/chats", { message: "second" }, "two")]);
-  expect(results.map((r) => r.status)).toEqual([201, 201]);
-  expect(f.auths.sort()).toEqual(["Bearer second-private-token", "Bearer secret-access"].sort());
+  const row = JSON.parse(f.store.query<{ value: string }, []>("SELECT value FROM private WHERE key = 'instance'").get()!.value);
+  f.store.run("DELETE FROM private WHERE key = 'instance'");
+  f.db.run("INSERT INTO users (id, username, password_hash, role, deleted_at) VALUES (3, 'gone', 'x', 'admin', '2026-01-01')");
+  f.store.run("INSERT INTO private VALUES ('user:3', ?), ('user:2', ?), ('user:1', ?), ('pending:1', '{}')", [
+    JSON.stringify({ ...row, access_token: "removed-token" }),
+    JSON.stringify({ ...row, access_token: "member-token" }),
+    JSON.stringify({ ...row, access_token: "admin-token" }),
+  ]);
+  const adopted = () => {
+    createApp({ db: f.db, credentials: f.store, clock: () => new Date(), fetch: async () => new Response("") });
+    return JSON.parse(f.store.query<{ value: string }, []>("SELECT value FROM private WHERE key = 'instance'").get()?.value ?? "null")?.access_token;
+  };
+  expect(adopted()).toBe("admin-token");
+  expect(f.store.query("SELECT count(*) AS n FROM private WHERE key LIKE 'user:%' OR key LIKE 'pending:%'").get()).toEqual({ n: 0 });
+  f.store.run("DELETE FROM private WHERE key = 'instance'");
+  f.store.run("INSERT INTO private VALUES ('user:3', ?)", [JSON.stringify({ ...row, access_token: "removed-token" })]);
+  expect(adopted()).toBe(undefined);
+});
+
+test("a capture is kept as pending when the ChatGPT sign-in has expired", async () => {
+  const f = await fixture();
+  await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
+  const { token } = (await f.call("POST", "/api/tokens", { name: "Phone" })).body;
+  f.advance();
+  f.bad("revoked");
+  const res = await f.app.request("/api/capture", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ text: "ramen" }) });
+  expect(res.status).toBe(201);
+  expect(await res.json()).toMatchObject({ note: "ramen", status: "pending" });
 });
 
 test("temporary token or JWKS outages preserve a renewable connection", async () => {
@@ -357,10 +394,11 @@ test("shared chat history stays readable without an AI connection or after revoc
   expect(chat.status).toBe(201);
   expect((await f.call("GET", "/api/chats", undefined, "two")).status).toBe(200);
   expect((await f.call("GET", `/api/chats/${chat.body.id}`, undefined, "two")).body).toEqual(chat.body);
-  expect((await f.call("POST", `/api/chats/${chat.body.id}/messages`, { message: "Continue" }, "two")).status).toBe(403);
+  const continued = await f.call("POST", `/api/chats/${chat.body.id}/messages`, { message: "Continue" }, "two");
+  expect(continued.status).toBe(200);
   f.advance();
   f.bad("revoked");
   await f.call("GET", "/api/chatgpt/models");
-  expect((await f.call("GET", `/api/chats/${chat.body.id}`)).body).toEqual(chat.body);
+  expect((await f.call("GET", `/api/chats/${chat.body.id}`)).body).toEqual(continued.body);
   expect((await f.call("DELETE", `/api/chats/${chat.body.id}`, undefined, "two")).status).toBe(200);
 });
