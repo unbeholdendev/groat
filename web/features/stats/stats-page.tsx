@@ -69,7 +69,7 @@ export function StatsPage() {
     <>
       <section>
         {head}
-        <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="engraving mt-7 block" />
+        <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="mt-7 block" />
         <p className="mt-2.5 flex min-h-[26px] flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-ink2">
           {incomplete ? "Incomplete totals · comparison unavailable" : scrubbed ?? (d ? (
             <>

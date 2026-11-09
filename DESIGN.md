@@ -246,7 +246,7 @@ Use lining tabular figures on the body and `num` utility. Keep controls, user co
 
 One centred column, 448px maximum, with 20px gutters. On wide screens the navigation moves into the left rail and the category breakdown can sit to the right. The mobile dock stays at the bottom; the desktop entry bar remains sticky.
 
-Home opens with month controls, the total, comparison, 112px daily skyline and category legend. Transactions share a paper panel with day headings and inset row dividers. Rows retain their 62px height, emoji circle, note, category and right-aligned amount. Hide a day total when it repeats the only row.
+Home opens with month controls, the total, comparison, 112px daily skyline and category legend. Transactions share a paper panel with day headings and inset row dividers. Rows retain their 62px height, emoji circle, note, category and right-aligned amount. Day totals use 16px semibold Source Sans 3 in primary ink; row amounts use secondary ink. Hide a day total when it repeats the only row.
 
 Stats keeps its period control, total, cumulative spending chart, previous-period comparison and category and tag lists. Preserve chart scrubbing, keyboard day selection and the accessible data table. Forms, settings, categories, recurring transactions and the bin use the same type and tokens.
 
@@ -260,13 +260,13 @@ Panels have 4px corners; fields and buttons 6px; cards and desktop dock 8px. Cat
 
 ## Components
 
-The total counts up through the existing reduced-motion-aware component. Home and Stats use the `engraving` utility for a faint, static line ornament behind the total. `web/guilloche.svg` matches the cropped flowing lines in the chosen mockup. Render it as a CSS mask in accent green at 35% opacity, 170px tall and spanning the total width. It adds no accessible content and ignores pointer input.
+The total counts up through the existing reduced-motion-aware component. Keep the area behind totals and category readouts free of ornament.
 
 The skyline remains one column per day, stacked in category colour. Keep future dots, empty ticks, today's outline, pointer and keyboard selection and scrolling to the selected day.
 
 The entry bar keeps its parser, completion, category chips, receipt, undo, camera and voice actions. Rest and focus colours use the shared tokens. Primary actions and focus use accent green. Never change entry behaviour to serve the visual theme.
 
-Keep the current motion curve and reduced-motion guard. Totals count up, chart lines draw, new rows open and controls press. The engraving stays still.
+Keep the current motion curve and reduced-motion guard. Totals count up, chart lines draw, new rows open and controls press.
 
 ## Do's and Don'ts
 

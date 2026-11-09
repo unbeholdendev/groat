@@ -321,19 +321,3 @@ html:active-view-transition-type(back) {
     scale: none !important;
   }
 }
-
-@utility engraving {
-  position: relative;
-  isolation: isolate;
-  &::before {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    pointer-events: none;
-    inset: -30px 0 auto;
-    height: 170px;
-    background: var(--accent);
-    opacity: 0.35;
-    mask: url("./guilloche.svg") center / 100% 100% no-repeat;
-  }
-}
