@@ -1,8 +1,6 @@
-import { decimals, knownCurrencies } from "../shared/amount";
-import { and, eq } from "drizzle-orm";
-import { Hono } from "hono";
+import { decimals } from "../shared/amount";
+import { eq } from "drizzle-orm";
 import { isoDate } from "../shared/schema";
-import { json, valid, query } from "./request";
 import { z } from "zod";
 import type { Ctx, Deps } from "./app";
 import { settings, today } from "./db";
@@ -103,28 +101,5 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
       return { ...r, baseAmount: Number.isSafeInteger(amount) ? amount : null, conversion };
     });
   };
-  return Object.assign(value, { reset: () => { recent.clear(); provenance.clear(); } });
-}
-
-export function rateRoutes({ db }: Ctx, value: Valuer) {
-  const app = new Hono();
-  const key = z.object({ date: isoDate, currency: z.string().refine(c => c !== "USD" && knownCurrencies.has(c)) });
-  app.get("/api/rates", c => c.json(db.select().from(t.rates).where(eq(t.rates.source, "manual")).all()));
-  app.put("/api/rates", async c => {
-    const body = valid(key.extend({ rate: z.number().finite().positive() }), await json(c));
-    if ("error" in body) return c.json({ error: "Enter a date, currency and positive rate" }, 400);
-    const { date, currency, rate } = body.data;
-    db.insert(t.rates).values({ date, currency, rate, source: "manual", rateDate: date })
-      .onConflictDoUpdate({ target: [t.rates.date, t.rates.currency], set: { rate, source: "manual", rateDate: date } }).run();
-    value.reset();
-    return c.json({});
-  });
-  app.delete("/api/rates", c => {
-    const body = query(c, key);
-    if ("error" in body) return c.json({ error: "Invalid rate" }, 400);
-    db.delete(t.rates).where(and(eq(t.rates.date, body.data.date), eq(t.rates.currency, body.data.currency), eq(t.rates.source, "manual"))).run();
-    value.reset();
-    return c.json({});
-  });
-  return app;
+  return value;
 }

@@ -202,9 +202,10 @@ test("the AI knows category kinds, and drafts only expenses", async () => {
   expect(prompt).toContain(`"name":"Salary","parentId":null,"kind":"income"`);
 });
 
-test("AI tools report incomplete totals and use the same shared manual rates as lists", async () => {
+test("AI tools report incomplete totals and use the same rates as lists", async () => {
   const ai = provider();
-  const t = setup(undefined, ai.handler, config);
+  let up = false;
+  const t = setup(undefined, (url, init) => (up ? frankfurter({ "2026-10-02": { EUR: 0.8 } })(url) : undefined) ?? ai.handler(url, init), config);
   await t.call("POST", "/api/onboarding", { baseCurrency: "USD" });
   await t.call("POST", "/api/transactions", { note: "Foreign", amount: "10", currency: "EUR", date: "2026-10-02" });
   const ask = async (name: string, args: unknown) => {
@@ -213,7 +214,8 @@ test("AI tools report incomplete totals and use the same shared manual rates as 
     return JSON.parse(result.body.messages.find((m: any) => m.role === "tool").content);
   };
   expect(await ask("category_totals", { from: "2026-10-02", to: "2026-10-02" })).toMatchObject({ total: 0, unconverted: 1 });
-  await t.call("PUT", "/api/rates", { date: "2026-10-02", currency: "EUR", rate: 0.8 });
+  up = true;
+  t.clock.now = new Date("2026-10-10T12:11:00Z");
   expect(await ask("category_totals", { from: "2026-10-02", to: "2026-10-02" })).toMatchObject({ total: 1250, unconverted: 0 });
-  expect((await ask("list_transactions", {}))[0]).toMatchObject({ baseAmount: 1250, conversion: { from: { source: "manual" } } });
+  expect((await ask("list_transactions", {}))[0]).toMatchObject({ baseAmount: 1250, conversion: { from: { source: "frankfurter" } } });
 });

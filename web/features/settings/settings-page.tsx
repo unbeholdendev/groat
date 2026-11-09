@@ -7,7 +7,6 @@ import { Chatgpt } from "./chatgpt";
 import { AiModels } from "./ai-models";
 import { AiProvider } from "./ai-provider";
 import { Backup } from "./backup";
-import { Rates } from "./rates";
 import { Members } from "./members";
 import { PasswordForm } from "./password-form";
 import { SettingsForm } from "./settings-form";
@@ -31,7 +30,6 @@ export function SettingsPage() {
   return (
     <>
       <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" />
-      <Rates />
       <Chatgpt />
       {admin && <Members />}
       {admin && <AiProvider />}

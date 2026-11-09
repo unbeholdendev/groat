@@ -51,7 +51,7 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
       <p className="mt-4">
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} />
       </p>
-      {incomplete && <p className="mt-2 text-[13px] text-amber">Incomplete totals: expenses without rates are excluded. Comparison unavailable. Add a manual rate in Settings.</p>}
+      {incomplete && <p className="mt-2 text-[13px] text-amber">Incomplete totals: expenses without rates are excluded. Comparison unavailable.</p>}
       <p aria-live="polite" className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] font-medium text-ink2">
         {shown ? (
           <>

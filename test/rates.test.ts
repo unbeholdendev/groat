@@ -140,3 +140,28 @@ test("a missing rate for today is not refetched while another currency is", asyn
   await call("GET", "/api/transactions");
   expect(btc()).toBe(before);
 });
+
+test("failed historical rates recover after ten minutes without restarting", async () => {
+  let up = false;
+  const t = await onboarded("USD", url => up ? frankfurter(rates)(url) : new Response("down", { status: 503 }));
+  await t.call("POST", "/api/transactions", { note: "a", amount: "10", currency: "EUR", date: "2026-10-02" });
+  up = true;
+  t.clock.now = new Date("2026-10-10T12:11:00Z");
+  expect((await t.call("GET", "/api/transactions")).body[0].baseAmount).toBe(1250);
+});
+
+test("weekend rate provenance survives restart", async () => {
+  const t = await onboarded("USD");
+  await t.call("POST", "/api/transactions", { note: "weekend", amount: "10", currency: "EUR", date: "2026-10-04" });
+  t.restart();
+  expect((await t.call("GET", "/api/transactions")).body[0].conversion.from).toMatchObject({ rateDate: "2026-10-02", source: "frankfurter" });
+});
+
+test("overflowing conversions stay incomplete instead of turning into zero", async () => {
+  for (const [base, quotes] of [["USD", { EUR: 1e-310 }], ["GBP", { EUR: 2e306, GBP: 1.5e303 }]] as const) {
+    const t = await onboarded(base, frankfurter({ "2026-10-02": quotes }));
+    await t.call("POST", "/api/transactions", { note: "Dinner", amount: "10", currency: "EUR", date: "2026-10-02" });
+    expect((await t.call("GET", "/api/transactions")).body[0].baseAmount).toBeNull();
+    expect((await t.call("GET", "/api/stats?from=2026-10-02&to=2026-10-02")).body).toMatchObject({ total: 0, unconverted: 1 });
+  }
+});

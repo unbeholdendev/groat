@@ -1,28 +1,11 @@
 import { expect, seed, test } from "./fixtures";
 
-test("missing rates mark totals incomplete and shared manual rates can be edited and reset", async ({ app: page }) => {
+test("missing rates mark totals incomplete", async ({ app: page }) => {
   await seed(page, [{ note: "Unconverted dinner", amount: "10", currency: "JPY" }]);
   await page.reload();
   await expect(page.getByText("Incomplete totals:")).toBeVisible();
   await page.getByRole("button", { name: "Unconverted dinner", exact: true }).click();
-  await expect(page.getByText("Missing rate. Add a manual rate in Settings.")).toBeVisible();
-  await page.goto("/settings");
-  await page.getByLabel("Date", { exact: true }).fill(new Date().toLocaleDateString("en-CA"));
-  await page.getByLabel("Currency", { exact: true }).fill("JPY");
-  await page.getByLabel("Units per 1 USD").fill("100");
-  await page.screenshot({ path: `/tmp/109-rates-${test.info().project.name}.png`, fullPage: true });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.getByRole("button", { name: "Save manual rate" }).click();
-  await expect(page.getByText("Rate updated.", { exact: true })).toHaveText("Rate updated.");
-  await page.goto("/");
-  await expect(page.getByText("Incomplete totals:")).toBeHidden();
-  await page.getByRole("button", { name: "Unconverted dinner", exact: true }).click();
-  await expect(page.getByText(/1 USD = 100 JPY/)).toBeVisible();
-  await page.goto("/settings");
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await expect(page.getByLabel("Units per 1 USD")).toHaveValue("100");
-  await page.getByRole("button", { name: "Reset to automatic" }).click();
-  await expect(page.getByRole("button", { name: "Reset to automatic" })).toBeHidden();
+  await expect(page.getByText("Missing rate.", { exact: true })).toBeVisible();
   await page.goto("/stats");
   await expect(page.getByText("Incomplete totals · comparison unavailable")).toBeVisible();
 });

@@ -107,7 +107,7 @@ export function TransactionForm() {
       />
       {editRow?.conversion && <div className="mt-3 text-[13px] text-ink2">
         <p>Conversion for {editRow.conversion.date}</p>
-        {[editRow.conversion.from, editRow.conversion.to].map((q, i) => <p key={i}>{q ? "1 USD = " + q.rate + " " + q.currency + " · " + q.source + " · rate date " + (q.rateDate ?? "unknown (cached history)") : "Missing rate. Add a manual rate in Settings."}</p>)}
+        {[editRow.conversion.from, editRow.conversion.to].map((q, i) => <p key={i}>{q ? "1 USD = " + q.rate + " " + q.currency + " · " + q.source + " · rate date " + (q.rateDate ?? "unknown (cached history)") : "Missing rate."}</p>)}
       </div>}
       {recovered && <p role="status" className="mt-3 text-sm text-ink2">Recovered unsaved expense.</p>}
       <dialog ref={dialog} aria-labelledby={title} onCancel={(e) => { e.preventDefault(); blocker.reset?.(); }} className="fixed inset-0 m-auto w-[min(26rem,92vw)] rounded-card bg-surface p-5 text-ink shadow-lift backdrop:bg-bg/80">

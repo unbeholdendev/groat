@@ -16,7 +16,7 @@ import { memberRoutes } from "./members";
 import { aiModels, type Models } from "./models";
 import { exportRoutes } from "./export";
 import { importRoutes } from "./import";
-import { rateRoutes, valuer } from "./rates";
+import { valuer } from "./rates";
 import { recurringRoutes } from "./recurring";
 import { settingsRoutes } from "./settings";
 import { statsRoutes } from "./stats";
@@ -75,7 +75,6 @@ export function createApp(deps: Deps) {
   app.route("/", models.routes);
   app.route("/", settingsRoutes(db, models));
   app.route("/", categoryRoutes(db));
-  app.route("/", rateRoutes(ctx, value));
   app.route("/", transactionRoutes(ctx, value));
   app.route("/", draftRoutes(ctx));
   app.route("/", voiceRoutes(ctx));
