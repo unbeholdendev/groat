@@ -7,6 +7,7 @@ import { settings, today, uncategorised } from "./db";
 import { readTransaction, saveTags } from "./transactions";
 import { json, valid } from "./request";
 import * as t from "./schema";
+import { errorKind, log } from "./logging";
 
 const e = t.transactions;
 const r = t.recurring;
@@ -36,26 +37,36 @@ export function recurringRoutes({ db, clock }: Ctx) {
   };
 
   function generate(skip?: string) {
-    const now = clock().toISOString();
-    const rows = db
-      .select()
-      .from(r)
-      .where(skip ? eq(r.id, Number(skip)) : and(isNull(r.deletedAt), eq(r.paused, false)))
-      .all();
-    db.transaction(() => {
-      for (const tpl of rows) {
-        let last = tpl.lastDate;
-        for (let d; (d = last && last >= tpl.startDate ? next(last, tpl) : tpl.startDate) <= today(clock) && (!tpl.endDate || d <= tpl.endDate); last = d) {
-          if (skip) continue;
-          const status = tpl.needsConfirmation ? "pending" : "normal";
-          const { note, amount, currency, categoryId } = tpl;
-          const values = { note, amount, currency, date: d, categoryId, recurringId: tpl.id, status, createdAt: now, updatedAt: now };
-          const { id } = db.insert(e).values(values).returning({ id: e.id }).get();
-          saveTags(db, id, tpl.tags);
+    const start = performance.now();
+    let count = 0;
+    log("debug", "recurring.generate.started");
+    try {
+      const now = clock().toISOString();
+      const rows = db
+        .select()
+        .from(r)
+        .where(skip ? eq(r.id, Number(skip)) : and(isNull(r.deletedAt), eq(r.paused, false)))
+        .all();
+      db.transaction(() => {
+        for (const tpl of rows) {
+          let last = tpl.lastDate;
+          for (let d; (d = last && last >= tpl.startDate ? next(last, tpl) : tpl.startDate) <= today(clock) && (!tpl.endDate || d <= tpl.endDate); last = d) {
+            if (skip) continue;
+            const status = tpl.needsConfirmation ? "pending" : "normal";
+            const { note, amount, currency, categoryId } = tpl;
+            const values = { note, amount, currency, date: d, categoryId, recurringId: tpl.id, status, createdAt: now, updatedAt: now };
+            const { id } = db.insert(e).values(values).returning({ id: e.id }).get();
+            saveTags(db, id, tpl.tags);
+            count++;
+          }
+          db.update(r).set({ lastDate: last }).where(eq(r.id, tpl.id)).run();
         }
-        db.update(r).set({ lastDate: last }).where(eq(r.id, tpl.id)).run();
-      }
-    });
+      });
+      log("info", "recurring.generate.completed", { count, durationMs: Math.round(performance.now() - start) });
+    } catch (error) {
+      log("error", "recurring.generate.failed", { error: errorKind(error), durationMs: Math.round(performance.now() - start) });
+      throw error;
+    }
   }
 
   app.get("/api/recurring", (c) => c.json(templates().orderBy(r.id).all()));

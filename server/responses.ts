@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Deps } from "./app";
+import { diagnostic, log } from "./logging";
 
 const message = z.object({
   role: z.string(),
@@ -79,8 +80,15 @@ export async function responses(fetch: Deps["fetch"], provider: { key: string; m
         .join("\n");
       if (!data || data === "[DONE]") continue;
       const event = JSON.parse(data);
-      if (["response.failed", "response.incomplete", "error"].includes(event.type))
+      if (["response.failed", "response.incomplete", "error"].includes(event.type)) {
+        log("error", "ai.response.failed", {
+          operation: event.type,
+          providerRequestId: diagnostic(res.headers.get("x-request-id")),
+          code: diagnostic(event.type === "error" ? event.code : event.response?.error?.code),
+          reason: diagnostic(event.response?.incomplete_details?.reason),
+        });
         throw new Error("ChatGPT could not finish this response. Check your plan usage or reconnect in Settings, then try again.");
+      }
       if (event.type === "response.completed") {
         const reply = output.parse(event.response);
         const calls = reply.output.filter((o) => o.type === "function_call");

@@ -1,11 +1,12 @@
 import type { Database } from "bun:sqlite";
 import { Hono } from "hono";
-import { upgradeWebSocket } from "hono/bun";
+import { getBunServer, type BunWebSocketData } from "hono/bun";
 import { getCookie } from "hono/cookie";
-import type { WSContext } from "hono/ws";
+import type { WSContext, WSEvents } from "hono/ws";
+import { log, type RequestEnv } from "./logging";
 
 export function liveUpdates(db: Database, clock: () => Date) {
-  const app = new Hono();
+  const app = new Hono<RequestEnv>();
   const clients = new Map<WSContext, string>();
   let timer: ReturnType<typeof setInterval> | undefined;
   const valid = (id: string) => db.query(`SELECT users.username FROM sessions JOIN users ON users.id = sessions.user_id
@@ -25,15 +26,16 @@ export function liveUpdates(db: Database, clock: () => Date) {
     if (!origin || origin !== `${protocol}://${url.host}`) return c.json({ error: "Forbidden" }, 403);
     if (!valid(getCookie(c, "session") ?? "")) return c.json({ error: "Sign in first" }, 401);
     return next();
-  }, upgradeWebSocket((c) => {
+  }, (c, next) => {
     const id = getCookie(c, "session") ?? "";
     let connection: WSContext | undefined;
-    return {
+    const events: WSEvents = {
       onOpen(_, ws) {
         const user = valid(id);
         if (!user) return ws.close(4001, "Session ended");
         connection = ws;
         clients.set(ws, id);
+        log("debug", "live.connected", { count: clients.size });
         ws.send(JSON.stringify({ type: "ready", username: user.username }));
         timer ??= setInterval(() => {
           for (const [socket, session] of clients) {
@@ -48,9 +50,25 @@ export function liveUpdates(db: Database, clock: () => Date) {
       },
       onClose() {
         if (connection) clients.delete(connection);
+        log("debug", "live.disconnected", { count: clients.size });
         if (!clients.size) { clearInterval(timer); timer = undefined; }
       },
+      onError() { log("warn", "live.failed"); },
     };
-  }));
-  return { routes: app, publish };
+    const server = getBunServer<Bun.Server<BunWebSocketData>>(c);
+    if (!server) throw new TypeError("env has to include the 2nd argument of fetch.");
+    if (!server.upgrade(c.req.raw, {
+      headers: { "x-request-id": c.get("requestId") },
+      data: { events, url: new URL(c.req.url), protocol: c.req.header("sec-websocket-protocol")?.split(",")[0]?.trim() ?? "" },
+    })) return next();
+    c.set("websocketUpgraded", true);
+    return new Response(null);
+  });
+  const close = () => {
+    clearInterval(timer);
+    timer = undefined;
+    for (const ws of clients.keys()) ws.close(1001, "Server shutting down");
+    clients.clear();
+  };
+  return { routes: app, publish, close };
 }

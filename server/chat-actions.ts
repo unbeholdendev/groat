@@ -8,9 +8,14 @@ import { categoryRoutes, categoryUpdate, newCategory, order, tagInput } from "./
 import type { Valuer } from "./rates";
 import { recurringRoutes, schedule } from "./recurring";
 import { transactionRoutes } from "./transactions";
+import { errorKind, log } from "./logging";
 
 export function chatActions(ctx: Ctx, value: Valuer, cookie: string) {
   const app = new Hono<Env>();
+  app.onError((error, c) => {
+    log("warn", "ai.action.failed", { error: errorKind(error) });
+    return error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500);
+  });
   app.route("/", auth(ctx.db, ctx.clock));
   app.route("/", transactionRoutes(ctx, value));
   app.route("/", categoryRoutes(ctx.db));
@@ -27,6 +32,7 @@ export function chatActions(ctx: Ctx, value: Valuer, cookie: string) {
         headers: { "content-type": "application/json", cookie },
         body: method === "GET" || method === "DELETE" ? undefined : JSON.stringify(payload(args)),
       });
+      log(res.ok ? "info" : "warn", "ai.action.completed", { method, status: res.status });
       if (res.status === 401) throw new HTTPException(401, { message: "Your session ended. Sign in again." });
       const result = await res.json();
       return res.ok ? { outcome: "completed", result } : result;

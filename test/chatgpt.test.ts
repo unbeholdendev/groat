@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
 import { createApp } from "../server/app";
 import { responses } from "../server/responses";
 
@@ -213,6 +213,35 @@ test("Responses translates images, tools and histories and rejects failed, incom
   expect(reply.tool_calls?.[0].function.name).toBe("transaction");
   for (const type of ["response.failed", "response.incomplete", "error", "response.output_text.delta"])
     await expect(responses(async () => sse(type), provider, request)).rejects.toThrow();
+});
+
+test("failed Responses streams log diagnostic fields without private payloads", async () => {
+  const log = spyOn(console, "error").mockImplementation(() => {});
+  try {
+    for (const event of [
+      { type: "response.failed", response: { error: { code: "server_error", message: "private-message" }, output: ["private-output"] } },
+      { type: "response.incomplete", response: { incomplete_details: { reason: "max_output_tokens" } } },
+      { type: "error", code: "rate_limit_exceeded", message: "private-message" },
+      { type: "error", code: { secret: "private-object" } },
+      { type: "error", code: "private\nforged log" },
+      { type: "error", code: "private".repeat(20) },
+    ]) {
+      log.mockClear();
+      const stream = new Response(`data: ${JSON.stringify(event)}\n\n`, { headers: { "x-request-id": "req_test" } });
+      await expect(responses(async () => stream, { key: "private-key", model: "test" }, { messages: [{ role: "user", content: "private-prompt" }] })).rejects.toThrow(
+        "ChatGPT could not finish this response",
+      );
+      const code = event.type === "response.failed" ? "server_error" : event.code === "rate_limit_exceeded" ? event.code : undefined;
+      expect(log.mock.calls).toHaveLength(1);
+      expect(JSON.parse(String(log.mock.calls[0][0]))).toEqual({
+        timestamp: expect.any(String), level: "error", event: "ai.response.failed", operation: event.type, providerRequestId: "req_test",
+        ...(code && { code }), ...(event.type === "response.incomplete" && { reason: "max_output_tokens" }),
+      });
+      expect(JSON.stringify(log.mock.calls)).not.toContain("private");
+    }
+  } finally {
+    log.mockRestore();
+  }
 });
 
 test("AI SQL cannot read API keys, session IDs or password hashes", async () => {

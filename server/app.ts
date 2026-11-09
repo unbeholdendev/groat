@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { chats } from "./ai";
 import { attachmentRoutes } from "./attachments";
 import { auth, type Env } from "./auth";
@@ -22,6 +23,7 @@ import { statsRoutes } from "./stats";
 import { captureRoutes, tokenRoutes } from "./tokens";
 import { liveUpdates } from "./live";
 import { voiceRoutes } from "./voice";
+import { errorKind, log, loggedFetch, requestLogging } from "./logging";
 
 export type Deps = {
   db: Database;
@@ -33,9 +35,18 @@ export type Deps = {
 export type Ctx = Omit<Deps, "db"> & { db: Db; models: Models };
 
 export function createApp(deps: Deps) {
+  deps = { ...deps, fetch: loggedFetch(deps.fetch) };
   deps.db.run("PRAGMA foreign_keys = ON");
   const db = drizzle(deps.db, { casing: "snake_case" });
-  migrate(db, { migrationsFolder });
+  log("info", "database.migration.started");
+  const start = performance.now();
+  try {
+    migrate(db, { migrationsFolder });
+    log("info", "database.migration.completed", { durationMs: Math.round(performance.now() - start) });
+  } catch (error) {
+    log("error", "database.migration.failed", { error: errorKind(error) });
+    throw error;
+  }
   const subscription = chatgpt(deps, deps.credentials);
   if (!deps.db.query("SELECT 1 FROM users LIMIT 1").get()) subscription.reset();
   subscription.adopt(deps.db.query<{ id: number }, []>("SELECT id FROM users WHERE deleted_at IS NULL ORDER BY role = 'admin' DESC, id").all().map((u) => u.id));
@@ -51,6 +62,8 @@ export function createApp(deps: Deps) {
   });
   const ctx = { ...deps, db, models };
   const app = new Hono<Env>();
+  app.use("*", requestLogging);
+  app.onError((error, c) => error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500));
   const value = valuer(ctx);
   const recurring = recurringRoutes(ctx);
   recurring.generate();
@@ -88,5 +101,5 @@ export function createApp(deps: Deps) {
   app.route("/api/chats", chats(ctx, value));
   app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
-  return Object.assign(app, { generate: () => { recurring.generate(); live.publish(); } });
+  return Object.assign(app, { generate: () => { recurring.generate(); live.publish(); }, close: live.close });
 }

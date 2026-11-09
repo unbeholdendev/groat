@@ -32,6 +32,13 @@ Set these as environment variables, e.g. in `groat.env` (`NAME=value` per line) 
 |---|---|---|
 | `PORT` | `3000` | Port to listen on. |
 | `DB_PATH` | `data.db` | SQLite database, including receipt photos. The image sets `/data/expenses.db`; change it only if your host forces a different mount path. |
+| `LOG_LEVEL` | `info` | Minimum log level: `debug`, `info`, `warn`, `error` or `silent`. Unknown values use `info`. |
+
+Groat writes one JSON object per line to stdout, with warnings and errors on stderr. Logs cover startup, migrations, readiness, shutdown, requests, outbound services, recurring generation, imports, backups, restores and ChatGPT connection changes. Debug adds request, outbound-call and tool starts, tool completions and live connection events. The container logs its release version at startup.
+
+Each request gets a generated `x-request-id` response header. Its logs and outbound calls share that ID. Logs use registered route patterns and omit request bodies, query strings, record IDs, credentials, financial data and free-form exception messages. Outbound durations measure time to response headers, not time to consume the body. Request completion covers the handler, not delivery of streamed files or a WebSocket's lifetime.
+
+In Kubernetes, use `kubectl -n groat logs deployment/groat -c groat --since=30m --timestamps -f`. Set `LOG_LEVEL=debug` on the deployment for more detail, then return it to `info`. On `SIGTERM` or `SIGINT`, Groat closes live connections and allows requests up to ten seconds to finish before exiting.
 
 All AI features are optional, and an admin sets them up once for everyone in Settings → AI. The status rows there show what powers asking, receipts and dictation. Earlier versions read `AI_*` environment variables; Groat now ignores them and logs a warning if they are set.
 

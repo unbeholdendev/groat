@@ -10,6 +10,7 @@ import { z } from "zod";
 import type { Env } from "./auth";
 import { type Db, migrationsFolder, today } from "./db";
 import { valid } from "./request";
+import { log } from "./logging";
 
 const scrubbed = ["sessions", "api_tokens", "chat_messages", "chats"];
 const notBackup = "That file isn’t a backup from this app";
@@ -34,7 +35,9 @@ export function backupRoutes(db: Db, clock: () => Date) {
       // Without this the deleted session ids and AI keys would survive in free pages.
       copy.run("VACUUM");
       copy.close();
-      return c.body(await Bun.file(path).bytes(), 200, {
+      const bytes = await Bun.file(path).bytes();
+      log("info", "backup.completed");
+      return c.body(bytes, 200, {
         "content-type": "application/vnd.sqlite3",
         "content-disposition": `attachment; filename="expenses-${today(clock)}.sqlite"`,
       });
@@ -101,6 +104,7 @@ export function restoreRoutes(db: Db, resetCredentials: () => void = () => {}) {
         live.run("DETACH backup");
       }
       resetCredentials();
+      log("info", "restore.completed");
       return c.json({});
     } finally {
       await remove(path);

@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Ctx, Deps } from "./app";
 import { settings, today } from "./db";
 import * as t from "./schema";
+import { errorKind, log } from "./logging";
 
 type Row = { amount: number; currency: string; date: string };
 type Source = (fetch: Deps["fetch"], date: string, currencies: string[]) => Promise<Record<string, { rate: number; date: string | null }>>;
@@ -74,7 +75,10 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
         if (needed.every((c) => have.has(c) || fresh(c))) return;
         const missing = [...new Set(needed)].filter((c) => !have.has(c) && !fresh(c));
         for (const [name, source] of Object.entries(sources)) {
-          const got = await source(fetch, date, missing.filter((c) => !have.has(c))).catch(() => ({}));
+          const got = await source(fetch, date, missing.filter((c) => !have.has(c))).catch((error) => {
+            log("warn", "rates.source.failed", { service: name, error: errorKind(error) });
+            return {};
+          });
           for (const [currency, quote] of Object.entries(got)) {
             const { rate } = quote;
             if (!Number.isFinite(rate) || rate <= 0) continue;

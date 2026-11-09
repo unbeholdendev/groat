@@ -20,7 +20,7 @@ COPY LICENSE ./
 COPY server server
 COPY shared shared
 COPY --from=build /app/dist dist
-ENV DB_PATH=/data/expenses.db NODE_ENV=production
+ENV DB_PATH=/data/expenses.db NODE_ENV=production GROAT_VERSION=$VERSION
 VOLUME /data
 EXPOSE 3000
 CMD ["bun", "server/index.ts"]

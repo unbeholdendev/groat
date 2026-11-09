@@ -10,6 +10,7 @@ import { builtin, type Db, settings, today } from "./db";
 import { addTransaction, readTransaction } from "./transactions";
 import { valid } from "./request";
 import * as t from "./schema";
+import { log } from "./logging";
 
 const required = ["date", "note", "amount", "currency"];
 const upload = z.object({ file: z.file() });
@@ -155,6 +156,7 @@ export function importRoutes({ db, clock }: Ctx) {
       }
       for (const { at, ...row } of rows) addTransaction(db, now, { ...row, categoryId: at ? existing.get(at)! : row.categoryId }, userId);
     });
+    log("info", "import.completed", { count: rows.length });
     return c.json({ imported: rows.length });
   });
 

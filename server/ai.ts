@@ -13,6 +13,7 @@ import type { Valuer } from "./rates";
 import { responses } from "./responses";
 import { categories, chatMessages, chats as chatTable } from "./schema";
 import { period } from "./stats";
+import { errorKind, log } from "./logging";
 
 const chatMessage = z.looseObject({
   role: z.string(),
@@ -139,6 +140,7 @@ export function chats(ctx: Ctx, value: Valuer) {
           tools: Object.entries(available).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),
         },
       ).catch((error) => {
+        log("warn", "ai.reply.failed", { error: errorKind(error) });
         if (!acted) throw error;
         return { role: "assistant", content: "The action results are saved. I could not finish the reply.\n" + [...results.values()].map((result) => JSON.stringify(result)).join("\n") } as Message;
       });
@@ -147,15 +149,22 @@ export function chats(ctx: Ctx, value: Valuer) {
       for (const { id: callId, function: f } of reply.tool_calls) {
         const key = callId;
         const mutates = f.name in actions && f.name !== "list_recurring";
+        const operation = Object.hasOwn(available, f.name) ? f.name : "unknown";
         const result = mutates && results.has(key) ? results.get(key) : await Promise.resolve()
           .then(() => {
             const selected = available[f.name];
             if (!selected) throw new Error("Unsupported action");
             const args = JSON.parse(f.arguments);
             if (mutates) acted = true;
+            log("debug", "ai.tool.started", { operation });
             return selected.run(args);
           })
+          .then((result) => {
+            log("debug", "ai.tool.completed", { operation });
+            return result;
+          })
           .catch((e) => {
+            log("warn", "ai.tool.failed", { operation, error: errorKind(e) });
             if (e instanceof HTTPException && e.status === 401) throw e;
             return { error: String(e) };
           });

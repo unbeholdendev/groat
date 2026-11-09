@@ -5,6 +5,7 @@ import { getCookie } from "hono/cookie";
 import { z } from "zod";
 import type { Deps } from "./app";
 import { admin, type Env } from "./auth";
+import { errorKind, log } from "./logging";
 
 const issuer = "https://auth.openai.com";
 const resource = "https://api.openai.com/v1";
@@ -101,6 +102,7 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
     if (!saved.renewal && saved.expires > now() + 60000) return saved;
     if (flight) return flight;
     flight = (async () => {
+      log("debug", "chatgpt.refresh.started");
       try {
         const pending = saved.renewal;
         const fresh =
@@ -117,10 +119,12 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
         const { receivedAt, ...tokens } = fresh;
         const updated = { ...current, ...tokens, renewal: undefined, expires: receivedAt + fresh.expires_in * 1000 };
         put("instance", updated);
+        log("info", "chatgpt.refresh.completed");
         return updated;
       } catch (error) {
         if (error instanceof Error && "terminal" in error && error.terminal && read<Credential>("instance")?.refresh_token === saved.refresh_token)
           put("instance", { ...saved, revoked: true });
+        log("warn", "chatgpt.refresh.failed", { error: errorKind(error), code: read<Credential>("instance")?.revoked ? "revoked" : "retryable" });
         throw error;
       }
     })();
@@ -211,6 +215,7 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
     remove("pending");
     put("registration", { client, subject: identity.subject });
     put("instance", { ...fresh, ...identity, client, expires: now() + fresh.expires_in * 1000 });
+    log("info", "chatgpt.connected");
     return c.json({ connected: true });
   });
   routes.get("/api/chatgpt/models", async (c) => c.json({ models: await catalogue() }));
@@ -237,6 +242,7 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
           .then((r) => r.ok)
           .catch(() => false)
       : true;
+    log(revoked ? "info" : "warn", "chatgpt.disconnected", { code: revoked ? "revoked" : "revocation_unconfirmed" });
     return c.json({ revocationConfirmed: revoked });
   });
   return {
