@@ -18,8 +18,8 @@ function server(...args: Parameters<typeof setup>) {
   const server = Bun.serve({ port: 0, fetch: h.app.fetch, websocket });
   cleanups.push(() => server.stop(true));
   const origin = server.url.origin;
-  const connect = (cookie = "session=live", tab = "") => {
-    const ws = new (WebSocket as unknown as { new(url: string, options: Bun.WebSocketOptions): WebSocket })(origin.replace("http:", "ws:") + "/api/live?tab=" + tab, { headers: { cookie, origin } });
+  const connect = (cookie = "session=live", tab = "", headers: Record<string, string> = {}) => {
+    const ws = new (WebSocket as unknown as { new(url: string, options: Bun.WebSocketOptions): WebSocket })(origin.replace("http:", "ws:") + "/api/live?tab=" + tab, { headers: { cookie, origin, ...headers } });
     const messages: unknown[] = [];
     ws.onmessage = (e) => messages.push(JSON.parse(String(e.data)));
     cleanups.push(() => ws.close());
@@ -136,3 +136,16 @@ test("deleting a category tells other clients to refresh recurring schedules", a
   await received(client.messages, 2);
   expect(client.messages[1]).toEqual({ type: "changed", resources: ["categories", "transactions", "recurring"] });
 });
+
+for (const [forwarded, scheme] of [["ws", "http"], ["wss", "https"], ["http", "http"], ["https", "https"]]) {
+  test(`live connections accept matching origins behind a ${forwarded} proxy`, async () => {
+    const h = server();
+    const origin = scheme + "://" + new URL(h.origin).host;
+    const client = h.connect(undefined, "", { origin, "x-forwarded-proto": forwarded });
+    await received(client.messages, 1);
+    expect(client.messages[0]).toEqual({ type: "ready", username: "admin" });
+    for (const rejected of ["https://evil.test", (scheme === "https" ? "http" : "https") + "://" + new URL(h.origin).host]) {
+      expect((await fetch(h.origin + "/api/live", { headers: { origin: rejected, cookie: "session=live", "x-forwarded-proto": forwarded } })).status).toBe(403);
+    }
+  });
+}

@@ -55,7 +55,8 @@ export function liveUpdates(db: Database, clock: () => Date) {
   app.get("/api/live", (c, next) => {
     const origin = c.req.header("origin");
     const url = new URL(c.req.url);
-    const protocol = c.req.header("x-forwarded-proto") ?? url.protocol.slice(0, -1);
+    const forwarded = c.req.header("x-forwarded-proto") ?? url.protocol.slice(0, -1);
+    const protocol = forwarded === "wss" ? "https" : forwarded === "ws" ? "http" : forwarded;
     if (!origin || origin !== `${protocol}://${url.host}`) return c.json({ error: "Forbidden" }, 403);
     if (!valid(getCookie(c, "session") ?? "")) return c.json({ error: "Sign in first" }, 401);
     return next();
