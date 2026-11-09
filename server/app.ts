@@ -20,6 +20,7 @@ import { recurringRoutes } from "./recurring";
 import { settingsRoutes } from "./settings";
 import { statsRoutes } from "./stats";
 import { captureRoutes, tokenRoutes } from "./tokens";
+import { liveUpdates } from "./live";
 import { voiceRoutes } from "./voice";
 
 export type Deps = {
@@ -57,9 +58,13 @@ export function createApp(deps: Deps) {
   for (const file of ["sw.js", "manifest.webmanifest"])
     app.get(`/${file}`, () => new Response(Bun.file(`${import.meta.dir}/${file}`)));
 
+  const live = liveUpdates(deps.db, deps.clock);
+  app.route("/", live.routes);
+
   app.use("/api/*", async (c, next) => {
     await next();
     c.header("cache-control", "no-store");
+    if (!["GET", "HEAD", "OPTIONS"].includes(c.req.method) && c.res.ok) live.publish();
   });
 
   app.route("/", captureRoutes(ctx));
@@ -83,5 +88,5 @@ export function createApp(deps: Deps) {
   app.route("/api/chats", chats(ctx, value));
   app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
-  return Object.assign(app, { generate: recurring.generate });
+  return Object.assign(app, { generate: () => { recurring.generate(); live.publish(); } });
 }

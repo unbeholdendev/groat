@@ -22,8 +22,12 @@ for (const [name, path, route] of [["Bin", "/api/bin", "/?view=bin"], ["Recurrin
     await page.route(`**${path}`, (r) => r.fulfill({ status: 400, json: { error: "Load failed" } }));
     await page.goto(route);
     await expect(page.getByRole("alert").filter({ hasText: "Load failed" })).toBeVisible();
+    const retry = page.getByRole("button", { name: "Try again", exact: true });
+    await expect(retry).toBeVisible();
     await page.unroute(`**${path}`);
-    await page.getByRole("button", { name: "Try again", exact: true }).click();
+    await retry.click({ timeout: 1000 }).catch(async (error) => {
+      if (await retry.isVisible()) throw error;
+    });
     await expect(page.getByRole("alert").filter({ hasText: "Load failed" })).toHaveCount(0);
   });
 }

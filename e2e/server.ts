@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { serveStatic } from "hono/bun";
+import { serveStatic, websocket } from "hono/bun";
 import { createApp } from "../server/app";
 import { frankfurter, mempool } from "../test/harness";
 
@@ -12,6 +12,12 @@ function provider(url: URL, init: RequestInit | undefined, models: string[]) {
   if (url.pathname === "/v1/models") return Response.json({ object: "list", data: models.map((id) => ({ id })) });
   const body = JSON.parse(String(init?.body));
   const last = body.messages.at(-1).content;
+  if (!body.tool_choice && body.messages.findLast((m: { role: string }) => m.role === "user")?.content === "Add test coffee for £3") {
+    const message = body.messages.at(-1).role === "tool"
+      ? { role: "assistant", content: "Added test coffee." }
+      : { role: "assistant", content: null, tool_calls: [{ id: "coffee", type: "function", function: { name: "add_transaction", arguments: JSON.stringify({ note: "Test coffee", amount: "3", currency: "GBP" }) } }] };
+    return Response.json({ choices: [{ message }] });
+  }
   const message = body.tool_choice
     ? { content: null, tool_calls: [{ id: "x", type: "function", function: { name: "transaction", arguments: JSON.stringify({ note: typeof last === "string" ? last.replace(/[\d.]+/g, "").trim() : "Corner shop", amount: "9.99" }) } }] }
     : { content: "Mostly on food." };
@@ -38,8 +44,9 @@ let app = build();
 
 export default {
   port: Number(process.env.PORT ?? 3100),
-  fetch: (req: Request) => {
+  websocket,
+  fetch: (req: Request, server: Parameters<typeof app.fetch>[1]) => {
     const url = new URL(req.url);
-    return url.pathname === "/__reset" ? ((app = build(url.searchParams.get("ai")?.split(",").filter(Boolean))), new Response("ok")) : app.fetch(req);
+    return url.pathname === "/__reset" ? ((app = build(url.searchParams.get("ai")?.split(",").filter(Boolean))), new Response("ok")) : app.fetch(req, server);
   },
 };

@@ -146,7 +146,7 @@ export function Bar(props: {
           {!text && !inChat && !reviewing && !settings.voice && <Mic onAudio={() => {}} onError={setCaptureError} off={aiOff(settings, admin, "voice")} />}
           {!text && !inChat && !reviewing && settings.voice && online && <Mic onAudio={(audio) => (setCaptureError(null), drafting.mutate({ audio }))} onError={setCaptureError} />}
           {empty ? (
-            <button type="button" aria-label="Full form" title="Full form" onMouseDown={(e) => e.preventDefault()} onClick={() => props.onForm(seed())} className="press grid size-11 shrink-0 place-items-center rounded-chip text-ink2"><Icon d={paths.plus} className="size-5" /></button>
+            <button type="button" aria-label="Full form" title="Full form" onMouseDown={(e) => e.preventDefault()} onClick={() => props.onForm(seed())} className="press grid size-11 shrink-0 place-items-center rounded-chip text-ink2"><Icon d={paths.expand} className="size-5" /></button>
           ) : (
             <SubmitButton name={key} dim={!text.trim() && !inChat} disabled={adding.isPending || asking.isPending || drafting.isPending || (inChat && !question)} />
           )}

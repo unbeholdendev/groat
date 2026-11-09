@@ -6,6 +6,9 @@ import { syncCategory } from "./features/categories/queries";
 import { syncTransaction } from "./features/transactions/queries";
 import { syncAi, syncChatgpt, syncModels, syncSettings, syncToken, syncUsers } from "./features/settings/queries";
 
+import { liveUpdates } from "./lib/live";
+
+let sessionVersion = 0;
 let endingSession: Promise<unknown> = Promise.resolve();
 const endSession = () => (endingSession = fetch("/api/logout", { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => {}));
 
@@ -60,18 +63,29 @@ const sync = (key: string[], patch: (client: QueryClient, data: unknown, request
         if (!meta?.owner)
           throw Object.assign(new Error("Sign in as the original user to sync this change"), { status: 401 });
       }
+      const version = sessionVersion;
+      const current = () => {
+        const session = client.getQueryData<{ user: { username: string } | null }>(["/api/session"]);
+        if (version !== sessionVersion || (!authentication && (isLocallySignedOut() || (session && session.user?.username !== meta?.owner))))
+          throw new Error("Your session changed. Sign in again before retrying this change.");
+      };
       let data = await send(r[0], r[1], r[2], authentication ? undefined : String(meta?.owner));
+      current();
       if (meta?.edited && r[0] === "POST" && r[1] === "/api/transactions") {
         const { id } = transaction.parse(data);
         data = await send("PUT", `/api/transactions/${id}`, r[2], String(meta.owner));
+        current();
       }
       if (authentication) {
-        unlockDevice();
         await client.cancelQueries();
+        current();
         await client.resetQueries({ predicate: (q) => q.queryKey[0] !== "/api/session" && !(q.queryKey[0] === "transaction-draft" && q.queryKey[1] === (data as { username: string }).username) });
+        current();
+        unlockDevice();
         client.setQueryData(["/api/session"], { setup: false, user: data });
       }
       await patch(client, data, r);
+      current();
       return data;
     },
   });
@@ -127,11 +141,19 @@ void queryClient.resumePausedMutations();
 if (isLocallySignedOut() && onlineManager.isOnline()) endSession();
 onlineManager.subscribe((online) => { if (online && isLocallySignedOut()) endSession(); });
 
-export async function signOutDevice() {
-  lockDevice();
+export function signOutDevice() {
   endSession();
+  return clearDevice();
+}
+
+async function clearDevice(retainChanges = false) {
+  sessionVersion++;
+  if (!retainChanges) lockDevice();
   await queryClient.cancelQueries();
-  queryClient.getMutationCache().clear();
+  if (!retainChanges) queryClient.getMutationCache().clear();
   queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== "/api/session" });
   queryClient.setQueryData(["/api/session"], { setup: false, user: null });
+  if (retainChanges) persistCache();
 }
+
+liveUpdates(queryClient, () => { void clearDevice(true); });

@@ -31,15 +31,15 @@ export function SettingsPage() {
       <Ai admin={admin} />
       {admin && <Members />}
       <Backup admin={admin} />
-      <h2 className={sectionHead}>More</h2>
-      <nav className={panel}>
-        <Link to="/" search={{ view: "recurring" }} className={linkRow}>
+      <h2 className={`${sectionHead} lg:hidden`}>More</h2>
+      <nav className={`${panel} lg:mt-7`}>
+        <Link to="/" search={{ view: "recurring" }} className={`${linkRow} lg:hidden`}>
           <Go d={paths.repeat}>Recurring</Go>
         </Link>
-        <Link to="/chat" className={linkRow}>
+        <Link to="/chat" className={`${linkRow} lg:hidden`}>
           <Go d={paths.chat}>Past chats</Go>
         </Link>
-        <Link to="/" search={{ view: "bin" }} className={linkRow}>
+        <Link to="/" search={{ view: "bin" }} className={`${linkRow} lg:hidden`}>
           <Go d={paths.bin}>Bin</Go>
         </Link>
         <a href="/privacy.html" className={linkRow}>

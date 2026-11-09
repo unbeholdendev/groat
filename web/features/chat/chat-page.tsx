@@ -21,7 +21,10 @@ export function ChatPage({ openId }: { openId: number | null }) {
   const missing = !!openId && !!error && "status" in error && error.status === 404;
   const asking = useMutationState({ filters: { mutationKey: ["ask", openId], status: "pending" }, select: (m) => (typeof m.state.variables === "string" ? m.state.variables : undefined) })[0];
   const messages = [...(open?.messages ?? []), ...(asking ? [{ role: "user", content: asking }] : [])];
-  useEffect(() => void (openId && scrollTo(0, document.body.scrollHeight)), [messages.length]);
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (openId) main?.scrollTo(0, main.scrollHeight);
+  }, [messages.length]);
   const deleting = useMutation({
     mutationFn: (id: number) => send("DELETE", `/api/chats/${id}`),
     onSuccess: (_, id, __, { client }) => client.setQueryData<Chat[]>(["/api/chats"], (rows) => rows?.filter((c) => c.id !== id)),

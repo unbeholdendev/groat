@@ -15,13 +15,13 @@ const o = t.categoryOrder;
 const required = "Enter a name, emoji and colour";
 const text = (message: string) => z.string(message).trim().min(1, message);
 const categoryInput = z.object({ name: text(required), icon: text(required), color: text(required) });
-const newCategory = categoryInput.extend({
+export const newCategory = categoryInput.extend({
   parentId: z.number("Invalid parent category").int("Invalid parent category").nullable().default(null),
   kind: kind.optional(),
 });
-const categoryUpdate = categoryInput.extend({ kind }).partial();
-const order = z.array(z.number("Expected a list of category IDs").int("Expected a list of category IDs"), "Expected a list of category IDs");
-const tagInput = z.object({ name: text("Enter a name") });
+export const categoryUpdate = categoryInput.extend({ kind }).partial();
+export const order = z.array(z.number("Expected a list of category IDs").int("Expected a list of category IDs"), "Expected a list of category IDs");
+export const tagInput = z.object({ name: text("Enter a name") });
 const deletion = z.object({ moveTo: z.coerce.number("Invalid category to move to").int("Invalid category to move to").optional() });
 
 const shape = { id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, parentId: cat.parentId, builtin: cat.builtin, kind: cat.kind };

@@ -83,7 +83,7 @@ export function TransactionForm() {
     saving.reset();
     repeating.reset();
     form.reset(filled(e, unit, kindOf(e)));
-    scrollTo(0, 0);
+    document.querySelector("main")?.scrollTo(0, 0);
   }
 
   const save = handleSubmit(({ categoryId, period, every, endDate, needsConfirmation, kind, ...v }) => {

@@ -71,7 +71,7 @@ test("a line without an amount opens the full form", async ({ app: page }) => {
   await expect(page.getByRole("heading", { name: "New expense" })).toBeVisible();
 });
 
-test("Enter on an empty bar does nothing; the plus opens the full form", async ({ app: page }) => {
+test("Enter on an empty bar does nothing; the expand button opens the full form", async ({ app: page }) => {
   await bar(page).press("Enter");
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("button", { name: "Full form" })).toHaveCount(1);
@@ -116,7 +116,7 @@ test("full form adds, edits, bins and restores", async ({ app: page }) => {
   await expect(row).toBeHidden();
 
   await page.getByRole("link", { name: "Settings" }).click();
-  await page.getByRole("main").getByRole("link", { name: "Bin" }).click();
+  await page.getByRole("link", { name: "Bin", exact: true }).click();
   await page.getByRole("button", { name: "Restore" }).click();
   await expect(page.getByText("The bin is empty.")).toBeVisible();
   await page.getByRole("link", { name: "Expenses" }).click();

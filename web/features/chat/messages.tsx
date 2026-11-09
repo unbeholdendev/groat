@@ -25,7 +25,7 @@ export function Messages({ messages, asking, onDraft }: { messages: Message[]; a
             </p>
           );
         })}
-      {asking && <p className="mr-10 justify-self-start rounded-[20px] rounded-bl-md bg-surface px-4 py-2.5 text-ink3 shadow-panel">Looking at your expenses…</p>}
+      {asking && <p className="mr-10 justify-self-start rounded-[20px] rounded-bl-md bg-surface px-4 py-2.5 text-ink3 shadow-panel">Working on it…</p>}
     </div>
   );
 }

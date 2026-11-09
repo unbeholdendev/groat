@@ -1,6 +1,6 @@
 import { bar, expect, test } from "./fixtures";
 
-test.use({ ai: true });
+test.use({ ai: true, serviceWorkers: "block" });
 
 test("a new line goes to AI and saves from the review card", async ({ app: page }) => {
   await bar(page).fill("corner shop");
@@ -28,13 +28,56 @@ test("? asks, and the answer continues in chat", async ({ app: page }) => {
   await expect(page.getByRole("button", { name: "where does it go" })).toBeVisible();
 });
 
-test("past chats remain readable after the AI provider is removed", async ({ app: page }) => {
+test("past chats remain readable after the AI provider is removed", async ({ app: page, isMobile }) => {
   const response = await page.request.post("/api/chats", { data: { message: "Saved question" } });
   expect(response.status()).toBe(201);
   expect((await page.request.put("/api/ai", { data: { baseUrl: "" } })).ok()).toBe(true);
   await page.getByRole("link", { name: "Settings" }).click();
-  await page.getByRole("link", { name: "Past chats" }).click();
+  await page.getByRole("link", { name: isMobile ? "Past chats" : "Chats", exact: true }).click();
   await page.getByRole("button", { name: "Saved question" }).click();
   await expect(page.getByRole("heading", { name: "Saved question" })).toBeVisible();
   await expect(page.getByText("Mostly on food.")).toBeVisible();
+});
+
+test("an explicit chat request saves the expense and refreshes Home without manual saving", async ({ app: page }) => {
+  await bar(page).fill("?Add test coffee for £3");
+  await bar(page).press("Enter");
+  await expect(page.getByText("Added test coffee.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Test coffee", exact: true })).toBeVisible();
+  const rows = await (await page.request.get("/api/transactions")).json();
+  expect(rows.filter((r: { note: string }) => r.note === "Test coffee")).toHaveLength(1);
+});
+
+test("a delayed chat reply cannot repopulate the device cache after revocation", async ({ app: page }) => {
+  let release!: () => void;
+  let received!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  const ready = new Promise<void>((resolve) => { received = resolve; });
+  await page.route("**/api/chats", async (route) => {
+    const response = await route.fetch();
+    received();
+    await held;
+    await route.fulfill({ response });
+  });
+  await bar(page).fill("?Private delayed question");
+  await bar(page).press("Enter");
+  await ready;
+  await page.request.post("/api/logout");
+  await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
+  const finished = page.waitForEvent("requestfinished", { predicate: (r) => r.url().endsWith("/api/chats") && r.method() === "POST" });
+  release();
+  await finished;
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  expect(await page.evaluate(() => localStorage.getItem("cache") ?? "")).not.toContain("Private delayed question");
+});
+
+test("chat requests fail offline instead of queuing actions for later", async ({ app: page, context }) => {
+  await expect(bar(page)).toBeVisible();
+  await context.setOffline(true);
+  await bar(page).fill("?Add test coffee for £3");
+  await bar(page).press("Enter");
+  await expect(page.getByText("Couldn’t reach the server. Check your connection and try again.", { exact: true })).toBeVisible();
+  const cache = await page.evaluate(() => JSON.parse(localStorage.getItem("cache") ?? "{}"));
+  expect(cache.mutations ?? []).toHaveLength(0);
 });

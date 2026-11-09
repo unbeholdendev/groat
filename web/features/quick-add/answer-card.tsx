@@ -20,7 +20,7 @@ export function AnswerCard({ asking, unit, onClose, onForm, onChat }: {
   return (
     <section ref={ref} tabIndex={-1} aria-live="polite" className="rise max-h-[55dvh] overflow-y-auto rounded-card bg-surface px-5 pt-[18px] pb-2.5 shadow-lift outline-none">
       <p className={`text-[17px] leading-snug font-medium whitespace-pre-wrap ${asking.isPending ? "text-ink3" : ""}`}>
-        {(asking.error && (asking.error.message || "Couldn’t reach the AI service. Try again.")) ?? answer ?? (asking.isPending ? "Looking at your expenses…" : "No answer came back.")}
+        {(asking.error && (asking.error.message || "Couldn’t reach the AI service. Try again.")) ?? answer ?? (asking.isPending ? "Working on it…" : "No answer came back.")}
       </p>
       {drafts.map((d, i) => (
         <DraftCard key={i} draft={d} unit={unit} className="mt-3 w-full bg-surface2" onClick={() => (onForm(d), asking.reset())} />

@@ -1,6 +1,6 @@
 import { chmodSync, closeSync, openSync } from "node:fs";
 import { Database } from "bun:sqlite";
-import { serveStatic } from "hono/bun";
+import { serveStatic, websocket } from "hono/bun";
 import { createApp } from "./app";
 
 const ignored = Object.keys(process.env).filter((k) => k.startsWith("AI_"));
@@ -22,4 +22,4 @@ setInterval(app.generate, 86_400_000);
 app.use("*", serveStatic({ root: "./dist" }));
 app.get("*", serveStatic({ path: "./dist/index.html" }));
 
-export default { port: Number(process.env.PORT ?? 3000), fetch: app.fetch };
+export default { port: Number(process.env.PORT ?? 3000), fetch: app.fetch, websocket };

@@ -14,8 +14,9 @@ function provider(script: Record<string, unknown>[] = []) {
   return { handler, requests, script };
 }
 
+let nextCall = 0;
 const call = (name: string, args: unknown) => ({
-  tool_calls: [{ id: `call-${name}`, type: "function", function: { name, arguments: JSON.stringify(args) } }],
+  tool_calls: [{ id: `call-${nextCall++}`, type: "function", function: { name, arguments: JSON.stringify(args) } }],
 });
 
 test("without a key inference refuses but shared history remains available", async () => {
@@ -218,4 +219,131 @@ test("AI tools report incomplete totals and use the same rates as lists", async 
   t.clock.now = new Date("2026-10-10T12:11:00Z");
   expect(await ask("category_totals", { from: "2026-10-02", to: "2026-10-02" })).toMatchObject({ total: 1250, unconverted: 0 });
   expect((await ask("list_transactions", {}))[0]).toMatchObject({ baseAmount: 1250, conversion: { from: { source: "frankfurter" } } });
+});
+
+test("explicit chat actions execute once through ledger validation", async () => {
+  const { ask, call: api } = await withSpending();
+  const input = { note: "Lunch", amount: "12", currency: "GBP" };
+  const add = call("add_transaction", input);
+  const [saved, repeated, invalid] = await ask("Add lunch for £12",
+    add, add,
+    call("add_transaction", { ...input, amount: "-1" }), { content: "Added lunch." });
+  expect(saved).toMatchObject({ outcome: "completed", result: { note: "Lunch", amount: 1200 } });
+  expect(repeated).toEqual(saved);
+  expect(invalid.error).toContain("Invalid amount");
+  expect((await api("GET", "/api/transactions")).body.filter((t: any) => t.note === "Lunch")).toHaveLength(1);
+});
+
+test("a provider failure after an action preserves its outcome for continuation", async () => {
+  const ai = provider([call("add_transaction", { note: "Coffee", amount: "3" })]);
+  let requests = 0;
+  const s = setup(undefined, (url, init) => {
+    if (url.href.endsWith("/chat/completions") && ++requests === 2) return new Response("down", { status: 500 });
+    return ai.handler(url, init);
+  }, config);
+  const chat = await s.call("POST", "/api/chats", { message: "Add coffee for 3" });
+  expect(chat.status).toBe(201);
+  expect(chat.body.messages.some((m: any) => m.role === "tool" && m.content.includes('"outcome":"completed"'))).toBe(true);
+  expect(chat.body.messages.at(-1).content).toContain("saved");
+  ai.script.push({ content: "Coffee was added." });
+  await s.call("POST", `/api/chats/${chat.body.id}/messages`, { message: "What happened?" });
+  expect((await s.call("GET", "/api/transactions")).body.filter((t: any) => t.note === "Coffee")).toHaveLength(1);
+});
+
+test("chat actions cover category, income, transaction bin and recurring operations", async () => {
+  const { ask, call: api, id } = await withSpending();
+  const [category] = await ask("Create a category", call("add_category", { name: "Books", icon: "📚", color: "#123456" }), { content: "Created." });
+  expect(category.outcome).toBe("completed");
+  const [income] = await ask("Record pay", call("add_transaction", { note: "Pay", amount: "100", categoryId: id("Salary") }), { content: "Added." });
+  expect(income.result.categoryId).toBe(id("Salary"));
+  const transactionId = income.result.id;
+  const [binned, restored, missing] = await ask("Bin and restore pay",
+    call("bin_transaction", { id: transactionId }), call("restore_transaction", { id: transactionId }),
+    call("confirm_transaction", { id: 999999 }), { content: "Restored." });
+  expect(binned.outcome).toBe("completed");
+  expect(restored.outcome).toBe("completed");
+  expect(missing.error).toBe("Not found");
+  const [recurring] = await ask("Schedule books", call("add_recurring", {
+    note: "Books", amount: "5", categoryId: category.result.id, period: "month", every: 1
+  }), { content: "Scheduled." });
+  expect(recurring.outcome).toBe("completed");
+  await ask("Pause it", call("pause_recurring", { id: recurring.result.id }), { content: "Paused." });
+  expect((await api("GET", "/api/recurring")).body.find((r: any) => r.id === recurring.result.id).paused).toBe(true);
+});
+
+test("malformed and unknown chat tools report errors without writing", async () => {
+  const { ask, call: api } = await withSpending();
+  const before = (await api("GET", "/api/transactions")).body;
+  const [malformed, unknown] = await ask("Add something",
+    { tool_calls: [{ id: "bad", function: { name: "add_transaction", arguments: "{" } }] },
+    call("change_settings", {}), { content: "Please give the amount and note." });
+  expect(malformed.error).toBeString();
+  expect(unknown.error).toContain("Unsupported action");
+  expect((await api("GET", "/api/transactions")).body).toEqual(before);
+});
+
+test("all offered tools use object parameters and category ordering executes", async () => {
+  const ai = provider([{ content: "Ready" }]);
+  const s = setup(undefined, ai.handler, config);
+  await s.call("POST", "/api/chats", { message: "hi" });
+  for (const { function: tool } of ai.requests[0].body.tools) expect(tool.parameters.type).toBe("object");
+  const categories = (await s.call("GET", "/api/categories")).body;
+  const ids = categories.filter((c: { kind: string }) => c.kind === "expense").map((c: { id: number }) => c.id).reverse();
+  ai.script.push(call("order_categories", { ids }), { content: "Reordered." });
+  const chat = await s.call("POST", "/api/chats", { message: "Reverse my category order" });
+  expect(JSON.parse(chat.body.messages.find((m: any) => m.role === "tool").content)).toMatchObject({ outcome: "completed" });
+  expect((await s.call("GET", "/api/categories")).body.filter((c: { kind: string }) => c.kind === "expense").map((c: { id: number }) => c.id)).toEqual(ids);
+});
+
+test("distinct calls can save two separate identical expenses", async () => {
+  const { ask, call: api } = await withSpending();
+  const args = { note: "Identical coffee", amount: "3", currency: "GBP" };
+  await ask("Add two separate identical coffees for £3 each", {
+    tool_calls: ["first-coffee", "second-coffee"].map((id) => ({ id, type: "function", function: { name: "add_transaction", arguments: JSON.stringify(args) } })),
+  }, { content: "Added both coffees." });
+  expect((await api("GET", "/api/transactions")).body.filter((t: any) => t.note === "Identical coffee")).toHaveLength(2);
+});
+
+for (const [reason, revoke] of [
+  ["revoked", "DELETE FROM sessions"],
+  ["expired", "UPDATE sessions SET expires_at = '2000'"],
+  ["removed user", "UPDATE users SET deleted_at = '2026-10-10'"],
+] as const) test(`chat actions stop when their originating session is ${reason}`, async () => {
+  let release!: () => void;
+  let started!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  const ready = new Promise<void>((resolve) => { started = resolve; });
+  const ai = provider([call("add_transaction", { note: "Revoked write", amount: "3" }), { content: "Added." }]);
+  const s = setup(undefined, async (url, init) => {
+    if (url.pathname.endsWith("/chat/completions")) { started(); await pending; }
+    return ai.handler(url, init) ?? new Response("not found", { status: 404 });
+  }, config);
+  const result = s.call("POST", "/api/chats", { message: "Add coffee for 3" });
+  await ready;
+  s.db.run(revoke);
+  release();
+  expect((await result).status).toBe(401);
+  expect(s.db.query("SELECT count(*) AS n FROM transactions").get()).toEqual({ n: 0 });
+});
+
+test("revoking a session between tool rounds stops every later action", async () => {
+  let release!: () => void;
+  let started!: () => void;
+  let rounds = 0;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  const ready = new Promise<void>((resolve) => { started = resolve; });
+  const ai = provider([
+    call("add_transaction", { note: "Before revocation", amount: "3" }),
+    { tool_calls: [call("add_transaction", { note: "After revocation", amount: "3" }).tool_calls[0], call("empty_bin", {}).tool_calls[0]] },
+  ]);
+  const s = setup(undefined, async (url, init) => {
+    if (url.pathname.endsWith("/chat/completions") && ++rounds === 2) { started(); await pending; }
+    return ai.handler(url, init) ?? new Response("not found", { status: 404 });
+  }, config);
+  const result = s.call("POST", "/api/chats", { message: "Add these two expenses" });
+  await ready;
+  s.db.run("DELETE FROM sessions");
+  release();
+  expect((await result).status).toBe(401);
+  expect(s.db.query("SELECT note FROM transactions").all()).toEqual([{ note: "Before revocation" }]);
 });

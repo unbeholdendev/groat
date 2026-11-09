@@ -11,7 +11,7 @@ import * as t from "./schema";
 const e = t.transactions;
 const r = t.recurring;
 
-const schedule = transactionInput.omit({ date: true }).extend({
+export const schedule = transactionInput.omit({ date: true }).extend({
   period: z.enum(["day", "week", "month", "year"], "Invalid schedule"),
   every: z.number("Invalid schedule").int("Invalid schedule").min(1, "Invalid schedule"),
   startDate: isoDate.optional(),

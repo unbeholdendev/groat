@@ -35,7 +35,7 @@ export function SignIn({ setup }: { setup: boolean }) {
           mutation.reset(); setClearing(false);
         }}>Remove unsent changes</Button><Button onClick={() => setClearing(false)}>Keep changes</Button></> : <Button onClick={() => setClearing(true)}>Clear unsent changes</Button>}
       </div>}
-      {!setup && <p className="text-sm text-ink2">Forgot your password? Ask an admin to reset it. Admins can recover access using the server’s README.</p>}
+      {!setup && <p className="text-sm text-ink2">Forgot your password? Contact your server administrator for help.</p>}
       <Button variant="primary" type="submit" disabled={mutation.isPending}>
         {setup ? "Create account" : "Sign in"}
       </Button>

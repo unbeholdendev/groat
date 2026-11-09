@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 export const paths = {
+  expand: "M14 4h6v6M20 4l-6 6M10 20H4v-6M4 20l6-6",
   plus: "M12 5v14M5 12h14",
   close: "M6 6l12 12M18 6 6 18",
   chevron: "m6 9 6 6 6-6",
