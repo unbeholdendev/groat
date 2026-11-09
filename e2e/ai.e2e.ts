@@ -2,9 +2,26 @@ import { bar, expect, test } from "./fixtures";
 
 test.use({ ai: true, serviceWorkers: "block" });
 
+test("a note and amount save without a category or AI review", async ({ app: page }) => {
+  const drafts: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/drafts")) drafts.push(request.url());
+  });
+  await bar(page).fill("corner shop 12.50");
+  await bar(page).press("Enter");
+  await expect(bar(page)).toHaveValue("");
+  await expect(page.getByRole("region", { name: "Review expense" })).toBeHidden();
+  await expect(page.getByRole("listitem").filter({ hasText: "corner shop" })).toContainText("£12.50");
+  await expect(page.getByRole("listitem").filter({ hasText: "corner shop" })).toContainText("Uncategorised");
+  const rows = await (await page.request.get("/api/transactions")).json();
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({ note: "corner shop" });
+  expect(drafts).toEqual([]);
+});
+
 test("a new line goes to AI and saves from the review card", async ({ app: page }) => {
   await bar(page).fill("corner shop");
-  await expect(page.getByText("Press Enter and AI reads it for you to check.")).toBeVisible();
+  await expect(page.getByText("Press Enter to create an expense draft for review.")).toBeVisible();
   await bar(page).press("Enter");
   const card = page.getByRole("region", { name: "Review expense" });
   await expect(card.getByLabel("Amount")).toHaveValue("9.99");

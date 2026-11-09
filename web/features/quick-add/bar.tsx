@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useMutationState } from "@tanstack/react-query";
 import { parseAmount, type Unit } from "../../../shared/amount";
-import { confident, parse } from "../../../shared/parse";
+import { parse } from "../../../shared/parse";
 import { useSend, useSession } from "../../lib/api";
 import { Icon, paths } from "../../components/icon";
 import { today } from "../../lib/dates";
@@ -79,7 +79,7 @@ export function Bar(props: {
     if (ask) return question && asking.mutate(question, { onSuccess: (c) => inChat && (clear(), props.onChat(c.id)) });
     if (reviewing) return drafting.isSuccess && save();
     if (!text.trim()) return;
-    if (settings.ai && !confident(p, category?.id)) return drafting.mutate(text.trim());
+    if (settings.ai && !p.amount) return drafting.mutate(text.trim());
     if (!p.amount) return props.onForm(seed());
     adding.mutate(["POST", "/api/transactions", { note: p.note, amount: p.amount, currency, unit: p.unit ?? unit, date, categoryId: category?.id, tags: p.tags }]);
   }
@@ -161,7 +161,6 @@ export function Bar(props: {
             text={text}
             ask={ask}
             p={p}
-            category={category}
             error={error}
             receipt={receipt}
             queued={queued}

@@ -3,12 +3,12 @@ import { Button } from "../../components/button";
 import { Fragment } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Unit } from "../../../shared/amount";
-import { confident, parse } from "../../../shared/parse";
+import { parse } from "../../../shared/parse";
 import { Tile } from "../../components/category";
 import { Icon, paths } from "../../components/icon";
 import { useSession } from "../../lib/api";
 import { money } from "../../lib/money";
-import type { Category, Settings } from "../../lib/schemas";
+import type { Settings } from "../../lib/schemas";
 import { Tokens } from "./tokens";
 import type { Receipt } from "./use-receipt";
 
@@ -26,7 +26,6 @@ export function Hint(props: {
   text: string;
   ask: boolean;
   p: ReturnType<typeof parse>;
-  category?: Category;
   error: Error | null;
   receipt: Receipt;
   queued: number;
@@ -64,8 +63,8 @@ export function Hint(props: {
             </>
           )}
         </span>
-      ) : text && settings.ai && !confident(p, props.category?.id) ? (
-        <span>Press Enter and AI reads it for you to check.</span>
+      ) : text && settings.ai && !p.amount ? (
+        <span>Press Enter to create an expense draft for review.</span>
       ) : text && !p.amount ? (
         <span>Add an amount, like 24.50, or press Enter for the full form.</span>
       ) : text ? (
