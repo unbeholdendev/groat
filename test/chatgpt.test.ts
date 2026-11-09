@@ -236,6 +236,34 @@ test("failed Responses streams log diagnostic fields without private payloads", 
       expect(JSON.parse(String(log.mock.calls[0][0]))).toEqual({
         timestamp: expect.any(String), level: "error", event: "ai.response.failed", operation: event.type, providerRequestId: "req_test",
         ...(code && { code }), ...(event.type === "response.incomplete" && { reason: "max_output_tokens" }),
+        hasMessage: event.type === "response.failed" || event.code === "rate_limit_exceeded",
+      });
+      expect(JSON.stringify(log.mock.calls)).not.toContain("private");
+    }
+  } finally {
+    log.mockRestore();
+  }
+});
+
+test("Responses logs nested errors and message-only failures without exposing messages", async () => {
+  const log = spyOn(console, "error").mockImplementation(() => {});
+  try {
+    for (const [event, expected] of [
+      [{ type: "error", error: { code: "insufficient_quota", type: "invalid_request_error", param: "model", message: "private-message" } },
+        { code: "insufficient_quota", errorType: "invalid_request_error", param: "model", hasMessage: true }],
+      [{ type: "error", code: null, message: "private-message", param: "stream" },
+        { param: "stream", hasMessage: true }],
+      [{ type: "response.failed", response: { error: { code: "server_error", type: "server_error", message: "private-message" } } },
+        { code: "server_error", errorType: "server_error", hasMessage: true }],
+      [{ type: "error", error: { code: "private\ncode", type: { secret: "private-type" }, param: "private".repeat(20), message: { secret: "private-message" } } },
+        { hasMessage: false }],
+    ] as const) {
+      log.mockClear();
+      const stream = new Response(`data: ${JSON.stringify(event)}\n\n`);
+      await expect(responses(async () => stream, { key: "private-key", model: "test" }, { messages: [] })).rejects.toThrow("ChatGPT could not finish");
+      expect(log.mock.calls).toHaveLength(1);
+      expect(JSON.parse(String(log.mock.calls[0][0]))).toEqual({
+        timestamp: expect.any(String), level: "error", event: "ai.response.failed", operation: event.type, ...expected,
       });
       expect(JSON.stringify(log.mock.calls)).not.toContain("private");
     }

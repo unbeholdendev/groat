@@ -8,6 +8,7 @@ type Level = Exclude<keyof typeof levels, "silent">;
 type Fields = {
   method?: string; route?: string; status?: number; durationMs?: number; operation?: string;
   service?: string; count?: number; error?: string; code?: string; reason?: string;
+  errorType?: string; param?: string; hasMessage?: boolean;
   providerRequestId?: string; port?: number; signal?: string; version?: string;
 };
 const context = new AsyncLocalStorage<{ requestId: string }>();

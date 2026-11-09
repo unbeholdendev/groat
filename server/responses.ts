@@ -80,10 +80,14 @@ export async function responses(fetch: Deps["fetch"], provider: { key: string; m
       if (!data || data === "[DONE]") continue;
       const event = JSON.parse(data);
       if (["response.failed", "response.incomplete", "error"].includes(event.type)) {
+        const failure = event.type === "error" ? event.error ?? event : event.response?.error;
         log("error", "ai.response.failed", {
           operation: event.type,
           providerRequestId: diagnostic(res.headers.get("x-request-id")),
-          code: diagnostic(event.type === "error" ? event.code : event.response?.error?.code),
+          code: diagnostic(failure?.code),
+          errorType: diagnostic(failure?.type === "error" ? undefined : failure?.type),
+          param: diagnostic(failure?.param),
+          hasMessage: typeof failure?.message === "string",
           reason: diagnostic(event.response?.incomplete_details?.reason),
         });
         throw new Error("ChatGPT could not finish this response. Check your plan usage or reconnect in Settings, then try again.");
