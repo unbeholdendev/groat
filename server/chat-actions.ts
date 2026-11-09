@@ -25,7 +25,7 @@ export function chatActions(ctx: Ctx, value: Valuer, cookie: string) {
   const empty = z.object({});
   const action = <T extends z.ZodType>(description: string, input: T, method: string, path: (args: z.output<T>) => string, payload: (args: z.output<T>) => unknown = (args) => args) => ({
     description,
-    parameters: z.toJSONSchema(input, { io: "input", target: "openapi-3.0" }),
+    parameters: z.toJSONSchema(input, { io: "input", target: "draft-07" }),
     run: async (raw: unknown) => {
       const args = input.parse(raw);
       const res = await app.request(path(args), {

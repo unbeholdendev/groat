@@ -50,7 +50,7 @@ export async function extract(ctx: Ctx, input: string | Photo) {
       },
       { role: "user", content: typeof input === "string" ? input : [{ type: "image_url", image_url: { url: input.image } }] },
     ],
-    tools: [{ type: "function", function: { name: "transaction", parameters: z.toJSONSchema(fields, { io: "input", target: "openapi-3.0" }) } }],
+    tools: [{ type: "function", function: { name: "transaction", parameters: z.toJSONSchema(fields, { io: "input", target: "draft-07" }) } }],
     tool_choice: { type: "function", function: { name: "transaction" } },
   }, typeof input === "string" ? "chat" : "vision");
   const read = reply.safeParse(message.tool_calls?.[0]?.function.arguments);

@@ -21,7 +21,7 @@ const range = z.object({ from: isoDate.describe("YYYY-MM-DD"), to: isoDate.descr
 
 const tool = <T extends z.ZodType>(description: string, input: T, run: (args: z.output<T>) => unknown) => ({
   description,
-  parameters: z.toJSONSchema(input, { io: "input", target: "openapi-3.0" }),
+  parameters: z.toJSONSchema(input, { io: "input", target: "draft-07" }),
   run: (args: unknown) => run(input.parse(args)),
 });
 

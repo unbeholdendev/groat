@@ -360,3 +360,23 @@ test("revoking a session between tool rounds stops every later action", async ()
   expect((await result).status).toBe(401);
   expect(s.db.query("SELECT note FROM transactions").all()).toEqual([{ note: "Before revocation" }]);
 });
+
+test("chat tools use JSON Schema bounds and nullable types", async () => {
+  const ai = provider([{ content: "Ready" }]);
+  const s = setup(undefined, ai.handler, config);
+  expect((await s.call("POST", "/api/chats", { message: "hi" })).status).toBe(201);
+  const tools = ai.requests[0].body.tools;
+  const check = (schema: any) => {
+    if (!schema || typeof schema !== "object") return;
+    for (const bound of ["exclusiveMinimum", "exclusiveMaximum"])
+      if (bound in schema) expect(typeof schema[bound]).toBe("number");
+    expect(schema).not.toHaveProperty("nullable");
+    for (const value of Object.values(schema)) check(value);
+  };
+  for (const { function: tool } of tools) check(tool.parameters);
+  const parameters = (name: string) => tools.find((t: any) => t.function.name === name).function.parameters;
+  expect(parameters("bin_transaction").properties.id.exclusiveMinimum).toBe(0);
+  expect(parameters("add_category").properties.parentId.anyOf).toContainEqual({ type: "null" });
+  expect(parameters("add_recurring").properties.endDate.type).toEqual(["string", "null"]);
+  expect(parameters("add_category").required).not.toContain("parentId");
+});
