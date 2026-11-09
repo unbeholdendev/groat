@@ -13,7 +13,7 @@ import { type Db, migrationsFolder } from "./db";
 import { draftRoutes } from "./draft";
 import { transactionRoutes } from "./transactions";
 import { memberRoutes } from "./members";
-import { aiModels, type Models } from "./models";
+import { aiModels, type Ai } from "./models";
 import { exportRoutes } from "./export";
 import { importRoutes } from "./import";
 import { valuer } from "./rates";
@@ -32,7 +32,7 @@ export type Deps = {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 };
 
-export type Ctx = Omit<Deps, "db"> & { db: Db; models: Models };
+export type Ctx = Omit<Deps, "db"> & { db: Db; ai: Ai };
 
 export function createApp(deps: Deps) {
   deps = { ...deps, fetch: loggedFetch(deps.fetch) };
@@ -50,17 +50,8 @@ export function createApp(deps: Deps) {
   const subscription = chatgpt(deps, deps.credentials);
   if (!deps.db.query("SELECT 1 FROM users LIMIT 1").get()) subscription.reset();
   subscription.adopt(deps.db.query<{ id: number }, []>("SELECT id FROM users WHERE deleted_at IS NULL ORDER BY role = 'admin' DESC, id").all().map((u) => u.id));
-  const models = aiModels(db, deps.fetch, {
-    connected: subscription.connected,
-    provider: async () => {
-      const saved = await subscription.credential();
-      if (!saved) return;
-      const model = saved.model ?? (await subscription.catalogue())[0]?.slug;
-      if (!model) throw new Error("Choose a ChatGPT model in Settings");
-      return { base: "https://api.openai.com/v1", key: saved.access_token, model, responses: true as const };
-    },
-  });
-  const ctx = { ...deps, db, models };
+  const ai = aiModels(db, deps.fetch, subscription);
+  const ctx = { ...deps, db, ai };
   const app = new Hono<Env>();
   app.use("*", requestLogging);
   app.onError((error, c) => error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500));
@@ -86,8 +77,8 @@ export function createApp(deps: Deps) {
   app.route("/", subscription.routes);
   app.route("/", memberRoutes(db, deps.clock));
   app.route("/", tokenRoutes(ctx));
-  app.route("/", models.routes);
-  app.route("/", settingsRoutes(db, models));
+  app.route("/", ai.routes);
+  app.route("/", settingsRoutes(db, ai));
   app.route("/", categoryRoutes(db));
   app.route("/", transactionRoutes(ctx, value));
   app.route("/", draftRoutes(ctx));

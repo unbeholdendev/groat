@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { knownCurrencies } from "../shared/amount";
 import { type Db, settings as stored } from "./db";
-import type { Models } from "./models";
+import type { Ai } from "./models";
 import { body } from "./request";
 import * as t from "./schema";
 
@@ -22,21 +22,10 @@ const currency = z.string("Invalid currency").refine((c) => knownCurrencies.has(
 const onboarding = z.object({ baseCurrency: currency });
 const update = onboarding.extend({ theme: z.enum(["system", "light", "dark"], "Invalid theme") }).partial();
 
-export function settingsRoutes(db: Db, models: Models) {
+export function settingsRoutes(db: Db, ai: Ai) {
   const app = new Hono();
   const cat = t.categories;
-  const settings = async () => {
-    const chat = await models.chat().catch((e: Error) => e);
-    const working = !!chat && !(chat instanceof Error);
-    return {
-      ...stored(db),
-      ai: working,
-      aiSource: models.source(),
-      aiProblem: chat instanceof Error ? chat.message : null,
-      vision: working && !!(await models.vision().catch(() => null)),
-      voice: working && !!(await models.stt().catch(() => null)),
-    };
-  };
+  const settings = async () => ({ ...stored(db), ...(await ai.status()) });
 
   app.get("/api/settings", async (c) => c.json(await settings()));
 

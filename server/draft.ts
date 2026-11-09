@@ -4,7 +4,6 @@ import { z } from "zod";
 import { knownCurrencies } from "../shared/amount";
 import { parse } from "../shared/parse";
 import { isoDate } from "../shared/schema";
-import { complete } from "./ai";
 import type { Ctx } from "./app";
 import { settings, today, uncategorised } from "./db";
 import { readTransaction } from "./transactions";
@@ -31,7 +30,7 @@ const reply = z.string().transform((s, ctx) => {
 
 export const textInput = z.object({ text: z.string("Enter some text").trim().min(1, "Enter some text") });
 
-type Photo = { image: string; model: string };
+type Photo = { image: string };
 
 export async function extract(ctx: Ctx, input: string | Photo) {
   const { db, clock } = ctx;
@@ -39,7 +38,7 @@ export async function extract(ctx: Ctx, input: string | Photo) {
   const { lastCurrency, recentCurrencies } = settings(db);
   const day = today(clock);
   const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).where(eq(categories.kind, "expense")).all();
-  const message = await complete(ctx, {
+  const message = await ctx.ai.complete({
     messages: [
       {
         role: "system",
@@ -53,8 +52,7 @@ export async function extract(ctx: Ctx, input: string | Photo) {
     ],
     tools: [{ type: "function", function: { name: "transaction", parameters: z.toJSONSchema(fields, { io: "input", target: "openapi-3.0" }) } }],
     tool_choice: { type: "function", function: { name: "transaction" } },
-    ...(typeof input === "string" ? {} : { model: input.model }),
-  });
+  }, typeof input === "string" ? "chat" : "vision");
   const read = reply.safeParse(message.tool_calls?.[0]?.function.arguments);
   if (!read.success) throw new Error("The AI provider sent an unexpected reply");
   const { note, amount, currency, date, categoryId, tags = [] } = read.data;
@@ -82,7 +80,8 @@ export function draftRoutes(ctx: Ctx) {
   const app = new Hono();
 
   app.post("/api/drafts", async (c) => {
-    if (!(await ctx.models.chat())) return c.json({ error: "AI isn’t set up" }, 403);
+    const off = await ctx.ai.unavailable("chat");
+    if (off) return c.json({ error: off }, 403);
     const parsed = await body(c, textInput);
     if ("error" in parsed) return c.json(parsed, 400);
     return c.json(await extract(ctx, parsed.data.text));

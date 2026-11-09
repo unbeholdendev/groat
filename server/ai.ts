@@ -10,19 +10,11 @@ import { countable, settings, today, uncategorised } from "./db";
 import { transactionFilter, transactionQuery, transactions, newest, readTransaction } from "./transactions";
 import { body } from "./request";
 import type { Valuer } from "./rates";
-import { responses } from "./responses";
 import { categories, chatMessages, chats as chatTable } from "./schema";
 import { period } from "./stats";
 import { errorKind, log } from "./logging";
+import { chatMessage, type Message } from "./models";
 
-const chatMessage = z.looseObject({
-  role: z.string(),
-  content: z.string().nullish(),
-  tool_calls: z.array(z.looseObject({ id: z.string(), function: z.looseObject({ name: z.string(), arguments: z.string() }) })).optional(),
-  tool_call_id: z.string().optional(),
-});
-type Message = z.infer<typeof chatMessage>;
-const completion = z.object({ choices: z.tuple([z.object({ message: chatMessage })], z.unknown()) });
 const question = z.object({ message: z.string("Enter a message").trim().min(1, "Enter a message") });
 const range = z.object({ from: isoDate.describe("YYYY-MM-DD"), to: isoDate.describe("YYYY-MM-DD") });
 
@@ -32,26 +24,13 @@ const tool = <T extends z.ZodType>(description: string, input: T, run: (args: z.
   run: (args: unknown) => run(input.parse(args)),
 });
 
-export async function complete({ fetch, models }: Pick<Ctx, "fetch" | "models">, request: { messages: Record<string, unknown>[]; [key: string]: unknown }) {
-  const provider = await models.chat();
-  if (!provider) throw new Error("AI isn’t set up");
-  if ("responses" in provider) return responses(fetch, provider, request);
-  const { base, key, model } = provider;
-  const res = await fetch(`${base}/chat/completions`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-    body: JSON.stringify({ model, ...request, messages: request.messages.map(({ responseItems, ...message }) => message) }),
-  });
-  if (!res.ok) throw new Error(`The AI provider returned an error (${res.status})`);
-  const reply = completion.safeParse(await res.json().catch(() => undefined));
-  if (!reply.success) throw new Error("The AI provider sent an unexpected reply");
-  return reply.data.choices[0].message;
-}
-
 export function chats(ctx: Ctx, value: Valuer) {
-  const { db, clock, fetch, models } = ctx;
+  const { db, clock, ai } = ctx;
   const app = new Hono<Env>();
-  app.use("*", async (c, next) => (c.req.method !== "POST" || (await models.chat()) ? next() : c.json({ error: "AI isn’t set up" }, 403)));
+  app.use("*", async (c, next) => {
+    const off = c.req.method === "POST" && (await ai.unavailable("chat"));
+    return off ? c.json({ error: off }, 403) : next();
+  });
 
   const save = (chatId: number, message: object) => db.insert(chatMessages).values({ chatId, message }).run();
 
@@ -133,13 +112,10 @@ export function chats(ctx: Ctx, value: Valuer) {
     const history = (chatId && chat(chatId)?.messages) || [];
     const added: Message[] = [{ role: "user", content: message }];
     for (let turn = 0; turn < 10; turn++) {
-      const reply = await complete(
-        { fetch, models },
-        {
-          messages: [{ role: "system", content: system() }, ...history, ...added],
-          tools: Object.entries(available).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),
-        },
-      ).catch((error) => {
+      const reply = await ai.complete({
+        messages: [{ role: "system", content: system() }, ...history, ...added],
+        tools: Object.entries(available).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),
+      }).catch((error) => {
         log("warn", "ai.reply.failed", { error: errorKind(error) });
         if (!acted) throw error;
         return { role: "assistant", content: "The action results are saved. I could not finish the reply.\n" + [...results.values()].map((result) => JSON.stringify(result)).join("\n") } as Message;

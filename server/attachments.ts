@@ -15,13 +15,13 @@ export function attachmentRoutes(ctx: Ctx) {
   const app = new Hono();
 
   app.post("/api/drafts/photo", bodyLimit({ maxSize, onError: (c) => c.json({ error: "That image is too large" }, 413) }), async (c) => {
-    const model = await ctx.models.vision();
-    if (!model) return c.json({ error: "Photo reading isn’t set up" }, 403);
+    const off = await ctx.ai.unavailable("vision");
+    if (off) return c.json({ error: off }, 403);
     const parsed = valid(photo, await c.req.parseBody().catch(() => undefined));
     if ("error" in parsed) return c.json(parsed, 400);
     const { image } = parsed.data;
     const bytes = Buffer.from(await image.arrayBuffer());
-    const draft = await extract(ctx, { image: `data:${image.type};base64,${bytes.toString("base64")}`, model });
+    const draft = await extract(ctx, { image: `data:${image.type};base64,${bytes.toString("base64")}` });
     const now = clock();
     db.delete(attachments)
       .where(and(isNull(attachments.transactionId), lt(attachments.createdAt, new Date(now.getTime() - 864e5).toISOString())))

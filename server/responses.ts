@@ -11,7 +11,6 @@ const message = z.object({
 });
 const requestSchema = z.object({
   messages: z.array(message),
-  model: z.string().optional(),
   tools: z.array(z.object({ function: z.object({ name: z.string(), description: z.string().optional(), parameters: z.unknown() }) })).optional(),
   tool_choice: z.object({ function: z.object({ name: z.string() }) }).optional(),
 });
@@ -51,7 +50,7 @@ export async function responses(fetch: Deps["fetch"], provider: { key: string; m
     headers: { authorization: `Bearer ${provider.key}`, "content-type": "application/json" },
     signal: AbortSignal.timeout(120000),
     body: JSON.stringify({
-      model: parsed.model ?? provider.model,
+      model: provider.model,
       input,
       store: false,
       stream: true,
