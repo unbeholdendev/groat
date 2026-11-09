@@ -16,6 +16,7 @@ export function chatActions(ctx: Ctx, value: Valuer, cookie: string) {
     log("warn", "ai.action.failed", { error: errorKind(error) });
     return error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500);
   });
+  app.use("*", ctx.publishChanges);
   app.route("/", auth(ctx.db, ctx.clock));
   app.route("/", transactionRoutes(ctx, value));
   app.route("/", categoryRoutes(ctx.db));

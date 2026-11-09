@@ -1,4 +1,4 @@
-import { bar, expect, test } from "./fixtures";
+import { add, bar, expect, test } from "./fixtures";
 
 test.use({ serviceWorkers: "block" });
 
@@ -22,6 +22,26 @@ test("another signed-in client sees writes and catches up after reconnecting", a
   } finally {
     await other.close();
   }
+});
+
+test("a tab's own write reaches its other tabs but is not echoed back to it", async ({ app: page, context }) => {
+  const frames: string[] = [];
+  page.on("websocket", (ws) => ws.on("framereceived", (f) => frames.push(String(f.payload))));
+  await page.reload();
+  await expect(bar(page)).toBeVisible();
+  await expect.poll(() => frames.some((f) => f.includes('"ready"'))).toBe(true);
+  const second = await context.newPage();
+  await second.goto("/");
+  await expect(bar(second)).toBeVisible();
+  const refetched: string[] = [];
+  page.on("request", (r) => r.method() === "GET" && r.url().includes("/api/transactions?") && refetched.push(r.url()));
+  await add(page, "echo tea 2");
+  await expect(page.getByRole("button", { name: "echo tea", exact: true })).toBeVisible();
+  await expect(second.getByRole("button", { name: "echo tea", exact: true })).toBeVisible();
+  expect(refetched).toEqual([]);
+  await second.request.post("/api/transactions", { data: { note: "Other tab", amount: "1" } });
+  await expect(page.getByRole("button", { name: "Other tab", exact: true })).toBeVisible();
+  expect(frames.filter((f) => f.includes('"changed"'))).toEqual(['{"type":"changed","resources":["transactions"]}']);
 });
 
 for (const change of ["revocation", "account switch"]) test(`a delayed token response cannot restore private cache after ${change}`, async ({ app: page }) => {

@@ -12,7 +12,6 @@ export function useAsk(chat?: number) {
     onSuccess: (c, _, started, { client }) => {
       if (!started?.session || client.getQueryData(["/api/session"]) !== started.session) throw new Error("Your session changed. Sign in again before continuing this chat.");
       client.setQueryData([`/api/chats/${c.id}`], c);
-      void client.invalidateQueries();
       client.setQueryData<Chat[]>(["/api/chats"], (rows) => rows && (rows.some((r) => r.id === c.id) ? rows : [{ id: c.id, title: c.title }, ...rows]));
     },
   });

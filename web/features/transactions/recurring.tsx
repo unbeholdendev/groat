@@ -18,7 +18,7 @@ export function Recurring({ onEdit }: { onEdit: (t: Template) => void }) {
   const categories = useCategories();
   const [unit] = useContext(UnitContext);
   const [stopping, setStopping] = useState<number | null>(null);
-  const mutation = useSend();
+  const mutation = useSend("recurring");
   const act = (t: Template, action: string) => {
     setStopping(null);
     mutation.mutate(action === "DELETE" ? ["DELETE", `/api/recurring/${t.id}`] : ["POST", `/api/recurring/${t.id}/${action}`]);

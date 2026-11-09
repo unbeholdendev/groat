@@ -37,7 +37,7 @@ export function TransactionForm() {
   const categories = useCategories();
   const editRow = [...(useTransactions() ?? []), ...usePending()].find((e) => e.id === editing);
   const saving = useSend("transaction", () => close(true));
-  const repeating = useSend(undefined, () => close(true));
+  const repeating = useSend("recurring", () => close(true));
   const [recurring, setRecurring] = useState(recovered?.recurring ?? template?.id);
 
   const values = JSON.stringify(watch());

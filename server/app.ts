@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { chats } from "./ai";
 import { attachmentRoutes } from "./attachments";
@@ -32,7 +32,7 @@ export type Deps = {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 };
 
-export type Ctx = Omit<Deps, "db"> & { db: Db; ai: Ai };
+export type Ctx = Omit<Deps, "db"> & { db: Db; ai: Ai; publishChanges: MiddlewareHandler };
 
 export function createApp(deps: Deps) {
   deps = { ...deps, fetch: loggedFetch(deps.fetch) };
@@ -51,7 +51,8 @@ export function createApp(deps: Deps) {
   if (!deps.db.query("SELECT 1 FROM users LIMIT 1").get()) subscription.reset();
   subscription.adopt(deps.db.query<{ id: number }, []>("SELECT id FROM users WHERE deleted_at IS NULL ORDER BY role = 'admin' DESC, id").all().map((u) => u.id));
   const ai = aiModels(db, deps.fetch, subscription);
-  const ctx = { ...deps, db, ai };
+  const live = liveUpdates(deps.db, deps.clock);
+  const ctx = { ...deps, db, ai, publishChanges: live.publishChanges };
   const app = new Hono<Env>();
   app.use("*", requestLogging);
   app.onError((error, c) => error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500));
@@ -62,14 +63,13 @@ export function createApp(deps: Deps) {
   for (const file of ["sw.js", "manifest.webmanifest"])
     app.get(`/${file}`, () => new Response(Bun.file(`${import.meta.dir}/${file}`)));
 
-  const live = liveUpdates(deps.db, deps.clock);
   app.route("/", live.routes);
 
   app.use("/api/*", async (c, next) => {
     await next();
     c.header("cache-control", "no-store");
-    if (!["GET", "HEAD", "OPTIONS"].includes(c.req.method) && c.res.ok) live.publish();
   });
+  app.use("/api/*", live.publishChanges);
 
   app.route("/", captureRoutes(ctx));
   app.route("/", restoreRoutes(db, subscription.reset));
@@ -92,5 +92,5 @@ export function createApp(deps: Deps) {
   app.route("/api/chats", chats(ctx, value));
   app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
-  return Object.assign(app, { generate: () => { recurring.generate(); live.publish(); }, close: live.close });
+  return Object.assign(app, { generate: () => { recurring.generate(); live.publish(["recurring", "transactions"]); }, close: live.close });
 }

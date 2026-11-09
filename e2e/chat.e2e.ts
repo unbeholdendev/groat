@@ -5,6 +5,25 @@ test.use({ ai: true });
 
 const nav = (page: Page) => page.getByRole("navigation", { name: "Main" });
 
+test("saved chats update across tabs without refreshing the ledger", async ({ app: page, context }) => {
+  const second = await context.newPage();
+  await second.goto("/chat");
+  await expect(second.getByRole("heading", { name: "Chats", exact: true })).toBeVisible();
+  const created = await page.request.post("/api/chats", { data: { message: "Shared question" } });
+  const chat = await created.json();
+  await second.getByRole("button", { name: "Shared question", exact: true }).click();
+  await expect(second.getByRole("heading", { name: "Shared question", exact: true })).toBeVisible();
+  const ledgerRequests: string[] = [];
+  second.on("request", (request) => {
+    if (request.method() === "GET" && request.url().includes("/api/transactions?")) ledgerRequests.push(request.url());
+  });
+  await page.request.post(`/api/chats/${chat.id}/messages`, { data: { message: "Follow-up question" } });
+  await expect(second.getByText("Follow-up question", { exact: true })).toBeVisible();
+  await page.request.delete(`/api/chats/${chat.id}`);
+  await expect(second.getByRole("heading", { name: "Chat not found", exact: true })).toBeVisible();
+  expect(ledgerRequests).toEqual([]);
+});
+
 const openChats = async (page: Page, isMobile: boolean) => {
   if (isMobile) await page.getByRole("link", { name: "Chats" }).click();
   else await nav(page).getByRole("link", { name: "Chats" }).click();

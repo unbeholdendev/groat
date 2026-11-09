@@ -3,6 +3,28 @@ import { cumulative, valueAt } from "../web/features/stats/cumulative";
 import { dayLabel, pick, today } from "../web/lib/dates";
 import { money } from "../web/lib/money";
 import { change, days, span } from "../web/lib/period";
+import { invalidate, stale } from "../web/lib/resources";
+import { QueryClient } from "@tanstack/react-query";
+import { syncCategory } from "../web/features/categories/queries";
+
+test("changing category kind refreshes derived income settings in the sending tab", async () => {
+  const client = new QueryClient();
+  client.setQueryData(["/api/settings"], { income: false });
+  client.setQueryData(["/api/transactions?", ""], []);
+  await syncCategory(client, {}, ["PUT", "/api/categories/3", { kind: "income" }]);
+  expect(client.getQueryState(["/api/settings"])?.isInvalidated).toBe(true);
+  expect(client.getQueryState(["/api/transactions?", ""])?.isInvalidated).toBe(true);
+  client.clear();
+});
+
+test("chat changes refresh saved conversations without refreshing the ledger", async () => {
+  const client = new QueryClient();
+  const keys = [["/api/chats"], ["/api/chats/1"], ["/api/transactions?", ""], ["/api/settings"]];
+  for (const key of keys) client.setQueryData(key, {});
+  await invalidate(client, ["chats"]);
+  expect(keys.map((key) => client.getQueryState(key)?.isInvalidated)).toEqual([true, true, false, false]);
+  client.clear();
+});
 
 test("money formats fiat and bitcoin", () => {
   expect(money(350, "GBP")).toBe("£3.50");
@@ -64,4 +86,23 @@ test("cumulative ends on the last day of the range", () => {
   expect(last([{ start: "2026-10-19", total: 4 }])).toEqual([18, 4]);
   expect(last([{ start: "2026-09-28", total: 1 }, { start: "2026-10-05", total: 2 }, { start: "2026-10-12", total: 3 }, { start: "2026-10-19", total: 4 }])).toEqual([18, 10]);
   expect(last([{ start: "2026-10-01", total: 4 }])).toEqual([18, 4]);
+});
+
+test("a resource maps to its queries and their dependents", () => {
+  expect(stale(["/api/transactions?", "from=2026-10-01"], ["transactions"])).toBe(true);
+  expect(stale(["/api/stats?from=2026-10-01&to=2026-10-31&group=month"], ["transactions"])).toBe(true);
+  expect(stale(["/api/stats?from=2026-10-01"], ["categories"])).toBe(true);
+  expect(stale(["/api/notes?prefix=", "co"], ["transactions"])).toBe(true);
+  expect(stale(["/api/categories"], ["transactions"])).toBe(false);
+  expect(stale(["/api/chats"], ["transactions", "categories", "settings", "recurring", "members", "tokens", "ai"])).toBe(false);
+  expect(stale(["/api/session"], ["members"])).toBe(false);
+  expect(stale(["/api/session"], ["session"])).toBe(true);
+  expect(stale(["/api/settings"], ["ai"])).toBe(true);
+  expect(stale(["/api/chatgpt/models"], ["ai"])).toBe(true);
+  expect(stale(["transaction-draft", "admin"], ["transactions"])).toBe(false);
+});
+
+test("patched queries are left alone", () => {
+  expect(stale(["/api/transactions?", "from=2026-10-01"], ["transactions"], ["/api/transactions?"])).toBe(false);
+  expect(stale(["/api/bin"], ["transactions"], ["/api/transactions?"])).toBe(true);
 });

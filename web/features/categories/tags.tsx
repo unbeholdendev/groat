@@ -13,7 +13,7 @@ export type Tag = z.infer<typeof tagSchema>;
 export function Tags() {
   const tags = useApi(z.array(tagSchema), ["/api/tags"]).data ?? [];
   const [active, setActive] = useState<{ id: number; deleting: boolean }>();
-  const { mutate: call, error, reset } = useSend();
+  const { mutate: call, error, reset } = useSend("tags");
   const close = () => setActive(undefined);
 
   return (

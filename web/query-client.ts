@@ -1,6 +1,7 @@
 import { dehydrate, hydrate, keepPreviousData, MutationCache, onlineManager, QueryCache, QueryClient } from "@tanstack/react-query";
-import { refresh, send } from "./lib/api";
+import { send } from "./lib/api";
 import { isLocallySignedOut, lockDevice, storeCache, unlockDevice } from "./lib/device";
+import { invalidate } from "./lib/resources";
 import { transaction, request, type Request } from "./lib/schemas";
 import { syncCategory } from "./features/categories/queries";
 import { syncTransaction } from "./features/transactions/queries";
@@ -89,8 +90,10 @@ const sync = (key: string[], patch: (client: QueryClient, data: unknown, request
       return data;
     },
   });
-sync(["send"], (client) => client.invalidateQueries());
-sync(["send", "bin"], (client) => refresh(client, "/api/bin"));
+sync(["send"], () => undefined);
+sync(["send", "bin"], (client) => client.setQueryData(["/api/bin"], []));
+sync(["send", "recurring"], (client) => invalidate(client, ["recurring", "transactions"]));
+sync(["send", "tags"], (client) => invalidate(client, ["transactions", "recurring"]));
 sync(["send", "transaction"], syncTransaction);
 sync(["send", "category"], syncCategory);
 sync(["send", "settings"], syncSettings);

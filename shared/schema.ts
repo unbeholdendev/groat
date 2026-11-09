@@ -10,6 +10,9 @@ export type Kind = z.infer<typeof kind>;
 
 export const unit = z.enum(["sats", "BTC"]);
 
+export const resource = z.enum(["transactions", "categories", "settings", "recurring", "members", "tokens", "ai", "session", "chats"]);
+export type Resource = z.infer<typeof resource>;
+
 export const transactionInput = z.object({
   note: z.string("Enter a note").trim().min(1, "Enter a note"),
   amount: z.string("Invalid amount"),

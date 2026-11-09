@@ -1,4 +1,15 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { z } from "zod";
+import { resource } from "../../shared/schema";
+import { tab } from "./api";
+import { invalidate } from "./resources";
+import { session } from "./schemas";
+
+const message = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("ready"), username: z.string() }),
+  z.object({ type: z.literal("changed"), resources: z.array(resource) }),
+  z.object({ type: z.literal("heartbeat") }),
+]);
 
 export function liveUpdates(client: QueryClient, revoked: () => void) {
   let owner: string | undefined;
@@ -6,7 +17,6 @@ export function liveUpdates(client: QueryClient, revoked: () => void) {
   let retry: ReturnType<typeof setTimeout> | undefined;
   let heartbeat: ReturnType<typeof setTimeout> | undefined;
   let delay = 1000;
-  const refresh = () => void client.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/") });
   const stop = () => {
     clearTimeout(retry);
     clearTimeout(heartbeat);
@@ -18,6 +28,7 @@ export function liveUpdates(client: QueryClient, revoked: () => void) {
     if (!owner || socket) return;
     const url = new URL("/api/live", location.href);
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    url.searchParams.set("tab", tab);
     const current = new WebSocket(url);
     socket = current;
     const alive = () => {
@@ -27,17 +38,20 @@ export function liveUpdates(client: QueryClient, revoked: () => void) {
     current.onopen = alive;
     current.onmessage = (event) => {
       if (socket !== current) return;
-      let message;
-      try { message = JSON.parse(event.data); } catch { return; }
+      let raw;
+      try { raw = JSON.parse(event.data); } catch { return; }
       alive();
-      if (message.type === "ready" && message.username !== owner) {
+      const data = message.safeParse(raw).data;
+      if (data?.type === "changed") void invalidate(client, data.resources);
+      if (data?.type !== "ready") return;
+      if (data.username !== owner) {
         owner = undefined;
         stop();
         revoked();
         return;
       }
-      if (message.type === "ready") delay = 1000;
-      if (message.type === "ready" || message.type === "invalidate") refresh();
+      delay = 1000;
+      void client.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/") });
     };
     current.onclose = (event) => {
       if (socket !== current) return;
@@ -55,7 +69,7 @@ export function liveUpdates(client: QueryClient, revoked: () => void) {
   };
   const unsubscribe = client.getQueryCache().subscribe((event) => {
     if (event.type !== "updated" || event.action.type !== "success" || event.query.queryKey[0] !== "/api/session") return;
-    const next = (event.query.state.data as { user?: { username: string } | null })?.user?.username;
+    const next = session.safeParse(event.query.state.data).data?.user?.username;
     if (owner === next) return;
     const ended = !!owner && !next;
     owner = next;
