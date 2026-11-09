@@ -62,7 +62,7 @@ export function App() {
           <Outbox />
           <Outlet />
         </main>
-        <Dock settings={settings} guide={guide} onGuided={() => setGuide(false)} />
+        <Dock guide={guide} onGuided={() => setGuide(false)} />
       </div>
     </UnitContext>
   );

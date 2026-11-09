@@ -1,8 +1,8 @@
 import { add, expect, test } from "./fixtures";
 
 test("capture without AI and find the privacy document from Settings", async ({ app: page }) => {
-  const settings = await page.request.get("/api/settings");
-  expect(await settings.json()).toMatchObject({ ai: false, vision: false, voice: false });
+  const status = await page.request.get("/api/ai/status");
+  expect(await status.json()).toMatchObject({ ai: false, vision: false, voice: false });
   await add(page, "coffee 3.20");
   await expect(page.getByRole("button", { name: "coffee", exact: true })).toBeVisible();
   await page.goto("/settings");

@@ -29,14 +29,16 @@ export const settings = z.object({
   lastCurrency: z.string(),
   theme,
   onboarded: z.boolean(),
+  income: z.boolean(),
+});
+export const aiStatus = z.object({
   ai: z.boolean(),
   aiSource: z.enum(["chatgpt", "key"]).nullable(),
   aiProblem: z.string().nullable(),
   vision: z.boolean(),
   voice: z.boolean(),
-  income: z.boolean(),
 });
-export type Settings = z.infer<typeof settings>;
+export type Settings = z.infer<typeof settings> & z.infer<typeof aiStatus> & { aiLoading: boolean };
 
 const choice = z.object({ models: z.array(z.string()), model: z.string().nullable(), error: z.string().optional() });
 export const models = z.object({ chat: choice, vision: choice, stt: choice }).nullable();

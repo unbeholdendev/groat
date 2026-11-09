@@ -26,11 +26,6 @@ test("settings changes persist", async () => {
     lastCurrency: "BTC",
     theme: "dark",
     income: false,
-    ai: false,
-    aiSource: null,
-    aiProblem: null,
-    vision: false,
-    voice: false,
   });
   await call("PUT", "/api/settings", { theme: "light" });
   expect((await call("GET", "/api/settings")).body).toMatchObject({ baseCurrency: "BTC", theme: "light" });
@@ -117,4 +112,24 @@ test("onboarding saves base currency and seeds categories once", async () => {
     ["Salary", []],
     ["Other income", []],
   ]);
+});
+
+test("basic settings never wait for the AI provider", async () => {
+  let release!: (response: Response) => void;
+  const stalled = new Promise<Response>((resolve) => { release = resolve; });
+  const { call, fetches } = setup(undefined, () => stalled, { baseUrl: "https://ai.test/v1", key: "test" });
+  try {
+    for (const [method, path, body] of [
+      ["GET", "/api/settings", undefined],
+      ["PUT", "/api/settings", { theme: "dark" }],
+      ["POST", "/api/onboarding", { baseCurrency: "GBP" }],
+    ] as const) {
+      const result = await Promise.race([call(method, path, body), Bun.sleep(100).then(() => "blocked")]);
+      expect(result).not.toBe("blocked");
+      expect(result).toMatchObject({ status: 200 });
+    }
+    expect(fetches).toEqual([]);
+  } finally {
+    release(Response.json({ data: [{ id: "m" }] }));
+  }
 });

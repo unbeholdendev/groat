@@ -35,12 +35,12 @@ test("an admin sets the provider in Settings and AI turns on without a restart",
   const p = provider();
   const { call, request } = setup(undefined, p.handler);
   expect((await call("GET", "/api/ai")).body).toEqual(off);
-  expect((await call("GET", "/api/settings")).body).toMatchObject({ ai: false, vision: false, voice: false });
+  expect((await call("GET", "/api/ai/status")).body).toMatchObject({ ai: false, vision: false, voice: false });
 
   const saved = await call("PUT", "/api/ai", { baseUrl: " https://ai.test/v1/ ", key });
   expect(saved).toEqual({ status: 200, body: { baseUrl: "https://ai.test/v1", keyEnding: "abcd", sttBaseUrl: null, sttKeyEnding: null } });
   expect(aiProvider.parse(saved.body)).toEqual(saved.body);
-  expect((await call("GET", "/api/settings")).body).toMatchObject({ ai: true, vision: true, voice: true });
+  expect((await call("GET", "/api/ai/status")).body).toMatchObject({ ai: true, vision: true, voice: true });
   expect((await call("POST", "/api/chats", { message: "hi" })).status).toBe(201);
   const form = new FormData();
   form.append("audio", new File([new Uint8Array([1])], "voice.webm", { type: "audio/webm" }));
@@ -108,14 +108,14 @@ test("a bad URL or key can't be saved, and the error says why", async () => {
     expect(res.body.error).toMatch(error);
   }
   expect((await call("GET", "/api/ai")).body).toEqual(off);
-  expect((await call("GET", "/api/settings")).body.ai).toBe(false);
+  expect((await call("GET", "/api/ai/status")).body.ai).toBe(false);
 });
 
 test("an empty base URL turns AI off and forgets both keys", async () => {
   const { call } = setup(undefined, provider().handler);
   await call("PUT", "/api/ai", { baseUrl: "https://ai.test/v1", key, sttBaseUrl: "https://stt.test/v1", sttKey });
   expect(await call("PUT", "/api/ai", { baseUrl: "" })).toEqual({ status: 200, body: off });
-  expect((await call("GET", "/api/settings")).body).toMatchObject({ ai: false, voice: false });
+  expect((await call("GET", "/api/ai/status")).body).toMatchObject({ ai: false, voice: false });
   expect(await call("PUT", "/api/ai", { baseUrl: "https://ai.test/v1" })).toEqual({ status: 400, body: { error: "Enter the API key" } });
 });
 

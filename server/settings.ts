@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { knownCurrencies } from "../shared/amount";
 import { type Db, settings as stored } from "./db";
-import type { Ai } from "./models";
 import { body } from "./request";
 import * as t from "./schema";
 
@@ -22,19 +21,18 @@ const currency = z.string("Invalid currency").refine((c) => knownCurrencies.has(
 const onboarding = z.object({ baseCurrency: currency });
 const update = onboarding.extend({ theme: z.enum(["system", "light", "dark"], "Invalid theme") }).partial();
 
-export function settingsRoutes(db: Db, ai: Ai) {
+export function settingsRoutes(db: Db) {
   const app = new Hono();
   const cat = t.categories;
-  const settings = async () => ({ ...stored(db), ...(await ai.status()) });
 
-  app.get("/api/settings", async (c) => c.json(await settings()));
+  app.get("/api/settings", (c) => c.json(stored(db)));
 
   app.put("/api/settings", async (c) => {
     const input = await body(c, update);
     if ("error" in input) return c.json(input, 400);
     const { baseCurrency, theme } = { ...stored(db), ...input.data };
     db.update(t.settings).set({ baseCurrency, theme }).run();
-    return c.json(await settings());
+    return c.json(stored(db));
   });
 
   app.post("/api/onboarding", async (c) => {
@@ -48,7 +46,7 @@ export function settingsRoutes(db: Db, ai: Ai) {
         children.forEach(([child, childIcon], j) => db.insert(cat).values({ name: child, icon: childIcon, color, parentId: id, sort: j }).run());
       });
     });
-    return c.json(await settings());
+    return c.json(stored(db));
   });
 
   return app;

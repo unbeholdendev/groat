@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { z } from "zod";
-import { apiToken, category, chat, transaction, member, models, period, session, settings, suggestion, tag, template } from "../web/lib/schemas";
+import { aiStatus, apiToken, category, chat, transaction, member, models, period, session, settings, suggestion, tag, template } from "../web/lib/schemas";
 import { models as listing, setup } from "./harness";
 
 test("web schemas accept what the server sends", async () => {
@@ -21,6 +21,7 @@ test("web schemas accept what the server sends", async () => {
     [z.array(chat), (await call("GET", "/api/chats")).body],
     [session, (await call("GET", "/api/session")).body],
     [z.array(member), (await call("GET", "/api/users")).body],
+    [aiStatus, (await call("GET", "/api/ai/status")).body],
     [settings, (await call("GET", "/api/settings")).body],
     [models, (await call("GET", "/api/models")).body],
     [z.array(category), (await call("GET", "/api/categories")).body],

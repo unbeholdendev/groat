@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { draft, transaction, settings } from "../web/lib/schemas";
+import { draft, transaction, aiStatus } from "../web/lib/schemas";
 import { models, setup, type Ai } from "./harness";
 
 const config: Ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
@@ -43,7 +43,7 @@ test("a photo becomes a draft with an attachment, read by the vision model", asy
   expect(ai.requests[0].model).toBe("vision-model");
   expect(ai.requests[0].messages[1].content[0].image_url.url).toBe(`data:image/jpeg;base64,${Buffer.from(jpeg).toString("base64")}`);
   expect((await call("GET", "/api/transactions")).body).toEqual([]);
-  expect(settings.parse((await call("GET", "/api/settings")).body).vision).toBe(true);
+  expect(aiStatus.parse((await call("GET", "/api/ai/status")).body).vision).toBe(true);
 });
 
 test("the vision model defaults to the chat model, and photos are off without one", async () => {
@@ -53,7 +53,7 @@ test("the vision model defaults to the chat model, and photos are off without on
 
   const off = photos(config, ["text-model", "other-model"]);
   expect((await off.upload()).status).toBe(403);
-  expect((await off.call("GET", "/api/settings")).body.vision).toBe(false);
+  expect((await off.call("GET", "/api/ai/status")).body.vision).toBe(false);
   expect((await photos({}).upload()).status).toBe(403);
 });
 

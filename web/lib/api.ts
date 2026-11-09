@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { category, type Request, session, settings } from "./schemas";
+import { aiStatus, category, type Request, session, settings } from "./schemas";
 
 import { isLocallySignedOut } from "./device";
 
@@ -26,7 +26,15 @@ export const useSend = (key?: string, onSuccess?: () => void) => {
 export const useApi = <T extends z.ZodType>(schema: T, queryKey: string[], options: { enabled?: boolean; throwOnError?: boolean } = {}) =>
   useQuery({ queryKey, queryFn: async () => schema.parse(queryKey[0] === "/api/session" && isLocallySignedOut() ? { setup: false, user: null } : await send("GET", queryKey.join(""))), ...options });
 
-export const useSettings = () => useApi(settings, ["/api/settings"]).data;
+export const useSettings = () => {
+  const config = useApi(settings, ["/api/settings"]);
+  const status = useApi(aiStatus, ["/api/ai/status"], { enabled: !!config.data?.onboarded });
+  return config.data && {
+    ...config.data,
+    ...(status.data ?? { ai: false, aiSource: null, aiProblem: status.error?.message ?? null, vision: false, voice: false }),
+    aiLoading: !status.data && !status.isError,
+  };
+};
 export const useSession = () => useApi(session, ["/api/session"]).data;
 export const useCategories = () => useApi(z.array(category), ["/api/categories"]).data ?? [];
 // Paused mutations are persisted to localStorage; never let a password queue offline.

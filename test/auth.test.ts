@@ -15,6 +15,7 @@ test("a fresh install asks for setup, which creates the admin and signs them in,
   db.run("DELETE FROM users");
   expect(await (await get("/api/session")).json()).toEqual({ setup: true, user: null });
   expect((await get("/api/settings")).status).toBe(401);
+  expect((await get("/api/ai/status")).status).toBe(401);
   expect((await post("/api/setup", { username: " ann ", password: "" })).status).toBe(400);
 
   const res = await post("/api/setup", { username: " ann ", password: "hunter22" });

@@ -206,6 +206,8 @@ export function aiModels(db: Db, fetch: Deps["fetch"], subscription: Pick<Return
     return c.json(await view());
   });
 
+  routes.get("/api/ai/status", async (c) => c.json(await status()));
+
   routes.get("/api/ai", (c) => c.json(provider()));
 
   routes.put("/api/ai", async (c) => {

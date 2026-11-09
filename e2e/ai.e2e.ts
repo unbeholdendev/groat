@@ -98,3 +98,27 @@ test("chat requests fail offline instead of queuing actions for later", async ({
   const cache = await page.evaluate(() => JSON.parse(localStorage.getItem("cache") ?? "{}"));
   expect(cache.mutations ?? []).toHaveLength(0);
 });
+
+test("expense entry works while AI availability is pending", async ({ fresh: page }) => {
+  await page.request.post("/api/setup", { data: { username: "admin", password: "secret" } });
+  await page.request.post("/api/onboarding", { data: { baseCurrency: "GBP" } });
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/api/ai/status", async (route) => {
+    await pending;
+    await route.continue();
+  });
+  try {
+    await page.goto("/");
+    await bar(page).fill("Coffee 3");
+    await bar(page).press("Enter");
+    await expect(page.getByRole("listitem").filter({ hasText: "Coffee" })).toContainText("£3.00");
+    await page.getByRole("link", { name: "Settings", exact: true }).click();
+    await expect(page.getByText("Checking AI availability…")).toBeVisible();
+    release();
+    await expect(page.getByText("Checking AI availability…")).toBeHidden();
+    await expect(page.getByText("Everyone on this server uses it", { exact: false })).toBeVisible();
+  } finally {
+    release();
+  }
+});

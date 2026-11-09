@@ -78,7 +78,7 @@ export function createApp(deps: Deps) {
   app.route("/", memberRoutes(db, deps.clock));
   app.route("/", tokenRoutes(ctx));
   app.route("/", ai.routes);
-  app.route("/", settingsRoutes(db, ai));
+  app.route("/", settingsRoutes(db));
   app.route("/", categoryRoutes(db));
   app.route("/", transactionRoutes(ctx, value));
   app.route("/", draftRoutes(ctx));

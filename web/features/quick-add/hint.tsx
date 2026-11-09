@@ -13,6 +13,7 @@ import { Tokens } from "./tokens";
 import type { Receipt } from "./use-receipt";
 
 export function aiOff(s: Settings, admin: boolean, feature: "ai" | "voice") {
+  if (s.aiLoading) return "Checking AI availability…";
   if (s.aiProblem) return s.aiProblem;
   if (!s.aiSource) return admin ? "AI isn’t set up yet. Turn it on in Settings." : "AI isn’t set up. Ask an admin to turn it on.";
   if (!s.ai) return admin ? "AI needs a chat model. Choose one in Settings." : "AI isn’t finished setting up. Ask an admin to choose a chat model.";

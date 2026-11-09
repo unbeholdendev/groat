@@ -125,7 +125,7 @@ test("manual callback validates ownership, session and single use without fetchi
   expect((await f.call("GET", "/api/chatgpt")).body.signIn).toBe(null);
   expect((await f.call("GET", "/api/chatgpt", undefined, "two")).status).toBe(403);
   expect((await f.call("POST", "/api/chats", { message: "hi" }, "two")).body.messages.at(-1).content).toBe("Hello");
-  expect((await f.call("GET", "/api/settings", undefined, "two")).body).toMatchObject({ ai: true, aiSource: "chatgpt", aiProblem: null });
+  expect((await f.call("GET", "/api/ai/status", undefined, "two")).body).toMatchObject({ ai: true, aiSource: "chatgpt", aiProblem: null });
 });
 
 test("rejects malformed URLs, mismatched state, expired attempts and denied consent", async () => {
@@ -161,7 +161,7 @@ test("refresh is single flight; revoked credentials give reconnect recovery and 
   f.bad("revoked");
   expect((await f.call("GET", "/api/chatgpt/models")).status).toBe(400);
   expect((await f.call("GET", "/api/chatgpt")).body.needsSignIn).toBe(true);
-  expect((await f.call("GET", "/api/settings", undefined, "two")).body).toMatchObject({ ai: false, aiSource: "chatgpt", aiProblem: "ChatGPT sign-in has expired. Reconnect ChatGPT in Settings." });
+  expect((await f.call("GET", "/api/ai/status", undefined, "two")).body).toMatchObject({ ai: false, aiSource: "chatgpt", aiProblem: "ChatGPT sign-in has expired. Reconnect ChatGPT in Settings." });
   await f.call("DELETE", "/api/chatgpt");
   expect((await f.call("GET", "/api/chatgpt")).body.connected).toBe(false);
 });
@@ -169,9 +169,9 @@ test("refresh is single flight; revoked credentials give reconnect recovery and 
 test("with ChatGPT connected, a shared key only adds dictation", async () => {
   const f = await fixture();
   await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
-  expect((await f.call("GET", "/api/settings")).body).toMatchObject({ ai: true, vision: true, voice: false });
+  expect((await f.call("GET", "/api/ai/status")).body).toMatchObject({ ai: true, vision: true, voice: false });
   f.db.run("UPDATE settings SET ai_base_url = 'https://ai.test/v1', ai_key = 'sk-shared'");
-  expect((await f.call("GET", "/api/settings")).body).toMatchObject({ ai: true, aiSource: "chatgpt", vision: true, voice: true });
+  expect((await f.call("GET", "/api/ai/status")).body).toMatchObject({ ai: true, aiSource: "chatgpt", vision: true, voice: true });
 });
 
 test("credentials and host are outside the backup and SQL database", async () => {

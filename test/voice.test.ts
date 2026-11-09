@@ -29,7 +29,7 @@ const record = (request: (path: string, init?: RequestInit) => Response | Promis
 test("a recording is transcribed and comes back as a draft, using the AI base and key by default", async () => {
   const p = providers("taxi home fourteen pounds");
   const { request, call } = setup(undefined, p.handler, ai);
-  expect((await call("GET", "/api/settings")).body.voice).toBe(true);
+  expect((await call("GET", "/api/ai/status")).body.voice).toBe(true);
 
   const res = await record(request);
   const body = await res.json();
@@ -51,7 +51,7 @@ test("a separate speech-to-text base and key are used when set", async () => {
 
 test("voice is off without a speech-to-text model, and bad input or replies are reported", async () => {
   const off = setup(undefined, providers("taxi", models(["test-model"])).handler, ai);
-  expect((await off.call("GET", "/api/settings")).body.voice).toBe(false);
+  expect((await off.call("GET", "/api/ai/status")).body.voice).toBe(false);
   expect((await record(off.request)).status).toBe(403);
 
   const silent = setup(undefined, providers(" ").handler, ai);

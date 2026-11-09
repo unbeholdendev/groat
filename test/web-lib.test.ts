@@ -6,6 +6,7 @@ import { change, days, span } from "../web/lib/period";
 import { invalidate, stale } from "../web/lib/resources";
 import { QueryClient } from "@tanstack/react-query";
 import { syncCategory } from "../web/features/categories/queries";
+import { syncAi } from "../web/features/settings/queries";
 
 test("changing category kind refreshes derived income settings in the sending tab", async () => {
   const client = new QueryClient();
@@ -97,7 +98,8 @@ test("a resource maps to its queries and their dependents", () => {
   expect(stale(["/api/chats"], ["transactions", "categories", "settings", "recurring", "members", "tokens", "ai"])).toBe(false);
   expect(stale(["/api/session"], ["members"])).toBe(false);
   expect(stale(["/api/session"], ["session"])).toBe(true);
-  expect(stale(["/api/settings"], ["ai"])).toBe(true);
+  expect(stale(["/api/settings"], ["ai"])).toBe(false);
+  expect(stale(["/api/ai/status"], ["ai"])).toBe(true);
   expect(stale(["/api/chatgpt/models"], ["ai"])).toBe(true);
   expect(stale(["transaction-draft", "admin"], ["transactions"])).toBe(false);
 });
@@ -105,4 +107,17 @@ test("a resource maps to its queries and their dependents", () => {
 test("patched queries are left alone", () => {
   expect(stale(["/api/transactions?", "from=2026-10-01"], ["transactions"], ["/api/transactions?"])).toBe(false);
   expect(stale(["/api/bin"], ["transactions"], ["/api/transactions?"])).toBe(true);
+});
+
+test("saving an AI provider refreshes capabilities but keeps the patched provider", async () => {
+  const client = new QueryClient();
+  const provider = { baseUrl: null, keyEnding: null, sttBaseUrl: null, sttKeyEnding: null };
+  for (const path of ["/api/ai", "/api/ai/status", "/api/models", "/api/settings"]) client.setQueryData([path], {});
+  await syncAi(client, provider);
+  expect(client.getQueryData<unknown>(["/api/ai"])).toEqual(provider);
+  expect(client.getQueryState(["/api/ai"])?.isInvalidated).toBe(false);
+  expect(client.getQueryState(["/api/ai/status"])?.isInvalidated).toBe(true);
+  expect(client.getQueryState(["/api/models"])?.isInvalidated).toBe(true);
+  expect(client.getQueryState(["/api/settings"])?.isInvalidated).toBe(false);
+  client.clear();
 });

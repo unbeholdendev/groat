@@ -21,7 +21,7 @@ const call = (name: string, args: unknown) => ({
 
 test("without a key inference refuses but shared history remains available", async () => {
   const s = setup();
-  expect((await s.call("GET", "/api/settings")).body.ai).toBe(false);
+  expect((await s.call("GET", "/api/ai/status")).body.ai).toBe(false);
   expect((await s.call("GET", "/api/chats")).status).toBe(200);
   expect((await s.call("POST", "/api/chats", { message: "hi" })).status).toBe(403);
 });
@@ -29,7 +29,7 @@ test("without a key inference refuses but shared history remains available", asy
 test("a chat is answered, saved with a title from the first question, listed and deleted", async () => {
   const ai = provider([{ content: "About £40." }, { content: "Cook more." }]);
   const { call } = setup(undefined, ai.handler, config);
-  expect((await call("GET", "/api/settings")).body.ai).toBe(true);
+  expect((await call("GET", "/api/ai/status")).body.ai).toBe(true);
   const chat = await call("POST", "/api/chats", { message: "How much did I spend on food this month?" });
   expect(chat.status).toBe(201);
   expect(chat.body.title).toBe("How much did I spend on food this month?");
@@ -56,7 +56,7 @@ test("a chat is answered, saved with a title from the first question, listed and
 test("AI needs the base URL as well as the key", async () => {
   for (const missing of ["baseUrl", "key"]) {
     const { call } = setup(undefined, listed, { ...config, [missing]: undefined });
-    expect((await call("GET", "/api/settings")).body.ai).toBe(false);
+    expect((await call("GET", "/api/ai/status")).body.ai).toBe(false);
     expect((await call("GET", "/api/chats")).status).toBe(200);
   }
 });

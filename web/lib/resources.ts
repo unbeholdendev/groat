@@ -8,7 +8,7 @@ const keys: Record<Resource, string[]> = {
   recurring: ["/api/recurring"],
   members: ["/api/users"],
   tokens: ["/api/tokens"],
-  ai: ["/api/ai", "/api/models", "/api/chatgpt", "/api/settings"],
+  ai: ["/api/ai", "/api/models", "/api/chatgpt"],
   session: ["/api/session"],
   chats: ["/api/chats"],
 };
@@ -16,7 +16,7 @@ const keys: Record<Resource, string[]> = {
 export const stale = (key: QueryKey, resources: readonly Resource[], patched: string[] = []) => {
   const path = String(key[0]);
   const under = (prefix: string) => path.startsWith(prefix);
-  return resources.some((r) => keys[r].some(under)) && !patched.some(under);
+  return resources.some((r) => keys[r].some(under)) && !patched.includes(path);
 };
 
 export const invalidate = (client: QueryClient, resources: readonly Resource[], patched?: string[]) =>

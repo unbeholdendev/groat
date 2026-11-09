@@ -78,14 +78,14 @@ test("a backup restores into a fresh instance with its financial data and accoun
 
 test("a backup leaves out the AI provider, so a restore leaves AI off until it is set again", async () => {
   const source = await household();
-  expect((await source.call("GET", "/api/settings")).body.ai).toBe(true);
+  expect((await source.call("GET", "/api/ai/status")).body.ai).toBe(true);
   const bytes = Buffer.from(await download(source));
   for (const secret of Object.values(ai)) expect([secret, bytes.includes(secret)]).toEqual([secret, false]);
 
   const target = fresh();
   expect((await target.restore(bytes)).status).toBe(200);
   expect((await target.call("GET", "/api/ai")).body).toEqual({ baseUrl: null, keyEnding: null, sttBaseUrl: null, sttKeyEnding: null });
-  expect((await target.call("GET", "/api/settings")).body).toMatchObject({ ai: false, vision: false, voice: false });
+  expect((await target.call("GET", "/api/ai/status")).body).toMatchObject({ ai: false, vision: false, voice: false });
 });
 
 test("only admins can download a backup", async () => {

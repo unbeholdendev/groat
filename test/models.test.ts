@@ -25,7 +25,7 @@ function provider(ids: (string | object)[], stt?: { ids: string[]; base: string 
 }
 
 const flags = async (call: ReturnType<typeof setup>["call"]) => {
-  const { ai, vision, voice } = (await call("GET", "/api/settings")).body;
+  const { ai, vision, voice } = (await call("GET", "/api/ai/status")).body;
   return { ai, vision, voice };
 };
 
@@ -82,6 +82,7 @@ test("members who aren't admins can't see or change models", async () => {
   const login = await h.app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "sam", password: "pw" }) });
   const cookie = login.headers.get("set-cookie")!.split(";")[0];
   const as = (method: string, body?: unknown) => h.app.request("/api/models", { method, headers: { cookie, "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+  expect((await h.app.request("/api/ai/status", { headers: { cookie } })).status).toBe(200);
   expect((await as("GET")).status).toBe(403);
   expect((await as("PUT", { chat: "gpt-4o" })).status).toBe(403);
   expect((await h.call("GET", "/api/models")).body.chat.model).toBeNull();

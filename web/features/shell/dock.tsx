@@ -1,12 +1,12 @@
 import { use, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { TabBar } from "../../components/tab-bar";
-import { useCategories } from "../../lib/api";
-import type { Settings } from "../../lib/schemas";
+import { useCategories, useSettings } from "../../lib/api";
 import { UnitContext } from "../../lib/unit";
 import { Bar } from "../quick-add/bar";
 
-export function Dock({ settings, guide, onGuided }: { settings: Settings; guide: boolean; onGuided: () => void }) {
+export function Dock({ guide, onGuided }: { guide: boolean; onGuided: () => void }) {
+  const settings = useSettings()!;
   const [unit] = use(UnitContext);
   const search = useSearch({ strict: false });
   const path = useLocation().pathname;

@@ -5,11 +5,12 @@ import { FormError } from "../../components/form";
 import { Masthead } from "../../components/masthead";
 import { panel, sectionHead } from "../../components/styles";
 import { useSend } from "../../lib/api";
-import type { Settings } from "../../lib/schemas";
+import type { z } from "zod";
+import type { settings } from "../../lib/schemas";
 import { BaseCurrency } from "./base-currency";
 import { ThemeSection } from "./theme-section";
 
-export function SettingsForm(props: { settings: Settings; path: string; method: string; title: string; onSaved?: () => void }) {
+export function SettingsForm(props: { settings: z.infer<typeof settings>; path: string; method: string; title: string; onSaved?: () => void }) {
   const onboarding = !props.settings.onboarded;
   const [baseCurrency, setBase] = useState(props.settings.baseCurrency);
   const mutation = useSend("settings", props.onSaved);
