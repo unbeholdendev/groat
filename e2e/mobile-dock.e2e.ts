@@ -47,3 +47,23 @@ test("settings only repeats secondary navigation on phones", async ({ app: page 
   }
   await expect(page.getByRole("link", { name: "Privacy and data flows" })).toBeVisible();
 });
+
+test("desktop quick add has a rounded footer clear of the window edge", async ({ app: page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop");
+  const dock = page.getByRole("contentinfo");
+  const shape = await dock.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return { radius: parseFloat(style.borderTopLeftRadius), bottom: el.getBoundingClientRect().bottom };
+  });
+  expect(shape.radius).toBeGreaterThan(0);
+  expect(shape.bottom).toBeLessThan(800);
+  await bar(page).fill("Coffee 3");
+  await expect(bar(page)).toBeFocused();
+  await expect(page.getByRole("button", { name: "Add", exact: true })).toBeVisible();
+  await page.screenshot({ path: "/tmp/groat-desktop-dock-light.png" });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.screenshot({ path: "/tmp/groat-desktop-dock-dark.png" });
+  await bar(page).press("Enter");
+  await expect(bar(page)).toHaveValue("");
+});
