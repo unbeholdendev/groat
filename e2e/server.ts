@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { serveStatic, websocket } from "hono/bun";
 import { createApp } from "../server/app";
-import { frankfurter, mempool } from "../test/harness";
+import { completion, frankfurter, mempool } from "../test/harness";
 
 const rates = frankfurter({ "2000-01-01": { EUR: 0.9, GBP: 0.8, USD: 1 } });
 const btc = mempool({ "2000-01-01": 60000 });
@@ -16,12 +16,12 @@ function provider(url: URL, init: RequestInit | undefined, models: string[]) {
     const message = body.messages.at(-1).role === "tool"
       ? { role: "assistant", content: "Added test coffee." }
       : { role: "assistant", content: null, tool_calls: [{ id: "coffee", type: "function", function: { name: "add_transaction", arguments: JSON.stringify({ note: "Test coffee", amount: "3", currency: "GBP" }) } }] };
-    return Response.json({ choices: [{ message }] });
+    return completion(message);
   }
   const message = body.tool_choice
     ? { content: null, tool_calls: [{ id: "x", type: "function", function: { name: "transaction", arguments: JSON.stringify({ note: typeof last === "string" ? last.replace(/[\d.]+/g, "").trim() : "Corner shop", amount: "9.99" }) } }] }
     : { content: "Mostly on food." };
-  return Response.json({ choices: [{ message: { role: "assistant", ...message } }] });
+  return completion({ role: "assistant", ...message });
 }
 
 function build(models?: string[]) {

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { frankfurter, models, setup } from "./harness";
+import { completion, frankfurter, models, setup } from "./harness";
 
 const config = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 const listed = models(["test-model"]);
@@ -9,7 +9,7 @@ function provider(script: Record<string, unknown>[] = []) {
   const handler = (url: URL, init?: RequestInit) => {
     if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
     requests.push({ auth: new Headers(init?.headers).get("authorization"), body: JSON.parse(String(init?.body)) });
-    return Response.json({ choices: [{ message: { role: "assistant", content: null, ...script.shift() } }] });
+    return completion({ role: "assistant", content: null, ...script.shift() });
   };
   return { handler, requests, script };
 }
@@ -379,4 +379,31 @@ test("chat tools use JSON Schema bounds and nullable types", async () => {
   expect(parameters("add_category").properties.parentId.anyOf).toContainEqual({ type: "null" });
   expect(parameters("add_recurring").properties.endDate.type).toEqual(["string", "null"]);
   expect(parameters("add_category").required).not.toContain("parentId");
+});
+
+test("truncated completion streams cannot execute a partial action", async () => {
+  for (const finish_reason of [null, "length"]) {
+    const tool = call("add_transaction", { note: "Coffee", amount: "3" }).tool_calls[0];
+    const chunk = { choices: [{ index: 0, delta: { role: "assistant", tool_calls: [{ index: 0, ...tool }] }, finish_reason }] };
+    const { call: api } = setup(undefined, (url) => listed(url) ?? new Response(`data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`, { headers: { "content-type": "text/event-stream" } }), config);
+    expect((await api("POST", "/api/chats", { message: "Add coffee" })).status).toBe(502);
+    expect((await api("GET", "/api/transactions")).body).toEqual([]);
+    expect((await api("GET", "/api/chats")).body).toEqual([]);
+  }
+});
+
+test("a saved chat with malformed legacy tool arguments can continue", async () => {
+  const ai = provider([
+    { tool_calls: [{ id: "legacy", function: { name: "add_transaction", arguments: "{" } }] },
+    { content: "Please give the amount." },
+    { content: "Hello again." },
+  ]);
+  const h = setup(undefined, ai.handler, config);
+  const chat = await h.call("POST", "/api/chats", { message: "Add something" });
+  expect(chat.status).toBe(201);
+  h.db.run("UPDATE chat_messages SET message = json_set(message, '$.tool_calls[0].function.arguments', '{') WHERE json_extract(message, '$.tool_calls[0].id') = 'legacy'");
+  const next = await h.call("POST", `/api/chats/${chat.body.id}/messages`, { message: "Hello" });
+  expect(next.status).toBe(200);
+  expect(next.body.messages.at(-1).content).toBe("Hello again.");
+  expect((await h.call("GET", "/api/transactions")).body).toEqual([]);
 });

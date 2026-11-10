@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { aiProvider } from "../web/lib/schemas";
-import { setup } from "./harness";
+import { completion, setup } from "./harness";
 
 const key = "sk-live-0123456789abcd";
 const sttKey = "stt-live-9876543210wxyz";
@@ -17,7 +17,7 @@ function provider(keys: Record<string, string> = { "https://ai.test/v1": key, "h
     if (url.pathname === "/v1/audio/transcriptions") return Response.json({ text: "taxi 14" });
     const drafting = JSON.parse(String(init?.body)).tool_choice;
     const call = { id: "c", type: "function", function: { name: "transaction", arguments: JSON.stringify({ note: "Taxi", amount: "14" }) } };
-    return Response.json({ choices: [{ message: { role: "assistant", content: drafting ? null : "Hi", tool_calls: drafting ? [call] : undefined } }] });
+    return completion({ role: "assistant", content: drafting ? null : "Hi", tool_calls: drafting ? [call] : undefined });
   };
   return { handler, auth };
 }

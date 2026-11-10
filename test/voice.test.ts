@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { draft } from "../web/lib/schemas";
-import { models, setup } from "./harness";
+import { completion, models, setup } from "./harness";
 
 const ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 
@@ -13,9 +13,7 @@ function providers(text: string, listed = models(["test-model", "whisper-1"])) {
     }
     if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
     const args = { note: "Taxi home", amount: "14" };
-    return Response.json({
-      choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: JSON.stringify(args) } }] } }],
-    });
+    return completion({ role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: JSON.stringify(args) } }] });
   };
   return { handler, heard };
 }

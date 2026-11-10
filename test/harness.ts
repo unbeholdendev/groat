@@ -4,6 +4,34 @@ import { hashCost } from "../server/auth";
 
 type Handler = (url: URL, init?: RequestInit) => Response | undefined | Promise<Response>;
 
+export function completion(message: {
+  role?: string;
+  content?: string | null;
+  tool_calls?: { id: string; type?: string; function: { name: string; arguments: string } }[];
+}) {
+  const chunks: unknown[] = [];
+  const chunk = (delta: object, finish_reason: string | null = null) => chunks.push({
+    id: "chatcmpl-test", object: "chat.completion.chunk", created: 0, model: "test-model",
+    choices: [{ index: 0, delta, finish_reason }],
+  });
+  const parts = (value: string) => [value.slice(0, Math.ceil(value.length / 2)), value.slice(Math.ceil(value.length / 2))];
+  chunk({ role: "assistant", content: "" });
+  if (typeof message.content === "string") for (const content of parts(message.content)) chunk({ content });
+  for (const [index, call] of (message.tool_calls ?? []).entries()) {
+    chunk({ tool_calls: [{ index, id: call.id, type: "function", function: { name: call.function.name, arguments: "" } }] });
+    for (const args of parts(call.function.arguments)) chunk({ tool_calls: [{ index, function: { arguments: args } }] });
+  }
+  chunk({}, message.tool_calls?.length ? "tool_calls" : "stop");
+  const encoder = new TextEncoder();
+  return new Response(new ReadableStream({
+    start(controller) {
+      for (const data of chunks) controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.close();
+    },
+  }), { headers: { "content-type": "text/event-stream" } });
+}
+
 export function frankfurter(rates: Record<string, Record<string, number>>): Handler {
   return (url) => {
     if (url.host !== "api.frankfurter.dev") return;

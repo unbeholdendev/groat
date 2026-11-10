@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { draft } from "../web/lib/schemas";
-import { models, setup } from "./harness";
+import { completion, models, setup } from "./harness";
 
 const config = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 const listed = models(["test-model"]);
@@ -12,9 +12,7 @@ function provider(read: (body: any) => unknown) {
     const body = JSON.parse(String(init?.body));
     requests.push(body);
     const args = read(body);
-    return Response.json({
-      choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: typeof args === "string" ? args : JSON.stringify(args) } }] } }],
-    });
+    return completion({ role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: typeof args === "string" ? args : JSON.stringify(args) } }] });
   };
   return { handler, requests };
 }

@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { websocket } from "hono/bun";
 import { changed } from "../server/live";
-import { models, setup } from "./harness";
+import { completion, models, setup } from "./harness";
 
 const cleanups: (() => void)[] = [];
 afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup(); });
@@ -102,7 +102,7 @@ test("chat publishes saved conversations separately from ledger actions", async 
   ];
   const listed = models(["test-model"]);
   const ai = (url: URL) => url.href === "https://ai.test/v1/chat/completions"
-    ? Response.json({ choices: [{ message: { role: "assistant", content: null, ...replies.shift() } }] })
+    ? completion({ role: "assistant", content: null, ...replies.shift() })
     : listed(url);
   const h = server(undefined, ai, { baseUrl: "https://ai.test/v1", key: "sk-test" });
   const client = h.connect(undefined, "a");

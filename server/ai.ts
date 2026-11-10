@@ -152,7 +152,7 @@ export function chats(ctx: Ctx, value: Valuer) {
     }
     return db.transaction(() => {
       const id = chatId ?? db.insert(chatTable).values({ title: message.slice(0, 60) }).returning().get().id;
-      for (const { responseItems, ...message } of added) save(id, message);
+      for (const { modelMessage, ...message } of added) save(id, message);
       return chat(id);
     });
   };

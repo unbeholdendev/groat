@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
-import { setup } from "./harness";
+import { completion, setup } from "./harness";
 import { request } from "node:http";
 import { websocket } from "hono/bun";
 
@@ -81,7 +81,7 @@ test("concurrent requests keep their correlation IDs separate", async () => {
   const s = setup(undefined, async (url) => {
     if (url.pathname.endsWith("/models")) return Response.json({ data: [{ id: "test" }] });
     await new Promise((resolve) => setTimeout(resolve, 5));
-    return Response.json({ choices: [{ message: { role: "assistant", content: "done" } }] });
+    return completion({ role: "assistant", content: "done" });
   }, { baseUrl: "https://ai.test/v1", key: "private-key" });
   output.mockClear();
   const responses = await Promise.all([1, 2].map(() => s.request("/api/chats", {
@@ -152,7 +152,7 @@ test("internal AI action failures cannot write raw database exceptions to stderr
     const message = turn++ ? { role: "assistant", content: "Failed" } : { role: "assistant", tool_calls: [{
       id: "call", type: "function", function: { name: "add_transaction", arguments: JSON.stringify({ note: "private-note", amount: "2" }) },
     }] };
-    return Response.json({ choices: [{ message }] });
+    return completion(message);
   }, { baseUrl: "https://ai.test/v1", key: "private-key" });
   s.db.run("CREATE TRIGGER fail_insert BEFORE INSERT ON transactions BEGIN SELECT RAISE(ABORT, 'private-database-details'); END");
   await s.call("POST", "/api/chats", { message: "private-prompt" });

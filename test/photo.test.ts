@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { draft, transaction, aiStatus } from "../web/lib/schemas";
-import { models, setup, type Ai } from "./harness";
+import { completion, models, setup, type Ai } from "./harness";
 
 const config: Ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
@@ -12,7 +12,7 @@ function provider(ids = ["text-model"]) {
     if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
     requests.push(JSON.parse(String(init?.body)));
     const args = JSON.stringify({ note: "Tesco", amount: "23.45", date: "2026-10-09" });
-    return Response.json({ choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: args } }] } }] });
+    return completion({ role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: args } }] });
   };
   return { handler, requests };
 }

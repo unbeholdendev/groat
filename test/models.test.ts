@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { models as modelChoice } from "../web/lib/schemas";
-import { models, setup, type Ai } from "./harness";
+import { completion, models, setup, type Ai } from "./harness";
 
 const config: Ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 
@@ -19,7 +19,7 @@ function provider(ids: (string | object)[], stt?: { ids: string[]; base: string 
     const body = JSON.parse(String(init?.body));
     used.chat.push(body.model);
     const args = JSON.stringify({ note: "Taxi", amount: "14" });
-    return Response.json({ choices: [{ message: { role: "assistant", content: body.tool_choice ? null : "hi", tool_calls: body.tool_choice ? [{ id: "c", type: "function", function: { name: "transaction", arguments: args } }] : undefined } }] });
+    return completion({ role: "assistant", content: body.tool_choice ? null : "hi", tool_calls: body.tool_choice ? [{ id: "c", type: "function", function: { name: "transaction", arguments: args } }] : undefined });
   };
   return { handler, used };
 }

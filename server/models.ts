@@ -5,7 +5,7 @@ import { admin, type Env } from "./auth";
 import type { chatgpt } from "./chatgpt";
 import type { Db } from "./db";
 import { body } from "./request";
-import { responses } from "./responses";
+import { complete as completion } from "./completion";
 import * as t from "./schema";
 
 export const chatMessage = z.looseObject({
@@ -15,7 +15,6 @@ export const chatMessage = z.looseObject({
   tool_call_id: z.string().optional(),
 });
 export type Message = z.infer<typeof chatMessage>;
-const completion = z.object({ choices: z.tuple([z.object({ message: chatMessage })], z.unknown()) });
 const transcript = z.object({ text: z.string() });
 
 const listing = z.object({
@@ -108,24 +107,13 @@ export function aiModels(db: Db, fetch: Deps["fetch"], subscription: Pick<Return
     if (!model) throw new Error("Choose a ChatGPT model in Settings");
     return { key: saved.access_token, model };
   };
-  const completions = async ({ base, key, model }: Provider & { model: string }, request: Request) => {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-      body: JSON.stringify({ model, ...request, messages: request.messages.map(({ responseItems, ...message }) => message) }),
-    });
-    if (!res.ok) throw new Error(`The AI provider returned an error (${res.status})`);
-    const reply = completion.safeParse(await res.json().catch(() => undefined));
-    if (!reply.success) throw new Error("The AI provider sent an unexpected reply");
-    return reply.data.choices[0].message;
-  };
   const sender = async (use: "chat" | "vision") => {
     const subscribed = await own();
-    if (subscribed) return (request: Request) => responses(fetch, subscribed, request);
+    if (subscribed) return (request: Request) => completion(fetch, { ...subscribed, base: "https://api.openai.com/v1", api: "openai-responses" }, request);
     const p = current().chat;
     const model = await chatModel();
     const used = use === "vision" ? (saved()?.visionModel ?? model) : model;
-    return p && used ? (request: Request) => completions({ ...p, model: used }, request) : null;
+    return p && used ? (request: Request) => completion(fetch, { ...p, model: used, api: "openai-completions" }, request) : null;
   };
   const sttModel = async () => {
     const p = current().stt;
