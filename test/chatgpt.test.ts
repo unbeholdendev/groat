@@ -221,9 +221,10 @@ test("Responses translates images, tools and histories and rejects failed, incom
   expect(sent).toMatchObject({
     store: false,
     stream: true,
-    tools: [{ type: "namespace", name: "groat" }],
+    tools: [{ type: "namespace", name: "groat", tools: [{ name: "transaction", strict: false }] }],
     input: [{ role: "developer" }, { content: [{ type: "input_image" }] }, { type: "function_call", namespace: "groat" }, { type: "function_call_output", call_id: "c1" }],
   });
+  expect(sent).not.toHaveProperty("reasoning");
   expect(reply.tool_calls?.[0].function.name).toBe("transaction");
   for (const type of ["response.failed", "response.incomplete", "error", "response.output_text.delta"])
     await expect(responses(async () => sse(type), provider, request)).rejects.toThrow();
@@ -281,6 +282,23 @@ test("Responses logs SDK-consumed errors and message-only failures without expos
       });
       expect(JSON.stringify(log.mock.calls)).not.toContain("private");
     }
+  } finally {
+    log.mockRestore();
+  }
+});
+
+test("rejected Responses requests log the provider's error code without its message", async () => {
+  const log = spyOn(console, "error").mockImplementation(() => {});
+  try {
+    const error = { code: "invalid_function_parameters", type: "invalid_request_error", param: "tools", message: "private-message" };
+    const res = new Response(JSON.stringify({ error }), { status: 400, headers: { "x-request-id": "req_test" } });
+    await expect(responses(async () => res, { key: "private-key", model: "test" }, { messages: [] })).rejects.toThrow("ChatGPT returned an error (400)");
+    expect(log.mock.calls).toHaveLength(1);
+    expect(JSON.parse(String(log.mock.calls[0][0]))).toEqual({
+      timestamp: expect.any(String), level: "error", event: "ai.response.failed", operation: "stream", providerRequestId: "req_test", reason: "error",
+      code: "invalid_function_parameters", errorType: "invalid_request_error", param: "tools",
+    });
+    expect(JSON.stringify(log.mock.calls)).not.toContain("private");
   } finally {
     log.mockRestore();
   }

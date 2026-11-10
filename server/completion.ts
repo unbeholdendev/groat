@@ -69,12 +69,14 @@ export async function complete(fetch: Deps["fetch"], provider: Provider, request
   let status: number | undefined;
   let requestId: string | undefined;
   let failed = false;
+  let rejection: Record<string, unknown> | undefined;
   const options = {
     apiKey: provider.key,
     fetch: Object.assign(async (input: string | URL | Request, init?: RequestInit) => {
       const res = await fetch(input, init);
       status = res.status;
       requestId = diagnostic(res.headers.get("x-request-id"));
+      if (!res.ok) rejection = z.object({ error: z.looseObject({}) }).safeParse(await res.clone().json().catch(() => null)).data?.error;
       return res;
     }, { preconnect: globalThis.fetch.preconnect }),
     signal: AbortSignal.any([AbortSignal.timeout(120000), ...(signal ? [signal] : [])]), maxRetries: 0,
@@ -97,8 +99,8 @@ export async function complete(fetch: Deps["fetch"], provider: Provider, request
         ...options,
         ...(name && { toolChoice: { type: "function", name } }),
         onPayload: (payload) => {
-          const p = z.looseObject({ tools: z.array(z.unknown()).optional() }).parse(payload);
-          return { ...p, ...(name && { tool_choice: { type: "function", namespace: "groat", name } }), ...(p.tools && { tools: [{ type: "namespace", name: "groat", description: "Groat ledger tools", tools: p.tools }] }) };
+          const { reasoning, ...p } = z.looseObject({ tools: z.array(z.looseObject({})).optional() }).parse(payload);
+          return { ...p, ...(name && { tool_choice: { type: "function", namespace: "groat", name } }), ...(p.tools && { tools: [{ type: "namespace", name: "groat", description: "Groat ledger tools", tools: p.tools.map((t) => ({ ...t, strict: false })) }] }) };
         },
       })
     : completions(model as Model<"openai-completions">, context, { ...options, ...(name && { toolChoice: { type: "function", function: { name } } }) });
@@ -107,7 +109,10 @@ export async function complete(fetch: Deps["fetch"], provider: Provider, request
   const reply = await stream.result();
   if (failed || !["stop", "toolUse"].includes(reply.stopReason)) {
     if (!subscribed) throw new Error(status && status >= 400 ? `The AI provider returned an error (${status})` : "The AI provider sent an unexpected reply");
-    if (!failed) log("error", "ai.response.failed", { operation: "stream", providerRequestId: requestId, reason: diagnostic(reply.stopReason) });
+    if (!failed) log("error", "ai.response.failed", {
+      operation: "stream", providerRequestId: requestId, reason: diagnostic(reply.stopReason),
+      code: diagnostic(rejection?.code), errorType: diagnostic(rejection?.type), param: diagnostic(rejection?.param),
+    });
     if (status === 401 || status === 403) throw new Error("ChatGPT needs you to sign in again. Open Settings and reconnect.");
     if (status && status >= 400) throw new Error(`ChatGPT returned an error (${status}). Try again.`);
     throw new Error("ChatGPT could not finish this response. Check your plan usage or reconnect in Settings, then try again.");
