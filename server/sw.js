@@ -18,7 +18,7 @@ self.addEventListener("fetch", (e) => {
   if (
     e.request.mode !== "navigate" &&
     !url.pathname.startsWith("/assets/") &&
-    !["/", "/privacy.html", "/favicon.ico", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"].includes(url.pathname)
+    !["/", "/privacy.html", "/favicon.ico", "/favicon.svg", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"].includes(url.pathname)
   ) return;
   const key = e.request.mode === "navigate" && url.pathname !== "/privacy.html" ? "/" : e.request;
   e.respondWith(
