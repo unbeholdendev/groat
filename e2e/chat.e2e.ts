@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import { bar, expect, test } from "./fixtures";
 
-test.use({ ai: true });
+test.use({ ai: true, serviceWorkers: "block" });
 
 const nav = (page: Page) => page.getByRole("navigation", { name: "Main" });
 
@@ -140,3 +140,35 @@ test("a reply that finishes before the question's response arrives stays shown",
   await expect(page.getByText("Mostly on food.")).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Stop" })).toBeHidden();
 });
+
+for (const available of [true, false]) {
+  test(`saved chats open before AI availability resolves (${available ? "available" : "unavailable"})`, async ({ fresh: page, isMobile }) => {
+    await page.request.post("/api/setup", { data: { username: "admin", password: "secret" } });
+    await page.request.post("/api/onboarding", { data: { baseCurrency: "GBP" } });
+    const created = await page.request.post("/api/chats", { data: { message: "Saved question" } });
+    expect(created.status()).toBe(202);
+    const { id } = await created.json();
+    await expect.poll(async () => (await (await page.request.get(`/api/chats/${id}`)).json()).running).toBe(false);
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    await page.route("**/api/ai/status", async (route) => {
+      await pending;
+      await route.fulfill({ json: { ai: available, aiSource: available ? "key" : null, aiProblem: null, vision: available, voice: false } });
+    });
+    try {
+      await page.goto("/");
+      await openChats(page, isMobile);
+      await page.getByRole("button", { name: "Saved question", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "Saved question", exact: true })).toBeVisible();
+      await expect(page.getByText("Mostly on food.")).toBeVisible();
+      const checked = page.waitForResponse("**/api/ai/status");
+      release();
+      await checked;
+      await page.getByRole("button", { name: "Chats", exact: true }).click();
+      await page.getByRole("button", { name: "Back", exact: true }).click();
+      await expect(page.getByRole("link", { name: "Chats", exact: true }).filter({ visible: true })).toBeVisible();
+    } finally {
+      release();
+    }
+  });
+}

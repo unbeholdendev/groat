@@ -17,7 +17,7 @@ export function MonthHeader({ rows, showFilters, onFilters }: { rows: Transactio
   const kindOf = useKindOf();
   const counted = rows.filter((e) => kindOf(e) === (kind ?? "expense"));
   const shown = kind ? counted : rows;
-  const { baseCurrency: base, ai, aiSource } = useSettings()!;
+  const { baseCurrency: base } = useSettings()!;
   const [unit] = useContext(UnitContext);
   const navigate = route.useNavigate();
   const swipeFrom = useRef<[number, number]>(undefined);
@@ -56,11 +56,9 @@ export function MonthHeader({ rows, showFilters, onFilters }: { rows: Transactio
           <Icon d="M4 7h16M7 12h10M10 17h4" className="size-[18px] stroke-2" />
           {count > 0 && <b className="num absolute -top-1 -right-1 grid size-[18px] place-items-center rounded-chip bg-accent text-[11px] font-semibold text-on-accent ring-2 ring-bg">{count}</b>}
         </button>
-        {(ai || aiSource) && (
-          <Link to="/chat" aria-label="Chats" title="Chats" className={`${stepper} lg:hidden`}>
-            <Icon d={paths.chat} className="size-[18px] stroke-2" />
-          </Link>
-        )}
+        <Link to="/chat" aria-label="Chats" title="Chats" className={`${stepper} lg:hidden`}>
+          <Icon d={paths.chat} className="size-[18px] stroke-2" />
+        </Link>
       </div>
       {filtered ? (
         <>
