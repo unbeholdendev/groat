@@ -132,9 +132,11 @@ test("a reply that finishes before the question's response arrives stays shown",
     await expect(page.getByText("Mostly on food.")).toHaveCount(2);
     await route.fulfill({ response });
   });
+  const answered = page.waitForResponse(`**/api/chats/${chat.id}/messages`);
   await bar(page).fill("Second question");
   await bar(page).press("Enter");
   await expect(bar(page)).toHaveValue("");
+  await answered;
   await expect(page.getByText("Mostly on food.")).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Stop" })).toBeHidden();
 });

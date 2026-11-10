@@ -32,6 +32,17 @@ test("a new line goes to AI and saves from the review card", async ({ app: page 
   await expect(page.getByRole("listitem").filter({ hasText: "Corner shop" })).toContainText("£9.99");
 });
 
+test("a question leaves the input as soon as it is sent", async ({ app: page }) => {
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route("**/api/chats", async (route) => (await held, route.continue()));
+  await bar(page).fill("?where does it go");
+  await bar(page).press("Enter");
+  await expect(bar(page)).toHaveValue("");
+  release();
+  await expect(page.getByText("Mostly on food.")).toBeVisible();
+});
+
 test("? asks, and the answer continues in chat", async ({ app: page }) => {
   await bar(page).fill("?where does it go");
   await bar(page).press("Enter");
