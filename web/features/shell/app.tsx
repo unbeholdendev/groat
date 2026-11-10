@@ -9,6 +9,7 @@ import { SignIn } from "../auth/sign-in";
 import { SettingsForm } from "../settings/settings-form";
 import { useStorageWarning } from "../../lib/device";
 import { Outbox } from "../transactions/outbox";
+import { QuickAddContext } from "../quick-add/quick-add";
 import { Dock } from "./dock";
 import { Gate, LoadError } from "./gates";
 
@@ -33,11 +34,12 @@ export function App() {
       document.documentElement.style.removeProperty("--app-top");
     };
   }, []);
-  useEffect(() => document.querySelector("main")?.scrollTo(0, 0), [location.pathname, location.search.new, location.search.edit]);
+  useEffect(() => void document.querySelector("main")?.scrollTo(0, 0), [location.pathname, location.search.new, location.search.edit]);
   const storageWarning = useStorageWarning();
   const settings = config.data;
   const unitState = useState<Unit>("BTC");
   const [guide, setGuide] = useState(false);
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
   useTheme(settings?.theme);
 
   if (!session) return error ? <LoadError error={error} onRetry={() => refetch()} /> : <Gate><p role="status" className="pt-12 text-ink2">Loading Groat…</p></Gate>;
@@ -56,14 +58,16 @@ export function App() {
     );
   return (
     <UnitContext value={unitState}>
-      <div className="fixed inset-x-0 top-[var(--app-top,0px)] flex h-[var(--app-height,100dvh)] flex-col">
-        <main className="mx-auto min-h-0 w-full max-w-md flex-1 overflow-y-auto overscroll-y-contain px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[calc(var(--stack,0px)+1.5rem)]">
-          {storageWarning && <p role="alert" className="mb-4 text-sm text-up">{storageWarning}</p>}
-          <Outbox />
-          <Outlet />
-        </main>
-        <Dock guide={guide} onGuided={() => setGuide(false)} />
-      </div>
+      <QuickAddContext value={{ guide, onGuided: () => setGuide(false), host, onHost: setHost }}>
+        <div className="fixed inset-x-0 top-[var(--app-top,0px)] flex h-[var(--app-height,100dvh)] flex-col">
+          <main className="mx-auto min-h-0 w-full max-w-md flex-1 overflow-y-auto overscroll-y-contain px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[calc(var(--stack,0px)+1.5rem)]">
+            {storageWarning && <p role="alert" className="mb-4 text-sm text-up">{storageWarning}</p>}
+            <Outbox />
+            <Outlet />
+          </main>
+          <Dock />
+        </div>
+      </QuickAddContext>
     </UnitContext>
   );
 }

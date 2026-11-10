@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutationState } from "@tanstack/react-query";
 import { parseAmount, type Unit } from "../../../shared/amount";
 import { parse } from "../../../shared/parse";
@@ -24,6 +25,8 @@ import { useSlash } from "./use-slash";
 import { useSuggestions } from "./use-suggestions";
 
 export function Bar(props: {
+  inline?: boolean;
+  target?: HTMLElement | null;
   settings: Settings;
   unit: Unit;
   categories: Category[];
@@ -33,7 +36,7 @@ export function Bar(props: {
   onForm: (d: Draft) => void;
   onChat: (id: number) => void;
 }) {
-  const { settings, unit, categories } = props;
+  const { settings, unit, categories, inline, target } = props;
   const [text, setText] = useState("");
   const [focused, setFocused] = useState(false);
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -69,7 +72,7 @@ export function Bar(props: {
   }, [adding.isPaused]);
   const asking = useAsk(props.chat);
   const card = !asking.isIdle && !inChat;
-  useEffect(() => void (props.guide && input.current?.focus()), [props.guide]);
+  useEffect(() => void (props.guide && input.current?.focus()), [props.guide, target]);
   useSlash(input);
   const close = () => (asking.reset(), input.current?.focus());
   const error = adding.error ?? (inChat ? asking.error : null) ?? captureError;
@@ -92,12 +95,25 @@ export function Bar(props: {
   const key = ask ? "Ask" : p.amount || settings.ai ? "Add" : "Full form";
   const empty = !text.trim() && !inChat && !reviewing;
 
-  return (
-    <>
+  const stack = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (inline && reviewing) stack.current?.scrollIntoView({ block: "nearest" });
+  }, [inline, reviewing, drafting.isSuccess]);
+
+  const [away, setAway] = useState(false);
+  useEffect(() => {
+    if (!inline) return;
+    const observer = new IntersectionObserver(([entry]) => setAway(!entry.isIntersecting), { root: input.current!.closest("main") });
+    observer.observe(input.current!);
+    return () => observer.disconnect();
+  }, [inline, target]);
+
+  const content = (
+    <div className={inline ? "relative z-10 isolate" : undefined}>
       <Incoming enabled={settings.vision && online && !inChat} onImage={photo} />
       {card && <div className="fixed inset-0 -z-20 bg-bg/70" onClick={close} />}
-      <form aria-label="Quick add" onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && (card ? close() : unreview())}>
-        <div data-stack className="absolute inset-x-0 bottom-full grid grid-cols-1 gap-2 pb-2">
+      <form className={inline ? "flex flex-col" : undefined} aria-label="Quick add" onSubmit={submit} onKeyDown={(e) => e.key === "Escape" && (card ? close() : unreview())}>
+        <div ref={stack} data-stack className={inline ? "order-2 grid grid-cols-1 gap-2 pt-2 empty:hidden" : "absolute inset-x-0 bottom-full grid grid-cols-1 gap-2 pb-2"}>
           {card && <AnswerCard asking={asking} unit={unit} onClose={close} onForm={props.onForm} onChat={(id) => (clear(), props.onChat(id))} />}
           {reviewing && !card && (
             <Review
@@ -128,7 +144,7 @@ export function Bar(props: {
           )}
         </div>
         <div
-          className={`flex h-12 items-center gap-2 rounded-field border pr-[3px] pl-3.5 transition-[background-color,border-color,box-shadow] duration-200 ${focused || text ? "border-accent bg-surface shadow-bar-active" : "border-transparent bg-surface2"}`}
+          className={`flex ${inline ? "h-14" : "h-12"} items-center gap-2 rounded-field border pr-[3px] pl-3.5 transition-[background-color,border-color,box-shadow] duration-200 ${focused || text ? "border-accent bg-surface shadow-bar-active" : inline ? "border-accent/50 bg-surface shadow-panel" : "border-transparent bg-surface2"}`}
         >
           {inChat && <span aria-hidden className="-mr-1 text-[17px] font-medium text-accent">?</span>}
           <LineInput
@@ -140,20 +156,18 @@ export function Bar(props: {
             ghost={ghost}
             focused={focused}
             label={inChat ? "Ask about your spending" : settings.ai ? "Add an expense, or start with ? to ask" : "Add an expense"}
-            placeholder={inChat ? (props.chat ? "Reply" : "Ask about your spending") : "ramen 24.50"}
+            placeholder={inChat ? (props.chat ? "Reply" : "Ask about your spending") : inline ? "Add an expense" : "ramen 24.50"}
             onText={(t) => (setText(t), adding.reset(), setCaptureError(null), receipt.dismiss())}
             onAccept={() => fill(fills[0])}
             onFocus={setFocused}
           />
-          {!text && !inChat && !reviewing && (
-            <PhotoButton online={online} onPhoto={photo} off={settings.vision ? undefined : aiOff(settings, admin, "ai")} onOff={setCaptureError} />
-          )}
+          {!text && !inChat && !reviewing && <PhotoButton online={online} onPhoto={photo} off={settings.vision ? undefined : aiOff(settings, admin, "ai")} onOff={setCaptureError} />}
           {!text && !inChat && !reviewing && !settings.voice && <Mic onAudio={() => {}} onError={setCaptureError} off={aiOff(settings, admin, "voice")} />}
           {!text && !inChat && !reviewing && settings.voice && online && <Mic onAudio={(audio) => (setCaptureError(null), drafting.mutate({ audio }))} onError={setCaptureError} />}
           {empty ? (
-            <button type="button" aria-label="Full form" title="Full form" onMouseDown={(e) => e.preventDefault()} onClick={() => props.onForm(seed())} className="press grid size-11 shrink-0 place-items-center rounded-chip text-ink2"><Icon d={paths.expand} className="size-5" /></button>
+            <button type="button" aria-label="Full form" title="Full form" onMouseDown={(e) => e.preventDefault()} onClick={() => props.onForm(seed())} className={`press hit grid shrink-0 place-items-center rounded-chip ${inline ? "size-9 bg-accent text-on-accent" : "size-11 text-ink2"}`}><Icon d={inline ? paths.plus : paths.expand} className={inline ? "size-4" : "size-5"} /></button>
           ) : (
-            <SubmitButton name={key} dim={!text.trim() && !inChat} disabled={adding.isPending || asking.isPending || drafting.isPending || (inChat && !question)} />
+            <SubmitButton name={key} label={inline} dim={!text.trim() && !inChat} disabled={adding.isPending || asking.isPending || drafting.isPending || (ask && !question)} />
           )}
         </div>
         <span role="status" className="sr-only">
@@ -175,6 +189,16 @@ export function Bar(props: {
           />
         )}
       </form>
-    </>
+      {inline && away && (
+        <button type="button" onClick={() => {
+          input.current?.focus({ preventScroll: true });
+          input.current?.scrollIntoView({ block: "center" });
+        }} className="press fixed right-5 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-20 flex min-h-11 items-center gap-2 rounded-chip bg-accent px-4 text-sm font-semibold text-on-accent lg:hidden">
+          <Icon d={paths.plus} className="size-4" />
+          Add expense
+        </button>
+      )}
+    </div>
   );
+  return target ? createPortal(content, target) : content;
 }

@@ -153,3 +153,12 @@ test("saves over plain HTTP, where crypto.randomUUID is missing", async ({ app: 
   await add(page, "coffee 3.20");
   await expect(page.getByRole("button", { name: "coffee" })).toBeVisible();
 });
+
+test("quick entry survives navigation between Home and Settings", async ({ app: page }) => {
+  await bar(page).fill("Coffee 3.20 #work");
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+  await expect(bar(page)).toHaveValue("Coffee 3.20 #work");
+  await page.getByRole("link", { name: "Expenses", exact: true }).click();
+  await expect(bar(page)).toHaveValue("Coffee 3.20 #work");
+});

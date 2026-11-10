@@ -7,6 +7,7 @@ import type { Transaction } from "../../lib/schemas";
 import { iso } from "../../lib/period";
 import { today } from "../../lib/dates";
 import { UnitContext } from "../../lib/unit";
+import { QuickAddContext } from "../quick-add/quick-add";
 import { Breakdown } from "./breakdown";
 import { DayList } from "./day-list";
 import { Filters } from "./filters";
@@ -18,6 +19,7 @@ import { useMonth } from "./use-month";
 
 export function Month({ newest }: { newest: number }) {
   const { month, filter, setFilter, filtered, shown, end, label, kind } = useMonth();
+  const { onHost } = useContext(QuickAddContext);
   const income = useSettings()?.income;
   const kindOf = useKindOf();
   const [unit] = useContext(UnitContext);
@@ -44,6 +46,7 @@ export function Month({ newest }: { newest: number }) {
         setFilterPanel(showFilters ? "closed" : "open");
       }} />
       {!filtered && <Breakdown unit={unit} end={month ? end : undefined} />}
+      <div ref={onHost} className="my-6" />
       {showFilters && <Filters />}
       {income && <KindFilter />}
       <PendingList />
@@ -59,9 +62,9 @@ export function Month({ newest }: { newest: number }) {
                 Clear filters
               </Button>
             ) : month ? (
-              "Step back a month, or add one below with a date."
+              "Step back a month, or add one above with a date."
             ) : (
-              "Type one below, like “coffee 3.20”."
+              "Type one above, like “coffee 3.20”."
             )}
           </p>
         </div>

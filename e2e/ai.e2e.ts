@@ -138,3 +138,26 @@ test("expense entry works while AI availability is pending", async ({ fresh: pag
     release();
   }
 });
+
+test("AI review edits survive navigation between Home and Settings", async ({ app: page }) => {
+  await bar(page).fill("corner shop");
+  await bar(page).press("Enter");
+  const review = page.getByRole("region", { name: "Review expense" });
+  await expect(review.getByLabel("Amount")).toHaveValue("9.99");
+  await review.getByLabel("Note").fill("Edited shop");
+  await review.getByLabel("Amount").fill("12.34");
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Expenses", exact: true }).click();
+  await expect(review.getByLabel("Note")).toHaveValue("Edited shop");
+  await expect(review.getByLabel("Amount")).toHaveValue("12.34");
+});
+
+test("clicking outside a Home answer closes it without changing the month", async ({ app: page }) => {
+  await bar(page).fill("?where does it go");
+  await bar(page).press("Enter");
+  await expect(page.getByText("Mostly on food.")).toBeVisible();
+  await page.mouse.click(10, 180);
+  await expect(page.getByText("Mostly on food.")).toBeHidden();
+  await expect(page).toHaveURL(/\/$/);
+});

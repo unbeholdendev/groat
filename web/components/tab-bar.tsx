@@ -45,7 +45,7 @@ export function TabBar() {
   const wide = useSyncExternalStore(onResize, () => lg().matches);
   const current = view && !wide ? "/settings" : (view ?? path);
   return (
-    <nav aria-label="Main" className="grid grid-cols-4 lg:[view-transition-name:tabs] lg:fixed lg:top-6 lg:left-[calc(50%-432px)] lg:flex lg:w-44 lg:flex-col lg:gap-1">
+    <nav aria-label="Main" className="grid grid-cols-4 gap-1 max-lg:rounded-panel max-lg:bg-ink max-lg:dark:bg-surface2 max-lg:p-1 lg:[view-transition-name:tabs] lg:fixed lg:top-6 lg:left-[calc(50%-432px)] lg:flex lg:w-44 lg:flex-col lg:gap-1">
       {tabs.map(([to, label, icon]) => (
         <Link
           key={to}
@@ -53,9 +53,9 @@ export function TabBar() {
           to={to}
           activeOptions={{ exact: to === "/" }}
           aria-current={current === to ? "page" : undefined}
-          className={`press flex h-[52px] flex-col items-center justify-center gap-1 rounded-field text-[11px] font-semibold lg:h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-[15px] lg:font-medium ${current === to ? "text-ink lg:bg-surface2" : "text-ink3 lg:text-ink2 lg:hover:bg-surface2 lg:hover:text-ink"}`}
+          className={`press flex h-[52px] flex-col items-center justify-center gap-1 rounded-field text-[12px] font-semibold lg:h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-[15px] lg:font-medium ${current === to ? "max-lg:bg-accent max-lg:text-on-accent lg:text-ink lg:bg-surface2" : "max-lg:text-bg/75 max-lg:dark:text-ink2 lg:text-ink2 lg:hover:bg-surface2 lg:hover:text-ink"}`}
         >
-          <Icon className={`size-[22px] ${current === to ? "text-accent" : ""}`}>{icon}</Icon>
+          <Icon className={`size-[22px] ${current === to ? "lg:text-accent" : ""}`}>{icon}</Icon>
           {label}
         </Link>
       ))}
