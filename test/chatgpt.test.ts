@@ -68,6 +68,7 @@ async function fixture() {
       if (url.endsWith("/responses")) {
         auths.push(new Headers(init?.headers).get("authorization")!);
         requests.push(JSON.parse(String(init?.body)));
+        if (requests.at(-1).tool_choice?.namespace) return Response.json({ error: { code: "unknown_parameter", type: "invalid_request_error", param: "tool_choice.namespace" } }, { status: 400 });
         if (replies.length) return replies.shift()!;
         return sse("response.completed", {
           output: [
@@ -206,7 +207,7 @@ test("Responses translates images, tools and histories and rejects failed, incom
       { role: "assistant", tool_calls: [{ id: "c1", function: { name: "transaction", arguments: "{}" } }] },
       { role: "tool", tool_call_id: "c1", content: "{}" },
     ],
-    tools: [{ function: { name: "transaction", parameters: {} } }],
+    tools: [{ function: { name: "transaction", parameters: {} } }, { function: { name: "unused", parameters: {} } }],
     tool_choice: { function: { name: "transaction" } },
   };
   const provider = { key: "private", model: "test" };
@@ -225,6 +226,7 @@ test("Responses translates images, tools and histories and rejects failed, incom
     input: [{ role: "developer" }, { content: [{ type: "input_image" }] }, { type: "function_call", namespace: "groat" }, { type: "function_call_output", call_id: "c1" }],
   });
   expect(sent).not.toHaveProperty("reasoning");
+  expect(sent.tool_choice).toBe("required");
   expect(reply.tool_calls?.[0].function.name).toBe("transaction");
   for (const type of ["response.failed", "response.incomplete", "error", "response.output_text.delta"])
     await expect(responses(async () => sse(type), provider, request)).rejects.toThrow();
@@ -510,7 +512,8 @@ test("ChatGPT extracts text and receipt drafts through the connected account", a
   expect(await photo.json()).toMatchObject({ note: "Tesco", amount: 2345, attachmentId: expect.any(Number) });
   for (const request of f.requests) {
     expect(request.model).toBe("chat-test");
-    expect(request.tool_choice).toEqual({ type: "function", namespace: "groat", name: "transaction" });
+    expect(request.tool_choice).toBe("required");
+    expect(request.tools[0].tools.map((tool: { name: string }) => tool.name)).toEqual(["transaction"]);
   }
   expect(f.requests[1].input[1].content[0]).toMatchObject({ type: "input_image", image_url: expect.stringContaining("data:image/jpeg;base64,") });
   expect(f.auths).toEqual(["Bearer secret-access", "Bearer secret-access"]);

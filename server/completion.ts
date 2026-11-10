@@ -97,10 +97,10 @@ export async function complete(fetch: Deps["fetch"], provider: Provider, request
   const stream = subscribed
     ? responses(model as Model<"openai-responses">, context, {
         ...options,
-        ...(name && { toolChoice: { type: "function", name } }),
+        ...(name && { toolChoice: "required" as const }),
         onPayload: (payload) => {
           const { reasoning, ...p } = z.looseObject({ tools: z.array(z.looseObject({})).optional() }).parse(payload);
-          return { ...p, ...(name && { tool_choice: { type: "function", namespace: "groat", name } }), ...(p.tools && { tools: [{ type: "namespace", name: "groat", description: "Groat ledger tools", tools: p.tools.map((t) => ({ ...t, strict: false })) }] }) };
+          return { ...p, ...(p.tools && { tools: [{ type: "namespace", name: "groat", description: "Groat ledger tools", tools: p.tools.filter((t) => !name || t.name === name).map((t) => ({ ...t, strict: false })) }] }) };
         },
       })
     : completions(model as Model<"openai-completions">, context, { ...options, ...(name && { toolChoice: { type: "function", function: { name } } }) });
