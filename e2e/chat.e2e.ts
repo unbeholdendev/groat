@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures";
+import { bar, expect, test } from "./fixtures";
 
 test.use({ ai: true });
 
@@ -83,4 +83,58 @@ test("a long unbroken reply wraps instead of scrolling sideways", async ({ app: 
   const reply = page.getByText('{"id":', { exact: false });
   await expect(reply).toBeVisible();
   expect(await page.locator("main").evaluate((main) => main.scrollWidth - main.clientWidth)).toBe(0);
+});
+
+const slow = async (page: Page) => {
+  const chat = await (await page.request.post("/api/chats", { data: { message: "Add two slow coffees" } })).json();
+  await page.goto(`/chat?id=${chat.id}`);
+  await expect(page.getByText("Add transaction ✓")).toBeVisible();
+  await expect(page.getByText("Working on it…")).toBeVisible();
+};
+const notes = async (page: Page) => (await (await page.request.get("/api/transactions")).json()).map((t: { note: string }) => t.note);
+
+test("each step of a run shows before the final reply", async ({ app: page }) => {
+  await slow(page);
+  await expect(page.getByText("Added both slow coffees.")).toBeHidden();
+  await page.request.post("/__release");
+  await expect(page.getByText("Added both slow coffees.")).toBeVisible();
+  await expect(page.getByText("Add transaction ✓")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Stop" })).toBeHidden();
+});
+
+test("stopping a run keeps its steps and runs no further action", async ({ app: page }) => {
+  await slow(page);
+  await page.getByRole("button", { name: "Stop" }).click();
+  await expect(page.getByText("Stopped.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Add transaction ✓")).toHaveCount(1);
+  await page.request.post("/__release");
+  await expect(page.getByRole("button", { name: "Stop" })).toBeHidden();
+  expect(await notes(page)).toEqual(["Slow coffee"]);
+});
+
+test("a run carries on through a reload", async ({ app: page }) => {
+  await slow(page);
+  await page.reload();
+  await expect(page.getByText("Add transaction ✓")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
+  await page.request.post("/__release");
+  await expect(page.getByText("Added both slow coffees.")).toBeVisible();
+  expect((await notes(page)).sort()).toEqual(["Second slow coffee", "Slow coffee"]);
+});
+
+test("a reply that finishes before the question's response arrives stays shown", async ({ app: page }) => {
+  const chat = await (await page.request.post("/api/chats", { data: { message: "First question" } })).json();
+  await page.goto(`/chat?id=${chat.id}`);
+  await expect(page.getByText("Mostly on food.")).toHaveCount(1);
+  await page.route(`**/api/chats/${chat.id}/messages`, async (route) => {
+    const response = await route.fetch();
+    await expect.poll(async () => (await (await page.request.get(`/api/chats/${chat.id}`)).json()).running).toBe(false);
+    await expect(page.getByText("Mostly on food.")).toHaveCount(2);
+    await route.fulfill({ response });
+  });
+  await bar(page).fill("Second question");
+  await bar(page).press("Enter");
+  await expect(bar(page)).toHaveValue("");
+  await expect(page.getByText("Mostly on food.")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Stop" })).toBeHidden();
 });

@@ -2,7 +2,7 @@ import type { Env } from "./auth";
 import { chatActions } from "./chat-actions";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { transactionInput, isoDate } from "../shared/schema";
 import type { Ctx } from "./app";
@@ -29,18 +29,26 @@ export function chats(ctx: Ctx, value: Valuer) {
   const { db, clock, ai } = ctx;
   const app = new Hono<Env>();
   app.use("*", async (c, next) => {
-    const off = c.req.method === "POST" && (await ai.unavailable("chat"));
+    const off = c.req.method === "POST" && !c.req.path.endsWith("/stop") && (await ai.unavailable("chat"));
     return off ? c.json({ error: off }, 403) : next();
   });
 
+  const runs = new Map<number, AbortController>();
   const save = (chatId: number, message: object) => db.insert(chatMessages).values({ chatId, message }).run();
 
   const chat = (id: number | string) => {
     const row = db.select().from(chatTable).where(eq(chatTable.id, Number(id))).get();
     if (!row) return null;
     const messages = db.select().from(chatMessages).where(eq(chatMessages.chatId, row.id)).orderBy(chatMessages.id).all();
-    return { ...row, messages: messages.map((m) => chatMessage.parse(m.message)) };
+    return { ...row, running: runs.has(row.id), messages: messages.map((m) => chatMessage.parse(m.message)) };
   };
+
+  const last = db.select().from(chatMessages)
+    .where(inArray(chatMessages.id, db.select({ id: sql`max(${chatMessages.id})` }).from(chatMessages).groupBy(chatMessages.chatId))).all();
+  for (const { chatId, message } of last) {
+    const { role, tool_calls } = chatMessage.parse(message);
+    if (role !== "assistant" || tool_calls?.length) save(chatId, { role: "assistant", content: "Interrupted by a server restart. Check the steps above before asking again." });
+  }
 
   const totals = async ({ from, to }: z.infer<typeof range>) => {
     const { categories, buckets, ...rest } = await period(db, value, from, to, "month");
@@ -103,58 +111,77 @@ export function chats(ctx: Ctx, value: Valuer) {
     ].join("\n");
   };
 
-  const ask = async (chatId: number | null, message: string, cookie: string) => {
+  const answer = async (id: number, history: Message[], cookie: string, run: AbortController) => {
+    const { signal } = run;
     const actions = chatActions(ctx, value, cookie);
     const available: Record<string, ReturnType<typeof tool>> = { ...tools, ...actions };
     const results = new Map<string, unknown>();
-    let acted = false;
-    const history = (chatId && chat(chatId)?.messages) || [];
-    const added: Message[] = [{ role: "user", content: message }];
-    for (let turn = 0; turn < 25; turn++) {
-      const reply = await ai.complete({
-        messages: [{ role: "system", content: system() }, ...history, ...added],
-        tools: Object.entries(available).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),
-      }).catch((error) => {
-        log("warn", "ai.reply.failed", { error: errorKind(error) });
-        if (!acted) throw error;
-        return { role: "assistant", content: "The action results are saved. I could not finish the reply.\n" + [...results.values()].map((result) => JSON.stringify(result)).join("\n") } as Message;
-      });
-      added.push(reply);
-      if (!reply.tool_calls?.length) break;
-      for (const { id: callId, function: f } of reply.tool_calls) {
-        const key = callId;
-        const mutates = f.name in actions && f.name !== "list_recurring";
-        const operation = Object.hasOwn(available, f.name) ? f.name : "unknown";
-        const result = mutates && results.has(key) ? results.get(key) : await Promise.resolve()
-          .then(() => {
-            const selected = available[f.name];
-            if (!selected) throw new Error("Unsupported action");
-            const args = JSON.parse(f.arguments);
-            if (mutates) acted = true;
-            log("debug", "ai.tool.started", { operation });
-            return selected.run(args);
-          })
-          .then((result) => {
-            log("debug", "ai.tool.completed", { operation });
-            return result;
-          })
-          .catch((e) => {
-            log("warn", "ai.tool.failed", { operation, error: errorKind(e) });
-            if (e instanceof HTTPException && e.status === 401) throw e;
-            return { error: String(e) };
-          });
-        if (mutates) results.set(key, result);
-        added.push({ role: "tool", tool_call_id: callId, content: JSON.stringify(result) });
+    const added: Message[] = [];
+    const step = ({ modelMessage, ...message }: Message) => {
+      if (runs.get(id) !== run) throw new Error("Chat deleted");
+      added.push({ modelMessage, ...message });
+      save(id, message);
+      ctx.broadcast({ type: "chat", id });
+    };
+    try {
+      for (let turn = 0; turn < 25; turn++) {
+        const at = history.length + added.length;
+        step(await ai.complete({
+          messages: [{ role: "system", content: system() }, ...history, ...added],
+          tools: Object.entries(available).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),
+        }, "chat", { signal, onText: (text) => ctx.broadcast({ type: "chat", id, at, text }) }));
+        const calls = added.at(-1)?.tool_calls;
+        if (!calls?.length) return;
+        for (const { id: callId, function: f } of calls) {
+          signal.throwIfAborted();
+          const mutates = f.name in actions && f.name !== "list_recurring";
+          const operation = Object.hasOwn(available, f.name) ? f.name : "unknown";
+          const result = mutates && results.has(callId) ? results.get(callId) : await Promise.resolve()
+            .then(() => {
+              const selected = available[f.name];
+              if (!selected) throw new Error("Unsupported action");
+              const args = JSON.parse(f.arguments);
+              log("debug", "ai.tool.started", { operation });
+              return selected.run(args);
+            })
+            .then((result) => {
+              log("debug", "ai.tool.completed", { operation });
+              return result;
+            })
+            .catch((e) => {
+              log("warn", "ai.tool.failed", { operation, error: errorKind(e) });
+              if (e instanceof HTTPException && e.status === 401) throw e;
+              return { error: String(e) };
+            });
+          if (mutates) results.set(callId, result);
+          step({ role: "tool", tool_call_id: callId, content: JSON.stringify(result) });
+        }
       }
+      step({ role: "assistant", content: "I reached the tool limit. Check the steps above before requesting another change." });
+    } catch (error) {
+      if (!signal.aborted) log("warn", "ai.reply.failed", { error: errorKind(error) });
+      step({ role: "assistant", content: signal.aborted ? "Stopped." : error instanceof Error ? error.message : "The AI provider sent an unexpected reply" });
     }
-    if (added.at(-1)?.role === "tool") {
-      added.push({ role: "assistant", content: "I reached the tool limit. Check these action results before requesting another change.\n" + [...results.values()].map((result) => JSON.stringify(result)).join("\n") });
-    }
-    return db.transaction(() => {
+  };
+
+  const ask = (chatId: number | null, message: string, cookie: string) => {
+    const history = (chatId && chat(chatId)?.messages) || [];
+    const question = { role: "user", content: message };
+    const id = db.transaction(() => {
       const id = chatId ?? db.insert(chatTable).values({ title: message.slice(0, 60) }).returning().get().id;
-      for (const { modelMessage, ...message } of added) save(id, message);
-      return chat(id);
+      save(id, question);
+      return id;
     });
+    const run = new AbortController();
+    runs.set(id, run);
+    answer(id, [...history, question], cookie, run)
+      .catch((error) => log("warn", "ai.run.failed", { error: errorKind(error) }))
+      .finally(() => {
+        if (runs.get(id) !== run) return;
+        runs.delete(id);
+        ctx.broadcast({ type: "chat", id });
+      });
+    return chat(id);
   };
 
   app.onError((e, c) => c.json({ error: e.message }, e instanceof HTTPException ? e.status : 502));
@@ -164,7 +191,7 @@ export function chats(ctx: Ctx, value: Valuer) {
   app.post("/", async (c) => {
     const input = await body(c, question);
     if ("error" in input) return c.json(input, 400);
-    return c.json(await ask(null, input.data.message, c.req.header("cookie") ?? ""), 201);
+    return c.json(ask(null, input.data.message, c.req.header("cookie") ?? ""), 202);
   });
 
   app.get("/:id", (c) => {
@@ -174,14 +201,26 @@ export function chats(ctx: Ctx, value: Valuer) {
 
   app.post("/:id/messages", async (c) => {
     const input = await body(c, question);
-    if (!chat(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
+    const id = Number(c.req.param("id"));
+    if (!chat(id)) return c.json({ error: "Not found" }, 404);
     if ("error" in input) return c.json(input, 400);
-    return c.json(await ask(Number(c.req.param("id")), input.data.message, c.req.header("cookie") ?? ""));
+    if (runs.has(id)) return c.json({ error: "Wait for the reply, or stop it first" }, 409);
+    return c.json(ask(id, input.data.message, c.req.header("cookie") ?? ""), 202);
   });
 
-  app.delete("/:id", (c) =>
-    db.delete(chatTable).where(eq(chatTable.id, Number(c.req.param("id")))).returning().get() ? c.json({}) : c.json({ error: "Not found" }, 404),
-  );
+  app.post("/:id/stop", (c) => {
+    const id = Number(c.req.param("id"));
+    if (!chat(id)) return c.json({ error: "Not found" }, 404);
+    runs.get(id)?.abort();
+    return c.json({});
+  });
+
+  app.delete("/:id", (c) => {
+    const id = Number(c.req.param("id"));
+    runs.get(id)?.abort();
+    runs.delete(id);
+    return db.delete(chatTable).where(eq(chatTable.id, id)).returning().get() ? c.json({}) : c.json({ error: "Not found" }, 404);
+  });
 
   return app;
 }

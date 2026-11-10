@@ -41,7 +41,7 @@ test("an admin sets the provider in Settings and AI turns on without a restart",
   expect(saved).toEqual({ status: 200, body: { baseUrl: "https://ai.test/v1", keyEnding: "abcd", sttBaseUrl: null, sttKeyEnding: null } });
   expect(aiProvider.parse(saved.body)).toEqual(saved.body);
   expect((await call("GET", "/api/ai/status")).body).toMatchObject({ ai: true, vision: true, voice: true });
-  expect((await call("POST", "/api/chats", { message: "hi" })).status).toBe(201);
+  expect((await call("POST", "/api/chats", { message: "hi" })).status).toBe(202);
   const form = new FormData();
   form.append("audio", new File([new Uint8Array([1])], "voice.webm", { type: "audio/webm" }));
   expect((await request("/api/voice", { method: "POST", body: form })).status).toBe(200);

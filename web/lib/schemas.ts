@@ -62,7 +62,14 @@ export function draftIn(content: string | null | undefined) {
   }
 }
 
-export const chat = z.object({ id: z.number(), title: z.string(), messages: z.array(z.object({ role: z.string(), content: z.string().nullish() })).optional() });
+export const chatMessage = z.object({
+  role: z.string(),
+  content: z.string().nullish(),
+  tool_calls: z.array(z.object({ id: z.string(), function: z.object({ name: z.string() }) })).optional(),
+  tool_call_id: z.string().optional(),
+});
+export type ChatMessage = z.infer<typeof chatMessage>;
+export const chat = z.object({ id: z.number(), title: z.string(), running: z.boolean().optional(), messages: z.array(chatMessage).optional() });
 export type Chat = z.infer<typeof chat>;
 
 export const tag = z.object({ id: z.number(), name: z.string() });

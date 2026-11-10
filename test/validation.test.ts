@@ -31,5 +31,5 @@ test("malformed input gets a readable 400 on every route family", async () => {
 
 test("an unexpected AI provider reply is a clear error, not a crash", async () => {
   const { call } = setup(undefined, (url) => listed(url) ?? (url.host === "ai.test" ? Response.json({ choices: [] }) : undefined), ai);
-  expect(await call("POST", "/api/chats", { message: "hi" })).toEqual({ status: 502, body: { error: "The AI provider sent an unexpected reply" } });
+  expect((await call("POST", "/api/chats", { message: "hi" })).body.messages.at(-1)).toEqual({ role: "assistant", content: "The AI provider sent an unexpected reply" });
 });

@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite";
 import { expect, spyOn, test } from "bun:test";
 import { createApp } from "../server/app";
 import { complete } from "../server/completion";
+import { settling } from "./harness";
 
 const responses = (fetch: Parameters<typeof complete>[0], provider: { key: string; model: string }, request: object) =>
   complete(fetch, { ...provider, api: "openai-responses", base: "https://api.openai.com/v1" }, request);
@@ -80,14 +81,14 @@ async function fixture() {
   });
   db.run("INSERT INTO users (id, username, password_hash, role) VALUES (1, 'one', 'x', 'admin'), (2, 'two', 'x', 'member')");
   db.run("INSERT INTO sessions (id, user_id, expires_at) VALUES ('one', 1, '9999'), ('other', 1, '9999'), ('two', 2, '9999')");
-  const call = async (method: string, path: string, body?: unknown, session = "one") => {
+  const call = settling(async (method: string, path: string, body?: unknown, session = "one") => {
     const res = await app.request(path, {
       method,
       headers: { cookie: `session=${session}`, "content-type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     return { status: res.status, body: await res.json() };
-  };
+  });
   const start = async () => {
     const res = await call("POST", "/api/chatgpt/start");
     const auth = new URL(res.body.url);
@@ -415,7 +416,7 @@ test("opaque model state is not saved in shared chats or returned to members", a
   await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
   f.bad("reasoning");
   const result = await f.call("POST", "/api/chats", { message: "Hello" });
-  expect(result.status).toBe(201);
+  expect(result.status).toBe(202);
   expect(JSON.stringify(result.body)).not.toContain("opaque-reasoning");
   expect(JSON.stringify(f.db.query("SELECT message FROM chat_messages").all())).not.toContain("opaque-reasoning");
 });
@@ -463,11 +464,11 @@ test("shared chat history stays readable without an AI connection or after revoc
   const f = await fixture();
   await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
   const chat = await f.call("POST", "/api/chats", { message: "Shared history" });
-  expect(chat.status).toBe(201);
+  expect(chat.status).toBe(202);
   expect((await f.call("GET", "/api/chats", undefined, "two")).status).toBe(200);
   expect((await f.call("GET", `/api/chats/${chat.body.id}`, undefined, "two")).body).toEqual(chat.body);
   const continued = await f.call("POST", `/api/chats/${chat.body.id}/messages`, { message: "Continue" }, "two");
-  expect(continued.status).toBe(200);
+  expect(continued.status).toBe(202);
   f.advance();
   f.bad("revoked");
   await f.call("GET", "/api/chatgpt/models");
@@ -505,14 +506,14 @@ test("ChatGPT action calls execute once even when repeated with a different outp
     f.replies.push(sse("response.completed", { output: [{ type: "function_call", id, namespace: "groat", name: "add_transaction", call_id: "same-call", arguments: JSON.stringify({ note: "Coffee", amount: "3" }) }] }));
   f.replies.push(new Response("private-provider-error", { status: 503 }));
   const chat = await f.call("POST", "/api/chats", { message: "Add coffee for 3" });
-  expect(chat.status).toBe(201);
-  expect(chat.body.messages.at(-1).content).toContain("The action results are saved");
+  expect(chat.status).toBe(202);
+  expect(chat.body.messages.at(-1).content).toBe("ChatGPT returned an error (503). Try again.");
   const transactions = (await f.call("GET", "/api/transactions")).body;
   expect(transactions).toHaveLength(1);
   expect(transactions[0]).toMatchObject({ note: "Coffee", amount: 300 });
   expect(f.requests[1].input).toContainEqual(expect.objectContaining({ type: "function_call_output", call_id: "same-call" }));
   const continued = await f.call("POST", `/api/chats/${chat.body.id}/messages`, { message: "Thanks" });
-  expect(continued.status).toBe(200);
+  expect(continued.status).toBe(202);
   expect((await f.call("GET", "/api/transactions")).body).toHaveLength(1);
   expect(JSON.stringify(chat.body)).not.toContain("private-provider-error");
 });

@@ -4,11 +4,13 @@ import { resource } from "../../shared/schema";
 import { tab } from "./api";
 import { invalidate } from "./resources";
 import { session } from "./schemas";
+import { stream } from "./streams";
 
 const message = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ready"), username: z.string() }),
   z.object({ type: z.literal("changed"), resources: z.array(resource) }),
   z.object({ type: z.literal("heartbeat") }),
+  z.object({ type: z.literal("chat"), id: z.number(), at: z.number().optional(), text: z.string().optional() }),
 ]);
 
 export function liveUpdates(client: QueryClient, revoked: () => void) {
@@ -43,6 +45,10 @@ export function liveUpdates(client: QueryClient, revoked: () => void) {
       alive();
       const data = message.safeParse(raw).data;
       if (data?.type === "changed") void invalidate(client, data.resources);
+      if (data?.type === "chat") {
+        if (data.at !== undefined && data.text !== undefined) stream(data.id, data.at, data.text);
+        else void client.invalidateQueries({ queryKey: [`/api/chats/${data.id}`], exact: true });
+      }
       if (data?.type !== "ready") return;
       if (data.username !== owner) {
         owner = undefined;

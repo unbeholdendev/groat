@@ -19,8 +19,9 @@ const requestSchema = z.object({
 });
 
 type Provider = { api: "openai-completions" | "openai-responses"; base: string; key: string; model: string };
+export type Streaming = { signal?: AbortSignal; onText?: (text: string) => void };
 
-export async function complete(fetch: Deps["fetch"], provider: Provider, request: object) {
+export async function complete(fetch: Deps["fetch"], provider: Provider, request: object, { signal, onText }: Streaming = {}) {
   const parsed = requestSchema.parse(request);
   const subscribed = provider.api === "openai-responses";
   const model: Model<typeof provider.api> = {
@@ -76,7 +77,7 @@ export async function complete(fetch: Deps["fetch"], provider: Provider, request
       requestId = diagnostic(res.headers.get("x-request-id"));
       return res;
     }, { preconnect: globalThis.fetch.preconnect }),
-    signal: AbortSignal.timeout(120000), maxRetries: 0,
+    signal: AbortSignal.any([AbortSignal.timeout(120000), ...(signal ? [signal] : [])]), maxRetries: 0,
     onProviderStreamEvent: (data: unknown) => {
       if (!subscribed) return;
       const event = z.looseObject({ type: z.string(), response: z.any().optional(), error: z.any().optional(), code: z.any().optional(), message: z.any().optional(), param: z.any().optional() }).parse(data);
@@ -101,6 +102,8 @@ export async function complete(fetch: Deps["fetch"], provider: Provider, request
         },
       })
     : completions(model as Model<"openai-completions">, context, { ...options, ...(name && { toolChoice: { type: "function", function: { name } } }) });
+  if (onText) for await (const event of stream)
+    if (event.type === "text_delta") onText(event.partial.content.flatMap((c) => (c.type === "text" ? c.text : [])).join(""));
   const reply = await stream.result();
   if (failed || !["stop", "toolUse"].includes(reply.stopReason)) {
     if (!subscribed) throw new Error(status && status >= 400 ? `The AI provider returned an error (${status})` : "The AI provider sent an unexpected reply");

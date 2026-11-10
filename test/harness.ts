@@ -60,6 +60,20 @@ export function models(ids: (string | object)[], base = "https://ai.test/v1"): H
   return (url) => (url.href === `${base}/models` ? Response.json({ object: "list", data: ids.map((m) => (typeof m === "string" ? { id: m } : m)) }) : undefined);
 }
 
+type Called = { status: number; body: any };
+
+export function settling<A extends unknown[]>(call: (method: string, path: string, body?: unknown, ...rest: A) => Promise<Called>) {
+  return async (method: string, path: string, body?: unknown, ...rest: A): Promise<Called> => {
+    const res = await call(method, path, body, ...rest);
+    if (res.status !== 202 || !res.body.running) return res;
+    for (;;) {
+      const chat = await call("GET", `/api/chats/${res.body.id}`, undefined, ...rest);
+      if (!chat.body.running) return { status: res.status, body: chat.body };
+      await Bun.sleep(1);
+    }
+  };
+}
+
 export type Ai = { baseUrl?: string; key?: string; sttBaseUrl?: string; sttKey?: string };
 
 export function setup(now = "2026-10-10T12:00:00Z", handler: Handler = () => undefined, ai: Ai = {}) {
@@ -83,13 +97,13 @@ export function setup(now = "2026-10-10T12:00:00Z", handler: Handler = () => und
     db.run("INSERT OR REPLACE INTO sessions (id, user_id, expires_at) VALUES ('admin', 1, '9999')");
     return app.request(path, { ...init, headers: { cookie: "session=admin", ...init.headers } });
   };
-  const call = async (method: string, path: string, body?: unknown) => {
+  const call = settling(async (method: string, path: string, body?: unknown) => {
     const res = await request(path, {
       method,
       headers: body ? { "content-type": "application/json" } : {},
       body: body ? JSON.stringify(body) : undefined,
     });
     return { status: res.status, body: await res.json() };
-  };
+  });
   return { app, db, clock, fetches, call, request, restart };
 }

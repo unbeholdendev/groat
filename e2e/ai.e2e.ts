@@ -49,7 +49,9 @@ test("? asks, and the answer continues in chat", async ({ app: page }) => {
 
 test("past chats remain readable after the AI provider is removed", async ({ app: page, isMobile }) => {
   const response = await page.request.post("/api/chats", { data: { message: "Saved question" } });
-  expect(response.status()).toBe(201);
+  expect(response.status()).toBe(202);
+  const { id } = await response.json();
+  await expect.poll(async () => (await (await page.request.get(`/api/chats/${id}`)).json()).running).toBe(false);
   expect((await page.request.put("/api/ai", { data: { baseUrl: "" } })).ok()).toBe(true);
   await page.getByRole("link", { name: "Settings" }).click();
   await page.getByRole("link", { name: isMobile ? "Past chats" : "Chats", exact: true }).click();

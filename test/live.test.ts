@@ -94,7 +94,7 @@ test("expired and deleted users cannot connect", async () => {
   expect((await fetch(h.origin + "/api/live", { headers: { origin: h.origin, cookie: "session=live" } })).status).toBe(401);
 });
 
-test("chat publishes saved conversations separately from ledger actions", async () => {
+test("chat runs stream their reply and announce each saved step, separately from ledger changes", async () => {
   const replies: Record<string, unknown>[] = [
     { content: "About £40." },
     { tool_calls: [{ id: "add", type: "function", function: { name: "add_transaction", arguments: JSON.stringify({ note: "Lunch", amount: "12" }) } }] },
@@ -107,13 +107,30 @@ test("chat publishes saved conversations separately from ledger actions", async 
   const h = server(undefined, ai, { baseUrl: "https://ai.test/v1", key: "sk-test" });
   const client = h.connect(undefined, "a");
   await received(client.messages, 1);
-  expect((await h.call("POST", "/api/chats", { message: "How much on food?" })).status).toBe(201);
-  expect((await h.call("POST", "/api/chats", { message: "Add lunch for 12" })).status).toBe(201);
-  await received(client.messages, 4);
-  expect(client.messages.slice(1)).toEqual([
+  expect((await h.call("POST", "/api/chats", { message: "How much on food?" })).status).toBe(202);
+  expect((await h.call("POST", "/api/chats", { message: "Add lunch for 12" })).status).toBe(202);
+  await received(client.messages, 14);
+  const events = client.messages.slice(1) as { type: string; id?: number; [key: string]: unknown }[];
+  expect(events.filter((e) => e.type === "changed")).toEqual([
+    { type: "changed", resources: ["chats"] },
     { type: "changed", resources: ["chats"] },
     { type: "changed", resources: ["transactions"] },
-    { type: "changed", resources: ["chats"] },
+  ]);
+  const saved = { type: "chat", id: 2 };
+  expect(events.filter((e) => e.type === "chat" && e.id === 1)).toEqual([
+    { type: "chat", id: 1, at: 1, text: "About" },
+    { type: "chat", id: 1, at: 1, text: "About £40." },
+    { type: "chat", id: 1 },
+    { type: "chat", id: 1 },
+  ]);
+  expect(events.filter((e) => e.id === 2 || e.type === "changed").slice(2)).toEqual([
+    saved,
+    { type: "changed", resources: ["transactions"] },
+    saved,
+    { type: "chat", id: 2, at: 3, text: "Add" },
+    { type: "chat", id: 2, at: 3, text: "Added." },
+    saved,
+    saved,
   ]);
 });
 

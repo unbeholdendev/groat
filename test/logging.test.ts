@@ -7,6 +7,9 @@ let output: ReturnType<typeof spyOn<typeof console, "log">>;
 let errors: ReturnType<typeof spyOn<typeof console, "error">>;
 const previousLevel = process.env.LOG_LEVEL;
 const entries = () => [...output.mock.calls, ...errors.mock.calls].map(([line]) => JSON.parse(String(line)));
+const logged = async (event: string) => {
+  while (!entries().some((e) => e.event === event)) await Bun.sleep(1);
+};
 
 beforeEach(() => {
   process.env.LOG_LEVEL = "debug";
@@ -44,10 +47,11 @@ test("outbound calls and handled failures share the incoming request ID", async 
   const res = await s.request("/api/chats", {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "private-prompt" }),
   });
-  expect(res.status).toBe(502);
+  expect(res.status).toBe(202);
   const id = res.headers.get("x-request-id");
+  await logged("ai.reply.failed");
   expect(entries()).toContainEqual(expect.objectContaining({ event: "http.outbound.response", requestId: id, operation: "chat_completions", status: 503, level: "warn" }));
-  expect(entries()).toContainEqual(expect.objectContaining({ event: "http.request.completed", requestId: id, status: 502, level: "error", error: "Error" }));
+  expect(entries()).toContainEqual(expect.objectContaining({ event: "ai.reply.failed", requestId: id, level: "warn", error: "Error" }));
   expect(JSON.stringify(entries())).not.toContain("private");
 });
 
@@ -89,8 +93,9 @@ test("concurrent requests keep their correlation IDs separate", async () => {
   })));
   const ids = responses.map((r) => r.headers.get("x-request-id"));
   expect(new Set(ids).size).toBe(2);
-  const calls = entries().filter((e) => e.event === "http.outbound.response" && e.operation === "chat_completions");
-  expect(calls.map((e) => e.requestId).sort()).toEqual(ids.sort());
+  const calls = () => entries().filter((e) => e.event === "http.outbound.response" && e.operation === "chat_completions");
+  while (calls().length < 2) await Bun.sleep(1);
+  expect(calls().map((e) => e.requestId).sort()).toEqual(ids.sort());
 });
 
 test("LOG_LEVEL filters routine logs and silent disables output", async () => {
@@ -115,7 +120,8 @@ test("transport failures log their category and request ID without the exception
   const res = await s.request("/api/chats", {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "private-prompt" }),
   });
-  expect(res.status).toBe(502);
+  expect(res.status).toBe(202);
+  await logged("ai.reply.failed");
   expect(entries()).toContainEqual(expect.objectContaining({
     event: "http.outbound.failed", requestId: res.headers.get("x-request-id"), error: "TypeError", operation: "chat_completions",
   }));

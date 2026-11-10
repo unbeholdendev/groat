@@ -40,14 +40,15 @@ export function liveUpdates(db: Database, clock: () => Date) {
   let timer: ReturnType<typeof setInterval> | undefined;
   const valid = (id: string) => db.query(`SELECT users.username FROM sessions JOIN users ON users.id = sessions.user_id
     WHERE sessions.id = ? AND sessions.expires_at > ? AND users.deleted_at IS NULL`).get(id, clock().toISOString()) as { username: string } | null;
-  const publish = (resources: readonly Resource[], tab?: string) => {
+  const broadcast = (message: object | null, tab?: string) => {
     for (const [ws, client] of clients) {
       if (!valid(client.session)) {
         clients.delete(ws);
         ws.close(4001, "Session ended");
-      } else if (resources.length && (!tab || client.tab !== tab)) ws.send(JSON.stringify({ type: "changed", resources }));
+      } else if (message && (!tab || client.tab !== tab)) ws.send(JSON.stringify(message));
     }
   };
+  const publish = (resources: readonly Resource[], tab?: string) => broadcast(resources.length ? { type: "changed", resources } : null, tab);
   const publishChanges: MiddlewareHandler = async (c, next) => {
     await next();
     if (!["GET", "HEAD", "OPTIONS"].includes(c.req.method) && c.res.ok) publish(changed(c.req.path), c.req.header("x-tab"));
@@ -105,5 +106,5 @@ export function liveUpdates(db: Database, clock: () => Date) {
     for (const ws of clients.keys()) ws.close(1001, "Server shutting down");
     clients.clear();
   };
-  return { routes: app, publish, publishChanges, close };
+  return { routes: app, publish, broadcast, publishChanges, close };
 }

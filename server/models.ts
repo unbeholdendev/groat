@@ -5,7 +5,7 @@ import { admin, type Env } from "./auth";
 import type { chatgpt } from "./chatgpt";
 import type { Db } from "./db";
 import { body } from "./request";
-import { complete as completion } from "./completion";
+import { complete as completion, type Streaming } from "./completion";
 import * as t from "./schema";
 
 export const chatMessage = z.looseObject({
@@ -109,11 +109,11 @@ export function aiModels(db: Db, fetch: Deps["fetch"], subscription: Pick<Return
   };
   const sender = async (use: "chat" | "vision") => {
     const subscribed = await own();
-    if (subscribed) return (request: Request) => completion(fetch, { ...subscribed, base: "https://api.openai.com/v1", api: "openai-responses" }, request);
+    if (subscribed) return (request: Request, streaming?: Streaming) => completion(fetch, { ...subscribed, base: "https://api.openai.com/v1", api: "openai-responses" }, request, streaming);
     const p = current().chat;
     const model = await chatModel();
     const used = use === "vision" ? (saved()?.visionModel ?? model) : model;
-    return p && used ? (request: Request) => completion(fetch, { ...p, model: used, api: "openai-completions" }, request) : null;
+    return p && used ? (request: Request, streaming?: Streaming) => completion(fetch, { ...p, model: used, api: "openai-completions" }, request, streaming) : null;
   };
   const sttModel = async () => {
     const p = current().stt;
@@ -126,10 +126,10 @@ export function aiModels(db: Db, fetch: Deps["fetch"], subscription: Pick<Return
   };
 
   const unavailable = async (use: keyof typeof unset) => ((use === "voice" ? await stt() : await sender(use)) ? null : unset[use]);
-  const complete = async (request: Request, use: "chat" | "vision" = "chat") => {
+  const complete = async (request: Request, use: "chat" | "vision" = "chat", streaming?: Streaming) => {
     const send = await sender(use);
     if (!send) throw new Error(unset.chat);
-    return send(request);
+    return send(request, streaming);
   };
   const transcribe = async (audio: File) => {
     const p = await stt();

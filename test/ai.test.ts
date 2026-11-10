@@ -31,7 +31,7 @@ test("a chat is answered, saved with a title from the first question, listed and
   const { call } = setup(undefined, ai.handler, config);
   expect((await call("GET", "/api/ai/status")).body.ai).toBe(true);
   const chat = await call("POST", "/api/chats", { message: "How much did I spend on food this month?" });
-  expect(chat.status).toBe(201);
+  expect(chat.status).toBe(202);
   expect(chat.body.title).toBe("How much did I spend on food this month?");
   expect(chat.body.messages.at(-1)).toMatchObject({ role: "assistant", content: "About £40." });
   expect(ai.requests[0].auth).toBe("Bearer sk-test");
@@ -61,16 +61,15 @@ test("AI needs the base URL as well as the key", async () => {
   }
 });
 
-test("a provider failure saves neither the new chat nor the question", async () => {
+test("a provider failure ends the run with its error in the chat", async () => {
   const ai = provider([{ content: "Hi" }]);
   let down = false;
   const { call } = setup(undefined, (url, init) => (down ? new Response("down", { status: 500 }) : ai.handler(url, init)), config);
   const chat = await call("POST", "/api/chats", { message: "first" });
   down = true;
-  expect((await call("POST", "/api/chats", { message: "second" })).status).toBe(502);
-  expect((await call("POST", `/api/chats/${chat.body.id}/messages`, { message: "again" })).status).toBe(502);
-  expect((await call("GET", "/api/chats")).body).toEqual([{ id: chat.body.id, title: "first" }]);
-  expect((await call("GET", `/api/chats/${chat.body.id}`)).body).toEqual(chat.body);
+  const failed = { role: "assistant", content: "The AI provider returned an error (500)" };
+  expect((await call("POST", "/api/chats", { message: "second" })).body).toMatchObject({ running: false, messages: [{ role: "user", content: "second" }, failed] });
+  expect((await call("POST", `/api/chats/${chat.body.id}/messages`, { message: "again" })).body.messages.slice(2)).toEqual([{ role: "user", content: "again" }, failed]);
 });
 
 test("the system prompt says to leave out binned and pending expenses", async () => {
@@ -255,9 +254,9 @@ test("a provider failure after an action preserves its outcome for continuation"
     return ai.handler(url, init);
   }, config);
   const chat = await s.call("POST", "/api/chats", { message: "Add coffee for 3" });
-  expect(chat.status).toBe(201);
+  expect(chat.status).toBe(202);
   expect(chat.body.messages.some((m: any) => m.role === "tool" && m.content.includes('"outcome":"completed"'))).toBe(true);
-  expect(chat.body.messages.at(-1).content).toContain("saved");
+  expect(chat.body.messages.at(-1).content).toBe("The AI provider returned an error (500)");
   ai.script.push({ content: "Coffee was added." });
   await s.call("POST", `/api/chats/${chat.body.id}/messages`, { message: "What happened?" });
   expect((await s.call("GET", "/api/transactions")).body.filter((t: any) => t.note === "Coffee")).toHaveLength(1);
@@ -317,6 +316,108 @@ test("distinct calls can save two separate identical expenses", async () => {
   expect((await api("GET", "/api/transactions")).body.filter((t: any) => t.note === "Identical coffee")).toHaveLength(2);
 });
 
+const post = (s: ReturnType<typeof setup>, message: string, path = "/api/chats") =>
+  s.request(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message }) });
+
+async function finished(s: ReturnType<typeof setup>) {
+  for (;;) {
+    const row = s.db.query<{ message: string }, []>("SELECT message FROM chat_messages ORDER BY id DESC LIMIT 1").get();
+    const last = row && JSON.parse(row.message);
+    if (last?.role === "assistant" && !last.tool_calls) return last;
+    await Bun.sleep(1);
+  }
+}
+
+function held(script: Record<string, unknown>[], round: number) {
+  const ai = provider(script);
+  let reached!: () => void;
+  let open!: () => void;
+  const ready = new Promise<void>((resolve) => { reached = resolve; });
+  const gate = new Promise<void>((resolve) => { open = resolve; });
+  let rounds = 0;
+  const handler = async (url: URL, init?: RequestInit) => {
+    if (url.pathname.endsWith("/chat/completions") && ++rounds === round) {
+      reached();
+      await new Promise<void>((resolve, reject) => {
+        void gate.then(resolve);
+        init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+      });
+    }
+    return ai.handler(url, init) ?? new Response("not found", { status: 404 });
+  };
+  return { handler, ready, open };
+}
+
+const roles = (chat: { messages: { role: string }[] }) => chat.messages.map((m) => m.role);
+
+test("a run saves each step as it completes and refuses another question until it ends", async () => {
+  const ai = held([call("add_transaction", { note: "Coffee", amount: "3" }), { content: "Added coffee." }], 2);
+  const s = setup(undefined, ai.handler, config);
+  const started = await post(s, "Add coffee for 3");
+  expect(started.status).toBe(202);
+  const { id } = await started.json();
+  await ai.ready;
+  const running = (await s.call("GET", `/api/chats/${id}`)).body;
+  expect(running.running).toBe(true);
+  expect(roles(running)).toEqual(["user", "assistant", "tool"]);
+  expect(await (await post(s, "And tea", `/api/chats/${id}/messages`)).json()).toEqual({ error: "Wait for the reply, or stop it first" });
+  ai.open();
+  expect(await finished(s)).toEqual({ role: "assistant", content: "Added coffee." });
+  expect(roles((await s.call("GET", `/api/chats/${id}`)).body)).toEqual(["user", "assistant", "tool", "assistant"]);
+});
+
+test("stopping a run aborts the provider call, keeps the steps so far and runs no further action", async () => {
+  const ai = held([call("add_transaction", { note: "First", amount: "3" }), call("add_transaction", { note: "Second", amount: "3" })], 2);
+  const s = setup(undefined, ai.handler, config);
+  const { id } = await (await post(s, "Add two coffees")).json();
+  await ai.ready;
+  expect((await s.call("POST", `/api/chats/${id}/stop`)).status).toBe(200);
+  expect(await finished(s)).toEqual({ role: "assistant", content: "Stopped." });
+  expect(roles((await s.call("GET", `/api/chats/${id}`)).body)).toEqual(["user", "assistant", "tool", "assistant"]);
+  expect(s.db.query("SELECT note FROM transactions").all()).toEqual([{ note: "First" }]);
+});
+
+test("a deleted chat's unfinished run cannot write into a new chat that reuses its ID", async () => {
+  const ai = provider([call("add_transaction", { note: "Euro coffee", amount: "3", currency: "EUR" }), { content: "Hello" }]);
+  const rates = frankfurter({ "2026-10-01": { EUR: 0.8, GBP: 0.75 } });
+  let reached!: () => void;
+  let release!: () => void;
+  const converting = new Promise<void>((resolve) => { reached = resolve; });
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  const s = setup(undefined, async (url, init) => {
+    if (url.host !== "api.frankfurter.dev") return ai.handler(url, init) ?? new Response("not found", { status: 404 });
+    reached();
+    await held;
+    return rates(url) ?? new Response("not found", { status: 404 });
+  }, config);
+  await s.call("POST", "/api/onboarding", { baseCurrency: "GBP" });
+  const { id } = await (await post(s, "Add a euro coffee")).json();
+  await converting;
+  await s.call("DELETE", `/api/chats/${id}`);
+  const next = (await s.call("POST", "/api/chats", { message: "hi" })).body;
+  expect(next.id).toBe(id);
+  release();
+  await Bun.sleep(50);
+  expect((await s.call("GET", `/api/chats/${id}`)).body).toMatchObject({
+    running: false,
+    messages: [{ role: "user", content: "hi" }, { role: "assistant", content: "Hello" }],
+  });
+});
+
+test("a restart marks a run left unfinished as interrupted, keeping finished chats as they are", async () => {
+  const ai = held([{ content: "Hello" }, { content: "Never sent" }], 2);
+  const s = setup(undefined, ai.handler, config);
+  const done = (await s.call("POST", "/api/chats", { message: "hi" })).body;
+  const { id } = await (await post(s, "Add coffee for 3")).json();
+  await ai.ready;
+  s.restart();
+  expect((await s.call("GET", `/api/chats/${done.id}`)).body).toEqual(done);
+  expect((await s.call("GET", `/api/chats/${id}`)).body).toMatchObject({
+    running: false,
+    messages: [{ role: "user" }, { role: "assistant", content: "Interrupted by a server restart. Check the steps above before asking again." }],
+  });
+});
+
 for (const [reason, revoke] of [
   ["revoked", "DELETE FROM sessions"],
   ["expired", "UPDATE sessions SET expires_at = '2000'"],
@@ -331,11 +432,11 @@ for (const [reason, revoke] of [
     if (url.pathname.endsWith("/chat/completions")) { started(); await pending; }
     return ai.handler(url, init) ?? new Response("not found", { status: 404 });
   }, config);
-  const result = s.call("POST", "/api/chats", { message: "Add coffee for 3" });
+  expect((await post(s, "Add coffee for 3")).status).toBe(202);
   await ready;
   s.db.run(revoke);
   release();
-  expect((await result).status).toBe(401);
+  expect(await finished(s)).toEqual({ role: "assistant", content: "Your session ended. Sign in again." });
   expect(s.db.query("SELECT count(*) AS n FROM transactions").get()).toEqual({ n: 0 });
 });
 
@@ -353,18 +454,18 @@ test("revoking a session between tool rounds stops every later action", async ()
     if (url.pathname.endsWith("/chat/completions") && ++rounds === 2) { started(); await pending; }
     return ai.handler(url, init) ?? new Response("not found", { status: 404 });
   }, config);
-  const result = s.call("POST", "/api/chats", { message: "Add these two expenses" });
+  await post(s, "Add these two expenses");
   await ready;
   s.db.run("DELETE FROM sessions");
   release();
-  expect((await result).status).toBe(401);
+  expect(await finished(s)).toMatchObject({ content: "Your session ended. Sign in again." });
   expect(s.db.query("SELECT note FROM transactions").all()).toEqual([{ note: "Before revocation" }]);
 });
 
 test("chat tools use JSON Schema bounds and nullable types", async () => {
   const ai = provider([{ content: "Ready" }]);
   const s = setup(undefined, ai.handler, config);
-  expect((await s.call("POST", "/api/chats", { message: "hi" })).status).toBe(201);
+  expect((await s.call("POST", "/api/chats", { message: "hi" })).status).toBe(202);
   const tools = ai.requests[0].body.tools;
   const check = (schema: any) => {
     if (!schema || typeof schema !== "object") return;
@@ -386,9 +487,8 @@ test("truncated completion streams cannot execute a partial action", async () =>
     const tool = call("add_transaction", { note: "Coffee", amount: "3" }).tool_calls[0];
     const chunk = { choices: [{ index: 0, delta: { role: "assistant", tool_calls: [{ index: 0, ...tool }] }, finish_reason }] };
     const { call: api } = setup(undefined, (url) => listed(url) ?? new Response(`data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`, { headers: { "content-type": "text/event-stream" } }), config);
-    expect((await api("POST", "/api/chats", { message: "Add coffee" })).status).toBe(502);
+    expect((await api("POST", "/api/chats", { message: "Add coffee" })).body.messages.at(-1)).toEqual({ role: "assistant", content: "The AI provider sent an unexpected reply" });
     expect((await api("GET", "/api/transactions")).body).toEqual([]);
-    expect((await api("GET", "/api/chats")).body).toEqual([]);
   }
 });
 
@@ -400,10 +500,10 @@ test("a saved chat with malformed legacy tool arguments can continue", async () 
   ]);
   const h = setup(undefined, ai.handler, config);
   const chat = await h.call("POST", "/api/chats", { message: "Add something" });
-  expect(chat.status).toBe(201);
+  expect(chat.status).toBe(202);
   h.db.run("UPDATE chat_messages SET message = json_set(message, '$.tool_calls[0].function.arguments', '{') WHERE json_extract(message, '$.tool_calls[0].id') = 'legacy'");
   const next = await h.call("POST", `/api/chats/${chat.body.id}/messages`, { message: "Hello" });
-  expect(next.status).toBe(200);
+  expect(next.status).toBe(202);
   expect(next.body.messages.at(-1).content).toBe("Hello again.");
   expect((await h.call("GET", "/api/transactions")).body).toEqual([]);
 });
