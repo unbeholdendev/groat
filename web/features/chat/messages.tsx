@@ -19,7 +19,7 @@ export function Messages({ messages, asking, onDraft }: { messages: Message[]; a
           return (
             <p
               key={i}
-              className={`rise px-4 py-2.5 whitespace-pre-wrap ${m.role === "user" ? "ml-10 justify-self-end rounded-[20px] rounded-br-md bg-surface2" : "mr-10 justify-self-start rounded-[20px] rounded-bl-md bg-surface shadow-panel"}`}
+              className={`rise px-4 py-2.5 whitespace-pre-wrap wrap-anywhere ${m.role === "user" ? "ml-10 justify-self-end rounded-[20px] rounded-br-md bg-surface2" : "mr-10 justify-self-start rounded-[20px] rounded-bl-md bg-surface shadow-panel"}`}
             >
               {m.content}
             </p>

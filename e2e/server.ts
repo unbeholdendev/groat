@@ -18,6 +18,7 @@ function provider(url: URL, init: RequestInit | undefined, models: string[]) {
       : { role: "assistant", content: null, tool_calls: [{ id: "coffee", type: "function", function: { name: "add_transaction", arguments: JSON.stringify({ note: "Test coffee", amount: "3", currency: "GBP" }) } }] };
     return completion(message);
   }
+  if (last === "Show raw results") return completion({ role: "assistant", content: JSON.stringify({ id: "a".repeat(120) }) });
   const message = body.tool_choice
     ? { content: null, tool_calls: [{ id: "x", type: "function", function: { name: "transaction", arguments: JSON.stringify({ note: typeof last === "string" ? last.replace(/[\d.]+/g, "").trim() : "Corner shop", amount: "9.99" }) } }] }
     : { content: "Mostly on food." };

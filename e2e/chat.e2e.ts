@@ -76,3 +76,11 @@ test("an unknown chat says so and leads back to the list", async ({ app: page })
   await page.getByRole("button", { name: "Chats" }).click();
   await expect(page.getByRole("heading", { name: "Chats" })).toBeVisible();
 });
+
+test("a long unbroken reply wraps instead of scrolling sideways", async ({ app: page }) => {
+  const created = await page.request.post("/api/chats", { data: { message: "Show raw results" } });
+  await page.goto(`/chat?id=${(await created.json()).id}`);
+  const reply = page.getByText('{"id":', { exact: false });
+  await expect(reply).toBeVisible();
+  expect(await page.locator("main").evaluate((main) => main.scrollWidth - main.clientWidth)).toBe(0);
+});

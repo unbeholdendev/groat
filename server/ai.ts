@@ -110,7 +110,7 @@ export function chats(ctx: Ctx, value: Valuer) {
     let acted = false;
     const history = (chatId && chat(chatId)?.messages) || [];
     const added: Message[] = [{ role: "user", content: message }];
-    for (let turn = 0; turn < 10; turn++) {
+    for (let turn = 0; turn < 25; turn++) {
       const reply = await ai.complete({
         messages: [{ role: "system", content: system() }, ...history, ...added],
         tools: Object.entries(available).map(([name, { description, parameters }]) => ({ type: "function", function: { name, description, parameters } })),
