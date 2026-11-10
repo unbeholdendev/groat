@@ -36,11 +36,13 @@ test("? asks, and the answer continues in chat", async ({ app: page }) => {
   await bar(page).fill("?where does it go");
   await bar(page).press("Enter");
   await expect(page.getByText("Mostly on food.")).toBeVisible();
+  await expect(bar(page)).toHaveValue("");
   await page.getByRole("button", { name: "Continue in chat" }).click();
   await expect(page.getByRole("heading", { name: "where does it go" })).toBeVisible();
   await bar(page).fill("and last month?");
   await bar(page).press("Enter");
   await expect(page.getByText("Mostly on food.")).toHaveCount(2);
+  await expect(bar(page)).toHaveValue("");
   await page.getByRole("button", { name: "Chats" }).click();
   await expect(page.getByRole("button", { name: "where does it go" })).toBeVisible();
 });
@@ -95,6 +97,7 @@ test("chat requests fail offline instead of queuing actions for later", async ({
   await bar(page).fill("?Add test coffee for £3");
   await bar(page).press("Enter");
   await expect(page.getByText("Couldn’t reach the server. Check your connection and try again.", { exact: true })).toBeVisible();
+  await expect(bar(page)).toHaveValue("?Add test coffee for £3");
   const cache = await page.evaluate(() => JSON.parse(localStorage.getItem("cache") ?? "{}"));
   expect(cache.mutations ?? []).toHaveLength(0);
 });

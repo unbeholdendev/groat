@@ -76,7 +76,7 @@ export function Bar(props: {
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    if (ask) return question && asking.mutate(question, { onSuccess: (c) => inChat && (clear(), props.onChat(c.id)) });
+    if (ask) return question && asking.mutate(question, { onSuccess: (c) => (clear(), inChat && props.onChat(c.id)) });
     if (reviewing) return drafting.isSuccess && save();
     if (!text.trim()) return;
     if (settings.ai && !p.amount) return drafting.mutate(text.trim());
