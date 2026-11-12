@@ -7,8 +7,9 @@ import { readMigrationFiles } from "drizzle-orm/migrator";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { Hono } from "hono";
 import { z } from "zod";
-import type { Env } from "./auth";
-import { type Db, migrationsFolder, today } from "./db";
+import type { Env } from "./auth/access";
+import { type Ctx, today } from "./context";
+import { migrationsFolder } from "./db";
 import { valid } from "./request";
 import { log } from "./logging";
 
@@ -20,7 +21,7 @@ const temp = async () => join(await mkdtemp(join(tmpdir(), "transaction-backup-"
 const remove = (path: string) => rm(dirname(path), { recursive: true, force: true });
 const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 
-export function backupRoutes(db: Db, clock: () => Date) {
+export function backupRoutes({ db, clock }: Pick<Ctx, "db" | "clock">) {
   const app = new Hono<Env>();
 
   app.get("/api/backup", async (c) => {
@@ -69,7 +70,7 @@ function prepare(path: string) {
   }
 }
 
-export function restoreRoutes(db: Db, resetCredentials: () => void = () => {}) {
+export function restoreRoutes({ db, chatgpt }: Pick<Ctx, "db" | "chatgpt">) {
   const app = new Hono();
   const live = db.$client;
   const fresh = () => !live.query("SELECT 1 FROM users UNION ALL SELECT 1 FROM transactions").get();
@@ -110,7 +111,7 @@ export function restoreRoutes(db: Db, resetCredentials: () => void = () => {}) {
       } finally {
         live.run("DETACH backup");
       }
-      resetCredentials();
+      chatgpt.reset();
       log("info", "restore.completed");
       return c.json({});
     } finally {

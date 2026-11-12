@@ -1,43 +1,35 @@
-import type { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { Hono, type MiddlewareHandler } from "hono";
+import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { chats } from "./ai";
-import { attachmentRoutes } from "./attachments";
-import { auth, type Env } from "./auth";
+import { chatRoutes } from "./ai/chat/routes";
+import { chatgptAccount } from "./ai/chatgpt/account";
+import { chatgptRoutes } from "./ai/chatgpt/routes";
+import { draftRoutes } from "./ai/draft-routes";
+import { modelRoutes } from "./ai/model-routes";
+import { aiModels } from "./ai/models";
+import { voiceRoutes } from "./ai/voice";
+import type { Env } from "./auth/access";
+import { memberRoutes } from "./auth/members";
+import { authRoutes } from "./auth/routes";
 import { backupRoutes, restoreRoutes } from "./backup";
-import { categoryRoutes } from "./categories";
-import { chatgpt } from "./chatgpt";
-import { type Db, migrationsFolder } from "./db";
-import { draftRoutes } from "./draft";
-import { transactionRoutes } from "./transactions";
-import { memberRoutes } from "./members";
-import { aiModels, type Ai } from "./models";
-import { exportRoutes } from "./export";
-import { importRoutes } from "./import";
-import { valuer } from "./rates";
-import { recurringRoutes } from "./recurring";
-import { settingsRoutes } from "./settings";
-import { statsRoutes } from "./stats";
-import { captureRoutes, tokenRoutes } from "./tokens";
+import { categoryRoutes } from "./categories/routes";
+import type { Ctx, Deps } from "./context";
+import { migrationsFolder } from "./db";
 import { liveUpdates } from "./live";
-import { voiceRoutes } from "./voice";
 import { errorKind, log, loggedFetch, requestLogging } from "./logging";
-
-export type Deps = {
-  db: Database;
-  credentials?: Database;
-  clock: () => Date;
-  fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-};
-
-export type Ctx = Omit<Deps, "db"> & {
-  db: Db;
-  ai: Ai;
-  publishChanges: MiddlewareHandler;
-  broadcast: (message: object) => void;
-};
+import { valuer } from "./rates/valuer";
+import { settingsRoutes } from "./settings/routes";
+import { statsRoutes } from "./stats/routes";
+import { tagRoutes } from "./tags/routes";
+import { captureRoutes } from "./tokens/capture";
+import { tokenRoutes } from "./tokens/routes";
+import { attachmentRoutes } from "./transactions/attachments";
+import { exportRoutes } from "./transactions/export";
+import { importRoutes } from "./transactions/import-routes";
+import { generateRecurring } from "./transactions/recurring";
+import { recurringRoutes } from "./transactions/recurring-routes";
+import { transactionRoutes } from "./transactions/routes";
 
 export function createApp(deps: Deps) {
   deps = { ...deps, fetch: loggedFetch(deps.fetch) };
@@ -52,25 +44,32 @@ export function createApp(deps: Deps) {
     log("error", "database.migration.failed", { error: errorKind(error) });
     throw error;
   }
-  const subscription = chatgpt(deps, deps.credentials);
-  if (!deps.db.query("SELECT 1 FROM users LIMIT 1").get()) subscription.reset();
-  subscription.adopt(
+  const chatgpt = chatgptAccount(deps, deps.credentials);
+  if (!deps.db.query("SELECT 1 FROM users LIMIT 1").get()) chatgpt.reset();
+  chatgpt.adopt(
     deps.db
       .query<{ id: number }, []>("SELECT id FROM users WHERE deleted_at IS NULL ORDER BY role = 'admin' DESC, id")
       .all()
       .map((u) => u.id),
   );
-  const ai = aiModels(db, deps.fetch, subscription);
-  const live = liveUpdates(deps.db, deps.clock);
-  const ctx = { ...deps, db, ai, publishChanges: live.publishChanges, broadcast: live.broadcast };
+  const ai = aiModels({ db, fetch: deps.fetch, chatgpt });
+  const live = liveUpdates(deps);
+  const value = valuer({ db, fetch: deps.fetch, clock: deps.clock });
+  const ctx: Ctx = {
+    ...deps,
+    db,
+    ai,
+    chatgpt,
+    value,
+    publishChanges: live.publishChanges,
+    broadcast: live.broadcast,
+  };
   const app = new Hono<Env>();
   app.use("*", requestLogging);
   app.onError((error, c) =>
     error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500),
   );
-  const value = valuer(ctx);
-  const recurring = recurringRoutes(ctx);
-  recurring.generate();
+  generateRecurring(ctx);
 
   for (const file of ["sw.js", "manifest.webmanifest"])
     app.get(`/${file}`, () => new Response(Bun.file(`${import.meta.dir}/${file}`)));
@@ -84,29 +83,30 @@ export function createApp(deps: Deps) {
   app.use("/api/*", live.publishChanges);
 
   app.route("/", captureRoutes(ctx));
-  app.route("/", restoreRoutes(db, subscription.reset));
-  app.route("/", auth(db, deps.clock));
-  app.route("/", subscription.routes);
-  app.route("/", memberRoutes(db, deps.clock));
+  app.route("/", restoreRoutes(ctx));
+  app.route("/", authRoutes(ctx));
+  app.route("/", chatgptRoutes(ctx));
+  app.route("/", memberRoutes(ctx));
   app.route("/", tokenRoutes(ctx));
-  app.route("/", ai.routes);
-  app.route("/", settingsRoutes(db));
-  app.route("/", categoryRoutes(db));
-  app.route("/", transactionRoutes(ctx, value));
+  app.route("/", modelRoutes(ctx));
+  app.route("/", settingsRoutes(ctx));
+  app.route("/", categoryRoutes(ctx));
+  app.route("/", tagRoutes(ctx));
+  app.route("/", transactionRoutes(ctx));
   app.route("/", draftRoutes(ctx));
   app.route("/", voiceRoutes(ctx));
   app.route("/", attachmentRoutes(ctx));
-  app.route("/", exportRoutes(db, value));
+  app.route("/", exportRoutes(ctx));
   app.route("/", importRoutes(ctx));
-  app.route("/", backupRoutes(db, deps.clock));
-  app.route("/", statsRoutes(db, value));
-  app.route("/", recurring);
-  app.route("/api/chats", chats(ctx, value));
+  app.route("/", backupRoutes(ctx));
+  app.route("/", statsRoutes(ctx));
+  app.route("/", recurringRoutes(ctx));
+  app.route("/api/chats", chatRoutes(ctx));
   app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
   return Object.assign(app, {
     generate: () => {
-      recurring.generate();
+      generateRecurring(ctx);
       live.publish(["recurring", "transactions"]);
     },
     close: live.close,

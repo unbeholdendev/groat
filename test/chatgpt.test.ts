@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { expect, spyOn, test } from "bun:test";
 import { createApp } from "../server/app";
-import { complete } from "../server/completion";
+import { complete } from "../server/ai/completion";
 import { settling } from "./harness";
 
 const responses = (fetch: Parameters<typeof complete>[0], provider: { key: string; model: string }, request: object) =>
@@ -432,7 +432,7 @@ test("AI SQL cannot read API keys, session IDs or password hashes", async () => 
   const child = Bun.spawn(
     [
       process.execPath,
-      `${import.meta.dir}/../server/sql.ts`,
+      `${import.meta.dir}/../server/ai/chat/sql.ts`,
       "SELECT ai_key, stt_key, (SELECT count(*) FROM sessions) AS sessions, (SELECT password_hash FROM users LIMIT 1) AS password FROM settings",
       "200",
     ],

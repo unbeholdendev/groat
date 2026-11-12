@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { drizzle } from "drizzle-orm/bun-sqlite";
-import { readTransaction, type Intent } from "../server/read-transaction";
+import { readTransaction, type Intent } from "../server/transactions/read-transaction";
 import { setup } from "./harness";
 
 async function ledger() {

@@ -39,6 +39,22 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["server/**"],
+      "linter": {
+        "rules": {
+          "complexity": { "noCommaOperator": "error" },
+          "style": { "noNestedTernary": "error", "noNonNullAssertion": "error" },
+          "suspicious": {
+            "noAssignInExpressions": "error",
+            "noImplicitAnyLet": "error",
+            "useIterableCallbackReturn": "error"
+          }
+        }
+      }
+    }
+  ],
   "linter": {
     "rules": {
       "preset": "recommended",

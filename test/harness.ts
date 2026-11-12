@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { createApp } from "../server/app";
-import { hashCost } from "../server/auth";
+import { hashCost } from "../server/auth/access";
 
 type Handler = (url: URL, init?: RequestInit) => Response | undefined | Promise<Response>;
 

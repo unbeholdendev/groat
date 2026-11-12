@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { MiddlewareHandler } from "hono";
 import { routePath } from "hono/route";
-import type { Deps } from "./app";
+import type { Deps } from "./context";
 
 const levels = { debug: 10, info: 20, warn: 30, error: 40, silent: 50 };
 type Level = Exclude<keyof typeof levels, "silent">;
@@ -51,6 +51,11 @@ export function log(level: Level, event: string, fields: Fields = {}) {
   else console.log(line);
 }
 
+const levelFor = (status: number): Level => {
+  if (status >= 500) return "error";
+  return status >= 400 ? "warn" : "info";
+};
+
 export const requestLogging: MiddlewareHandler<RequestEnv> = async (c, next) => {
   const requestId = crypto.randomUUID();
   c.set("requestId", requestId);
@@ -63,7 +68,7 @@ export const requestLogging: MiddlewareHandler<RequestEnv> = async (c, next) => 
       const upgraded = c.get("websocketUpgraded");
       if (!upgraded) c.res.headers.set("x-request-id", requestId);
       const status = upgraded ? 101 : c.res.status;
-      log(status >= 500 ? "error" : status >= 400 ? "warn" : "info", "http.request.completed", {
+      log(levelFor(status), "http.request.completed", {
         method: diagnostic(c.req.method),
         route: routePath(c),
         status,
@@ -72,6 +77,11 @@ export const requestLogging: MiddlewareHandler<RequestEnv> = async (c, next) => 
       });
     }
   });
+};
+
+const endpoint = (path: string) => {
+  if (path.endsWith("/responses")) return "responses";
+  return path.endsWith("/models") ? "models" : "fetch";
 };
 
 export function loggedFetch(fetch: Deps["fetch"]): Deps["fetch"] {
@@ -98,8 +108,7 @@ export function loggedFetch(fetch: Deps["fetch"]): Deps["fetch"] {
           "oauth/revoke": "oauth_revoke",
           ".well-known/jwks.json": "jwks",
         } as Record<string, string>
-      )[suffix] ??
-      (url.pathname.endsWith("/responses") ? "responses" : url.pathname.endsWith("/models") ? "models" : "fetch");
+      )[suffix] ?? endpoint(url.pathname);
     log("debug", "http.outbound.started", { service, operation });
     try {
       const response = await fetch(input, init);

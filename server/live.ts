@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type { Deps } from "./context";
 import { Hono, type MiddlewareHandler } from "hono";
 import { getBunServer, type BunWebSocketData } from "hono/bun";
 import { getCookie } from "hono/cookie";
@@ -34,7 +34,12 @@ const changes: [string, Resource[]][] = [
 export const changed = (path: string): readonly Resource[] =>
   changes.find(([prefix]) => path === prefix || path.startsWith(`${prefix}/`))?.[1] ?? resource.options;
 
-export function liveUpdates(db: Database, clock: () => Date) {
+const webProtocols = new Map([
+  ["wss", "https"],
+  ["ws", "http"],
+]);
+
+export function liveUpdates({ db, clock }: Pick<Deps, "db" | "clock">) {
   const app = new Hono<RequestEnv>();
   const clients = new Map<WSContext, { session: string; tab?: string }>();
   let timer: ReturnType<typeof setInterval> | undefined;
@@ -64,7 +69,7 @@ export function liveUpdates(db: Database, clock: () => Date) {
       const origin = c.req.header("origin");
       const url = new URL(c.req.url);
       const forwarded = c.req.header("x-forwarded-proto") ?? url.protocol.slice(0, -1);
-      const protocol = forwarded === "wss" ? "https" : forwarded === "ws" ? "http" : forwarded;
+      const protocol = webProtocols.get(forwarded) ?? forwarded;
       if (!origin || origin !== `${protocol}://${url.host}`) return c.json({ error: "Forbidden" }, 403);
       if (!valid(getCookie(c, "session") ?? "")) return c.json({ error: "Sign in first" }, 401);
       return next();
