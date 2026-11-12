@@ -18,6 +18,17 @@ const Status = ({ icon, label, value }: { icon: ReactNode; label: string; value:
 
 const source = (s: Settings) => (s.aiSource === "chatgpt" ? "ChatGPT" : "API key");
 
+function askingStatus(s: Settings) {
+  if (s.aiLoading) return "Checking…";
+  if (s.ai) return source(s);
+  return s.aiProblem ? <span className="text-up">Needs attention</span> : "Off";
+}
+
+function dictationStatus(s: Settings) {
+  if (s.aiLoading) return "Checking…";
+  return s.voice ? "API key" : "Off";
+}
+
 function caption(s: Settings, admin: boolean) {
   if (s.aiLoading) return "Checking AI availability…";
   if (s.aiProblem) return s.aiProblem;
@@ -40,25 +51,11 @@ export function Ai({ admin }: { admin: boolean }) {
     <section>
       <h2 className={sectionHead}>AI</h2>
       <div className={panel}>
-        <Status
-          icon={<path d={paths.chat} />}
-          label="Asking and receipts"
-          value={
-            settings.aiLoading ? (
-              "Checking…"
-            ) : settings.ai ? (
-              source(settings)
-            ) : settings.aiProblem ? (
-              <span className="text-up">Needs attention</span>
-            ) : (
-              "Off"
-            )
-          }
-        />
+        <Status icon={<path d={paths.chat} />} label="Asking and receipts" value={askingStatus(settings)} />
         <Status
           icon={<path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3ZM5 11a7 7 0 0 0 14 0M12 18v3" />}
           label="Dictation"
-          value={settings.aiLoading ? "Checking…" : settings.voice ? "API key" : "Off"}
+          value={dictationStatus(settings)}
         />
       </div>
       <p className={`mt-2 px-1 text-[13px] ${settings.aiProblem ? "text-up" : "text-ink2"}`}>

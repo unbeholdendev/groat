@@ -47,7 +47,10 @@ export function Backup({ admin }: { admin: boolean }) {
   const run = useMutation({
     mutationFn: async (f: File) => imported.parse(await post("/api/import", f)),
     networkMode: "always",
-    onSuccess: () => (setFile(null), client.invalidateQueries()),
+    onSuccess: () => {
+      setFile(null);
+      return client.invalidateQueries();
+    },
   });
   const plan = file && check.data;
 
@@ -135,7 +138,14 @@ export function Backup({ admin }: { admin: boolean }) {
             </div>
           )}
           <div className="flex justify-end gap-2">
-            <Button onClick={() => (setFile(null), check.reset())}>Cancel</Button>
+            <Button
+              onClick={() => {
+                setFile(null);
+                check.reset();
+              }}
+            >
+              Cancel
+            </Button>
             <Button
               variant="primary"
               disabled={run.isPending || plan.rejected.length > 0 || plan.count === 0}

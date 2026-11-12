@@ -14,7 +14,10 @@ export function Members() {
   const mutation = useSendNow("users");
   const [open, setOpen] = useState<string | null>(null);
   const send = (...request: Request) => mutation.mutate(request, { onSuccess: () => setOpen(null) });
-  const show = (next: string | null) => (mutation.reset(), setOpen(next));
+  function show(next: string | null) {
+    mutation.reset();
+    setOpen(next);
+  }
 
   return (
     <section>

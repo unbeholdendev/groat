@@ -1,15 +1,19 @@
 import { useState } from "react";
-import { useMutationState, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useMutationState, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../components/button";
 import { Field, FormError, Input } from "../../components/form";
 import { Masthead } from "../../components/masthead";
-import { useSendNow } from "../../lib/api";
+import { signIn } from "../../lib/session";
 import { useZodForm } from "../../lib/use-zod-form";
 import { Restore } from "./restore";
 import { credentials } from "./schema";
 
 export function SignIn({ setup }: { setup: boolean }) {
-  const mutation = useSendNow();
+  const mutation = useMutation({
+    mutationFn: (body: { username: string; password: string }, { client }) =>
+      signIn(client, setup ? "/api/setup" : "/api/login", body),
+    networkMode: "always",
+  });
   const client = useQueryClient();
   const unsent = useMutationState({
     filters: { predicate: (m) => !!m.meta?.retained && m.state.status !== "success" },
@@ -20,7 +24,7 @@ export function SignIn({ setup }: { setup: boolean }) {
 
   return (
     <form
-      onSubmit={handleSubmit((body) => mutation.mutate(["POST", setup ? "/api/setup" : "/api/login", body]))}
+      onSubmit={handleSubmit((body) => mutation.mutate(body))}
       onChangeCapture={() => mutation.reset()}
       className="flex flex-col gap-4"
     >
@@ -52,7 +56,9 @@ export function SignIn({ setup }: { setup: boolean }) {
                     .getMutationCache()
                     .getAll()
                     .filter((m) => m.meta?.retained)
-                    .forEach((m) => client.getMutationCache().remove(m));
+                    .forEach((m) => {
+                      client.getMutationCache().remove(m);
+                    });
                   mutation.reset();
                   setClearing(false);
                 }}

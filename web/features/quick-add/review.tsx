@@ -26,7 +26,7 @@ export function Review(props: {
   const { register, watch, setValue, formState } = props.form;
   const f = watch();
   const category = props.categories.find((c) => c.id === f.categoryId);
-  const shown = formState.errors.note ? "note" : formState.errors.amount ? "amount" : null;
+  const shown = firstInvalid(formState.errors);
   const error = shown && formState.errors[shown]?.message;
   const id = useId();
   const invalid = (name: "note" | "amount") => ({
@@ -106,4 +106,9 @@ export function Review(props: {
       </div>
     </section>
   );
+}
+
+function firstInvalid(errors: { note?: unknown; amount?: unknown }) {
+  if (errors.note) return "note";
+  return errors.amount ? "amount" : null;
 }

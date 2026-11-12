@@ -12,16 +12,16 @@ export const isLocallySignedOut = () => {
 const report = (value: string | null) => {
   if (value === warning) return;
   warning = value;
-  listeners.forEach((f) => f());
+  for (const f of listeners) f();
 };
 export const useStorageWarning = () =>
   useSyncExternalStore(
-    (f) => (
-      listeners.add(f),
-      () => {
+    (f) => {
+      listeners.add(f);
+      return () => {
         listeners.delete(f);
-      }
-    ),
+      };
+    },
     () => warning,
   );
 export function storeCache(value: unknown) {

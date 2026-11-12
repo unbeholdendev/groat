@@ -50,7 +50,10 @@ export function AnswerCard({
           draft={d}
           unit={unit}
           className="mt-3 w-full bg-surface2"
-          onClick={() => (onForm(d), asking.reset())}
+          onClick={() => {
+            onForm(d);
+            asking.reset();
+          }}
         />
       ))}
       <div className="mt-3 flex justify-end gap-1 border-t border-line pt-1.5">

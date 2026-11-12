@@ -15,7 +15,13 @@ export function CategoriesPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-display font-bold">Categories</h1>
-        <Button className="-mr-2.5 h-11" onClick={() => (setReorder(!reorder), setEditing(null))}>
+        <Button
+          className="-mr-2.5 h-11"
+          onClick={() => {
+            setReorder(!reorder);
+            setEditing(null);
+          }}
+        >
           {reorder ? "Done" : "Reorder"}
         </Button>
       </div>

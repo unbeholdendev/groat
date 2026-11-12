@@ -19,7 +19,8 @@ const incomeOnly = (p: Period): Period => ({ ...p, total: p.income.total, catego
 
 const group = (from: string, to: string) => {
   const n = days(from, to);
-  return n <= 62 ? "day" : n <= 366 ? "week" : "month";
+  if (n <= 62) return "day";
+  return n <= 366 ? "week" : "month";
 };
 const useSeries = ([from, to]: [string, string], by = group(from, to)) =>
   useApi(period, [`/api/stats?from=${from}&to=${to}&group=${by}`], { enabled: from <= to, throwOnError: true }).data;
@@ -61,7 +62,7 @@ export function StatsPage() {
   const show = (n: number) => money(n, now.baseCurrency, unit);
   const running = s.end > s.range[1];
   const n = days(...s.range);
-  const vs = preset !== "Custom" ? s.name : n === 1 ? "the day before" : `the ${n} days before`;
+  const vs = preset !== "Custom" ? s.name : daysBefore(n);
   const incomplete = now.unconverted > 0 || ref.unconverted > 0 || full.unconverted > 0;
   const d = !incomplete && change(now.total, ref.total);
 
@@ -118,7 +119,10 @@ export function StatsPage() {
             label="Breakdown"
             options={["Spending", "Income"]}
             value={breakdown}
-            onChange={(b) => (setBreakdown(b), setOpen(null))}
+            onChange={(b) => {
+              setBreakdown(b);
+              setOpen(null);
+            }}
           />
         </div>
       )}
@@ -136,4 +140,8 @@ export function StatsPage() {
       <ByTag now={now} prev={ref} range={s.range} vs={vs} show={show} />
     </>
   );
+}
+
+function daysBefore(n: number) {
+  return n === 1 ? "the day before" : `the ${n} days before`;
 }

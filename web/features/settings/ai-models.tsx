@@ -70,18 +70,18 @@ export function AiModels({ dictationOnly }: { dictationOnly: boolean }) {
           {data.stt.error && (
             <FormError error={{ message: `Couldn’t list dictation models: ${data.stt.error}` }} className="mt-2 px-1" />
           )}
-          <p className="mt-2 px-1 text-[13px] text-ink2">
-            {!dictationOnly && !data.chat.model
-              ? "Choose a chat model to turn on asking, AI reading and receipt photos."
-              : !data.stt.model
-                ? "Choose a dictation model to turn on dictation."
-                : dictationOnly
-                  ? "Models come from the API key above."
-                  : "Models come from the API key above. Receipt photos use the chat model unless you pick another."}
-          </p>
+          <p className="mt-2 px-1 text-[13px] text-ink2">{modelsHint(dictationOnly, data)}</p>
         </>
       )}
       <FormError error={mutation.error} className="mt-2 px-1" />
     </div>
   );
+}
+
+function modelsHint(dictationOnly: boolean, data: Models) {
+  if (!dictationOnly && !data.chat.model)
+    return "Choose a chat model to turn on asking, AI reading and receipt photos.";
+  if (!data.stt.model) return "Choose a dictation model to turn on dictation.";
+  if (dictationOnly) return "Models come from the API key above.";
+  return "Models come from the API key above. Receipt photos use the chat model unless you pick another.";
 }

@@ -20,13 +20,23 @@ export function CategoryList(props: {
   const tree = categories
     .filter((p) => p.parentId === null && p.kind === kind)
     .flatMap((p) => [p, ...categories.filter((c) => c.parentId === p.id)]);
-  const edit = (id: number | Kind) => (reset(), onEdit(id));
+  function edit(id: number | Kind) {
+    reset();
+    onEdit(id);
+  }
 
   function move(c: Category, by: number) {
     const siblings = categories.filter((s) => s.parentId === c.parentId && s.kind === kind);
     const other = siblings[siblings.indexOf(c) + by];
     if (!other) return;
-    call(["PUT", "/api/categories/order", siblings.map((s) => (s === c ? other.id : s === other ? c.id : s.id))]);
+    call([
+      "PUT",
+      "/api/categories/order",
+      siblings.map((s) => {
+        if (s === c) return other.id;
+        return s === other ? c.id : s.id;
+      }),
+    ]);
   }
 
   const editor = (c?: Category) => (
@@ -35,9 +45,10 @@ export function CategoryList(props: {
       kind={kind}
       categories={categories}
       onClose={() => onEdit(null)}
-      onDelete={(moveTo) => (
-        onEdit(null), c && call(["DELETE", `/api/categories/${c.id}${moveTo ? `?moveTo=${moveTo}` : ""}`])
-      )}
+      onDelete={(moveTo) => {
+        onEdit(null);
+        if (c) call(["DELETE", `/api/categories/${c.id}${moveTo ? `?moveTo=${moveTo}` : ""}`]);
+      }}
     />
   );
 

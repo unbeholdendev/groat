@@ -66,6 +66,18 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
     e.preventDefault();
     setHover(next);
   };
+  function comparison() {
+    if (d)
+      return (
+        <>
+          <Pill d={d} />
+          vs {s.name}
+          {!end && " by today"}
+        </>
+      );
+    return end ? "all month" : "this month";
+  }
+
   return (
     <>
       <p className="mt-6">
@@ -91,16 +103,8 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
               </span>
             ))}
           </>
-        ) : d ? (
-          <>
-            <Pill d={d} />
-            vs {s.name}
-            {!end && " by today"}
-          </>
-        ) : end ? (
-          "all month"
         ) : (
-          "this month"
+          comparison()
         )}
       </p>
       <button
@@ -116,10 +120,18 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
         className="mt-5 grid h-28 w-full items-end gap-[3px] rounded-token focus-visible:outline-2 focus-visible:outline-accent"
         style={{ gridTemplateColumns: `repeat(${dates.length}, 1fr)` }}
       >
-        {days.map((day, i) =>
-          day.date > today() ? (
-            <i key={day.date} aria-hidden className="mx-auto size-[3px] rounded-full bg-line2" />
-          ) : day.total ? (
+        {days.map((day, i) => {
+          if (day.date > today())
+            return <i key={day.date} aria-hidden className="mx-auto size-[3px] rounded-full bg-line2" />;
+          if (!day.total)
+            return (
+              <i
+                key={day.date}
+                aria-hidden
+                className={`h-0.5 rounded-full ${day.unrated ? "bg-amber" : "bg-line2"} ${day.date === today() ? "outline-[1.5px] outline-offset-2 outline-ink" : ""}`}
+              />
+            );
+          return (
             <span
               key={day.date}
               aria-hidden
@@ -134,14 +146,8 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
                 />
               ))}
             </span>
-          ) : (
-            <i
-              key={day.date}
-              aria-hidden
-              className={`h-0.5 rounded-full ${day.unrated ? "bg-amber" : "bg-line2"} ${day.date === today() ? "outline-[1.5px] outline-offset-2 outline-ink" : ""}`}
-            />
-          ),
-        )}
+          );
+        })}
       </button>
       <p aria-hidden className="num mt-2 flex justify-between text-[11px] text-ink3">
         <span>1</span>

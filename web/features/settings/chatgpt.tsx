@@ -27,20 +27,15 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
   const busy = mutation.isPending;
   const data = query.data;
   const signIn = data?.signIn;
-  const run = (...args: Parameters<typeof mutation.mutate>) => (setNotice(""), mutation.mutate(...args));
+  function run(...args: Parameters<typeof mutation.mutate>) {
+    setNotice("");
+    mutation.mutate(...args);
+  }
   const chosen = models.data?.models.find((m) => m.slug === data?.model) ?? models.data?.models[0];
   return (
     <div className="flex flex-col gap-3">
       <h3 className={subHead}>ChatGPT plan</h3>
-      <p className="px-1 text-sm text-ink2">
-        {!data?.connected
-          ? keyInUse
-            ? "Connecting a ChatGPT plan moves asking and receipts to it for everyone. The API key stays for dictation."
-            : "Connect a ChatGPT plan and everyone on this server can ask questions and read receipts with it."
-          : data.needsSignIn
-            ? `The sign-in for ${data.email} has expired, so AI is off. Reconnect to turn it back on.`
-            : `Connected as ${data.email}. Everyone on this server uses this plan.`}
-      </p>
+      <p className="px-1 text-sm text-ink2">{planStatus(data, keyInUse)}</p>
       {notice && (
         <p role="status" className="px-1 text-sm text-ink2">
           {notice}
@@ -64,7 +59,13 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
         </div>
       )}
       <FormError error={query.error ?? mutation.error ?? models.error} className="px-1" />
-      {signIn ? (
+      {actions()}
+    </div>
+  );
+
+  function actions() {
+    if (signIn)
+      return (
         <form
           className="flex flex-col gap-3"
           onSubmit={(e) => {
@@ -95,7 +96,10 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
               inputMode="url"
               placeholder="http://127.0.0.1:1455/auth/callback?…"
               value={callback}
-              onChange={(e) => (mutation.reset(), setCallback(e.target.value))}
+              onChange={(e) => {
+                mutation.reset();
+                setCallback(e.target.value);
+              }}
             />
           </Field>
           <div className="flex justify-end gap-2">
@@ -107,7 +111,9 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
             </Button>
           </div>
         </form>
-      ) : confirming ? (
+      );
+    if (confirming)
+      return (
         <div className="flex flex-wrap items-center justify-end gap-2">
           <p className="mr-auto px-1 text-sm">Disconnect ChatGPT? AI turns off for everyone until you connect again.</p>
           <Button onClick={() => setConfirming(false)}>Keep it</Button>
@@ -130,19 +136,34 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
             Disconnect
           </Button>
         </div>
-      ) : (
-        <div className="flex justify-end gap-2">
-          {data?.connected && <Button onClick={() => setConfirming(true)}>Disconnect</Button>}
-          <Button
-            variant={(data?.connected && !data.needsSignIn) || keyInUse ? "text" : "primary"}
-            tone="accent"
-            disabled={busy || !data}
-            onClick={() => run(["POST", "/api/chatgpt/start"])}
-          >
-            {busy ? "Starting…" : data?.connected ? "Reconnect" : "Connect ChatGPT"}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+      );
+    return (
+      <div className="flex justify-end gap-2">
+        {data?.connected && <Button onClick={() => setConfirming(true)}>Disconnect</Button>}
+        <Button
+          variant={(data?.connected && !data.needsSignIn) || keyInUse ? "text" : "primary"}
+          tone="accent"
+          disabled={busy || !data}
+          onClick={() => run(["POST", "/api/chatgpt/start"])}
+        >
+          {connectLabel(busy, !!data?.connected)}
+        </Button>
+      </div>
+    );
+  }
+}
+
+function planStatus(data: z.infer<typeof status> | undefined, keyInUse: boolean) {
+  if (data?.connected)
+    return data.needsSignIn
+      ? `The sign-in for ${data.email} has expired, so AI is off. Reconnect to turn it back on.`
+      : `Connected as ${data.email}. Everyone on this server uses this plan.`;
+  return keyInUse
+    ? "Connecting a ChatGPT plan moves asking and receipts to it for everyone. The API key stays for dictation."
+    : "Connect a ChatGPT plan and everyone on this server can ask questions and read receipts with it.";
+}
+
+function connectLabel(busy: boolean, connected: boolean) {
+  if (busy) return "Starting…";
+  return connected ? "Reconnect" : "Connect ChatGPT";
 }

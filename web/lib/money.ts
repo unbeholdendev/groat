@@ -10,11 +10,6 @@ export function rate(amount: number, currency: string, baseAmount: number, base:
   const r = baseAmount / 10 ** decimals(base) / (amount / 10 ** decimals(currency));
   const n = (v: number, o?: Intl.NumberFormatOptions) =>
     v.toLocaleString("en-GB", { maximumSignificantDigits: 4, ...o });
-  const value =
-    base !== "BTC"
-      ? n(r, { style: "currency", currency: base })
-      : unit === "sats"
-        ? `${n(r * 1e8)} sats`
-        : `${n(r)} BTC`;
-  return `1 ${currency} = ${value}`;
+  if (base !== "BTC") return `1 ${currency} = ${n(r, { style: "currency", currency: base })}`;
+  return `1 ${currency} = ${unit === "sats" ? `${n(r * 1e8)} sats` : `${n(r)} BTC`}`;
 }

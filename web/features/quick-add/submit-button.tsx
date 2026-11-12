@@ -16,7 +16,7 @@ export const SubmitButton = ({
   <button
     aria-label={name}
     disabled={disabled}
-    className={`press hit flex h-10 ${label ? "min-w-16 px-3" : "w-10"} shrink-0 items-center justify-center rounded-chip transition-[scale,background-color,color] duration-200 disabled:opacity-50 ${dim ? "text-ink3" : name === "Full form" ? "bg-accent-soft text-accent" : "bg-accent text-on-accent"}`}
+    className={`press hit flex h-10 ${label ? "min-w-16 px-3" : "w-10"} shrink-0 items-center justify-center rounded-chip transition-[scale,background-color,color] duration-200 disabled:opacity-50 ${tone(dim, name)}`}
   >
     {label ? (
       name
@@ -29,3 +29,8 @@ export const SubmitButton = ({
     )}
   </button>
 );
+
+function tone(dim: boolean, name: keyof typeof glyphs) {
+  if (dim) return "text-ink3";
+  return name === "Full form" ? "bg-accent-soft text-accent" : "bg-accent text-on-accent";
+}

@@ -14,7 +14,11 @@ export function SwipeRow({ transaction: e, fresh }: { transaction: Transaction; 
   return (
     <li
       className={`relative ${sliding ? "bg-up" : "hover:bg-surface2"} ${divide} ${fresh ? "grow-in" : ""}`}
-      onClickCapture={(ev) => dragged.current && (ev.stopPropagation(), (dragged.current = false))}
+      onClickCapture={(ev) => {
+        if (!dragged.current) return;
+        ev.stopPropagation();
+        dragged.current = false;
+      }}
     >
       {sliding && (
         <Icon d={paths.bin} className="absolute top-1/2 right-6 size-5 -translate-y-1/2 stroke-2 text-surface" />

@@ -1,77 +1,43 @@
 import { Button } from "../../../components/button";
-import { useContext, useEffect, useRef, useId, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { persistCache } from "../../../query-client";
-import { useBlocker, useCanGoBack, useLocation, useRouter } from "@tanstack/react-router";
+import { useContext, useEffect } from "react";
+import { useCanGoBack, useLocation, useRouter } from "@tanstack/react-router";
 import { Field, FormError, Input } from "../../../components/form";
 import { kinds } from "../../../../shared/schema";
 import { Segmented } from "../../../components/segmented";
-import { useCategories, useSend, useSession, useSettings } from "../../../lib/api";
+import { useCategories, useSend, useSettings } from "../../../lib/api";
 import type { Draft } from "../../../lib/schemas";
 import { UnitContext } from "../../../lib/unit";
-import { useZodForm } from "../../../lib/use-zod-form";
 import { useKindOf, useTransactions, usePending } from "../queries";
-import { blank, transactionForm, filled, fromTemplate, type TransactionValues } from "../schema";
+import { blank, filled, fromTemplate } from "../schema";
 import { route, useList } from "../use-month";
 import { CategoryChips, DateChips } from "./chips";
+import { DiscardDialog } from "./discard-dialog";
 import { FormHeader } from "./form-header";
 import { RepeatFields } from "./repeat-fields";
+import { useDraftRecovery } from "./use-draft-recovery";
 
 export function TransactionForm() {
   const settings = useSettings()!;
-  const [unit, setUnit] = useContext(UnitContext);
+  const [unit] = useContext(UnitContext);
   const { draft, template } = useLocation().state;
   const editing = Number(route.useSearch().edit) || null;
   const list = useList();
   const navigate = route.useNavigate();
   const { history } = useRouter();
   const back = useCanGoBack();
-  const cache = useQueryClient();
-  const owner = useSession()?.user?.username;
-  const draftKey = [
-    "transaction-draft",
-    owner,
-    editing ? `edit:${editing}` : template ? `recurring:${template.id}` : "new",
-  ];
-  const [recovered] = useState(() =>
-    draft
-      ? undefined
-      : cache.getQueryData<{ values: TransactionValues; recurring?: number; unit: typeof unit }>(draftKey),
-  );
   const kindOf = useKindOf();
-  const form = useZodForm(
-    transactionForm(unit),
-    recovered?.values ?? (template ? fromTemplate(template, unit, kindOf(template)) : blank(settings.lastCurrency)),
-  );
+  const { form, recovered, recurring, setRecurring, dirty, forget, discard } = useDraftRecovery({
+    slot: draftSlot(editing, template?.id),
+    fresh: !!draft,
+    defaults: () => (template ? fromTemplate(template, unit, kindOf(template)) : blank(settings.lastCurrency)),
+    recurring: template?.id,
+  });
   const { watch, setValue, handleSubmit } = form;
   const [categoryId, date, kind] = watch(["categoryId", "date", "kind"]);
   const categories = useCategories();
   const editRow = [...(useTransactions() ?? []), ...usePending()].find((e) => e.id === editing);
   const saving = useSend("transaction", () => close(true));
   const repeating = useSend("recurring", () => close(true));
-  const [recurring, setRecurring] = useState(recovered?.recurring ?? template?.id);
-
-  const values = JSON.stringify(watch());
-  const dirty = !!recovered || values !== JSON.stringify(form.formState.defaultValues);
-  useEffect(() => {
-    if (recovered) setUnit(recovered.unit);
-  }, [recovered]);
-  useEffect(() => {
-    if (!dirty) {
-      cache.removeQueries({ queryKey: draftKey, exact: true });
-      persistCache();
-      return;
-    }
-    cache.setQueryData(draftKey, { values: form.getValues(), recurring, unit });
-    persistCache();
-  }, [values, recurring, unit, dirty]);
-  const blocker = useBlocker({ shouldBlockFn: () => dirty, enableBeforeUnload: dirty, withResolver: true });
-  const dialog = useRef<HTMLDialogElement>(null);
-  const title = useId();
-  useEffect(() => {
-    if (blocker.status === "blocked") dialog.current?.showModal();
-    else dialog.current?.close();
-  }, [blocker.status]);
 
   useEffect(() => {
     if (!draft) return;
@@ -86,7 +52,7 @@ export function TransactionForm() {
   }, [saving.isPaused || repeating.isPaused]);
 
   function close(saved = false) {
-    if (saved || !dirty) cache.removeQueries({ queryKey: draftKey, exact: true });
+    if (saved || !dirty) forget();
     if (back) history.back({ ignoreBlocker: saved });
     else navigate({ search: list, replace: true, ignoreBlocker: saved });
   }
@@ -116,7 +82,7 @@ export function TransactionForm() {
     <form noValidate onSubmit={save} className="flex flex-col">
       <FormHeader
         form={form}
-        title={editing ? `Edit ${kind}` : recurring ? "Edit recurring" : `New ${kind}`}
+        title={formTitle(kind, editing, recurring)}
         submit={editing || recurring ? "Save" : "Add"}
         pending={saving.isPending || repeating.isPending}
         editing={!!editing}
@@ -147,48 +113,17 @@ export function TransactionForm() {
           Recovered unsaved expense.
         </p>
       )}
-      <dialog
-        ref={dialog}
-        aria-labelledby={title}
-        onCancel={(e) => {
-          e.preventDefault();
-          blocker.reset?.();
-        }}
-        className="fixed inset-0 m-auto w-[min(26rem,92vw)] rounded-card bg-surface p-5 text-ink shadow-lift backdrop:bg-bg/80"
-      >
-        <h2 id={title} className="text-[17px] font-semibold">
-          Discard expense changes?
-        </h2>
-        <p className="mt-2 text-sm text-ink2">Your changes have not been saved.</p>
-        <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            autoFocus
-            onClick={() => blocker.reset?.()}
-            className="press min-h-11 rounded-chip bg-surface2 px-4 font-medium"
-          >
-            Keep editing
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              cache.removeQueries({ queryKey: draftKey, exact: true });
-              persistCache();
-              blocker.proceed?.();
-            }}
-            className="press min-h-11 rounded-chip bg-accent px-4 font-medium text-on-accent"
-          >
-            Discard changes
-          </button>
-        </div>
-      </dialog>
+      <DiscardDialog dirty={dirty} onDiscard={discard} />
       <div className="mt-5">
         <Segmented
           label="Kind"
           options={kinds}
           names={{ expense: "Expense", income: "Income" }}
           value={kind}
-          onChange={(k) => (setValue("kind", k), kindOf({ categoryId }) !== k && setValue("categoryId", null))}
+          onChange={(k) => {
+            setValue("kind", k);
+            if (kindOf({ categoryId }) !== k) setValue("categoryId", null);
+          }}
         />
       </div>
       <CategoryChips kind={kind} value={categoryId} onChange={(id) => setValue("categoryId", id)} />
@@ -224,4 +159,14 @@ export function TransactionForm() {
       )}
     </form>
   );
+}
+
+function draftSlot(editing: number | null, template?: number) {
+  if (editing) return `edit:${editing}`;
+  return template ? `recurring:${template}` : "new";
+}
+
+function formTitle(kind: string, editing: number | null, recurring?: number) {
+  if (editing) return `Edit ${kind}`;
+  return recurring ? "Edit recurring" : `New ${kind}`;
 }

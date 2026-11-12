@@ -33,7 +33,11 @@ export function Incoming(props: { enabled: boolean; onImage: (file: Blob) => voi
     };
     const hasImage = (e: DragEvent) =>
       [...(e.dataTransfer?.items ?? [])].some((i) => i.kind === "file" && i.type.startsWith("image/"));
-    const enter = (e: DragEvent) => hasImage(e) && (e.preventDefault(), setOver(true));
+    const enter = (e: DragEvent) => {
+      if (!hasImage(e)) return;
+      e.preventDefault();
+      setOver(true);
+    };
     const leave = (e: DragEvent) => !e.relatedTarget && setOver(false);
     const drop = (e: DragEvent) => {
       const file = image(e.dataTransfer?.files);

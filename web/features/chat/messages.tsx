@@ -58,18 +58,10 @@ export function Messages({
             )}
             {m.tool_calls?.map((c) => {
               const result = results.get(c.id);
-              const state =
-                result === undefined
-                  ? running
-                    ? "…"
-                    : ": not run"
-                  : result.startsWith('{"error"')
-                    ? ": failed"
-                    : " ✓";
               return (
                 <p key={c.id} className="mr-10 justify-self-start px-4 text-sm text-ink3">
                   {label(c.function.name)}
-                  {state}
+                  {toolState(result, running)}
                 </p>
               );
             })}
@@ -89,4 +81,9 @@ export function Messages({
       )}
     </div>
   );
+}
+
+function toolState(result: string | undefined, running: boolean) {
+  if (result === undefined) return running ? "…" : ": not run";
+  return result.startsWith('{"error"') ? ": failed" : " ✓";
 }

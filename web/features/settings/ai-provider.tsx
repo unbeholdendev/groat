@@ -35,9 +35,10 @@ function ProviderForm({ saved, dictationOnly }: { saved: Saved; dictationOnly: b
   const [sttBaseUrl, setSttBaseUrl] = useState(saved.sttBaseUrl ?? "");
   const [sttKey, setSttKey] = useState("");
   const [removeSttKey, setRemoveSttKey] = useState(false);
-  const edit = (set: (value: string) => void) => (e: { target: { value: string } }) => (
-    mutation.reset(), set(e.target.value)
-  );
+  const edit = (set: (value: string) => void) => (e: { target: { value: string } }) => {
+    mutation.reset();
+    set(e.target.value);
+  };
   return (
     <form
       className="flex flex-col gap-4"
@@ -49,7 +50,12 @@ function ProviderForm({ saved, dictationOnly }: { saved: Saved; dictationOnly: b
             "/api/ai",
             { baseUrl, sttBaseUrl, ...(key && { key }), ...(sttKey ? { sttKey } : removeSttKey && { sttKey: "" }) },
           ],
-          { onSuccess: () => (setKey(""), setSttKey("")) },
+          {
+            onSuccess: () => {
+              setKey("");
+              setSttKey("");
+            },
+          },
         );
       }}
     >
@@ -105,7 +111,14 @@ function ProviderForm({ saved, dictationOnly }: { saved: Saved; dictationOnly: b
             ) : (
               <div className="flex items-center gap-2">
                 {savedKey(saved.sttKeyEnding)}
-                <Button variant="link" tone="accent" onClick={() => (setSttKey(""), setRemoveSttKey(true))}>
+                <Button
+                  variant="link"
+                  tone="accent"
+                  onClick={() => {
+                    setSttKey("");
+                    setRemoveSttKey(true);
+                  }}
+                >
                   Remove
                 </Button>
               </div>

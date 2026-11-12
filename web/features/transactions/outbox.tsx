@@ -98,7 +98,8 @@ function Unsent({
     tags: "tag",
     bin: "bin",
   };
-  const action = r?.[0] === "DELETE" ? "Delete" : r?.[0] === "POST" ? "Add" : "Update";
+  const actions: Record<string, string> = { DELETE: "Delete", POST: "Add" };
+  const action = actions[r?.[0] ?? ""] ?? "Update";
   const label = `${action} ${resources[r?.[1].split("/")[2] ?? ""] ?? "change"}`;
   const busy = change.status === "pending" && !change.paused;
   return (

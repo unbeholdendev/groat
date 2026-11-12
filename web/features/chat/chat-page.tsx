@@ -15,8 +15,11 @@ export function ChatPage({ openId }: { openId: number | null }) {
   const { history } = useRouter();
   const canGoBack = useCanGoBack();
   const { fromList } = useLocation().state;
-  const back = () =>
-    openId && !fromList ? navigate({ to: "/chat", replace: true }) : canGoBack ? history.back() : navigate({ to: "/" });
+  function back() {
+    if (openId && !fromList) navigate({ to: "/chat", replace: true });
+    else if (canGoBack) history.back();
+    else navigate({ to: "/" });
+  }
   const chats = useApi(z.array(chatSchema), ["/api/chats"], { throwOnError: true }).data ?? [];
   const { data: chat, error } = useApi(chatSchema, [`/api/chats/${openId}`], { enabled: openId !== null });
   const open = openId === null ? null : chat;
@@ -43,7 +46,14 @@ export function ChatPage({ openId }: { openId: number | null }) {
       <ChatHeader
         back={openId ? "Chats" : "Back"}
         onBack={back}
-        onDelete={open ? () => (back(), deleting.mutate(open.id)) : undefined}
+        onDelete={
+          open
+            ? () => {
+                back();
+                deleting.mutate(open.id);
+              }
+            : undefined
+        }
       />
       <FormError error={deleting.error ?? stopping.error ?? (missing ? null : error)} />
       <div>

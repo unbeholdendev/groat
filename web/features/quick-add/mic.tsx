@@ -27,7 +27,7 @@ export function Mic(props: { onAudio: (audio: Blob) => void; onError: (e: Error)
     const chunks: Blob[] = [];
     r.ondataavailable = (e) => chunks.push(e.data);
     r.onstop = () => {
-      stream.getTracks().forEach((t) => t.stop());
+      for (const t of stream.getTracks()) t.stop();
       setRecorder(null);
       props.onAudio(new Blob(chunks, { type: r.mimeType }));
     };
@@ -41,8 +41,12 @@ export function Mic(props: { onAudio: (audio: Blob) => void; onError: (e: Error)
       aria-label={recorder ? "Stop recording" : "Dictate"}
       aria-pressed={!!recorder}
       aria-disabled={!!props.off}
-      onClick={() => (props.off ? props.onError(new Error(props.off)) : recorder ? recorder.stop() : start())}
-      className={`press hit grid size-10 shrink-0 place-items-center rounded-chip transition-[scale,background-color,color] duration-200 ${recorder ? "animate-pulse bg-up text-on-accent" : props.off ? "text-ink3 opacity-50" : "text-ink2"}`}
+      onClick={() => {
+        if (props.off) props.onError(new Error(props.off));
+        else if (recorder) recorder.stop();
+        else void start();
+      }}
+      className={`press hit grid size-10 shrink-0 place-items-center rounded-chip transition-[scale,background-color,color] duration-200 ${tone(!!recorder, !!props.off)}`}
     >
       <Icon className="size-[18px] stroke-2">
         {recorder ? (
@@ -53,4 +57,9 @@ export function Mic(props: { onAudio: (audio: Blob) => void; onError: (e: Error)
       </Icon>
     </button>
   );
+}
+
+function tone(recording: boolean, off: boolean) {
+  if (recording) return "animate-pulse bg-up text-on-accent";
+  return off ? "text-ink3 opacity-50" : "text-ink2";
 }

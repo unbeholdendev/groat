@@ -22,13 +22,26 @@ export function useDrafting(unit: Unit, onFail: () => void) {
     },
     networkMode: "always",
     onSuccess: (d) => form.reset(fields(d, unit)),
-    onError: (e, input) => (typeof input === "string" ? onFail() : (setCaptureError(e), drop())),
+    onError: (e, input) => {
+      if (typeof input === "string") return onFail();
+      setCaptureError(e);
+      drop();
+    },
   });
-  const drop = () => (image && URL.revokeObjectURL(image), setImage(undefined));
-  const unreview = () => (drafting.reset(), drop());
-  const photo = (file: Blob) => (
-    unreview(), setCaptureError(null), setImage(URL.createObjectURL(file)), drafting.mutate({ photo: file })
-  );
+  function drop() {
+    if (image) URL.revokeObjectURL(image);
+    setImage(undefined);
+  }
+  function unreview() {
+    drafting.reset();
+    drop();
+  }
+  function photo(file: Blob) {
+    unreview();
+    setCaptureError(null);
+    setImage(URL.createObjectURL(file));
+    drafting.mutate({ photo: file });
+  }
   return {
     form,
     drafting,

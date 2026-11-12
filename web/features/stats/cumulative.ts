@@ -3,10 +3,14 @@ import { days } from "../../lib/period";
 export function cumulative(buckets: { start: string; total: number }[], [from, to]: [string, string]) {
   let sum = 0;
   const at = (d: string) => Math.max(0, days(from, d) - 1);
-  return buckets.flatMap((b, i) => [
-    [at(b.start), sum],
-    [i < buckets.length - 1 ? at(buckets[i + 1].start) - 1 : at(to), (sum += b.total)],
-  ]);
+  return buckets.flatMap((b, i) => {
+    const before = sum;
+    sum += b.total;
+    return [
+      [at(b.start), before],
+      [i < buckets.length - 1 ? at(buckets[i + 1].start) - 1 : at(to), sum],
+    ];
+  });
 }
 
 export function valueAt(pts: number[][], n: number) {

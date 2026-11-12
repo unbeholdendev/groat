@@ -53,12 +53,12 @@ export function SettingsForm(props: {
         <fieldset disabled={mutation.isPending}>
           <ThemeSection
             value={props.settings.theme}
-            onChange={(theme) => (
-              queryClient.setQueryData(["/api/settings"], { ...props.settings, theme }),
+            onChange={(theme) => {
+              queryClient.setQueryData(["/api/settings"], { ...props.settings, theme });
               mutation.mutate([props.method, props.path, { theme }], {
                 onError: () => queryClient.setQueryData(["/api/settings"], props.settings),
-              })
-            )}
+              });
+            }}
           />
         </fieldset>
       )}
@@ -69,13 +69,7 @@ export function SettingsForm(props: {
       )}
       {!onboarding && (
         <p role="status" className="mt-3 text-sm text-ink2">
-          {mutation.isPaused
-            ? "Waiting for a connection to save…"
-            : mutation.isPending
-              ? "Saving settings…"
-              : mutation.isSuccess
-                ? "Settings saved."
-                : ""}
+          {saveStatus(mutation)}
         </p>
       )}
       <FormError error={mutation.error} className="mt-3 px-1" />
@@ -86,4 +80,10 @@ export function SettingsForm(props: {
       )}
     </form>
   );
+}
+
+function saveStatus(m: { isPaused: boolean; isPending: boolean; isSuccess: boolean }) {
+  if (m.isPaused) return "Waiting for a connection to save…";
+  if (m.isPending) return "Saving settings…";
+  return m.isSuccess ? "Settings saved." : "";
 }

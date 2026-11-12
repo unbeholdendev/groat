@@ -33,7 +33,10 @@ export function Bin() {
           <Confirm
             ask={`Delete ${bin.length} ${bin.length === 1 ? "expense" : "expenses"} for good?`}
             yes="Delete"
-            onYes={() => (setAsking(false), empty.mutate(["DELETE", "/api/bin"]))}
+            onYes={() => {
+              setAsking(false);
+              empty.mutate(["DELETE", "/api/bin"]);
+            }}
             onNo={() => setAsking(false)}
           />
         ) : (

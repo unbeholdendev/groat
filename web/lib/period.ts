@@ -56,7 +56,17 @@ export function change(now: number, before: number) {
   if (!before) return null;
   const pct = Math.round(((now - before) / before) * 100);
   return {
-    text: `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct)}%`,
-    tone: pct > 0 ? "text-up" : pct < 0 ? "text-down" : "text-ink3",
+    text: `${sign(pct)}${Math.abs(pct)}%`,
+    tone: trend(pct, "text-up", "text-down"),
   };
+}
+
+export function sign(n: number) {
+  if (n > 0) return "+";
+  return n < 0 ? "−" : "";
+}
+
+export function trend(n: number, rising: string, falling: string) {
+  if (n > 0) return rising;
+  return n < 0 ? falling : "text-ink3";
 }

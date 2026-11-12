@@ -64,7 +64,10 @@ export function Chart(props: {
       </>,
     );
   };
-  const unscrub = () => (setAt(null), props.onScrub(null));
+  function unscrub() {
+    setAt(null);
+    props.onScrub(null);
+  }
   useEffect(() => unscrub, []);
 
   return (

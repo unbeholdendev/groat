@@ -91,30 +91,38 @@ export function CategoryEditor(props: {
         />
       )}
       <FormError error={save.error} />
-      {moving && c ? (
+      {footer()}
+    </form>
+  );
+
+  function footer() {
+    if (moving && c)
+      return (
         <MoveKind category={c} kind={kind} categories={categories} onKeep={() => setMoving(false)} onMove={send} />
-      ) : deleting && c ? (
+      );
+    if (deleting && c)
+      return (
         <DeleteCategory
           category={c}
           categories={categories}
           onKeep={() => setDeleting(false)}
           onDelete={props.onDelete}
         />
-      ) : (
-        <div className="flex items-center">
-          {c && !c.builtin && (
-            <Button tone="up" className="-ml-2.5 h-11" onClick={() => setDeleting(true)}>
-              Delete
-            </Button>
-          )}
-          <Button className="ml-auto h-11" onClick={props.onClose}>
-            Cancel
+      );
+    return (
+      <div className="flex items-center">
+        {c && !c.builtin && (
+          <Button tone="up" className="-ml-2.5 h-11" onClick={() => setDeleting(true)}>
+            Delete
           </Button>
-          <Button variant="primary" type="submit">
-            {c ? "Save" : "Add"}
-          </Button>
-        </div>
-      )}
-    </form>
-  );
+        )}
+        <Button className="ml-auto h-11" onClick={props.onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" type="submit">
+          {c ? "Save" : "Add"}
+        </Button>
+      </div>
+    );
+  }
 }

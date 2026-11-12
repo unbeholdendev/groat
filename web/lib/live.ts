@@ -40,7 +40,7 @@ export function liveUpdates(client: QueryClient, revoked: () => void) {
     current.onopen = alive;
     current.onmessage = (event) => {
       if (socket !== current) return;
-      let raw;
+      let raw: unknown;
       try {
         raw = JSON.parse(event.data);
       } catch {

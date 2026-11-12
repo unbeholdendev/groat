@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useIsMutating, useMutationState } from "@tanstack/react-query";
+import { useIsMutating, useMutationState, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../components/button";
 import { FormError } from "../../components/form";
 import { panel } from "../../components/styles";
-import { signOutDevice } from "../../query-client";
+import { signOutDevice } from "../../lib/session";
 
 export function SignOut() {
+  const client = useQueryClient();
   const unsent = useMutationState({
     filters: { predicate: (m) => !!m.meta?.retained && m.state.status !== "success" },
   }).length;
@@ -13,7 +14,7 @@ export function SignOut() {
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const leave = () =>
-    void signOutDevice().catch(() =>
+    void signOutDevice(client).catch(() =>
       setError(new Error("Couldn’t clear saved data on this device. Check browser storage and try again.")),
     );
   return (

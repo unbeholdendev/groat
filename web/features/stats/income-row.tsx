@@ -1,4 +1,5 @@
 import { panel } from "../../components/styles";
+import { sign, trend } from "../../lib/period";
 import type { Period } from "./types";
 
 const rate = (p: Period) => (p.income.total ? (p.income.total - p.total) / p.income.total : null);
@@ -7,8 +8,8 @@ function Change({ now, before, points }: { now: number | null; before: number | 
   if (now === null || before === null || (!points && !before)) return null;
   const n = Math.round(points ? (now - before) * 100 : ((now - before) / Math.abs(before)) * 100);
   return (
-    <span className={`num text-[12px] ${n > 0 ? "text-down" : n < 0 ? "text-up" : "text-ink3"}`}>
-      {n > 0 ? "+" : n < 0 ? "−" : ""}
+    <span className={`num text-[12px] ${trend(n, "text-down", "text-up")}`}>
+      {sign(n)}
       {Math.abs(n)}
       {points ? " pts" : "%"}
     </span>

@@ -89,5 +89,28 @@
         "useIterableCallbackReturn": "off"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["web/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noCommaOperator": "error"
+          },
+          "correctness": {
+            "useJsxKeyInIterable": "error"
+          },
+          "style": {
+            "noNestedTernary": "error"
+          },
+          "suspicious": {
+            "noAssignInExpressions": "error",
+            "noImplicitAnyLet": "error",
+            "useIterableCallbackReturn": "error"
+          }
+        }
+      }
+    }
+  ]
 }

@@ -43,14 +43,15 @@ export function useReceipt(categories: Category[], unit: Unit, send: (r: Request
       .filter(Boolean)
       .join(" · ");
   const dismiss = () => shown && setDismissed(shown.id);
-  const undo = () =>
-    shown &&
-    (dismiss(),
+  function undo() {
+    if (!shown) return;
+    dismiss();
     send(
       shown.binned
         ? ["POST", `/api/bin/${shown.row.id}/restore`]
         : ["DELETE", `/api/transactions/${shown.row.id}?purge`],
-    ));
+    );
+  }
   return { shown, category, text, dismiss, undo, setHold };
 }
 

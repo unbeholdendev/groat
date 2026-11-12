@@ -63,18 +63,14 @@ export function Month({ newest }: { newest: number }) {
       {query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}
       {listed && days.size === 0 && (
         <div className={`mt-6 px-6 py-9 text-center ${panel}`}>
-          <p className="font-semibold">
-            {filtered ? "Nothing matches" : month ? `Nothing in ${label}` : "Nothing this month yet"}
-          </p>
+          <p className="font-semibold">{emptyTitle(filtered, month, label)}</p>
           <p className="mt-1 text-[13px] text-ink3">
             {filtered ? (
               <Button variant="link" tone="accent" onClick={() => setFilter({})}>
                 Clear filters
               </Button>
-            ) : month ? (
-              "Step back a month, or add one above with a date."
             ) : (
-              "Type one above, like “coffee 3.20”."
+              emptyHint(month)
             )}
           </p>
         </div>
@@ -82,4 +78,13 @@ export function Month({ newest }: { newest: number }) {
       {days.size > 0 && <DayList days={days} newest={newest} />}
     </>
   );
+}
+
+function emptyTitle(filtered: boolean, month: string | undefined, label: string) {
+  if (filtered) return "Nothing matches";
+  return month ? `Nothing in ${label}` : "Nothing this month yet";
+}
+
+function emptyHint(month: string | undefined) {
+  return month ? "Step back a month, or add one above with a date." : "Type one above, like “coffee 3.20”.";
 }

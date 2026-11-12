@@ -47,9 +47,13 @@ export function MonthHeader({
 
   return (
     <header
-      onPointerDown={(e) => e.isPrimary && (swipeFrom.current = [e.clientX, e.clientY])}
+      onPointerDown={(e) => {
+        if (e.isPrimary) swipeFrom.current = [e.clientX, e.clientY];
+      }}
       onPointerUp={(e) => e.isPrimary && swipe(e)}
-      onPointerCancel={() => (swipeFrom.current = undefined)}
+      onPointerCancel={() => {
+        swipeFrom.current = undefined;
+      }}
       className="touch-pan-y"
     >
       <div className="flex items-center gap-1 text-ink2">

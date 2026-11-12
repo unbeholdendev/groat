@@ -2,28 +2,36 @@ import { type ReactNode, useSyncExternalStore } from "react";
 import { Link, useLocation, useSearch } from "@tanstack/react-router";
 import { Icon, paths } from "./icon";
 
-const tabs: [string, string, ReactNode][] = [
-  ["/", "Expenses", <path d="M6 3.5h12v17l-2.5-1.5-2 1.5-1.5-1-1.5 1-2-1.5L6 20.5zM9.5 8.5h5M9.5 12h5M9.5 15.5h3" />],
-  ["/stats", "Stats", <path d="m4 17 5-5 3.5 3L20 7.5M15 7.5h5v5" />],
-  [
-    "/categories",
-    "Categories",
-    <>
-      <rect x="4" y="4" width="7" height="7" rx="1.5" />
-      <rect x="13" y="4" width="7" height="7" rx="1.5" />
-      <rect x="4" y="13" width="7" height="7" rx="1.5" />
-      <rect x="13" y="13" width="7" height="7" rx="1.5" />
-    </>,
-  ],
-  [
-    "/settings",
-    "Settings",
-    <>
-      <path d="M4 8h9M19 8h1M4 16h1M11 16h9" />
-      <circle cx="16" cy="8" r="3" />
-      <circle cx="8" cy="16" r="3" />
-    </>,
-  ],
+const tabs: { to: string; label: string; icon: ReactNode }[] = [
+  {
+    to: "/",
+    label: "Expenses",
+    icon: <path d="M6 3.5h12v17l-2.5-1.5-2 1.5-1.5-1-1.5 1-2-1.5L6 20.5zM9.5 8.5h5M9.5 12h5M9.5 15.5h3" />,
+  },
+  { to: "/stats", label: "Stats", icon: <path d="m4 17 5-5 3.5 3L20 7.5M15 7.5h5v5" /> },
+  {
+    to: "/categories",
+    label: "Categories",
+    icon: (
+      <>
+        <rect x="4" y="4" width="7" height="7" rx="1.5" />
+        <rect x="13" y="4" width="7" height="7" rx="1.5" />
+        <rect x="4" y="13" width="7" height="7" rx="1.5" />
+        <rect x="13" y="13" width="7" height="7" rx="1.5" />
+      </>
+    ),
+  },
+  {
+    to: "/settings",
+    label: "Settings",
+    icon: (
+      <>
+        <path d="M4 8h9M19 8h1M4 16h1M11 16h9" />
+        <circle cx="16" cy="8" r="3" />
+        <circle cx="8" cy="16" r="3" />
+      </>
+    ),
+  },
 ];
 
 const views = [
@@ -49,7 +57,7 @@ export function TabBar() {
       aria-label="Main"
       className="grid grid-cols-4 gap-1 max-lg:rounded-panel max-lg:bg-ink max-lg:dark:bg-surface2 max-lg:p-1 lg:[view-transition-name:tabs] lg:fixed lg:top-6 lg:left-[calc(50%-432px)] lg:flex lg:w-44 lg:flex-col lg:gap-1"
     >
-      {tabs.map(([to, label, icon]) => (
+      {tabs.map(({ to, label, icon }) => (
         <Link
           key={to}
           viewTransition

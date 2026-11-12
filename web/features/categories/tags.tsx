@@ -22,24 +22,34 @@ export function Tags() {
       <FormError error={error} className="mb-3" />
       {tags.length === 0 && <p className="text-sm text-ink3">No tags yet. Add one to an expense with #name.</p>}
       <ul className="flex flex-wrap gap-2 text-sm">
-        {tags.map((t) =>
-          active?.id !== t.id ? (
-            <TagChip
-              key={t.id}
-              tag={t}
-              onRename={() => (reset(), setActive({ id: t.id, deleting: false }))}
-              onDelete={() => setActive({ id: t.id, deleting: true })}
-            />
-          ) : active.deleting ? (
-            <li key={t.id}>
-              <Confirm
-                ask={`Remove #${t.name} from every expense?`}
-                yes="Delete"
-                onYes={() => (close(), call(["DELETE", `/api/tags/${t.id}`]))}
-                onNo={close}
+        {tags.map((t) => {
+          if (active?.id !== t.id)
+            return (
+              <TagChip
+                key={t.id}
+                tag={t}
+                onRename={() => {
+                  reset();
+                  setActive({ id: t.id, deleting: false });
+                }}
+                onDelete={() => setActive({ id: t.id, deleting: true })}
               />
-            </li>
-          ) : (
+            );
+          if (active.deleting)
+            return (
+              <li key={t.id}>
+                <Confirm
+                  ask={`Remove #${t.name} from every expense?`}
+                  yes="Delete"
+                  onYes={() => {
+                    close();
+                    call(["DELETE", `/api/tags/${t.id}`]);
+                  }}
+                  onNo={close}
+                />
+              </li>
+            );
+          return (
             <li key={t.id}>
               <RenameTag
                 tag={t}
@@ -47,8 +57,8 @@ export function Tags() {
                 onCancel={close}
               />
             </li>
-          ),
-        )}
+          );
+        })}
       </ul>
     </section>
   );
