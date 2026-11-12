@@ -31,7 +31,10 @@ export function QuickAdd() {
       onGuided={onGuided}
       chat={path === "/chat" ? Number(search.id) || 0 : undefined}
       onForm={(draft) => navigate({ to: "/", search: { new: "1" }, state: { draft } })}
-      onChat={(id) => id !== Number(search.id) && navigate({ to: "/chat", search: { id: String(id) }, state: { fromList: path === "/chat" } })}
+      onChat={(id) =>
+        id !== Number(search.id) &&
+        navigate({ to: "/chat", search: { id: String(id) }, state: { fromList: path === "/chat" } })
+      }
     />
   );
 }

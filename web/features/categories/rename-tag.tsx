@@ -3,7 +3,15 @@ import { useZodForm } from "../../lib/use-zod-form";
 import { tagForm } from "./schema";
 import type { Tag } from "./tags";
 
-export function RenameTag({ tag, onSave, onCancel }: { tag: Tag; onSave: (name: string) => void; onCancel: () => void }) {
+export function RenameTag({
+  tag,
+  onSave,
+  onCancel,
+}: {
+  tag: Tag;
+  onSave: (name: string) => void;
+  onCancel: () => void;
+}) {
   const { register, handleSubmit, formState } = useZodForm(tagForm, { name: tag.name });
   return (
     <form onSubmit={handleSubmit(({ name }) => onSave(name))}>

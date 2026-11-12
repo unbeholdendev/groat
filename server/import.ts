@@ -56,7 +56,8 @@ function plan(ctx: Pick<Ctx, "db" | "clock">, text: string) {
   if (csv.error !== undefined) return { error: csv.error };
   const [header, ...lines] = csv.rows;
   const column = new Map((header?.cells ?? []).map((name, i) => [name.trim().toLowerCase(), i]));
-  if (required.some((name) => !column.has(name))) return { error: "The file needs date, note, amount and currency columns" };
+  if (required.some((name) => !column.has(name)))
+    return { error: "The file needs date, note, amount and currency columns" };
 
   const existing = new Map<string, number>();
   const kinds = new Map<string, Kind>();
@@ -72,8 +73,17 @@ function plan(ctx: Pick<Ctx, "db" | "clock">, text: string) {
   for (const { line, cells } of lines) {
     if (cells.every((cell) => !cell.trim())) continue;
     const cell = (name: string) => cells[column.get(name) ?? -1]?.trim() ?? "";
-    const tags = cell("tags").split(",").map((tag) => tag.trim()).filter(Boolean);
-    const input = { note: cell("note"), amount: trimZeros(cell("amount")), currency: cell("currency"), date: cell("date"), tags };
+    const tags = cell("tags")
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+    const input = {
+      note: cell("note"),
+      amount: trimZeros(cell("amount")),
+      currency: cell("currency"),
+      date: cell("date"),
+      tags,
+    };
     const [category, sub] = [cell("category"), cell("subcategory")];
     const type = kind.optional().safeParse(cell("type").toLowerCase() || undefined);
     const rowKind = (type.success && type.data) || (category && kinds.get(key(category))) || "expense";
@@ -92,7 +102,8 @@ function plan(ctx: Pick<Ctx, "db" | "clock">, text: string) {
     }
     if (category && !kinds.has(key(category))) kinds.set(key(category), rowKind);
     if (category && !existing.has(key(category)) && !created.has(key(category))) created.set(key(category), [category]);
-    if (category && sub && !existing.has(key(category, sub)) && !created.has(key(category, sub))) created.set(key(category, sub), [category, sub]);
+    if (category && sub && !existing.has(key(category, sub)) && !created.has(key(category, sub)))
+      created.set(key(category, sub), [category, sub]);
     rows.push({ ...read, at: !category ? undefined : sub ? key(category, sub) : key(category) });
   }
 
@@ -105,7 +116,9 @@ function plan(ctx: Pick<Ctx, "db" | "clock">, text: string) {
     kinds,
     preview: {
       count: rows.length,
-      totals: [...totals].sort(([a], [b]) => a.localeCompare(b)).map(([currency, amount]) => ({ currency, amount: formatAmount(amount, currency) })),
+      totals: [...totals]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([currency, amount]) => ({ currency, amount: formatAmount(amount, currency) })),
       categories: [...created.values()].map((path) => path.join(" › ")),
       rejected,
     },
@@ -115,9 +128,15 @@ function plan(ctx: Pick<Ctx, "db" | "clock">, text: string) {
 export function importRoutes({ db, clock }: Ctx) {
   const app = new Hono<Env>();
   const used = "Import only works before any expenses are added";
-  const empty = () => !db.$client.query("SELECT 1 FROM transactions UNION ALL SELECT 1 FROM recurring UNION ALL SELECT 1 FROM tags").get();
+  const empty = () =>
+    !db.$client
+      .query("SELECT 1 FROM transactions UNION ALL SELECT 1 FROM recurring UNION ALL SELECT 1 FROM tags")
+      .get();
 
-  const limit = bodyLimit({ maxSize: 20 * 1024 * 1024, onError: (c) => c.json({ error: "That file is too large" }, 413) });
+  const limit = bodyLimit({
+    maxSize: 20 * 1024 * 1024,
+    onError: (c) => c.json({ error: "That file is too large" }, 413),
+  });
 
   const read = async (c: Context<Env>) => {
     if (c.get("user").role !== "admin") return c.json({ error: "Only admins can do that" }, 403);
@@ -148,12 +167,19 @@ export function importRoutes({ db, clock }: Ctx) {
       const parents = [...created.values()].sort((a, b) => a.length - b.length);
       for (const [name, sub] of parents) {
         const parentId = sub ? existing.get(key(name))! : null;
-        const color = parentId ? db.select({ color: cat.color }).from(cat).where(eq(cat.id, parentId)).get()!.color : "#71717a";
+        const color = parentId
+          ? db.select({ color: cat.color }).from(cat).where(eq(cat.id, parentId)).get()!.color
+          : "#71717a";
         const sort = sql`(SELECT coalesce(max(sort), -1) + 1 FROM categories WHERE parent_id IS ${parentId})`;
-        const { id } = db.insert(cat).values({ name: sub ?? name, icon: "🏷️", color, parentId, sort, kind: kinds.get(key(name)) }).returning({ id: cat.id }).get();
+        const { id } = db
+          .insert(cat)
+          .values({ name: sub ?? name, icon: "🏷️", color, parentId, sort, kind: kinds.get(key(name)) })
+          .returning({ id: cat.id })
+          .get();
         existing.set(sub ? key(name, sub) : key(name), id);
       }
-      for (const { at, ...row } of rows) addTransaction(db, now, { ...row, categoryId: at ? existing.get(at)! : row.categoryId }, userId);
+      for (const { at, ...row } of rows)
+        addTransaction(db, now, { ...row, categoryId: at ? existing.get(at)! : row.categoryId }, userId);
     });
     log("info", "import.completed", { count: rows.length });
     return c.json({ imported: rows.length });

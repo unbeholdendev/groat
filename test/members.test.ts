@@ -4,11 +4,19 @@ import { setup } from "./harness";
 function household() {
   const h = setup();
   const as = async (cookie: string, method: string, path: string, body?: unknown) => {
-    const res = await h.app.request(path, { method, headers: { "content-type": "application/json", cookie }, body: body ? JSON.stringify(body) : undefined });
+    const res = await h.app.request(path, {
+      method,
+      headers: { "content-type": "application/json", cookie },
+      body: body ? JSON.stringify(body) : undefined,
+    });
     return { status: res.status, body: await res.json() };
   };
   const login = async (username: string, password: string) => {
-    const res = await h.app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username, password }) });
+    const res = await h.app.request("/api/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
     return res.headers.get("set-cookie")?.split(";")[0] ?? "";
   };
   return { ...h, as, login };
@@ -23,7 +31,10 @@ test("the admin adds, lists, resets and removes members", async () => {
   expect((await call("GET", "/api/users")).body.map((u: { username: string }) => u.username)).toEqual(["admin", "bob"]);
 
   const signedIn = await login("bob", "pw1");
-  expect(await call("PUT", `/api/users/${bob.body.id}/password`, { password: "pw2" })).toEqual({ status: 200, body: {} });
+  expect(await call("PUT", `/api/users/${bob.body.id}/password`, { password: "pw2" })).toEqual({
+    status: 200,
+    body: {},
+  });
   expect((await as(signedIn, "GET", "/api/transactions")).status).toBe(401);
   const admin = await login("admin", "secret");
   expect((await as(admin, "PUT", "/api/users/1/password", { password: "new" })).status).toBe(200);

@@ -4,7 +4,11 @@ import { setup } from "./harness";
 test("editing an expense updates its fields", async () => {
   const { call } = setup();
   const { body } = await call("POST", "/api/transactions", { note: "Cofee", amount: "3.20", date: "2026-10-09" });
-  const edited = await call("PUT", `/api/transactions/${body.id}`, { note: "Coffee", amount: "3.50", date: "2026-10-08" });
+  const edited = await call("PUT", `/api/transactions/${body.id}`, {
+    note: "Coffee",
+    amount: "3.50",
+    date: "2026-10-08",
+  });
   expect(edited.status).toBe(200);
   expect((await call("GET", "/api/transactions")).body).toMatchObject([
     { id: body.id, note: "Coffee", amount: 350, currency: "GBP", date: "2026-10-08", baseAmount: 350 },

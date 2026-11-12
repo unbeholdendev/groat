@@ -6,9 +6,35 @@ import { body } from "./request";
 import * as t from "./schema";
 
 const defaultCategories: [string, string, string, [string, string][]?][] = [
-  ["Food", "🍽️", "#f98942", [["Groceries", "🛒"], ["Eating out", "🍜"]]],
-  ["Transport", "🚗", "#26c0cf", [["Fuel", "⛽"], ["Public transport", "🚆"], ["Taxi", "🚕"]]],
-  ["Home", "🏠", "#3fbe90", [["Rent/Mortgage", "🔑"], ["Utilities", "💡"], ["Maintenance", "🧰"]]],
+  [
+    "Food",
+    "🍽️",
+    "#f98942",
+    [
+      ["Groceries", "🛒"],
+      ["Eating out", "🍜"],
+    ],
+  ],
+  [
+    "Transport",
+    "🚗",
+    "#26c0cf",
+    [
+      ["Fuel", "⛽"],
+      ["Public transport", "🚆"],
+      ["Taxi", "🚕"],
+    ],
+  ],
+  [
+    "Home",
+    "🏠",
+    "#3fbe90",
+    [
+      ["Rent/Mortgage", "🔑"],
+      ["Utilities", "💡"],
+      ["Maintenance", "🧰"],
+    ],
+  ],
   ["Subscriptions", "📺", "#bf73df"],
   ["Health", "💊", "#f16f7e"],
   ["Shopping", "🛍️", "#e977bb"],
@@ -40,10 +66,14 @@ export function settingsRoutes(db: Db) {
     const input = await body(c, onboarding);
     if ("error" in input) return c.json(input, 400);
     db.transaction(() => {
-      db.update(t.settings).set({ ...input.data, onboarded: true }).run();
+      db.update(t.settings)
+        .set({ ...input.data, onboarded: true })
+        .run();
       defaultCategories.forEach(([name, icon, color, children = []], i) => {
         const { id } = db.insert(cat).values({ name, icon, color, sort: i }).returning({ id: cat.id }).get();
-        children.forEach(([child, childIcon], j) => db.insert(cat).values({ name: child, icon: childIcon, color, parentId: id, sort: j }).run());
+        children.forEach(([child, childIcon], j) =>
+          db.insert(cat).values({ name: child, icon: childIcon, color, parentId: id, sort: j }).run(),
+        );
       });
     });
     return c.json(stored(db));

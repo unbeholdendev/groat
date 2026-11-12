@@ -49,10 +49,23 @@ export function transactionFilter(db: Db, q: z.infer<typeof transactionQuery>, b
     q.from ? gte(e.date, q.from) : undefined,
     q.to ? lte(e.date, q.to) : undefined,
     category !== undefined
-      ? inArray(e.categoryId, db.select({ id: t.categories.id }).from(t.categories).where(or(eq(t.categories.id, category), eq(t.categories.parentId, category))))
+      ? inArray(
+          e.categoryId,
+          db
+            .select({ id: t.categories.id })
+            .from(t.categories)
+            .where(or(eq(t.categories.id, category), eq(t.categories.parentId, category))),
+        )
       : undefined,
     q.tag
-      ? inArray(e.id, db.select({ id: t.transactionTags.transactionId }).from(t.transactionTags).innerJoin(t.tags, eq(t.tags.id, t.transactionTags.tagId)).where(eq(t.tags.name, q.tag)))
+      ? inArray(
+          e.id,
+          db
+            .select({ id: t.transactionTags.transactionId })
+            .from(t.transactionTags)
+            .innerJoin(t.tags, eq(t.tags.id, t.transactionTags.tagId))
+            .where(eq(t.tags.name, q.tag)),
+        )
       : undefined,
     q.currency ? eq(e.currency, q.currency) : undefined,
     q.status ? eq(e.status, q.status) : undefined,
@@ -63,10 +76,25 @@ export function transactionFilter(db: Db, q: z.infer<typeof transactionQuery>, b
 
 const attachment = z.object({ attachmentId: z.number().int().optional(), requestId: z.uuid().optional() });
 
-export function addTransaction(db: Db, now: string, { tags, ...fields }: TransactionFields, createdBy: number, status = "normal", attachmentId?: number) {
-  const { id } = db.insert(e).values({ ...fields, status, createdBy, createdAt: now, updatedAt: now }).returning({ id: e.id }).get();
+export function addTransaction(
+  db: Db,
+  now: string,
+  { tags, ...fields }: TransactionFields,
+  createdBy: number,
+  status = "normal",
+  attachmentId?: number,
+) {
+  const { id } = db
+    .insert(e)
+    .values({ ...fields, status, createdBy, createdAt: now, updatedAt: now })
+    .returning({ id: e.id })
+    .get();
   saveTags(db, id, tags);
-  if (attachmentId) db.update(t.attachments).set({ transactionId: id }).where(and(eq(t.attachments.id, attachmentId), isNull(t.attachments.transactionId))).run();
+  if (attachmentId)
+    db.update(t.attachments)
+      .set({ transactionId: id })
+      .where(and(eq(t.attachments.id, attachmentId), isNull(t.attachments.transactionId)))
+      .run();
   return transactions(db, eq(e.id, id)).get();
 }
 
@@ -85,13 +113,24 @@ export function suggestions(db: Db, prefix: string) {
     .where(and(visible, sql`lower(substr(${e.note}, 1, length(${prefix}))) = lower(${prefix})`))
     .as("ranked");
   const { note, categoryId, currency, amount } = ranked;
-  return db.select({ note, categoryId, currency, amount }).from(ranked).where(eq(ranked.n, 1)).orderBy(desc(ranked.date), desc(ranked.id)).limit(10).all();
+  return db
+    .select({ note, categoryId, currency, amount })
+    .from(ranked)
+    .where(eq(ranked.n, 1))
+    .orderBy(desc(ranked.date), desc(ranked.id))
+    .limit(10)
+    .all();
 }
 
 export function saveTags(db: Db, id: number, tags: string[]) {
   db.delete(t.transactionTags).where(eq(t.transactionTags.transactionId, id)).run();
   for (const name of tags) {
-    const { tagId } = db.insert(t.tags).values({ name }).onConflictDoUpdate({ target: t.tags.name, set: { name } }).returning({ tagId: t.tags.id }).get();
+    const { tagId } = db
+      .insert(t.tags)
+      .values({ name })
+      .onConflictDoUpdate({ target: t.tags.name, set: { name } })
+      .returning({ tagId: t.tags.id })
+      .get();
     db.insert(t.transactionTags).values({ transactionId: id, tagId }).run();
   }
 }
@@ -104,12 +143,20 @@ export function transactionRoutes(ctx: Ctx, value: Valuer) {
   app.get("/api/transactions", async (c) => {
     const q = query(c, transactionQuery);
     if ("error" in q) return c.json(q, 400);
-    return c.json(await value(transactions(db, transactionFilter(db, q.data)).orderBy(...newest).all()));
+    return c.json(
+      await value(
+        transactions(db, transactionFilter(db, q.data))
+          .orderBy(...newest)
+          .all(),
+      ),
+    );
   });
 
   app.get("/api/notes", (c) => c.json(suggestions(db, c.req.query("prefix") ?? "")));
 
-  app.get("/api/bin", (c) => c.json(transactions(db, isNotNull(e.deletedAt)).orderBy(desc(e.deletedAt), desc(e.id)).all()));
+  app.get("/api/bin", (c) =>
+    c.json(transactions(db, isNotNull(e.deletedAt)).orderBy(desc(e.deletedAt), desc(e.id)).all()),
+  );
 
   app.post("/api/transactions", async (c) => {
     const now = clock().toISOString();
@@ -132,26 +179,42 @@ export function transactionRoutes(ctx: Ctx, value: Valuer) {
   app.put("/api/transactions/:id", async (c) => {
     const now = clock().toISOString();
     const id = Number(c.req.param("id"));
-    const old = db.select({ currency: e.currency, categoryId: e.categoryId }).from(e).where(and(eq(e.id, id), visible)).get();
+    const old = db
+      .select({ currency: e.currency, categoryId: e.categoryId })
+      .from(e)
+      .where(and(eq(e.id, id), visible))
+      .get();
     if (!old) return c.json({ error: "Not found" }, 404);
     const body = readTransaction(ctx, await json(c), { intent: "edit", old });
     if ("error" in body) return c.json(body, 400);
     const { tags, ...fields } = body;
-    db.update(e).set({ ...fields, updatedAt: now }).where(eq(e.id, id)).run();
+    db.update(e)
+      .set({ ...fields, updatedAt: now })
+      .where(eq(e.id, id))
+      .run();
     saveTags(db, id, tags);
     return c.json(await valued(id));
   });
 
   const setTransaction = async (c: Context, set: Partial<typeof e.$inferInsert>, where: SQL) => {
     const id = Number(c.req.param("id"));
-    return db.update(e).set(set).where(and(eq(e.id, id), where)).returning({ id: e.id }).get()
+    return db
+      .update(e)
+      .set(set)
+      .where(and(eq(e.id, id), where))
+      .returning({ id: e.id })
+      .get()
       ? c.json(await valued(id))
       : c.json({ error: "Not found" }, 404);
   };
 
   app.delete("/api/transactions/:id", (c) => {
     if (c.req.query("purge") === undefined) return setTransaction(c, { deletedAt: clock().toISOString() }, visible);
-    const row = db.delete(e).where(eq(e.id, Number(c.req.param("id")))).returning({ id: e.id }).get();
+    const row = db
+      .delete(e)
+      .where(eq(e.id, Number(c.req.param("id"))))
+      .returning({ id: e.id })
+      .get();
     return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   });
   app.post("/api/transactions/:id/confirm", (c) => setTransaction(c, { status: "normal" }, visible));

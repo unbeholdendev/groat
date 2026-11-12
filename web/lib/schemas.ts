@@ -11,7 +11,17 @@ export const transaction = z.object({
   categoryId: z.number().nullable(),
   tags: z.array(z.string()),
   baseAmount: z.number().nullish(),
-  conversion: z.object({ date: z.string(), from: z.object({ currency: z.string(), rate: z.number(), source: z.string(), rateDate: z.string().nullable() }).nullable(), to: z.object({ currency: z.string(), rate: z.number(), source: z.string(), rateDate: z.string().nullable() }).nullable() }).nullish(),
+  conversion: z
+    .object({
+      date: z.string(),
+      from: z
+        .object({ currency: z.string(), rate: z.number(), source: z.string(), rateDate: z.string().nullable() })
+        .nullable(),
+      to: z
+        .object({ currency: z.string(), rate: z.number(), source: z.string(), rateDate: z.string().nullable() })
+        .nullable(),
+    })
+    .nullish(),
   status: z.enum(["normal", "pending"]).optional(),
   recurringId: z.number().nullish(),
   addedBy: z.string().nullish(),
@@ -19,7 +29,15 @@ export const transaction = z.object({
 });
 export type Transaction = z.infer<typeof transaction>;
 
-export const category = z.object({ id: z.number(), name: z.string(), icon: z.string(), color: z.string(), parentId: z.number().nullable(), builtin: z.boolean(), kind });
+export const category = z.object({
+  id: z.number(),
+  name: z.string(),
+  icon: z.string(),
+  color: z.string(),
+  parentId: z.number().nullable(),
+  builtin: z.boolean(),
+  kind,
+});
 export type Category = z.infer<typeof category>;
 
 export const theme = z.enum(["system", "light", "dark"]);
@@ -43,14 +61,27 @@ export type Settings = z.infer<typeof settings> & z.infer<typeof aiStatus> & { a
 const choice = z.object({ models: z.array(z.string()), model: z.string().nullable(), error: z.string().optional() });
 export const models = z.object({ chat: choice, vision: choice, stt: choice }).nullable();
 export type Models = NonNullable<z.infer<typeof models>>;
-export const aiProvider = z.object({ baseUrl: z.string().nullable(), keyEnding: z.string().nullable(), sttBaseUrl: z.string().nullable(), sttKeyEnding: z.string().nullable() });
+export const aiProvider = z.object({
+  baseUrl: z.string().nullable(),
+  keyEnding: z.string().nullable(),
+  sttBaseUrl: z.string().nullable(),
+  sttKeyEnding: z.string().nullable(),
+});
 export type AiProvider = z.infer<typeof aiProvider>;
 
 const role = z.enum(["admin", "member"]);
 export const session = z.object({ setup: z.boolean(), user: z.object({ username: z.string(), role }).nullable() });
 export const member = z.object({ id: z.number(), username: z.string(), role });
 
-export const draft = z.object({ note: z.string(), amount: z.number(), currency: z.string(), date: z.string(), categoryId: z.number().nullable(), tags: z.array(z.string()), attachmentId: z.number().nullish() });
+export const draft = z.object({
+  note: z.string(),
+  amount: z.number(),
+  currency: z.string(),
+  date: z.string(),
+  categoryId: z.number().nullable(),
+  tags: z.array(z.string()),
+  attachmentId: z.number().nullish(),
+});
 export type Draft = z.infer<typeof draft>;
 const drafted = z.object({ draft });
 
@@ -69,12 +100,22 @@ export const chatMessage = z.object({
   tool_call_id: z.string().optional(),
 });
 export type ChatMessage = z.infer<typeof chatMessage>;
-export const chat = z.object({ id: z.number(), title: z.string(), running: z.boolean().optional(), messages: z.array(chatMessage).optional() });
+export const chat = z.object({
+  id: z.number(),
+  title: z.string(),
+  running: z.boolean().optional(),
+  messages: z.array(chatMessage).optional(),
+});
 export type Chat = z.infer<typeof chat>;
 
 export const tag = z.object({ id: z.number(), name: z.string() });
 
-export const apiToken = z.object({ id: z.number(), name: z.string(), createdAt: z.string(), lastUsedAt: z.string().nullable() });
+export const apiToken = z.object({
+  id: z.number(),
+  name: z.string(),
+  createdAt: z.string(),
+  lastUsedAt: z.string().nullable(),
+});
 export type ApiToken = z.infer<typeof apiToken>;
 
 export const template = transaction.omit({ date: true }).extend({
@@ -87,7 +128,12 @@ export const template = transaction.omit({ date: true }).extend({
 });
 export type Template = z.infer<typeof template>;
 
-export const suggestion = z.object({ note: z.string(), categoryId: z.number().nullable(), currency: z.string(), amount: z.number() });
+export const suggestion = z.object({
+  note: z.string(),
+  categoryId: z.number().nullable(),
+  currency: z.string(),
+  amount: z.number(),
+});
 export type Suggestion = z.infer<typeof suggestion>;
 
 const slice = z.object({ id: z.number(), name: z.string(), icon: z.string(), color: z.string(), total: z.number() });

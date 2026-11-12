@@ -10,7 +10,13 @@ import type { settings } from "../../lib/schemas";
 import { BaseCurrency } from "./base-currency";
 import { ThemeSection } from "./theme-section";
 
-export function SettingsForm(props: { settings: z.infer<typeof settings>; path: string; method: string; title: string; onSaved?: () => void }) {
+export function SettingsForm(props: {
+  settings: z.infer<typeof settings>;
+  path: string;
+  method: string;
+  title: string;
+  onSaved?: () => void;
+}) {
   const onboarding = !props.settings.onboarded;
   const [baseCurrency, setBase] = useState(props.settings.baseCurrency);
   const mutation = useSend("settings", props.onSaved);
@@ -19,7 +25,10 @@ export function SettingsForm(props: { settings: z.infer<typeof settings>; path: 
 
   function change(base: string) {
     setBase(base);
-    if (!onboarding) mutation.mutate([props.method, props.path, { baseCurrency: base }], { onError: () => setBase(props.settings.baseCurrency) });
+    if (!onboarding)
+      mutation.mutate([props.method, props.path, { baseCurrency: base }], {
+        onError: () => setBase(props.settings.baseCurrency),
+      });
   }
 
   function save(e: FormEvent) {
@@ -36,16 +45,39 @@ export function SettingsForm(props: { settings: z.infer<typeof settings>; path: 
       )}
       <h2 className={sectionHead}>Currencies</h2>
       <div className={panel}>
-        <fieldset disabled={mutation.isPending}><BaseCurrency value={baseCurrency} onChange={change} /></fieldset>
+        <fieldset disabled={mutation.isPending}>
+          <BaseCurrency value={baseCurrency} onChange={change} />
+        </fieldset>
       </div>
       {!onboarding && (
-        <fieldset disabled={mutation.isPending}><ThemeSection
-          value={props.settings.theme}
-          onChange={(theme) => (queryClient.setQueryData(["/api/settings"], { ...props.settings, theme }), mutation.mutate([props.method, props.path, { theme }], { onError: () => queryClient.setQueryData(["/api/settings"], props.settings) }))}
-        /></fieldset>
+        <fieldset disabled={mutation.isPending}>
+          <ThemeSection
+            value={props.settings.theme}
+            onChange={(theme) => (
+              queryClient.setQueryData(["/api/settings"], { ...props.settings, theme }),
+              mutation.mutate([props.method, props.path, { theme }], {
+                onError: () => queryClient.setQueryData(["/api/settings"], props.settings),
+              })
+            )}
+          />
+        </fieldset>
       )}
-      {!onboarding && <p className="mt-2 px-1 text-sm text-ink2">Totals use the base currency. Each expense keeps its original currency.</p>}
-      {!onboarding && <p role="status" className="mt-3 text-sm text-ink2">{mutation.isPaused ? "Waiting for a connection to save…" : mutation.isPending ? "Saving settings…" : mutation.isSuccess ? "Settings saved." : ""}</p>}
+      {!onboarding && (
+        <p className="mt-2 px-1 text-sm text-ink2">
+          Totals use the base currency. Each expense keeps its original currency.
+        </p>
+      )}
+      {!onboarding && (
+        <p role="status" className="mt-3 text-sm text-ink2">
+          {mutation.isPaused
+            ? "Waiting for a connection to save…"
+            : mutation.isPending
+              ? "Saving settings…"
+              : mutation.isSuccess
+                ? "Settings saved."
+                : ""}
+        </p>
+      )}
       <FormError error={mutation.error} className="mt-3 px-1" />
       {onboarding && (
         <Button variant="primary" type="submit" className="mt-7" disabled={mutation.isPending}>

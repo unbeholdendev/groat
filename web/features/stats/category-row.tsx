@@ -30,7 +30,11 @@ export function CategoryRow(props: {
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline gap-2">
           <span className="truncate font-medium">{c.name}</span>
-          {subs && <Chevron className={`size-3.5 shrink-0 self-center text-ink3 transition-transform ${open ? "rotate-180" : ""}`} />}
+          {subs && (
+            <Chevron
+              className={`size-3.5 shrink-0 self-center text-ink3 transition-transform ${open ? "rotate-180" : ""}`}
+            />
+          )}
           <span className="num ml-auto">{show(c.total)}</span>
           {props.compare && <Delta now={c.total} before={before?.total ?? 0} pad={pad} />}
         </span>
@@ -60,7 +64,9 @@ export function CategoryRow(props: {
                 <Tile category={tile(k.id) ?? k} small />
                 <span className="min-w-0 flex-1 truncate">{k.id === c.id ? `${k.name}, general` : k.name}</span>
                 <span className="num">{show(k.total)}</span>
-                {props.compare && <Delta now={k.total} before={before?.children.find((b) => b.id === k.id)?.total ?? 0} pad={pad} />}
+                {props.compare && (
+                  <Delta now={k.total} before={before?.children.find((b) => b.id === k.id)?.total ?? 0} pad={pad} />
+                )}
               </>
             );
             return (

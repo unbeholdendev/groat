@@ -11,7 +11,14 @@ export function Filters() {
   const settings = useSettings()!;
   const categories = useCategories();
   const filterInput = (key: keyof typeof filter, label: string, type = "text") => (
-    <Input className="min-w-0 w-full" type={type} aria-label={label} placeholder={label} value={filter[key] ?? ""} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} />
+    <Input
+      className="min-w-0 w-full"
+      type={type}
+      aria-label={label}
+      placeholder={label}
+      value={filter[key] ?? ""}
+      onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}
+    />
   );
   return (
     <div className={`rise mt-4 grid grid-cols-2 gap-2 p-3 ${panel}`}>
@@ -22,11 +29,21 @@ export function Filters() {
       <Field label="To" className="col-span-2 min-w-0 min-[380px]:col-span-1">
         {filterInput("to", "To", "date")}
       </Field>
-      <Select className="col-span-2 min-w-0" aria-label="Category" value={filter.category ?? ""} onChange={(e) => setFilter({ ...filter, category: e.target.value })}>
+      <Select
+        className="col-span-2 min-w-0"
+        aria-label="Category"
+        value={filter.category ?? ""}
+        onChange={(e) => setFilter({ ...filter, category: e.target.value })}
+      >
         <option value="">All categories</option>
         <CategoryOptions categories={categories} />
       </Select>
-      <Select className="min-w-0" aria-label="Currency" value={filter.currency ?? ""} onChange={(e) => setFilter({ ...filter, currency: e.target.value })}>
+      <Select
+        className="min-w-0"
+        aria-label="Currency"
+        value={filter.currency ?? ""}
+        onChange={(e) => setFilter({ ...filter, currency: e.target.value })}
+      >
         <option value="">All currencies</option>
         {byRecent(settings.recentCurrencies).map((c) => (
           <option key={c}>{c}</option>
@@ -41,7 +58,11 @@ export function Filters() {
         ) : (
           <span />
         )}
-        <a className="hit text-accent" href={`/api/export?${query}${kind ? `&kind=${kind}` : ""}`} download="expenses.csv">
+        <a
+          className="hit text-accent"
+          href={`/api/export?${query}${kind ? `&kind=${kind}` : ""}`}
+          download="expenses.csv"
+        >
           Export CSV
         </a>
       </div>

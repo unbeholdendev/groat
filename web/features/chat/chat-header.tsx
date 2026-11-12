@@ -13,7 +13,12 @@ export function ChatHeader({ back, onBack, onDelete }: { back: string; onBack: (
       </button>
       {onDelete &&
         (confirming ? (
-          <Confirm ask="Delete this chat?" yes="Delete" onYes={() => (setConfirming(false), onDelete())} onNo={() => setConfirming(false)} />
+          <Confirm
+            ask="Delete this chat?"
+            yes="Delete"
+            onYes={() => (setConfirming(false), onDelete())}
+            onNo={() => setConfirming(false)}
+          />
         ) : (
           <Button variant="link" tone="up" className="text-sm" onClick={() => setConfirming(true)}>
             Delete

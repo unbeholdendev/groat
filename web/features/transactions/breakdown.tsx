@@ -28,14 +28,28 @@ export function Breakdown({ unit, end }: { unit: Unit; end?: Date }) {
           const known = categories.find((k) => k.id === c.id);
           return (
             <li key={c.id} className={divide}>
-              <Link to="/" search={{ category: String(c.id), from: s.range[0], to: s.range[1] }} className="press flex items-center gap-3 px-4 py-3 hover:bg-surface2">
+              <Link
+                to="/"
+                search={{ category: String(c.id), from: s.range[0], to: s.range[1] }}
+                className="press flex items-center gap-3 px-4 py-3 hover:bg-surface2"
+              >
                 <Tile category={known ?? c} small />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2 text-[13px]">
                     <span className="truncate font-medium">{c.name}</span>
-                    <span className="num ml-auto">{show === "Amount" ? money(c.total, now.baseCurrency, unit) : `${Math.round((c.total / now.total) * 100)}%`}</span>
+                    <span className="num ml-auto">
+                      {show === "Amount"
+                        ? money(c.total, now.baseCurrency, unit)
+                        : `${Math.round((c.total / now.total) * 100)}%`}
+                    </span>
                   </span>
-                  <ShareBar className="mt-1.5 block h-1" share={c.total / now.total} color={c.color} builtin={known?.builtin} index={i} />
+                  <ShareBar
+                    className="mt-1.5 block h-1"
+                    share={c.total / now.total}
+                    color={c.color}
+                    builtin={known?.builtin}
+                    index={i}
+                  />
                 </span>
               </Link>
             </li>

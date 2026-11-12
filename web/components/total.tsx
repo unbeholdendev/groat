@@ -15,7 +15,8 @@ export const Pill = ({ d }: { d: NonNullable<ReturnType<typeof change>> }) => (
   </span>
 );
 
-export const numeralSize = (length: number) => (length > 14 ? "text-[28px]" : length > 12 ? "text-[34px]" : length > 9 ? "text-[44px]" : "text-[60px]");
+export const numeralSize = (length: number) =>
+  length > 14 ? "text-[28px]" : length > 12 ? "text-[34px]" : length > 9 ? "text-[44px]" : "text-[60px]";
 
 let counted = false;
 
@@ -25,7 +26,8 @@ function useCountUp(to: number) {
   useEffect(() => {
     counted = true;
     const start = from.current;
-    if (start === to || matchMedia("(prefers-reduced-motion: reduce)").matches) return void setShown((from.current = to));
+    if (start === to || matchMedia("(prefers-reduced-motion: reduce)").matches)
+      return void setShown((from.current = to));
     const t0 = performance.now();
     let frame = 0;
     const tick = (t: number) => {
@@ -40,11 +42,23 @@ function useCountUp(to: number) {
   return shown;
 }
 
-export function Total({ amount, currency, unit, className = "" }: { amount: number; currency: string; unit?: Unit; className?: string }) {
+export function Total({
+  amount,
+  currency,
+  unit,
+  className = "",
+}: {
+  amount: number;
+  currency: string;
+  unit?: Unit;
+  className?: string;
+}) {
   const final = money(amount, currency, unit);
   const [whole, part] = money(useCountUp(amount), currency, unit).split(/(?=\.\d+$)/);
   return (
-    <b className={`denomination font-bold tracking-[-0.02em] whitespace-nowrap ${numeralSize(final.length)} leading-none ${className}`}>
+    <b
+      className={`denomination font-bold tracking-[-0.02em] whitespace-nowrap ${numeralSize(final.length)} leading-none ${className}`}
+    >
       <span className="sr-only">{final}</span>
       <span aria-hidden>
         {whole}

@@ -23,18 +23,50 @@ const HeroError = ({ id, message }: { id: string; message?: string }) =>
     </p>
   ) : null;
 
-export function FormHeader({ form, title, submit, pending, editing, row, onCancel }: { form: TransactionFormApi; title: string; submit: string; pending: boolean; editing: boolean; row?: Transaction; onCancel: () => void }) {
+export function FormHeader({
+  form,
+  title,
+  submit,
+  pending,
+  editing,
+  row,
+  onCancel,
+}: {
+  form: TransactionFormApi;
+  title: string;
+  submit: string;
+  pending: boolean;
+  editing: boolean;
+  row?: Transaction;
+  onCancel: () => void;
+}) {
   const settings = useSettings()!;
   const [unit, setUnit] = useContext(UnitContext);
-  const { register, watch, getValues, setValue, formState: { errors } } = form;
+  const {
+    register,
+    watch,
+    getValues,
+    setValue,
+    formState: { errors },
+  } = form;
   const [note, amount, currency] = watch(["note", "amount", "currency"]);
-  const suggestions = useApi(z.array(suggestion), ["/api/notes?prefix=", encodeURIComponent(note)], { enabled: !!note }).data ?? [];
-  const symbol = currency === "BTC" ? "" : new Intl.NumberFormat("en-GB", { style: "currency", currency }).formatToParts(0).find((p) => p.type === "currency")?.value;
+  const suggestions =
+    useApi(z.array(suggestion), ["/api/notes?prefix=", encodeURIComponent(note)], { enabled: !!note }).data ?? [];
+  const symbol =
+    currency === "BTC"
+      ? ""
+      : new Intl.NumberFormat("en-GB", { style: "currency", currency })
+          .formatToParts(0)
+          .find((p) => p.type === "currency")?.value;
   const ids = { amount: useId(), note: useId() };
   const size = numeralSize((symbol ?? "").length + (amount || "0.00").length);
-  const invalid = (key: "amount" | "note") => (errors[key] ? { "aria-invalid": true, "aria-describedby": ids[key] } : {});
+  const invalid = (key: "amount" | "note") =>
+    errors[key] ? { "aria-invalid": true, "aria-describedby": ids[key] } : {};
 
-  const rated = row?.baseAmount && row.currency === currency && currency !== settings.baseCurrency ? rate(row.amount, currency, row.baseAmount, settings.baseCurrency, unit) : null;
+  const rated =
+    row?.baseAmount && row.currency === currency && currency !== settings.baseCurrency
+      ? rate(row.amount, currency, row.baseAmount, settings.baseCurrency, unit)
+      : null;
   const switchable = currency === "BTC" || settings.baseCurrency === "BTC";
 
   function switchUnit(next: Unit) {
@@ -68,23 +100,28 @@ export function FormHeader({ form, title, submit, pending, editing, row, onCance
         </button>
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-2">
-        <div className={`flex min-w-0 flex-1 items-center gap-2 ${(symbol ?? "").length + amount.length > 8 ? "max-[400px]:basis-full" : ""}`}>
-        {symbol && (
-          <span aria-hidden className={`-mr-2 ${size} leading-none font-semibold tracking-[-0.04em] text-ink3`}>
-            {symbol}
-          </span>
-        )}
-        <input
-          aria-label="Amount"
-          className={`w-0 min-w-0 flex-1 bg-transparent ${size} leading-none font-semibold tracking-[-0.04em] text-ink outline-none placeholder:text-ink3/50`}
-          placeholder="0.00"
-          inputMode="decimal"
-          autoFocus={!!note && !amount}
-          {...invalid("amount")}
-          {...register("amount", { onBlur: (e) => showResult(e.target.value) })}
-        />
+        <div
+          className={`flex min-w-0 flex-1 items-center gap-2 ${(symbol ?? "").length + amount.length > 8 ? "max-[400px]:basis-full" : ""}`}
+        >
+          {symbol && (
+            <span aria-hidden className={`-mr-2 ${size} leading-none font-semibold tracking-[-0.04em] text-ink3`}>
+              {symbol}
+            </span>
+          )}
+          <input
+            aria-label="Amount"
+            className={`w-0 min-w-0 flex-1 bg-transparent ${size} leading-none font-semibold tracking-[-0.04em] text-ink outline-none placeholder:text-ink3/50`}
+            placeholder="0.00"
+            inputMode="decimal"
+            autoFocus={!!note && !amount}
+            {...invalid("amount")}
+            {...register("amount", { onBlur: (e) => showResult(e.target.value) })}
+          />
         </div>
-        <Picker className={`${chip} relative shrink-0 gap-0.5`} chevron={<Chevron className="size-3 stroke-2 text-ink3" />}>
+        <Picker
+          className={`${chip} relative shrink-0 gap-0.5`}
+          chevron={<Chevron className="size-3 stroke-2 text-ink3" />}
+        >
           {currency}
           <CurrencySelect recent={settings.recentCurrencies} className={overlay} {...register("currency")} />
         </Picker>

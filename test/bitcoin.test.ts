@@ -13,7 +13,12 @@ async function onboarded(baseCurrency: string) {
 test("0.001 BTC and 100000 sats store the same value", async () => {
   const { call } = await onboarded("BTC");
   const btc = await call("POST", "/api/transactions", { note: "Coffee", amount: "0.001", currency: "BTC" });
-  const sats = await call("POST", "/api/transactions", { note: "Coffee", amount: "100000", currency: "BTC", unit: "sats" });
+  const sats = await call("POST", "/api/transactions", {
+    note: "Coffee",
+    amount: "100000",
+    currency: "BTC",
+    unit: "sats",
+  });
   expect(btc.body.amount).toBe(100000);
   expect(sats.body.amount).toBe(100000);
 });
@@ -28,8 +33,18 @@ test("BTC amounts keep every sat and reject more than 8 decimals or fractional s
 
 test("a BTC expense shows its GBP value from mempool.space, fetched once", async () => {
   const { call, fetches } = await onboarded("GBP");
-  await call("POST", "/api/transactions", { note: "Coffee", amount: "100000", currency: "BTC", unit: "sats", date: "2026-10-02" });
-  expect((await call("GET", "/api/transactions")).body[0]).toMatchObject({ amount: 100000, currency: "BTC", baseAmount: 7600 });
+  await call("POST", "/api/transactions", {
+    note: "Coffee",
+    amount: "100000",
+    currency: "BTC",
+    unit: "sats",
+    date: "2026-10-02",
+  });
+  expect((await call("GET", "/api/transactions")).body[0]).toMatchObject({
+    amount: 100000,
+    currency: "BTC",
+    baseAmount: 7600,
+  });
   const before = fetches.length;
   await call("GET", "/api/transactions");
   expect(fetches.length).toBe(before);

@@ -37,25 +37,35 @@ export function Month({ newest }: { newest: number }) {
 
   return (
     <>
-      <MonthHeader rows={rows} showFilters={showFilters} onFilters={() => {
-        if (filterPanel === "unopened" && !filtered) {
-          const past = new Date();
-          past.setDate(past.getDate() - 30);
-          void setFilter({ ...filter, from: filter.from || iso(past), to: filter.to || today() });
-        }
-        setFilterPanel(showFilters ? "closed" : "open");
-      }} />
+      <MonthHeader
+        rows={rows}
+        showFilters={showFilters}
+        onFilters={() => {
+          if (filterPanel === "unopened" && !filtered) {
+            const past = new Date();
+            past.setDate(past.getDate() - 30);
+            void setFilter({ ...filter, from: filter.from || iso(past), to: filter.to || today() });
+          }
+          setFilterPanel(showFilters ? "closed" : "open");
+        }}
+      />
       {!filtered && <Breakdown unit={unit} end={month ? end : undefined} />}
       <div ref={onHost} className="my-6" />
       {showFilters && <Filters />}
       {income && <KindFilter />}
       <PendingList />
-      {query.isPending && <p role="status" className="mt-6 text-ink2">Loading expenses…</p>}
+      {query.isPending && (
+        <p role="status" className="mt-6 text-ink2">
+          Loading expenses…
+        </p>
+      )}
       <FormError error={query.error} className="mt-4" />
       {query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}
       {listed && days.size === 0 && (
         <div className={`mt-6 px-6 py-9 text-center ${panel}`}>
-          <p className="font-semibold">{filtered ? "Nothing matches" : month ? `Nothing in ${label}` : "Nothing this month yet"}</p>
+          <p className="font-semibold">
+            {filtered ? "Nothing matches" : month ? `Nothing in ${label}` : "Nothing this month yet"}
+          </p>
           <p className="mt-1 text-[13px] text-ink3">
             {filtered ? (
               <Button variant="link" tone="accent" onClick={() => setFilter({})}>

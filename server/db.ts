@@ -20,7 +20,13 @@ const seeded = <T>(row: T | undefined) => {
 };
 
 export const builtin = (db: Db, kind: Kind) =>
-  seeded(db.select({ id: t.categories.id }).from(t.categories).where(and(eq(t.categories.builtin, true), eq(t.categories.kind, kind))).get()).id;
+  seeded(
+    db
+      .select({ id: t.categories.id })
+      .from(t.categories)
+      .where(and(eq(t.categories.builtin, true), eq(t.categories.kind, kind)))
+      .get(),
+  ).id;
 
 export function settings(db: Db) {
   const { baseCurrency, theme, onboarded } = seeded(db.select().from(t.settings).get());
@@ -38,7 +44,11 @@ export function settings(db: Db) {
     .orderBy(desc(max(t.transactions.id)))
     .all();
   const earning = db.select({ id: t.categories.id }).from(t.categories).where(eq(t.categories.kind, "income"));
-  const income = !!db.select({ id: t.transactions.id }).from(t.transactions).where(and(visible, inArray(t.transactions.categoryId, earning))).get();
+  const income = !!db
+    .select({ id: t.transactions.id })
+    .from(t.transactions)
+    .where(and(visible, inArray(t.transactions.categoryId, earning)))
+    .get();
   return {
     baseCurrency,
     recentCurrencies: [...new Set([...used.map((u) => u.currency), baseCurrency])],

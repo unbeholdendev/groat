@@ -47,9 +47,13 @@ test("changing base currency re-denominates history, fetching only the new base"
   await call("GET", "/api/transactions");
   const before = fetches.length;
   await call("PUT", "/api/settings", { baseCurrency: "EUR" });
-  expect((await call("GET", "/api/transactions")).body.map((e: { baseAmount: number }) => e.baseAmount)).toEqual([1000, 600]);
+  expect((await call("GET", "/api/transactions")).body.map((e: { baseAmount: number }) => e.baseAmount)).toEqual([
+    1000, 600,
+  ]);
   await call("PUT", "/api/settings", { baseCurrency: "JPY" });
-  expect((await call("GET", "/api/transactions")).body.map((e: { baseAmount: number }) => e.baseAmount)).toEqual([2000, 1000]);
+  expect((await call("GET", "/api/transactions")).body.map((e: { baseAmount: number }) => e.baseAmount)).toEqual([
+    2000, 1000,
+  ]);
   expect(fetches.slice(before)).toEqual([
     "https://api.frankfurter.dev/v2/rates?date=2026-10-01&base=USD&quotes=EUR",
     "https://api.frankfurter.dev/v2/rates?date=2026-10-02&base=USD&quotes=JPY",
@@ -58,12 +62,25 @@ test("changing base currency re-denominates history, fetching only the new base"
 
 test("zero-decimal currencies convert in whole units", async () => {
   const { call } = await onboarded("GBP");
-  const ramen = await call("POST", "/api/transactions", { note: "Ramen", amount: "1600", currency: "JPY", date: "2026-10-02" });
+  const ramen = await call("POST", "/api/transactions", {
+    note: "Ramen",
+    amount: "1600",
+    currency: "JPY",
+    date: "2026-10-02",
+  });
   expect(ramen.body.amount).toBe(1600);
-  expect((await call("GET", "/api/transactions")).body[0]).toMatchObject({ amount: 1600, currency: "JPY", baseAmount: 760 });
+  expect((await call("GET", "/api/transactions")).body[0]).toMatchObject({
+    amount: 1600,
+    currency: "JPY",
+    baseAmount: 760,
+  });
   await call("PUT", "/api/settings", { baseCurrency: "JPY" });
   await call("POST", "/api/transactions", { note: "Tea", amount: "2.50", currency: "GBP", date: "2026-10-01" });
-  expect((await call("GET", "/api/transactions")).body[1]).toMatchObject({ amount: 250, currency: "GBP", baseAmount: 521 });
+  expect((await call("GET", "/api/transactions")).body[1]).toMatchObject({
+    amount: 250,
+    currency: "GBP",
+    baseAmount: 521,
+  });
 });
 
 test("today's rates are reused for ten minutes, never stored", async () => {
@@ -72,7 +89,9 @@ test("today's rates are reused for ten minutes, never stored", async () => {
   const { call, fetches, clock, db } = await onboarded("GBP", (url) => fiat(url) ?? btc(url));
   await call("POST", "/api/transactions", { note: "a", amount: "10", currency: "EUR", date: "2026-10-10" });
   await call("POST", "/api/transactions", { note: "b", amount: "0.001", currency: "BTC", date: "2026-10-10" });
-  expect((await call("GET", "/api/transactions")).body.map((e: { baseAmount: number }) => e.baseAmount)).toEqual([3800, 950]);
+  expect((await call("GET", "/api/transactions")).body.map((e: { baseAmount: number }) => e.baseAmount)).toEqual([
+    3800, 950,
+  ]);
   await call("GET", "/api/stats?from=2026-10-01&to=2026-10-10&group=month");
   expect(fetches.length).toBe(2);
   expect(db.query("SELECT * FROM rates WHERE date = '2026-10-10'").all()).toEqual([]);
@@ -94,28 +113,56 @@ test("a failed fetch is not retried within ten minutes; restart also retries", a
 
 test("adding or editing a foreign expense answers with its base value", async () => {
   const { call } = await onboarded("GBP");
-  const added = await call("POST", "/api/transactions", { note: "Lunch", amount: "10.00", currency: "EUR", date: "2026-10-02" });
+  const added = await call("POST", "/api/transactions", {
+    note: "Lunch",
+    amount: "10.00",
+    currency: "EUR",
+    date: "2026-10-02",
+  });
   expect(added.body.baseAmount).toBe(950);
-  const edited = await call("PUT", `/api/transactions/${added.body.id}`, { note: "Lunch", amount: "20.00", currency: "EUR", date: "2026-10-02" });
+  const edited = await call("PUT", `/api/transactions/${added.body.id}`, {
+    note: "Lunch",
+    amount: "20.00",
+    currency: "EUR",
+    date: "2026-10-02",
+  });
   expect(edited.body.baseAmount).toBe(1900);
 });
 
 test("an unreachable rate source does not hold up saving", async () => {
   const hang = (url: URL, init?: RequestInit) =>
-    url.host === "mempool.space" ? new Promise<Response>((_, reject) => init?.signal?.addEventListener("abort", () => reject(init.signal?.reason))) : undefined;
+    url.host === "mempool.space"
+      ? new Promise<Response>((_, reject) => init?.signal?.addEventListener("abort", () => reject(init.signal?.reason)))
+      : undefined;
   const { call } = await onboarded("GBP", hang);
-  const saved = await call("POST", "/api/transactions", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2026-10-02" });
+  const saved = await call("POST", "/api/transactions", {
+    note: "Pizza",
+    amount: "0.0001",
+    currency: "BTC",
+    date: "2026-10-02",
+  });
   expect(saved).toMatchObject({ status: 201, body: { baseAmount: null } });
 });
 
 test("BTC falls back to Coinbase when mempool.space has no price, and only then", async () => {
-  const coinbase = (url: URL) => (url.host === "api.coinbase.com" ? Response.json({ data: { amount: "100000.00", base: "BTC", currency: "USD" } }) : undefined);
+  const coinbase = (url: URL) =>
+    url.host === "api.coinbase.com"
+      ? Response.json({ data: { amount: "100000.00", base: "BTC", currency: "USD" } })
+      : undefined;
   const down = await onboarded("GBP", (url) => frankfurter(rates)(url) ?? coinbase(url));
-  const pizza = await down.call("POST", "/api/transactions", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2026-10-02" });
+  const pizza = await down.call("POST", "/api/transactions", {
+    note: "Pizza",
+    amount: "0.0001",
+    currency: "BTC",
+    date: "2026-10-02",
+  });
   expect(pizza.body.baseAmount).toBe(760);
   expect(down.fetches).toContain("https://api.coinbase.com/v2/prices/BTC-USD/spot?date=2026-10-02");
 
-  const up = await onboarded("GBP", (url) => frankfurter(rates)(url) ?? mempool({ "2026-10-02": 100000 })(url) ?? coinbase(url));
+  const up = await onboarded(
+    "GBP",
+    (url) => frankfurter(rates)(url) ?? mempool({ "2026-10-02": 100000 })(url) ?? coinbase(url),
+  );
   await up.call("POST", "/api/transactions", { note: "Pizza", amount: "0.0001", currency: "BTC", date: "2026-10-02" });
   expect(up.fetches.some((f) => f.includes("coinbase"))).toBe(false);
 });
@@ -143,7 +190,7 @@ test("a missing rate for today is not refetched while another currency is", asyn
 
 test("failed historical rates recover after ten minutes without restarting", async () => {
   let up = false;
-  const t = await onboarded("USD", url => up ? frankfurter(rates)(url) : new Response("down", { status: 503 }));
+  const t = await onboarded("USD", (url) => (up ? frankfurter(rates)(url) : new Response("down", { status: 503 })));
   await t.call("POST", "/api/transactions", { note: "a", amount: "10", currency: "EUR", date: "2026-10-02" });
   up = true;
   t.clock.now = new Date("2026-10-10T12:11:00Z");
@@ -154,14 +201,23 @@ test("weekend rate provenance survives restart", async () => {
   const t = await onboarded("USD");
   await t.call("POST", "/api/transactions", { note: "weekend", amount: "10", currency: "EUR", date: "2026-10-04" });
   t.restart();
-  expect((await t.call("GET", "/api/transactions")).body[0].conversion.from).toMatchObject({ rateDate: "2026-10-02", source: "frankfurter" });
+  expect((await t.call("GET", "/api/transactions")).body[0].conversion.from).toMatchObject({
+    rateDate: "2026-10-02",
+    source: "frankfurter",
+  });
 });
 
 test("overflowing conversions stay incomplete instead of turning into zero", async () => {
-  for (const [base, quotes] of [["USD", { EUR: 1e-310 }], ["GBP", { EUR: 2e306, GBP: 1.5e303 }]] as const) {
+  for (const [base, quotes] of [
+    ["USD", { EUR: 1e-310 }],
+    ["GBP", { EUR: 2e306, GBP: 1.5e303 }],
+  ] as const) {
     const t = await onboarded(base, frankfurter({ "2026-10-02": quotes }));
     await t.call("POST", "/api/transactions", { note: "Dinner", amount: "10", currency: "EUR", date: "2026-10-02" });
     expect((await t.call("GET", "/api/transactions")).body[0].baseAmount).toBeNull();
-    expect((await t.call("GET", "/api/stats?from=2026-10-02&to=2026-10-02")).body).toMatchObject({ total: 0, unconverted: 1 });
+    expect((await t.call("GET", "/api/stats?from=2026-10-02&to=2026-10-02")).body).toMatchObject({
+      total: 0,
+      unconverted: 1,
+    });
   }
 });

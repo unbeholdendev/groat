@@ -11,5 +11,9 @@ const tones = { ink2: "text-ink2", up: "text-up", accent: "text-accent" };
 export type ButtonProps = ComponentProps<"button"> & { variant?: keyof typeof variants; tone?: keyof typeof tones };
 
 export const Button = ({ variant = "text", tone = "ink2", type = "button", className = "", ...props }: ButtonProps) => (
-  <button type={type} className={`${variants[variant]} ${variant === "text" || variant === "link" ? tones[tone] : ""} ${className}`} {...props} />
+  <button
+    type={type}
+    className={`${variants[variant]} ${variant === "text" || variant === "link" ? tones[tone] : ""} ${className}`}
+    {...props}
+  />
 );

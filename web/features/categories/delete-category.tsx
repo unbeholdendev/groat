@@ -6,7 +6,12 @@ import { useApi } from "../../lib/api";
 import { type Category, transaction } from "../../lib/schemas";
 import { Button } from "../../components/button";
 
-export function DeleteCategory(props: { category: Category; categories: Category[]; onKeep: () => void; onDelete: (moveTo: string) => void }) {
+export function DeleteCategory(props: {
+  category: Category;
+  categories: Category[];
+  onKeep: () => void;
+  onDelete: (moveTo: string) => void;
+}) {
   const { category: c, categories } = props;
   const [moveTo, setMoveTo] = useState("");
   const affected = useApi(z.array(transaction), ["/api/transactions?", `category=${c.id}`]).data;

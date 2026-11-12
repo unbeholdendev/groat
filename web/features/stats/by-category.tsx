@@ -17,7 +17,10 @@ export function ByCategory(props: {
   const { now, prev, vs } = props;
   const tile = (id: number) => props.categories.find((c) => c.id === id);
   const compare = !now.unconverted && !prev.unconverted;
-  const fresh = compare && prev.total ? now.categories.filter((c) => !prev.categories.find((r) => r.id === c.id)?.total && !tile(c.id)?.builtin) : [];
+  const fresh =
+    compare && prev.total
+      ? now.categories.filter((c) => !prev.categories.find((r) => r.id === c.id)?.total && !tile(c.id)?.builtin)
+      : [];
   return (
     <>
       <Head title="By category" vs={compare ? vs : null} />

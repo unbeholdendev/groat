@@ -32,7 +32,12 @@ export type Deps = {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 };
 
-export type Ctx = Omit<Deps, "db"> & { db: Db; ai: Ai; publishChanges: MiddlewareHandler; broadcast: (message: object) => void };
+export type Ctx = Omit<Deps, "db"> & {
+  db: Db;
+  ai: Ai;
+  publishChanges: MiddlewareHandler;
+  broadcast: (message: object) => void;
+};
 
 export function createApp(deps: Deps) {
   deps = { ...deps, fetch: loggedFetch(deps.fetch) };
@@ -49,13 +54,20 @@ export function createApp(deps: Deps) {
   }
   const subscription = chatgpt(deps, deps.credentials);
   if (!deps.db.query("SELECT 1 FROM users LIMIT 1").get()) subscription.reset();
-  subscription.adopt(deps.db.query<{ id: number }, []>("SELECT id FROM users WHERE deleted_at IS NULL ORDER BY role = 'admin' DESC, id").all().map((u) => u.id));
+  subscription.adopt(
+    deps.db
+      .query<{ id: number }, []>("SELECT id FROM users WHERE deleted_at IS NULL ORDER BY role = 'admin' DESC, id")
+      .all()
+      .map((u) => u.id),
+  );
   const ai = aiModels(db, deps.fetch, subscription);
   const live = liveUpdates(deps.db, deps.clock);
   const ctx = { ...deps, db, ai, publishChanges: live.publishChanges, broadcast: live.broadcast };
   const app = new Hono<Env>();
   app.use("*", requestLogging);
-  app.onError((error, c) => error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500));
+  app.onError((error, c) =>
+    error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500),
+  );
   const value = valuer(ctx);
   const recurring = recurringRoutes(ctx);
   recurring.generate();
@@ -92,5 +104,11 @@ export function createApp(deps: Deps) {
   app.route("/api/chats", chats(ctx, value));
   app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
-  return Object.assign(app, { generate: () => { recurring.generate(); live.publish(["recurring", "transactions"]); }, close: live.close });
+  return Object.assign(app, {
+    generate: () => {
+      recurring.generate();
+      live.publish(["recurring", "transactions"]);
+    },
+    close: live.close,
+  });
 }

@@ -4,7 +4,9 @@ import type { Ctx } from "./app";
 import { extract } from "./draft";
 import { valid } from "./request";
 
-const recording = z.object({ audio: z.file("audio is required").min(1, "audio is required").max(25_000_000, "recording is too long") });
+const recording = z.object({
+  audio: z.file("audio is required").min(1, "audio is required").max(25_000_000, "recording is too long"),
+});
 
 export function voiceRoutes(ctx: Ctx) {
   const app = new Hono();

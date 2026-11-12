@@ -21,7 +21,9 @@ export function Recurring({ onEdit }: { onEdit: (t: Template) => void }) {
   const mutation = useSend("recurring");
   const act = (t: Template, action: string) => {
     setStopping(null);
-    mutation.mutate(action === "DELETE" ? ["DELETE", `/api/recurring/${t.id}`] : ["POST", `/api/recurring/${t.id}/${action}`]);
+    mutation.mutate(
+      action === "DELETE" ? ["DELETE", `/api/recurring/${t.id}`] : ["POST", `/api/recurring/${t.id}/${action}`],
+    );
   };
   return (
     <>
@@ -31,7 +33,9 @@ export function Recurring({ onEdit }: { onEdit: (t: Template) => void }) {
       <FormError error={query.error} />
       {query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}
       <FormError error={mutation.error} className="mt-4" />
-      {query.data && templates.length === 0 && <p className="mt-4 text-ink3">Nothing repeats yet. Open the full form and set Repeat to add one.</p>}
+      {query.data && templates.length === 0 && (
+        <p className="mt-4 text-ink3">Nothing repeats yet. Open the full form and set Repeat to add one.</p>
+      )}
       {templates.length > 0 && (
         <ul className={`mt-4 ${panel}`}>
           {templates.map((t) => (
@@ -40,12 +44,18 @@ export function Recurring({ onEdit }: { onEdit: (t: Template) => void }) {
               <button className="min-w-0 flex-1 text-left" onClick={() => onEdit(t)}>
                 <span className="block truncate font-medium">{t.note}</span>
                 <span className="mt-0.5 block truncate text-xs font-medium text-ink3">
-                  <span className="num">{money(t.amount, t.currency, unit)}</span> every {t.every > 1 ? `${t.every} ${t.period}s` : t.period}
+                  <span className="num">{money(t.amount, t.currency, unit)}</span> every{" "}
+                  {t.every > 1 ? `${t.every} ${t.period}s` : t.period}
                   {t.paused && " · paused"}
                 </span>
               </button>
               {stopping === t.id ? (
-                <Confirm ask="Stop? Past expenses stay." yes="Stop" onYes={() => act(t, "DELETE")} onNo={() => setStopping(null)} />
+                <Confirm
+                  ask="Stop? Past expenses stay."
+                  yes="Stop"
+                  onYes={() => act(t, "DELETE")}
+                  onNo={() => setStopping(null)}
+                />
               ) : (
                 <span className="flex gap-1 text-[13px] font-medium">
                   <Button onClick={() => act(t, t.paused ? "resume" : "pause")}>{t.paused ? "Resume" : "Pause"}</Button>

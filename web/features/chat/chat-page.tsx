@@ -15,12 +15,16 @@ export function ChatPage({ openId }: { openId: number | null }) {
   const { history } = useRouter();
   const canGoBack = useCanGoBack();
   const { fromList } = useLocation().state;
-  const back = () => (openId && !fromList ? navigate({ to: "/chat", replace: true }) : canGoBack ? history.back() : navigate({ to: "/" }));
+  const back = () =>
+    openId && !fromList ? navigate({ to: "/chat", replace: true }) : canGoBack ? history.back() : navigate({ to: "/" });
   const chats = useApi(z.array(chatSchema), ["/api/chats"], { throwOnError: true }).data ?? [];
   const { data: chat, error } = useApi(chatSchema, [`/api/chats/${openId}`], { enabled: openId !== null });
   const open = openId === null ? null : chat;
   const missing = !!openId && !!error && "status" in error && error.status === 404;
-  const asking = useMutationState({ filters: { mutationKey: ["ask", openId], status: "pending" }, select: (m) => (typeof m.state.variables === "string" ? m.state.variables : undefined) })[0];
+  const asking = useMutationState({
+    filters: { mutationKey: ["ask", openId], status: "pending" },
+    select: (m) => (typeof m.state.variables === "string" ? m.state.variables : undefined),
+  })[0];
   const messages = [...(open?.messages ?? []), ...(asking ? [{ role: "user", content: asking }] : [])];
   const streamed = useStreamed(open?.id, open?.messages?.length ?? 0);
   useEffect(() => {
@@ -30,18 +34,28 @@ export function ChatPage({ openId }: { openId: number | null }) {
   const stopping = useMutation({ mutationFn: (id: number) => send("POST", `/api/chats/${id}/stop`) });
   const deleting = useMutation({
     mutationFn: (id: number) => send("DELETE", `/api/chats/${id}`),
-    onSuccess: (_, id, __, { client }) => client.setQueryData<Chat[]>(["/api/chats"], (rows) => rows?.filter((c) => c.id !== id)),
+    onSuccess: (_, id, __, { client }) =>
+      client.setQueryData<Chat[]>(["/api/chats"], (rows) => rows?.filter((c) => c.id !== id)),
   });
 
   return (
     <div className="grid gap-5">
-      <ChatHeader back={openId ? "Chats" : "Back"} onBack={back} onDelete={open ? () => (back(), deleting.mutate(open.id)) : undefined} />
+      <ChatHeader
+        back={openId ? "Chats" : "Back"}
+        onBack={back}
+        onDelete={open ? () => (back(), deleting.mutate(open.id)) : undefined}
+      />
       <FormError error={deleting.error ?? stopping.error ?? (missing ? null : error)} />
       <div>
         <h1 className="text-display font-bold text-balance">{missing ? "Chat not found" : (open?.title ?? "Chats")}</h1>
         {missing && <p className="mt-2 text-ink2">It may have been deleted.</p>}
       </div>
-      {!openId && <ChatList chats={chats} onOpen={(id) => navigate({ to: "/chat", search: { id: String(id) }, state: { fromList: true } })} />}
+      {!openId && (
+        <ChatList
+          chats={chats}
+          onOpen={(id) => navigate({ to: "/chat", search: { id: String(id) }, state: { fromList: true } })}
+        />
+      )}
       <Messages
         messages={messages}
         running={!!asking || !!open?.running}

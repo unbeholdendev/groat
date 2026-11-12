@@ -10,7 +10,9 @@ export function useTheme(theme?: Settings["theme"]) {
     const media = matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
       document.documentElement.classList.toggle("dark", theme === "dark" || (theme !== "light" && media.matches));
-      document.querySelector("meta[name=theme-color]")?.setAttribute("content", getComputedStyle(document.body).backgroundColor);
+      document
+        .querySelector("meta[name=theme-color]")
+        ?.setAttribute("content", getComputedStyle(document.body).backgroundColor);
     };
     apply();
     media.addEventListener("change", apply);

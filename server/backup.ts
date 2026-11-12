@@ -58,7 +58,8 @@ function prepare(path: string) {
     if (integrity.length !== 1 || integrity[0][0] !== "ok") return "That backup is damaged";
     const applied = file.query("SELECT created_at FROM __drizzle_migrations").values();
     if (!applied.length || !file.query("SELECT 1 FROM settings").get()) return notBackup;
-    if (applied.some(([at]) => !known.has(Number(at)))) return "This backup is from a newer version of the app. Update the app, then restore.";
+    if (applied.some(([at]) => !known.has(Number(at))))
+      return "This backup is from a newer version of the app. Update the app, then restore.";
     file.run("PRAGMA journal_mode = DELETE");
     migrate(drizzle(file), { migrationsFolder });
   } catch {
@@ -85,7 +86,9 @@ export function restoreRoutes(db: Db, resetCredentials: () => void = () => {}) {
       if (problem) return c.json({ error: problem }, 400);
       if (!fresh()) return c.json({ error: used }, 409);
       const tables = live
-        .query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name != '__drizzle_migrations'")
+        .query(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name != '__drizzle_migrations'",
+        )
         .values()
         .map(([name]) => String(name));
       live.run("ATTACH ? AS backup", [path]);
@@ -94,7 +97,11 @@ export function restoreRoutes(db: Db, resetCredentials: () => void = () => {}) {
           live.run("PRAGMA defer_foreign_keys = ON");
           for (const table of tables) live.run(`DELETE FROM main.${quote(table)}`);
           for (const table of tables) {
-            const columns = live.query("SELECT name FROM pragma_table_info(?)").values(table).map(([name]) => quote(String(name))).join(", ");
+            const columns = live
+              .query("SELECT name FROM pragma_table_info(?)")
+              .values(table)
+              .map(([name]) => quote(String(name)))
+              .join(", ");
             live.run(`INSERT INTO main.${quote(table)} (${columns}) SELECT ${columns} FROM backup.${quote(table)}`);
           }
         })();

@@ -2,9 +2,22 @@ import { type ComponentProps, createContext, type ReactNode, use, useId } from "
 
 const Described = createContext<string | undefined>(undefined);
 
-const aria = (errorId: string | undefined) => ({ "aria-invalid": errorId ? true : undefined, "aria-describedby": errorId });
+const aria = (errorId: string | undefined) => ({
+  "aria-invalid": errorId ? true : undefined,
+  "aria-describedby": errorId,
+});
 
-export function Field({ label, error, className = "", children }: { label?: ReactNode; error?: string; className?: string; children: ReactNode }) {
+export function Field({
+  label,
+  error,
+  className = "",
+  children,
+}: {
+  label?: ReactNode;
+  error?: string;
+  className?: string;
+  children: ReactNode;
+}) {
   const id = useId();
   return (
     <div className={`label ${className}`}>
@@ -21,9 +34,13 @@ export function Field({ label, error, className = "", children }: { label?: Reac
   );
 }
 
-export const Input = ({ className = "", ...props }: ComponentProps<"input">) => <input className={`input ${className}`} {...aria(use(Described))} {...props} />;
+export const Input = ({ className = "", ...props }: ComponentProps<"input">) => (
+  <input className={`input ${className}`} {...aria(use(Described))} {...props} />
+);
 
-export const Select = ({ className = "", ...props }: ComponentProps<"select">) => <select className={`input ${className}`} {...aria(use(Described))} {...props} />;
+export const Select = ({ className = "", ...props }: ComponentProps<"select">) => (
+  <select className={`input ${className}`} {...aria(use(Described))} {...props} />
+);
 
 export const FormError = ({ error, className = "" }: { error?: { message?: string } | null; className?: string }) =>
   error?.message ? (

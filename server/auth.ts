@@ -8,7 +8,8 @@ import { sessions, transactions, users } from "./schema";
 export const credentials = z.object({ username: z.string().trim().min(1), password: z.string().min(1) });
 const days = 30;
 export const active = isNull(users.deletedAt);
-export const hashCost = Bun.env.NODE_ENV === "test" ? ({ algorithm: "argon2id", memoryCost: 8, timeCost: 1 } as const) : undefined;
+export const hashCost =
+  Bun.env.NODE_ENV === "test" ? ({ algorithm: "argon2id", memoryCost: 8, timeCost: 1 } as const) : undefined;
 
 export type Env = { Variables: { user: { id: number; role: string } } };
 
@@ -30,7 +31,10 @@ export function auth(db: Db, clock: () => Date) {
 
   const signIn = (c: Context, id: string, userId: number) => {
     const expiresAt = new Date(clock().getTime() + days * 864e5).toISOString();
-    db.insert(sessions).values({ id, userId, expiresAt }).onConflictDoUpdate({ target: sessions.id, set: { expiresAt } }).run();
+    db.insert(sessions)
+      .values({ id, userId, expiresAt })
+      .onConflictDoUpdate({ target: sessions.id, set: { expiresAt } })
+      .run();
     const secure = c.req.url.startsWith("https:") || c.req.header("x-forwarded-proto") === "https";
     setCookie(c, "session", id, { httpOnly: true, sameSite: "Lax", path: "/", maxAge: days * 86400, secure });
   };
@@ -39,7 +43,10 @@ export function auth(db: Db, clock: () => Date) {
 
   app.get("/api/session", (c) => {
     const user = session(c);
-    return c.json({ setup: !db.select().from(users).get(), user: user ? { username: user.username, role: user.role } : null });
+    return c.json({
+      setup: !db.select().from(users).get(),
+      user: user ? { username: user.username, role: user.role } : null,
+    });
   });
 
   app.post("/api/setup", async (c) => {
@@ -56,7 +63,13 @@ export function auth(db: Db, clock: () => Date) {
 
   app.post("/api/login", async (c) => {
     const parsed = await body(c);
-    const user = parsed.success ? db.select().from(users).where(and(eq(users.username, parsed.data.username), active)).get() : undefined;
+    const user = parsed.success
+      ? db
+          .select()
+          .from(users)
+          .where(and(eq(users.username, parsed.data.username), active))
+          .get()
+      : undefined;
     if (!parsed.success || !user || !(await Bun.password.verify(parsed.data.password, user.passwordHash)))
       return c.json({ error: "Wrong username or password" }, 401);
     signIn(c, crypto.randomUUID(), user.id);
@@ -67,14 +80,17 @@ export function auth(db: Db, clock: () => Date) {
     const current = session(c);
     if (!current) return c.json({ error: "Sign in first" }, 401);
     const owner = c.req.header("x-transaction-user");
-    if (owner && owner !== encodeURIComponent(current.username)) return c.json({ error: "Your sign-in changed. Sign in as the original user to sync this change." }, 409);
+    if (owner && owner !== encodeURIComponent(current.username))
+      return c.json({ error: "Your sign-in changed. Sign in as the original user to sync this change." }, 409);
     signIn(c, current.id, current.userId);
     c.set("user", { id: current.userId, role: current.role });
     await next();
   });
 
   app.post("/api/logout", (c) => {
-    db.delete(sessions).where(eq(sessions.id, getCookie(c, "session") ?? "")).run();
+    db.delete(sessions)
+      .where(eq(sessions.id, getCookie(c, "session") ?? ""))
+      .run();
     deleteCookie(c, "session", { path: "/" });
     return c.json({});
   });

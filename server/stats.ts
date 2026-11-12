@@ -21,7 +21,11 @@ const shift = (date: string, days: number) => {
 };
 
 const bucketOf = (date: string, group: Group) =>
-  group === "month" ? `${date.slice(0, 7)}-01` : group === "week" ? shift(date, -((new Date(date).getUTCDay() + 6) % 7)) : date;
+  group === "month"
+    ? `${date.slice(0, 7)}-01`
+    : group === "week"
+      ? shift(date, -((new Date(date).getUTCDay() + 6) % 7))
+      : date;
 
 const nextBucket = (start: string, group: Group) => {
   if (group !== "month") return shift(start, group === "week" ? 7 : 1);
@@ -44,7 +48,10 @@ export async function period(db: Db, value: Valuer, from: string, to: string, gr
   const earned = rated.filter((r) => r.kind === "income");
   const sum = (rs: { baseAmount: number }[]) => rs.reduce((s, r) => s + r.baseAmount, 0);
 
-  const all: Category[] = db.select({ id: c.id, name: c.name, icon: c.icon, color: c.color, parentId: c.parentId, kind: c.kind }).from(c).all();
+  const all: Category[] = db
+    .select({ id: c.id, name: c.name, icon: c.icon, color: c.color, parentId: c.parentId, kind: c.kind })
+    .from(c)
+    .all();
   const breakdown = (kind: Kind, rs: { categoryId: number | null; baseAmount: number }[]) =>
     all
       .filter((p) => p.parentId === null && p.kind === kind)

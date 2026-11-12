@@ -5,7 +5,19 @@ import { Delta } from "./delta";
 import { Head } from "./head";
 import { type Period, row } from "./types";
 
-export function ByTag({ now, prev, range: [from, to], vs, show }: { now: Period; prev: Period; range: [string, string]; vs: string; show: (n: number) => string }) {
+export function ByTag({
+  now,
+  prev,
+  range: [from, to],
+  vs,
+  show,
+}: {
+  now: Period;
+  prev: Period;
+  range: [string, string];
+  vs: string;
+  show: (n: number) => string;
+}) {
   const compare = !now.unconverted && !prev.unconverted;
   if (now.tags.length === 0) return null;
   return (
@@ -22,7 +34,13 @@ export function ByTag({ now, prev, range: [from, to], vs, show }: { now: Period;
               </span>
               <span className="min-w-0 flex-1 truncate font-medium">{t.name}</span>
               <span className="num">{show(t.total)}</span>
-              {compare && <Delta now={t.total} before={prev.tags.find((r) => r.name === t.name)?.total ?? 0} pad={prev.total > 0} />}
+              {compare && (
+                <Delta
+                  now={t.total}
+                  before={prev.tags.find((r) => r.name === t.name)?.total ?? 0}
+                  pad={prev.total > 0}
+                />
+              )}
             </Link>
           </li>
         ))}

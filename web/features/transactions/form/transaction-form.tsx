@@ -28,10 +28,21 @@ export function TransactionForm() {
   const back = useCanGoBack();
   const cache = useQueryClient();
   const owner = useSession()?.user?.username;
-  const draftKey = ["transaction-draft", owner, editing ? `edit:${editing}` : template ? `recurring:${template.id}` : "new"];
-  const [recovered] = useState(() => draft ? undefined : cache.getQueryData<{ values: TransactionValues; recurring?: number; unit: typeof unit }>(draftKey));
+  const draftKey = [
+    "transaction-draft",
+    owner,
+    editing ? `edit:${editing}` : template ? `recurring:${template.id}` : "new",
+  ];
+  const [recovered] = useState(() =>
+    draft
+      ? undefined
+      : cache.getQueryData<{ values: TransactionValues; recurring?: number; unit: typeof unit }>(draftKey),
+  );
   const kindOf = useKindOf();
-  const form = useZodForm(transactionForm(unit), recovered?.values ?? (template ? fromTemplate(template, unit, kindOf(template)) : blank(settings.lastCurrency)));
+  const form = useZodForm(
+    transactionForm(unit),
+    recovered?.values ?? (template ? fromTemplate(template, unit, kindOf(template)) : blank(settings.lastCurrency)),
+  );
   const { watch, setValue, handleSubmit } = form;
   const [categoryId, date, kind] = watch(["categoryId", "date", "kind"]);
   const categories = useCategories();
@@ -42,7 +53,9 @@ export function TransactionForm() {
 
   const values = JSON.stringify(watch());
   const dirty = !!recovered || values !== JSON.stringify(form.formState.defaultValues);
-  useEffect(() => { if (recovered) setUnit(recovered.unit); }, [recovered]);
+  useEffect(() => {
+    if (recovered) setUnit(recovered.unit);
+  }, [recovered]);
   useEffect(() => {
     if (!dirty) {
       cache.removeQueries({ queryKey: draftKey, exact: true });
@@ -89,9 +102,14 @@ export function TransactionForm() {
   const save = handleSubmit(({ categoryId, period, every, endDate, needsConfirmation, kind, ...v }) => {
     const body = { ...v, unit, categoryId: categoryId || categories.find((c) => c.builtin && c.kind === kind)?.id };
     if (period)
-      repeating.mutate([recurring ? "PUT" : "POST", recurring ? `/api/recurring/${recurring}` : "/api/recurring", { ...body, period, every: Number(every), endDate: endDate || null, needsConfirmation, startDate: v.date }]);
+      repeating.mutate([
+        recurring ? "PUT" : "POST",
+        recurring ? `/api/recurring/${recurring}` : "/api/recurring",
+        { ...body, period, every: Number(every), endDate: endDate || null, needsConfirmation, startDate: v.date },
+      ]);
     else if (recurring) repeating.mutate(["DELETE", `/api/recurring/${recurring}`]);
-    else saving.mutate([editing ? "PUT" : "POST", editing ? `/api/transactions/${editing}` : "/api/transactions", body]);
+    else
+      saving.mutate([editing ? "PUT" : "POST", editing ? `/api/transactions/${editing}` : "/api/transactions", body]);
   });
 
   return (
@@ -105,17 +123,63 @@ export function TransactionForm() {
         row={editRow}
         onCancel={() => close()}
       />
-      {editRow?.conversion && <div className="mt-3 text-[13px] text-ink2">
-        <p>Conversion for {editRow.conversion.date}</p>
-        {[editRow.conversion.from, editRow.conversion.to].map((q, i) => <p key={i}>{q ? "1 USD = " + q.rate + " " + q.currency + " · " + q.source + " · rate date " + (q.rateDate ?? "unknown (cached history)") : "Missing rate."}</p>)}
-      </div>}
-      {recovered && <p role="status" className="mt-3 text-sm text-ink2">Recovered unsaved expense.</p>}
-      <dialog ref={dialog} aria-labelledby={title} onCancel={(e) => { e.preventDefault(); blocker.reset?.(); }} className="fixed inset-0 m-auto w-[min(26rem,92vw)] rounded-card bg-surface p-5 text-ink shadow-lift backdrop:bg-bg/80">
-        <h2 id={title} className="text-[17px] font-semibold">Discard expense changes?</h2>
+      {editRow?.conversion && (
+        <div className="mt-3 text-[13px] text-ink2">
+          <p>Conversion for {editRow.conversion.date}</p>
+          {[editRow.conversion.from, editRow.conversion.to].map((q, i) => (
+            <p key={i}>
+              {q
+                ? "1 USD = " +
+                  q.rate +
+                  " " +
+                  q.currency +
+                  " · " +
+                  q.source +
+                  " · rate date " +
+                  (q.rateDate ?? "unknown (cached history)")
+                : "Missing rate."}
+            </p>
+          ))}
+        </div>
+      )}
+      {recovered && (
+        <p role="status" className="mt-3 text-sm text-ink2">
+          Recovered unsaved expense.
+        </p>
+      )}
+      <dialog
+        ref={dialog}
+        aria-labelledby={title}
+        onCancel={(e) => {
+          e.preventDefault();
+          blocker.reset?.();
+        }}
+        className="fixed inset-0 m-auto w-[min(26rem,92vw)] rounded-card bg-surface p-5 text-ink shadow-lift backdrop:bg-bg/80"
+      >
+        <h2 id={title} className="text-[17px] font-semibold">
+          Discard expense changes?
+        </h2>
         <p className="mt-2 text-sm text-ink2">Your changes have not been saved.</p>
         <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <button type="button" autoFocus onClick={() => blocker.reset?.()} className="press min-h-11 rounded-chip bg-surface2 px-4 font-medium">Keep editing</button>
-          <button type="button" onClick={() => { cache.removeQueries({ queryKey: draftKey, exact: true }); persistCache(); blocker.proceed?.(); }} className="press min-h-11 rounded-chip bg-accent px-4 font-medium text-on-accent">Discard changes</button>
+          <button
+            type="button"
+            autoFocus
+            onClick={() => blocker.reset?.()}
+            className="press min-h-11 rounded-chip bg-surface2 px-4 font-medium"
+          >
+            Keep editing
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              cache.removeQueries({ queryKey: draftKey, exact: true });
+              persistCache();
+              blocker.proceed?.();
+            }}
+            className="press min-h-11 rounded-chip bg-accent px-4 font-medium text-on-accent"
+          >
+            Discard changes
+          </button>
         </div>
       </dialog>
       <div className="mt-5">
@@ -133,14 +197,28 @@ export function TransactionForm() {
         <Input placeholder="work, trip" {...form.register("tags")} />
       </Field>
       {editRow?.attachmentId != null && (
-        <a href={`/api/attachments/${editRow.attachmentId}`} target="_blank" rel="noreferrer" className="mt-6 self-start">
-          <img src={`/api/attachments/${editRow.attachmentId}`} alt="Receipt" className="max-h-40 rounded-field border border-line object-contain" />
+        <a
+          href={`/api/attachments/${editRow.attachmentId}`}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-6 self-start"
+        >
+          <img
+            src={`/api/attachments/${editRow.attachmentId}`}
+            alt="Receipt"
+            className="max-h-40 rounded-field border border-line object-contain"
+          />
         </a>
       )}
       {!editing && <RepeatFields form={form} stops={!!recurring} />}
       <FormError error={saving.error ?? repeating.error} className="mt-4" />
       {editing && (
-        <Button variant="link" tone="up" className="mt-6 self-start text-sm" onClick={() => saving.mutate(["DELETE", `/api/transactions/${editing}`])}>
+        <Button
+          variant="link"
+          tone="up"
+          className="mt-6 self-start text-sm"
+          onClick={() => saving.mutate(["DELETE", `/api/transactions/${editing}`])}
+        >
           Move to bin
         </Button>
       )}

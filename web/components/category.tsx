@@ -3,7 +3,13 @@ import type { Kind } from "../../shared/schema";
 import type { Category } from "../lib/schemas";
 import { Icon } from "./icon";
 
-export const Tile = ({ category, small }: { category?: { icon: string; color: string; builtin?: boolean }; small?: boolean }) => (
+export const Tile = ({
+  category,
+  small,
+}: {
+  category?: { icon: string; color: string; builtin?: boolean };
+  small?: boolean;
+}) => (
   <span
     aria-hidden
     className={`tile ${small ? "size-7 text-[15px]" : "size-9 text-[19px]"}`}
@@ -19,7 +25,15 @@ export const Tile = ({ category, small }: { category?: { icon: string; color: st
   </span>
 );
 
-export function CategoryOptions({ categories, except, kind }: { categories: Category[]; except?: number; kind?: Kind }) {
+export function CategoryOptions({
+  categories,
+  except,
+  kind,
+}: {
+  categories: Category[];
+  except?: number;
+  kind?: Kind;
+}) {
   const children = (id: number | null) => categories.filter((c) => c.parentId === id && c.id !== except);
   const tree = (k: Kind) =>
     children(null)

@@ -102,7 +102,14 @@ test("rejects a bad range or grouping", async () => {
 test("tag totals count each tagged expense in base currency, largest first", async () => {
   const { call, id } = await onboarded();
   const spend = (amount: string, currency: string, tags: string[]) =>
-    call("POST", "/api/transactions", { note: "x", amount, currency, date: "2026-09-03", categoryId: id("Food"), tags });
+    call("POST", "/api/transactions", {
+      note: "x",
+      amount,
+      currency,
+      date: "2026-09-03",
+      categoryId: id("Food"),
+      tags,
+    });
   await spend("10.00", "GBP", ["holiday", "friends"]);
   await spend("8.00", "EUR", ["holiday"]);
   await spend("1.00", "GBP", []);

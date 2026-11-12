@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { Button } from "../../components/button";
 
-export const Gate = ({ children }: { children: ReactNode }) => <main className="mx-auto max-w-md px-5 pb-10 lg:pt-12">{children}</main>;
+export const Gate = ({ children }: { children: ReactNode }) => (
+  <main className="mx-auto max-w-md px-5 pb-10 lg:pt-12">{children}</main>
+);
 
 export const LoadError = ({ error, onRetry }: { error: Error; onRetry: () => void }) => (
   <main className="mx-auto max-w-md px-5 pt-12">

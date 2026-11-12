@@ -4,7 +4,9 @@ import { changed } from "../server/live";
 import { completion, models, setup } from "./harness";
 
 const cleanups: (() => void)[] = [];
-afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup(); });
+afterEach(() => {
+  for (const cleanup of cleanups.splice(0)) cleanup();
+});
 
 async function received(messages: unknown[], count: number) {
   const deadline = Date.now() + 2000;
@@ -19,7 +21,10 @@ function server(...args: Parameters<typeof setup>) {
   cleanups.push(() => server.stop(true));
   const origin = server.url.origin;
   const connect = (cookie = "session=live", tab = "", headers: Record<string, string> = {}) => {
-    const ws = new (WebSocket as unknown as { new(url: string, options: Bun.WebSocketOptions): WebSocket })(origin.replace("http:", "ws:") + "/api/live?tab=" + tab, { headers: { cookie, origin, ...headers } });
+    const ws = new (WebSocket as unknown as { new (url: string, options: Bun.WebSocketOptions): WebSocket })(
+      origin.replace("http:", "ws:") + "/api/live?tab=" + tab,
+      { headers: { cookie, origin, ...headers } },
+    );
     const messages: unknown[] = [];
     ws.onmessage = (e) => messages.push(JSON.parse(String(e.data)));
     cleanups.push(() => ws.close());
@@ -31,7 +36,9 @@ function server(...args: Parameters<typeof setup>) {
 test("live endpoint rejects anonymous and foreign origins", async () => {
   const h = server();
   expect((await fetch(h.origin + "/api/live", { headers: { origin: h.origin } })).status).toBe(401);
-  expect((await fetch(h.origin + "/api/live", { headers: { cookie: "session=live", origin: "https://evil.test" } })).status).toBe(403);
+  expect(
+    (await fetch(h.origin + "/api/live", { headers: { cookie: "session=live", origin: "https://evil.test" } })).status,
+  ).toBe(403);
   expect((await fetch(h.origin + "/api/live", { headers: { cookie: "session=live" } })).status).toBe(403);
 });
 
@@ -46,18 +53,40 @@ test("writes name the resources they change", () => {
   expect(changed("/api/users/2/password")).toEqual(["members"]);
   expect(changed("/api/chatgpt/model")).toEqual(["ai"]);
   expect(changed("/api/login")).toEqual(["session"]);
-  for (const path of ["/api/drafts", "/api/drafts/photo", "/api/voice", "/api/import/preview", "/api/password", "/api/logout"])
+  for (const path of [
+    "/api/drafts",
+    "/api/drafts/photo",
+    "/api/voice",
+    "/api/import/preview",
+    "/api/password",
+    "/api/logout",
+  ])
     expect(changed(path)).toEqual([]);
-  expect(changed("/api/import")).toEqual(["transactions", "categories", "settings", "recurring", "members", "tokens", "ai", "session", "chats"]);
+  expect(changed("/api/import")).toEqual([
+    "transactions",
+    "categories",
+    "settings",
+    "recurring",
+    "members",
+    "tokens",
+    "ai",
+    "session",
+    "chats",
+  ]);
   expect(changed("/api/aiming")).toHaveLength(9);
 });
 
 test("other tabs hear a write, the sender's tab does not, and reconnect starts with catch-up", async () => {
   const h = server();
-  const a = h.connect(undefined, "a"), b = h.connect(undefined, "b");
+  const a = h.connect(undefined, "a"),
+    b = h.connect(undefined, "b");
   await Promise.all([received(a.messages, 1), received(b.messages, 1)]);
   expect(a.messages[0]).toEqual({ type: "ready", username: "admin" });
-  await h.request("/api/categories", { method: "POST", headers: { "content-type": "application/json", "x-tab": "a" }, body: JSON.stringify({ name: "Live", icon: "x", color: "#ff0000" }) });
+  await h.request("/api/categories", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-tab": "a" },
+    body: JSON.stringify({ name: "Live", icon: "x", color: "#ff0000" }),
+  });
   await received(b.messages, 2);
   expect(b.messages[1]).toEqual({ type: "changed", resources: ["categories", "transactions", "recurring"] });
   await h.call("POST", "/api/transactions", { note: "Untabbed", amount: "1" });
@@ -78,7 +107,7 @@ test("revocation closes sockets before broadcasting further updates", async () =
   const h = server();
   const client = h.connect();
   await received(client.messages, 1);
-  const closed = new Promise<number>((resolve) => client.ws.onclose = (e) => resolve(e.code));
+  const closed = new Promise<number>((resolve) => (client.ws.onclose = (e) => resolve(e.code)));
   h.db.run("DELETE FROM sessions WHERE id = 'live'");
   await h.call("POST", "/api/categories", { name: "Private", icon: "x", color: "#ff0000" });
   expect(await closed).toBe(4001);
@@ -88,22 +117,35 @@ test("revocation closes sockets before broadcasting further updates", async () =
 test("expired and deleted users cannot connect", async () => {
   const h = server();
   h.db.run("UPDATE sessions SET expires_at = '2000' WHERE id = 'live'");
-  expect((await fetch(h.origin + "/api/live", { headers: { origin: h.origin, cookie: "session=live" } })).status).toBe(401);
+  expect((await fetch(h.origin + "/api/live", { headers: { origin: h.origin, cookie: "session=live" } })).status).toBe(
+    401,
+  );
   h.db.run("UPDATE sessions SET expires_at = '9999'");
   h.db.run("UPDATE users SET deleted_at = '2026-01-01'");
-  expect((await fetch(h.origin + "/api/live", { headers: { origin: h.origin, cookie: "session=live" } })).status).toBe(401);
+  expect((await fetch(h.origin + "/api/live", { headers: { origin: h.origin, cookie: "session=live" } })).status).toBe(
+    401,
+  );
 });
 
 test("chat runs stream their reply and announce each saved step, separately from ledger changes", async () => {
   const replies: Record<string, unknown>[] = [
     { content: "About £40." },
-    { tool_calls: [{ id: "add", type: "function", function: { name: "add_transaction", arguments: JSON.stringify({ note: "Lunch", amount: "12" }) } }] },
+    {
+      tool_calls: [
+        {
+          id: "add",
+          type: "function",
+          function: { name: "add_transaction", arguments: JSON.stringify({ note: "Lunch", amount: "12" }) },
+        },
+      ],
+    },
     { content: "Added." },
   ];
   const listed = models(["test-model"]);
-  const ai = (url: URL) => url.href === "https://ai.test/v1/chat/completions"
-    ? completion({ role: "assistant", content: null, ...replies.shift() })
-    : listed(url);
+  const ai = (url: URL) =>
+    url.href === "https://ai.test/v1/chat/completions"
+      ? completion({ role: "assistant", content: null, ...replies.shift() })
+      : listed(url);
   const h = server(undefined, ai, { baseUrl: "https://ai.test/v1", key: "sk-test" });
   const client = h.connect(undefined, "a");
   await received(client.messages, 1);
@@ -154,15 +196,29 @@ test("deleting a category tells other clients to refresh recurring schedules", a
   expect(client.messages[1]).toEqual({ type: "changed", resources: ["categories", "transactions", "recurring"] });
 });
 
-for (const [forwarded, scheme] of [["ws", "http"], ["wss", "https"], ["http", "http"], ["https", "https"]]) {
+for (const [forwarded, scheme] of [
+  ["ws", "http"],
+  ["wss", "https"],
+  ["http", "http"],
+  ["https", "https"],
+]) {
   test(`live connections accept matching origins behind a ${forwarded} proxy`, async () => {
     const h = server();
     const origin = scheme + "://" + new URL(h.origin).host;
     const client = h.connect(undefined, "", { origin, "x-forwarded-proto": forwarded });
     await received(client.messages, 1);
     expect(client.messages[0]).toEqual({ type: "ready", username: "admin" });
-    for (const rejected of ["https://evil.test", (scheme === "https" ? "http" : "https") + "://" + new URL(h.origin).host]) {
-      expect((await fetch(h.origin + "/api/live", { headers: { origin: rejected, cookie: "session=live", "x-forwarded-proto": forwarded } })).status).toBe(403);
+    for (const rejected of [
+      "https://evil.test",
+      (scheme === "https" ? "http" : "https") + "://" + new URL(h.origin).host,
+    ]) {
+      expect(
+        (
+          await fetch(h.origin + "/api/live", {
+            headers: { origin: rejected, cookie: "session=live", "x-forwarded-proto": forwarded },
+          })
+        ).status,
+      ).toBe(403);
     }
   });
 }

@@ -43,7 +43,9 @@ test("bin empties for good", async ({ app: page }) => {
 });
 
 test("a recurring expense can be edited", async ({ app: page }) => {
-  await page.request.post("/api/recurring", { data: { note: "Gym", amount: "30", currency: "GBP", period: "month", every: 1, startDate: "2026-01-01" } });
+  await page.request.post("/api/recurring", {
+    data: { note: "Gym", amount: "30", currency: "GBP", period: "month", every: 1, startDate: "2026-01-01" },
+  });
   await page.goto("/?view=recurring");
   await page.getByRole("button", { name: /Gym/ }).click();
   await expect(page.getByRole("heading", { name: "Edit recurring" })).toBeVisible();
@@ -53,7 +55,9 @@ test("a recurring expense can be edited", async ({ app: page }) => {
 });
 
 test("clearing Repeat stops a recurring expense", async ({ app: page }) => {
-  await page.request.post("/api/recurring", { data: { note: "Gym", amount: "30", currency: "GBP", period: "month", every: 1, startDate: "2026-01-01" } });
+  await page.request.post("/api/recurring", {
+    data: { note: "Gym", amount: "30", currency: "GBP", period: "month", every: 1, startDate: "2026-01-01" },
+  });
   await page.goto("/?view=recurring");
   await page.getByRole("button", { name: /Gym/ }).click();
   await page.getByLabel("Repeat").selectOption("");
@@ -123,7 +127,12 @@ test("swiping a row left bins it, and Undo brings it back", async ({ app: page }
   await page.reload();
   const row = page.getByRole("listitem").filter({ hasText: "Mistake" }).locator("div").first();
   const b = (await row.boundingBox())!;
-  const at = (dx: number) => ({ clientX: b.x + b.width - 20 + dx, clientY: b.y + 30, pointerType: "touch", isPrimary: true });
+  const at = (dx: number) => ({
+    clientX: b.x + b.width - 20 + dx,
+    clientY: b.y + 30,
+    pointerType: "touch",
+    isPrimary: true,
+  });
   await row.dispatchEvent("pointerdown", at(0));
   await row.dispatchEvent("pointermove", at(-60));
   await row.dispatchEvent("pointerup", at(-60));
@@ -138,7 +147,16 @@ test("swiping a row left bins it, and Undo brings it back", async ({ app: page }
 
 test("a cache saved by an older build is dropped, not rendered", async ({ app: page }) => {
   await page.addInitScript(() => {
-    const old = { queryKey: ["/api/settings"], queryHash: '["/api/settings"]', state: { data: { baseCurrency: "GBP", currencies: ["GBP"], lastCurrency: "GBP", theme: "system", onboarded: true }, dataUpdatedAt: Date.now(), status: "success", fetchStatus: "idle" } };
+    const old = {
+      queryKey: ["/api/settings"],
+      queryHash: '["/api/settings"]',
+      state: {
+        data: { baseCurrency: "GBP", currencies: ["GBP"], lastCurrency: "GBP", theme: "system", onboarded: true },
+        dataUpdatedAt: Date.now(),
+        status: "success",
+        fetchStatus: "idle",
+      },
+    };
     localStorage.setItem("cache", JSON.stringify({ mutations: [], queries: [old] }));
   });
   await page.reload();

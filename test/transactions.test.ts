@@ -42,7 +42,9 @@ test("rejects invalid amounts and missing notes", async () => {
     expect((await call("POST", "/api/transactions", { note, amount: "5" })).status).toBe(400);
   for (const date of ["yesterday", "2026-02-31", "2026-13-01", "2026-10-12"])
     expect((await call("POST", "/api/transactions", { note: "x", amount: "5", date })).status).toBe(400);
-  expect((await call("POST", "/api/transactions", { note: "ahead of UTC", amount: "5", date: "2026-10-11" })).status).toBe(201);
+  expect(
+    (await call("POST", "/api/transactions", { note: "ahead of UTC", amount: "5", date: "2026-10-11" })).status,
+  ).toBe(201);
   for (const currency of ["", "nope", 7])
     expect((await call("POST", "/api/transactions", { note: "x", amount: "5", currency })).status).toBe(400);
   expect((await call("GET", "/api/transactions")).body.map((e: { note: string }) => e.note)).toEqual(["ahead of UTC"]);

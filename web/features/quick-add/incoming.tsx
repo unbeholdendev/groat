@@ -7,12 +7,15 @@ const editable = (t: EventTarget | null) => t instanceof HTMLInputElement || t i
 export function useShared(onImage: (file: Blob) => void) {
   useEffect(() => {
     if (!("caches" in window)) return;
-    caches.open("share").then(async (cache) => {
-      const shared = await cache.match("/shared-image");
-      if (!shared) return;
-      await cache.delete("/shared-image");
-      onImage(await shared.blob());
-    }).catch(() => {});
+    caches
+      .open("share")
+      .then(async (cache) => {
+        const shared = await cache.match("/shared-image");
+        if (!shared) return;
+        await cache.delete("/shared-image");
+        onImage(await shared.blob());
+      })
+      .catch(() => {});
   }, []);
 }
 
@@ -28,7 +31,8 @@ export function Incoming(props: { enabled: boolean; onImage: (file: Blob) => voi
       e.preventDefault();
       onImage.current(file);
     };
-    const hasImage = (e: DragEvent) => [...(e.dataTransfer?.items ?? [])].some((i) => i.kind === "file" && i.type.startsWith("image/"));
+    const hasImage = (e: DragEvent) =>
+      [...(e.dataTransfer?.items ?? [])].some((i) => i.kind === "file" && i.type.startsWith("image/"));
     const enter = (e: DragEvent) => hasImage(e) && (e.preventDefault(), setOver(true));
     const leave = (e: DragEvent) => !e.relatedTarget && setOver(false);
     const drop = (e: DragEvent) => {

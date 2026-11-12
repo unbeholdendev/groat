@@ -16,11 +16,15 @@ export function SwipeRow({ transaction: e, fresh }: { transaction: Transaction; 
       className={`relative ${sliding ? "bg-up" : "hover:bg-surface2"} ${divide} ${fresh ? "grow-in" : ""}`}
       onClickCapture={(ev) => dragged.current && (ev.stopPropagation(), (dragged.current = false))}
     >
-      {sliding && <Icon d={paths.bin} className="absolute top-1/2 right-6 size-5 -translate-y-1/2 stroke-2 text-surface" />}
+      {sliding && (
+        <Icon d={paths.bin} className="absolute top-1/2 right-6 size-5 -translate-y-1/2 stroke-2 text-surface" />
+      )}
       <div
         className={`${rowClass} touch-pan-y ${sliding ? "bg-surface" : "transition-transform"}`}
         style={{ translate: swiped ? `${swiped.dx}px` : undefined }}
-        onPointerDown={(p) => p.isPrimary && p.pointerType !== "mouse" && e.id > 0 && setSwiped({ x: p.clientX, dx: 0 })}
+        onPointerDown={(p) =>
+          p.isPrimary && p.pointerType !== "mouse" && e.id > 0 && setSwiped({ x: p.clientX, dx: 0 })
+        }
         onPointerMove={(p) => swiped && setSwiped({ ...swiped, dx: Math.min(0, p.clientX - swiped.x) })}
         onPointerUp={() => {
           if (!swiped) return;

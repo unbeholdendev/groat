@@ -14,7 +14,10 @@ const values = { ...blank("GBP"), note: "Coffee", amount: "3.50", date: "2026-05
 test("expense form parses tags and checks note and amount", () => {
   const r = transactionForm("BTC").safeParse({ ...values, tags: " work, ,trip " });
   expect(r.success && r.data.tags).toEqual(["work", "trip"]);
-  expect(errors(transactionForm("BTC").safeParse({ ...values, note: " ", amount: "3.505" }))).toEqual(["note", "amount"]);
+  expect(errors(transactionForm("BTC").safeParse({ ...values, note: " ", amount: "3.505" }))).toEqual([
+    "note",
+    "amount",
+  ]);
   expect(errors(transactionForm("BTC").safeParse({ ...values, amount: "0" }))).toEqual(["amount"]);
   expect(errors(transactionForm("sats").safeParse({ ...values, currency: "BTC", amount: "1.5" }))).toEqual(["amount"]);
   expect(errors(transactionForm("sats").safeParse({ ...values, currency: "BTC", amount: "5000" }))).toEqual([]);
@@ -30,19 +33,51 @@ test("repeat rules apply only with a period", () => {
 });
 
 test("blank, filled and fromTemplate seed the form", () => {
-  expect(blank("EUR")).toMatchObject({ note: "", amount: "", currency: "EUR", date: today(), period: "", every: "1", kind: "expense" });
+  expect(blank("EUR")).toMatchObject({
+    note: "",
+    amount: "",
+    currency: "EUR",
+    date: today(),
+    period: "",
+    every: "1",
+    kind: "expense",
+  });
   const draft = { note: "Tea", amount: 250, currency: "GBP", date: "2026-05-01", categoryId: 0, tags: ["a", "b"] };
   expect(filled(draft, "BTC")).toMatchObject({ amount: "2.50", categoryId: null, tags: "a, b", period: "" });
   expect(filled({ ...draft, amount: 0 }, "BTC").amount).toBe("");
   expect(filled(draft, "BTC", "income").kind).toBe("income");
   expect(filled({ ...draft, amount: 5000, currency: "BTC" }, "sats").amount).toBe("5000");
-  const template = { ...draft, id: 1, categoryId: 3, period: "week", every: 2, startDate: "2026-01-05", endDate: null, needsConfirmation: true, paused: false };
-  expect(fromTemplate(template, "BTC")).toMatchObject({ date: "2026-01-05", categoryId: 3, period: "week", every: "2", endDate: "", needsConfirmation: true });
+  const template = {
+    ...draft,
+    id: 1,
+    categoryId: 3,
+    period: "week",
+    every: 2,
+    startDate: "2026-01-05",
+    endDate: null,
+    needsConfirmation: true,
+    paused: false,
+  };
+  expect(fromTemplate(template, "BTC")).toMatchObject({
+    date: "2026-01-05",
+    categoryId: 3,
+    period: "week",
+    every: "2",
+    endDate: "",
+    needsConfirmation: true,
+  });
   expect(fromTemplate({ ...template, endDate: "2026-12-31" }, "BTC").endDate).toBe("2026-12-31");
 });
 
 test("quick-add review round-trips a draft", () => {
-  const draft = { note: "Lunch", amount: 1200, currency: "GBP", date: "2026-05-01", categoryId: null, tags: ["work", "team"] };
+  const draft = {
+    note: "Lunch",
+    amount: 1200,
+    currency: "GBP",
+    date: "2026-05-01",
+    categoryId: null,
+    tags: ["work", "team"],
+  };
   const f = fields(draft, "BTC");
   expect(f).toMatchObject({ amount: "12.00", categoryId: 0, tags: "#work #team" });
   expect(review("sats").parse(f)).toEqual({ ...f, categoryId: undefined, unit: "sats", tags: ["work", "team"] });
@@ -51,9 +86,22 @@ test("quick-add review round-trips a draft", () => {
 });
 
 test("category, tag, auth and settings forms", () => {
-  expect(categoryForm.parse({ name: " Food ", icon: "🍔", color: "#AA00ff", parentId: "4", kind: "income" })).toEqual({ name: "Food", icon: "🍔", color: "#AA00ff", parentId: 4, kind: "income" });
-  expect(categoryForm.parse({ name: "Food", icon: "🍔", color: "#aa00ff", parentId: "", kind: "expense" }).parentId).toBeNull();
-  expect(errors(categoryForm.safeParse({ name: " ", icon: " ", color: "red", parentId: "", kind: "refund" }))).toEqual(["name", "icon", "color", "kind"]);
+  expect(categoryForm.parse({ name: " Food ", icon: "🍔", color: "#AA00ff", parentId: "4", kind: "income" })).toEqual({
+    name: "Food",
+    icon: "🍔",
+    color: "#AA00ff",
+    parentId: 4,
+    kind: "income",
+  });
+  expect(
+    categoryForm.parse({ name: "Food", icon: "🍔", color: "#aa00ff", parentId: "", kind: "expense" }).parentId,
+  ).toBeNull();
+  expect(errors(categoryForm.safeParse({ name: " ", icon: " ", color: "red", parentId: "", kind: "refund" }))).toEqual([
+    "name",
+    "icon",
+    "color",
+    "kind",
+  ]);
   expect(errors(tagForm.safeParse({ name: " " }))).toEqual(["name"]);
   expect(errors(tokenName.safeParse({ name: " " }))).toEqual(["name"]);
   expect(errors(newPassword.safeParse({ password: "" }))).toEqual(["password"]);

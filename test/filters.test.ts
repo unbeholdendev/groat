@@ -15,7 +15,9 @@ test("date range keeps expenses between from and to inclusive", async () => {
 test("category filter includes its subcategories", async () => {
   const { call } = setup();
   const food = (await call("POST", "/api/categories", { name: "Food", icon: "🍽️", color: "#f00" })).body.id;
-  const groceries = (await call("POST", "/api/categories", { name: "Groceries", icon: "🛒", color: "#f00", parentId: food })).body.id;
+  const groceries = (
+    await call("POST", "/api/categories", { name: "Groceries", icon: "🛒", color: "#f00", parentId: food })
+  ).body.id;
   await call("POST", "/api/transactions", { note: "dinner", amount: "1", categoryId: food });
   await call("POST", "/api/transactions", { note: "milk", amount: "1", categoryId: groceries });
   await call("POST", "/api/transactions", { note: "bus", amount: "1" });
@@ -41,11 +43,22 @@ test("autocomplete suggests distinct notes with the latest live match's details"
   const { call } = setup();
   const food = (await call("POST", "/api/categories", { name: "Food", icon: "🍽️", color: "#f00" })).body.id;
   await call("POST", "/api/transactions", { note: "Coffee", amount: "2.50", currency: "GBP", date: "2026-10-01" });
-  await call("POST", "/api/transactions", { note: "Coffee", amount: "3", currency: "EUR", date: "2026-10-03", categoryId: food });
+  await call("POST", "/api/transactions", {
+    note: "Coffee",
+    amount: "3",
+    currency: "EUR",
+    date: "2026-10-03",
+    categoryId: food,
+  });
   await call("POST", "/api/transactions", { note: "Coffee", amount: "1", currency: "GBP", date: "2026-10-02" });
   await call("POST", "/api/transactions", { note: "cookies", amount: "4", currency: "GBP", date: "2026-10-04" });
   await call("POST", "/api/transactions", { note: "Tea", amount: "1", currency: "GBP" });
-  const binned = await call("POST", "/api/transactions", { note: "Coffee", amount: "99", currency: "GBP", date: "2026-10-09" });
+  const binned = await call("POST", "/api/transactions", {
+    note: "Coffee",
+    amount: "99",
+    currency: "GBP",
+    date: "2026-10-09",
+  });
   await call("DELETE", `/api/transactions/${binned.body.id}`);
   const gone = await call("POST", "/api/transactions", { note: "Cocoa", amount: "5", currency: "GBP" });
   await call("DELETE", `/api/transactions/${gone.body.id}`);

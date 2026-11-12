@@ -8,10 +8,18 @@ import type { Category } from "../../lib/schemas";
 import { CategoryEditor } from "./category-editor";
 import { Button } from "../../components/button";
 
-export function CategoryList(props: { kind: Kind; categories: Category[]; editing: number | Kind | null; onEdit: (id: number | Kind | null) => void; reorder: boolean }) {
+export function CategoryList(props: {
+  kind: Kind;
+  categories: Category[];
+  editing: number | Kind | null;
+  onEdit: (id: number | Kind | null) => void;
+  reorder: boolean;
+}) {
   const { kind, categories, editing, onEdit, reorder } = props;
   const { mutate: call, error, reset } = useSend("category");
-  const tree = categories.filter((p) => p.parentId === null && p.kind === kind).flatMap((p) => [p, ...categories.filter((c) => c.parentId === p.id)]);
+  const tree = categories
+    .filter((p) => p.parentId === null && p.kind === kind)
+    .flatMap((p) => [p, ...categories.filter((c) => c.parentId === p.id)]);
   const edit = (id: number | Kind) => (reset(), onEdit(id));
 
   function move(c: Category, by: number) {
@@ -27,7 +35,9 @@ export function CategoryList(props: { kind: Kind; categories: Category[]; editin
       kind={kind}
       categories={categories}
       onClose={() => onEdit(null)}
-      onDelete={(moveTo) => (onEdit(null), c && call(["DELETE", `/api/categories/${c.id}${moveTo ? `?moveTo=${moveTo}` : ""}`]))}
+      onDelete={(moveTo) => (
+        onEdit(null), c && call(["DELETE", `/api/categories/${c.id}${moveTo ? `?moveTo=${moveTo}` : ""}`])
+      )}
     />
   );
 
@@ -53,7 +63,12 @@ export function CategoryList(props: { kind: Kind; categories: Category[]; editin
                 </button>
                 {reorder &&
                   [-1, 1].map((by) => (
-                    <button key={by} className="grid size-11 place-items-center text-ink3" onClick={() => move(c, by)} aria-label={by < 0 ? "Move up" : "Move down"}>
+                    <button
+                      key={by}
+                      className="grid size-11 place-items-center text-ink3"
+                      onClick={() => move(c, by)}
+                      aria-label={by < 0 ? "Move up" : "Move down"}
+                    >
                       <Icon d={paths.chevron} className={`size-4 stroke-2 ${by < 0 ? "rotate-180" : ""}`} />
                     </button>
                   ))}

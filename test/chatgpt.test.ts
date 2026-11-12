@@ -10,10 +10,11 @@ const responses = (fetch: Parameters<typeof complete>[0], provider: { key: strin
 async function fixture() {
   const store = new Database(":memory:");
   const db = new Database(":memory:");
-  const keys = await crypto.subtle.generateKey({ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" }, true, [
-    "sign",
-    "verify",
-  ]);
+  const keys = await crypto.subtle.generateKey(
+    { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+    true,
+    ["sign", "verify"],
+  );
   const jwk = { ...(await crypto.subtle.exportKey("jwk", keys.publicKey)), kid: "test" };
   let nonce = "";
   let now = Date.now();
@@ -33,7 +34,8 @@ async function fixture() {
       const url = String(input);
       if (url.endsWith("/oauth/revoke")) revocations.push(new URLSearchParams(String(init?.body)).get("token")!);
       fetches.push(url);
-      if (url.endsWith("jwks.json")) return bad === "jwks" ? Response.json({}, { status: 503 }) : Response.json({ keys: [jwk] });
+      if (url.endsWith("jwks.json"))
+        return bad === "jwks" ? Response.json({}, { status: 503 }) : Response.json({ keys: [jwk] });
       if (url.endsWith("/oauth/token")) {
         tokenCalls++;
         if (bad === "unavailable") return Response.json({ error: "temporarily_unavailable" }, { status: 503 });
@@ -53,22 +55,33 @@ async function fixture() {
             exp: now / 1000 + (bad === "expired" ? -1 : 3600),
           }),
         ).toString("base64url");
-        const sig = Buffer.from(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", keys.privateKey, Buffer.from(`${header}.${payload}`))).toString("base64url");
+        const sig = Buffer.from(
+          await crypto.subtle.sign("RSASSA-PKCS1-v1_5", keys.privateKey, Buffer.from(`${header}.${payload}`)),
+        ).toString("base64url");
         return Response.json({
           access_token: "secret-access",
           refresh_token: `secret-refresh-${tokenCalls}`,
           id_token: `${header}.${payload}.${bad === "signature" ? "bad" : sig}`,
           token_type: "Bearer",
           expires_in: 3600,
-          scope: bad === "scope" ? "openid" : "openid profile email offline_access resource.invoke chatgpt.tokens.use.direct",
+          scope:
+            bad === "scope"
+              ? "openid"
+              : "openid profile email offline_access resource.invoke chatgpt.tokens.use.direct",
         });
       }
-      if (url === "https://ai.test/v1/models") return Response.json({ data: [{ id: "gpt-a" }, { id: "gpt-b" }, { id: "whisper-1" }] });
-      if (url.endsWith("/models")) return Response.json({ models: [{ slug: "chat-test", display_name: "Test model", visibility: "list" }] });
+      if (url === "https://ai.test/v1/models")
+        return Response.json({ data: [{ id: "gpt-a" }, { id: "gpt-b" }, { id: "whisper-1" }] });
+      if (url.endsWith("/models"))
+        return Response.json({ models: [{ slug: "chat-test", display_name: "Test model", visibility: "list" }] });
       if (url.endsWith("/responses")) {
         auths.push(new Headers(init?.headers).get("authorization")!);
         requests.push(JSON.parse(String(init?.body)));
-        if (requests.at(-1).tool_choice?.namespace) return Response.json({ error: { code: "unknown_parameter", type: "invalid_request_error", param: "tool_choice.namespace" } }, { status: 400 });
+        if (requests.at(-1).tool_choice?.namespace)
+          return Response.json(
+            { error: { code: "unknown_parameter", type: "invalid_request_error", param: "tool_choice.namespace" } },
+            { status: 400 },
+          );
         if (replies.length) return replies.shift()!;
         return sse("response.completed", {
           output: [
@@ -80,8 +93,12 @@ async function fixture() {
       return new Response("", { status: 200 });
     },
   });
-  db.run("INSERT INTO users (id, username, password_hash, role) VALUES (1, 'one', 'x', 'admin'), (2, 'two', 'x', 'member')");
-  db.run("INSERT INTO sessions (id, user_id, expires_at) VALUES ('one', 1, '9999'), ('other', 1, '9999'), ('two', 2, '9999')");
+  db.run(
+    "INSERT INTO users (id, username, password_hash, role) VALUES (1, 'one', 'x', 'admin'), (2, 'two', 'x', 'member')",
+  );
+  db.run(
+    "INSERT INTO sessions (id, user_id, expires_at) VALUES ('one', 1, '9999'), ('other', 1, '9999'), ('two', 2, '9999')",
+  );
   const call = settling(async (method: string, path: string, body?: unknown, session = "one") => {
     const res = await app.request(path, {
       method,
@@ -118,11 +135,20 @@ async function fixture() {
   };
 }
 function sse(type: string, response: any = {}) {
-  const events = type === "response.completed" ? [
-    ...(response.output ?? []).map((item: any, output_index: number) => ({ type: "response.output_item.done", output_index, item: { id: item.type === "function_call" ? "fc_" + output_index : "item_" + output_index, ...item } })),
-    { type, response: { status: "completed", ...response } },
-  ] : [{ type, response }];
-  return new Response(events.map((event) => "data: " + JSON.stringify(event) + "\n\n").join(""), { headers: { "content-type": "text/event-stream" } });
+  const events =
+    type === "response.completed"
+      ? [
+          ...(response.output ?? []).map((item: any, output_index: number) => ({
+            type: "response.output_item.done",
+            output_index,
+            item: { id: item.type === "function_call" ? "fc_" + output_index : "item_" + output_index, ...item },
+          })),
+          { type, response: { status: "completed", ...response } },
+        ]
+      : [{ type, response }];
+  return new Response(events.map((event) => "data: " + JSON.stringify(event) + "\n\n").join(""), {
+    headers: { "content-type": "text/event-stream" },
+  });
 }
 
 test("manual callback validates ownership, session and single use without fetching the pasted URL", async () => {
@@ -140,17 +166,31 @@ test("manual callback validates ownership, session and single use without fetchi
   expect((await f.call("GET", "/api/chatgpt")).body.signIn).toBe(null);
   expect((await f.call("GET", "/api/chatgpt", undefined, "two")).status).toBe(403);
   expect((await f.call("POST", "/api/chats", { message: "hi" }, "two")).body.messages.at(-1).content).toBe("Hello");
-  expect((await f.call("GET", "/api/ai/status", undefined, "two")).body).toMatchObject({ ai: true, aiSource: "chatgpt", aiProblem: null });
+  expect((await f.call("GET", "/api/ai/status", undefined, "two")).body).toMatchObject({
+    ai: true,
+    aiSource: "chatgpt",
+    aiProblem: null,
+  });
 });
 
 test("rejects malformed URLs, mismatched state, expired attempts and denied consent", async () => {
   const f = await fixture();
   const callback = await f.start();
   for (const value of ["invalid", callback.replace("127.0.0.1", "evil.test"), `${callback}&state=duplicate`])
-    expect((await f.call("POST", "/api/chatgpt/callback", { callback: value })).body.error).toStartWith("That isn’t the address");
-  expect((await f.call("POST", "/api/chatgpt/callback", { callback: callback.replace("state=", "state=wrong") })).body.error).toStartWith("This sign-in attempt has expired");
+    expect((await f.call("POST", "/api/chatgpt/callback", { callback: value })).body.error).toStartWith(
+      "That isn’t the address",
+    );
+  expect(
+    (await f.call("POST", "/api/chatgpt/callback", { callback: callback.replace("state=", "state=wrong") })).body.error,
+  ).toStartWith("This sign-in attempt has expired");
   expect(f.calls()).toBe(0);
-  expect((await f.call("POST", "/api/chatgpt/callback", { callback: callback.replace("code=private-code", "error=access_denied") })).status).toBe(400);
+  expect(
+    (
+      await f.call("POST", "/api/chatgpt/callback", {
+        callback: callback.replace("code=private-code", "error=access_denied"),
+      })
+    ).status,
+  ).toBe(400);
   expect(f.calls()).toBe(0);
   const expired = await f.start();
   f.advance();
@@ -176,7 +216,11 @@ test("refresh is single flight; revoked credentials give reconnect recovery and 
   f.bad("revoked");
   expect((await f.call("GET", "/api/chatgpt/models")).status).toBe(400);
   expect((await f.call("GET", "/api/chatgpt")).body.needsSignIn).toBe(true);
-  expect((await f.call("GET", "/api/ai/status", undefined, "two")).body).toMatchObject({ ai: false, aiSource: "chatgpt", aiProblem: "ChatGPT sign-in has expired. Reconnect ChatGPT in Settings." });
+  expect((await f.call("GET", "/api/ai/status", undefined, "two")).body).toMatchObject({
+    ai: false,
+    aiSource: "chatgpt",
+    aiProblem: "ChatGPT sign-in has expired. Reconnect ChatGPT in Settings.",
+  });
   await f.call("DELETE", "/api/chatgpt");
   expect((await f.call("GET", "/api/chatgpt")).body.connected).toBe(false);
 });
@@ -186,7 +230,12 @@ test("with ChatGPT connected, a shared key only adds dictation", async () => {
   await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
   expect((await f.call("GET", "/api/ai/status")).body).toMatchObject({ ai: true, vision: true, voice: false });
   f.db.run("UPDATE settings SET ai_base_url = 'https://ai.test/v1', ai_key = 'sk-shared'");
-  expect((await f.call("GET", "/api/ai/status")).body).toMatchObject({ ai: true, aiSource: "chatgpt", vision: true, voice: true });
+  expect((await f.call("GET", "/api/ai/status")).body).toMatchObject({
+    ai: true,
+    aiSource: "chatgpt",
+    vision: true,
+    voice: true,
+  });
 });
 
 test("credentials and host are outside the backup and SQL database", async () => {
@@ -214,7 +263,9 @@ test("Responses translates images, tools and histories and rejects failed, incom
   const reply = await responses(
     async (_, init) => {
       sent = JSON.parse(String(init?.body));
-      return sse("response.completed", { output: [{ type: "function_call", namespace: "groat", name: "transaction", call_id: "c2", arguments: "{}" }] });
+      return sse("response.completed", {
+        output: [{ type: "function_call", namespace: "groat", name: "transaction", call_id: "c2", arguments: "{}" }],
+      });
     },
     provider,
     request,
@@ -223,7 +274,12 @@ test("Responses translates images, tools and histories and rejects failed, incom
     store: false,
     stream: true,
     tools: [{ type: "namespace", name: "groat", tools: [{ name: "transaction", strict: false }] }],
-    input: [{ role: "developer" }, { content: [{ type: "input_image" }] }, { type: "function_call", namespace: "groat" }, { type: "function_call_output", call_id: "c1" }],
+    input: [
+      { role: "developer" },
+      { content: [{ type: "input_image" }] },
+      { type: "function_call", namespace: "groat" },
+      { type: "function_call_output", call_id: "c1" },
+    ],
   });
   expect(sent).not.toHaveProperty("reasoning");
   expect(sent.tool_choice).toBe("required");
@@ -236,7 +292,10 @@ test("failed Responses streams log diagnostic fields without private payloads", 
   const log = spyOn(console, "error").mockImplementation(() => {});
   try {
     for (const event of [
-      { type: "response.failed", response: { error: { code: "server_error", message: "private-message" }, output: ["private-output"] } },
+      {
+        type: "response.failed",
+        response: { error: { code: "server_error", message: "private-message" }, output: ["private-output"] },
+      },
       { type: "response.incomplete", response: { incomplete_details: { reason: "max_output_tokens" } } },
       { type: "error", code: "rate_limit_exceeded", message: "private-message" },
       { type: "error", code: { secret: "private-object" } },
@@ -245,14 +304,28 @@ test("failed Responses streams log diagnostic fields without private payloads", 
     ]) {
       log.mockClear();
       const stream = new Response(`data: ${JSON.stringify(event)}\n\n`, { headers: { "x-request-id": "req_test" } });
-      await expect(responses(async () => stream, { key: "private-key", model: "test" }, { messages: [{ role: "user", content: "private-prompt" }] })).rejects.toThrow(
-        "ChatGPT could not finish this response",
-      );
-      const code = event.type === "response.failed" ? "server_error" : event.code === "rate_limit_exceeded" ? event.code : undefined;
+      await expect(
+        responses(
+          async () => stream,
+          { key: "private-key", model: "test" },
+          { messages: [{ role: "user", content: "private-prompt" }] },
+        ),
+      ).rejects.toThrow("ChatGPT could not finish this response");
+      const code =
+        event.type === "response.failed"
+          ? "server_error"
+          : event.code === "rate_limit_exceeded"
+            ? event.code
+            : undefined;
       expect(log.mock.calls).toHaveLength(1);
       expect(JSON.parse(String(log.mock.calls[0][0]))).toEqual({
-        timestamp: expect.any(String), level: "error", event: "ai.response.failed", operation: event.type, providerRequestId: "req_test",
-        ...(code && { code }), ...(event.type === "response.incomplete" && { reason: "max_output_tokens" }),
+        timestamp: expect.any(String),
+        level: "error",
+        event: "ai.response.failed",
+        operation: event.type,
+        providerRequestId: "req_test",
+        ...(code && { code }),
+        ...(event.type === "response.incomplete" && { reason: "max_output_tokens" }),
         hasMessage: event.type === "response.failed" || event.code === "rate_limit_exceeded",
       });
       expect(JSON.stringify(log.mock.calls)).not.toContain("private");
@@ -266,21 +339,54 @@ test("Responses logs SDK-consumed errors and message-only failures without expos
   const log = spyOn(console, "error").mockImplementation(() => {});
   try {
     for (const [event, expected] of [
-      [{ type: "error", error: { code: "insufficient_quota", type: "invalid_request_error", param: "model", message: "private-message" } },
-        { operation: "stream", reason: "error" }],
-      [{ type: "error", code: null, message: "private-message", param: "stream" },
-        { param: "stream", hasMessage: true }],
-      [{ type: "response.failed", response: { error: { code: "server_error", type: "server_error", message: "private-message" } } },
-        { code: "server_error", errorType: "server_error", hasMessage: true }],
-      [{ type: "error", error: { code: "private\ncode", type: { secret: "private-type" }, param: "private".repeat(20), message: { secret: "private-message" } } },
-        { operation: "stream", reason: "error" }],
+      [
+        {
+          type: "error",
+          error: {
+            code: "insufficient_quota",
+            type: "invalid_request_error",
+            param: "model",
+            message: "private-message",
+          },
+        },
+        { operation: "stream", reason: "error" },
+      ],
+      [
+        { type: "error", code: null, message: "private-message", param: "stream" },
+        { param: "stream", hasMessage: true },
+      ],
+      [
+        {
+          type: "response.failed",
+          response: { error: { code: "server_error", type: "server_error", message: "private-message" } },
+        },
+        { code: "server_error", errorType: "server_error", hasMessage: true },
+      ],
+      [
+        {
+          type: "error",
+          error: {
+            code: "private\ncode",
+            type: { secret: "private-type" },
+            param: "private".repeat(20),
+            message: { secret: "private-message" },
+          },
+        },
+        { operation: "stream", reason: "error" },
+      ],
     ] as const) {
       log.mockClear();
       const stream = new Response(`data: ${JSON.stringify(event)}\n\n`);
-      await expect(responses(async () => stream, { key: "private-key", model: "test" }, { messages: [] })).rejects.toThrow("ChatGPT could not finish");
+      await expect(
+        responses(async () => stream, { key: "private-key", model: "test" }, { messages: [] }),
+      ).rejects.toThrow("ChatGPT could not finish");
       expect(log.mock.calls).toHaveLength(1);
       expect(JSON.parse(String(log.mock.calls[0][0]))).toEqual({
-        timestamp: expect.any(String), level: "error", event: "ai.response.failed", operation: event.type, ...expected,
+        timestamp: expect.any(String),
+        level: "error",
+        event: "ai.response.failed",
+        operation: event.type,
+        ...expected,
       });
       expect(JSON.stringify(log.mock.calls)).not.toContain("private");
     }
@@ -292,13 +398,27 @@ test("Responses logs SDK-consumed errors and message-only failures without expos
 test("rejected Responses requests log the provider's error code without its message", async () => {
   const log = spyOn(console, "error").mockImplementation(() => {});
   try {
-    const error = { code: "invalid_function_parameters", type: "invalid_request_error", param: "tools", message: "private-message" };
+    const error = {
+      code: "invalid_function_parameters",
+      type: "invalid_request_error",
+      param: "tools",
+      message: "private-message",
+    };
     const res = new Response(JSON.stringify({ error }), { status: 400, headers: { "x-request-id": "req_test" } });
-    await expect(responses(async () => res, { key: "private-key", model: "test" }, { messages: [] })).rejects.toThrow("ChatGPT returned an error (400)");
+    await expect(responses(async () => res, { key: "private-key", model: "test" }, { messages: [] })).rejects.toThrow(
+      "ChatGPT returned an error (400)",
+    );
     expect(log.mock.calls).toHaveLength(1);
     expect(JSON.parse(String(log.mock.calls[0][0]))).toEqual({
-      timestamp: expect.any(String), level: "error", event: "ai.response.failed", operation: "stream", providerRequestId: "req_test", reason: "error",
-      code: "invalid_function_parameters", errorType: "invalid_request_error", param: "tools",
+      timestamp: expect.any(String),
+      level: "error",
+      event: "ai.response.failed",
+      operation: "stream",
+      providerRequestId: "req_test",
+      reason: "error",
+      code: "invalid_function_parameters",
+      errorType: "invalid_request_error",
+      param: "tools",
     });
     expect(JSON.stringify(log.mock.calls)).not.toContain("private");
   } finally {
@@ -333,7 +453,12 @@ test("download excludes private credentials and restore clears existing host and
   const bytes = await backup.arrayBuffer();
   expect(Buffer.from(bytes).includes(Buffer.from("secret-access"))).toBe(false);
   expect(Buffer.from(bytes).includes(Buffer.from("urn:uuid:"))).toBe(false);
-  const app = createApp({ db: new Database(":memory:"), credentials: f.store, clock: () => new Date(), fetch: async () => new Response("", { status: 404 }) });
+  const app = createApp({
+    db: new Database(":memory:"),
+    credentials: f.store,
+    clock: () => new Date(),
+    fetch: async () => new Response("", { status: 404 }),
+  });
   const form = new FormData();
   form.append("backup", new File([bytes], "backup.sqlite"));
   const restored = await app.request("/api/restore", { method: "POST", body: form });
@@ -345,9 +470,13 @@ test("download excludes private credentials and restore clears existing host and
 test("an earlier personal connection becomes the instance's, preferring an admin's", async () => {
   const f = await fixture();
   await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
-  const row = JSON.parse(f.store.query<{ value: string }, []>("SELECT value FROM private WHERE key = 'instance'").get()!.value);
+  const row = JSON.parse(
+    f.store.query<{ value: string }, []>("SELECT value FROM private WHERE key = 'instance'").get()!.value,
+  );
   f.store.run("DELETE FROM private WHERE key = 'instance'");
-  f.db.run("INSERT INTO users (id, username, password_hash, role, deleted_at) VALUES (3, 'gone', 'x', 'admin', '2026-01-01')");
+  f.db.run(
+    "INSERT INTO users (id, username, password_hash, role, deleted_at) VALUES (3, 'gone', 'x', 'admin', '2026-01-01')",
+  );
   f.store.run("INSERT INTO private VALUES ('user:3', ?), ('user:2', ?), ('user:1', ?), ('pending:1', '{}')", [
     JSON.stringify({ ...row, access_token: "removed-token" }),
     JSON.stringify({ ...row, access_token: "member-token" }),
@@ -355,10 +484,14 @@ test("an earlier personal connection becomes the instance's, preferring an admin
   ]);
   const adopted = () => {
     createApp({ db: f.db, credentials: f.store, clock: () => new Date(), fetch: async () => new Response("") });
-    return JSON.parse(f.store.query<{ value: string }, []>("SELECT value FROM private WHERE key = 'instance'").get()?.value ?? "null")?.access_token;
+    return JSON.parse(
+      f.store.query<{ value: string }, []>("SELECT value FROM private WHERE key = 'instance'").get()?.value ?? "null",
+    )?.access_token;
   };
   expect(adopted()).toBe("admin-token");
-  expect(f.store.query("SELECT count(*) AS n FROM private WHERE key LIKE 'user:%' OR key LIKE 'pending:%'").get()).toEqual({ n: 0 });
+  expect(
+    f.store.query("SELECT count(*) AS n FROM private WHERE key LIKE 'user:%' OR key LIKE 'pending:%'").get(),
+  ).toEqual({ n: 0 });
   f.store.run("DELETE FROM private WHERE key = 'instance'");
   f.store.run("INSERT INTO private VALUES ('user:3', ?)", [JSON.stringify({ ...row, access_token: "removed-token" })]);
   expect(adopted()).toBe(undefined);
@@ -370,7 +503,11 @@ test("a capture is kept as pending when the ChatGPT sign-in has expired", async 
   const { token } = (await f.call("POST", "/api/tokens", { name: "Phone" })).body;
   f.advance();
   f.bad("revoked");
-  const res = await f.app.request("/api/capture", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ text: "ramen" }) });
+  const res = await f.app.request("/api/capture", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify({ text: "ramen" }),
+  });
   expect(res.status).toBe(201);
   expect(await res.json()).toMatchObject({ note: "ramen", status: "pending" });
 });
@@ -413,15 +550,29 @@ test("disconnect revokes the latest token after interrupted refresh validation",
 test("tool continuations preserve reasoning and tool call identifiers", async () => {
   const items = [
     { type: "reasoning", id: "r1", encrypted_content: "opaque-reasoning", summary: [] },
-    { type: "function_call", id: "fc_f1", namespace: "groat", name: "totals", call_id: "c1", arguments: "{}", status: "completed" },
+    {
+      type: "function_call",
+      id: "fc_f1",
+      namespace: "groat",
+      name: "totals",
+      call_id: "c1",
+      arguments: "{}",
+      status: "completed",
+    },
   ];
   const first = { role: "user", content: "What did I spend?" };
-  const reply = await responses(async () => sse("response.completed", { output: items }), { key: "secret", model: "test" }, { messages: [first] });
+  const reply = await responses(
+    async () => sse("response.completed", { output: items }),
+    { key: "secret", model: "test" },
+    { messages: [first] },
+  );
   let sent: any;
   await responses(
     async (_, init) => {
       sent = JSON.parse(String(init?.body));
-      return sse("response.completed", { output: [{ type: "message", content: [{ type: "output_text", text: "12" }] }] });
+      return sse("response.completed", {
+        output: [{ type: "message", content: [{ type: "output_text", text: "12" }] }],
+      });
     },
     { key: "secret", model: "test" },
     { messages: [first, reply, { role: "tool", tool_call_id: "c1", content: "12" }] },
@@ -459,7 +610,12 @@ test("a fresh expense database cannot inherit another installation's connections
   const f = await fixture();
   await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
   const db = new Database(":memory:");
-  const app = createApp({ db, credentials: f.store, clock: () => new Date(), fetch: async () => new Response("", { status: 404 }) });
+  const app = createApp({
+    db,
+    credentials: f.store,
+    clock: () => new Date(),
+    fetch: async () => new Response("", { status: 404 }),
+  });
   db.run("INSERT INTO users (id, username, password_hash, role) VALUES (1, 'new-owner', 'x', 'admin')");
   db.run("INSERT INTO sessions (id, user_id, expires_at) VALUES ('fresh', 1, '9999')");
   const response = await app.request("/api/chatgpt", { headers: { cookie: "session=fresh" } });
@@ -499,7 +655,18 @@ test("shared chat history stays readable without an AI connection or after revoc
 test("ChatGPT extracts text and receipt drafts through the connected account", async () => {
   const f = await fixture();
   await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
-  const extraction = () => sse("response.completed", { output: [{ type: "function_call", namespace: "groat", name: "transaction", call_id: "receipt", arguments: JSON.stringify({ note: "Tesco", amount: "23.45" }) }] });
+  const extraction = () =>
+    sse("response.completed", {
+      output: [
+        {
+          type: "function_call",
+          namespace: "groat",
+          name: "transaction",
+          call_id: "receipt",
+          arguments: JSON.stringify({ note: "Tesco", amount: "23.45" }),
+        },
+      ],
+    });
   f.replies.push(extraction());
   const text = await f.call("POST", "/api/drafts", { text: "Tesco 23.45" });
   expect(text.status).toBe(200);
@@ -507,7 +674,11 @@ test("ChatGPT extracts text and receipt drafts through the connected account", a
   f.replies.push(extraction());
   const form = new FormData();
   form.set("image", new File([Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1])], "receipt.jpg", { type: "image/jpeg" }));
-  const photo = await f.app.request("/api/drafts/photo", { method: "POST", headers: { cookie: "session=one" }, body: form });
+  const photo = await f.app.request("/api/drafts/photo", {
+    method: "POST",
+    headers: { cookie: "session=one" },
+    body: form,
+  });
   expect(photo.status).toBe(200);
   expect(await photo.json()).toMatchObject({ note: "Tesco", amount: 2345, attachmentId: expect.any(Number) });
   for (const request of f.requests) {
@@ -515,7 +686,10 @@ test("ChatGPT extracts text and receipt drafts through the connected account", a
     expect(request.tool_choice).toBe("required");
     expect(request.tools[0].tools.map((tool: { name: string }) => tool.name)).toEqual(["transaction"]);
   }
-  expect(f.requests[1].input[1].content[0]).toMatchObject({ type: "input_image", image_url: expect.stringContaining("data:image/jpeg;base64,") });
+  expect(f.requests[1].input[1].content[0]).toMatchObject({
+    type: "input_image",
+    image_url: expect.stringContaining("data:image/jpeg;base64,"),
+  });
   expect(f.auths).toEqual(["Bearer secret-access", "Bearer secret-access"]);
   expect((await f.call("GET", "/api/transactions")).body).toEqual([]);
 });
@@ -524,7 +698,20 @@ test("ChatGPT action calls execute once even when repeated with a different outp
   const f = await fixture();
   await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
   for (const id of ["fc_first", "fc_repeat"])
-    f.replies.push(sse("response.completed", { output: [{ type: "function_call", id, namespace: "groat", name: "add_transaction", call_id: "same-call", arguments: JSON.stringify({ note: "Coffee", amount: "3" }) }] }));
+    f.replies.push(
+      sse("response.completed", {
+        output: [
+          {
+            type: "function_call",
+            id,
+            namespace: "groat",
+            name: "add_transaction",
+            call_id: "same-call",
+            arguments: JSON.stringify({ note: "Coffee", amount: "3" }),
+          },
+        ],
+      }),
+    );
   f.replies.push(new Response("private-provider-error", { status: 503 }));
   const chat = await f.call("POST", "/api/chats", { message: "Add coffee for 3" });
   expect(chat.status).toBe(202);
@@ -532,7 +719,9 @@ test("ChatGPT action calls execute once even when repeated with a different outp
   const transactions = (await f.call("GET", "/api/transactions")).body;
   expect(transactions).toHaveLength(1);
   expect(transactions[0]).toMatchObject({ note: "Coffee", amount: 300 });
-  expect(f.requests[1].input).toContainEqual(expect.objectContaining({ type: "function_call_output", call_id: "same-call" }));
+  expect(f.requests[1].input).toContainEqual(
+    expect.objectContaining({ type: "function_call_output", call_id: "same-call" }),
+  );
   const continued = await f.call("POST", `/api/chats/${chat.body.id}/messages`, { message: "Thanks" });
   expect(continued.status).toBe(202);
   expect((await f.call("GET", "/api/transactions")).body).toHaveLength(1);
@@ -542,7 +731,20 @@ test("ChatGPT action calls execute once even when repeated with a different outp
 test("ChatGPT refuses tool calls from an unknown namespace and reports expired access", async () => {
   const provider = { key: "private-key", model: "test" };
   const request = { messages: [{ role: "user", content: "Hello" }] };
-  await expect(responses(async () => sse("response.completed", { output: [{ type: "function_call", namespace: "other", name: "add_transaction", call_id: "c1", arguments: "{}" }] }), provider, request)).rejects.toThrow("unknown tool");
+  await expect(
+    responses(
+      async () =>
+        sse("response.completed", {
+          output: [
+            { type: "function_call", namespace: "other", name: "add_transaction", call_id: "c1", arguments: "{}" },
+          ],
+        }),
+      provider,
+      request,
+    ),
+  ).rejects.toThrow("unknown tool");
   for (const status of [401, 403])
-    await expect(responses(async () => new Response("private", { status }), provider, request)).rejects.toThrow("sign in again");
+    await expect(responses(async () => new Response("private", { status }), provider, request)).rejects.toThrow(
+      "sign in again",
+    );
 });

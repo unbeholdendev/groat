@@ -6,7 +6,8 @@ import { type Category, category, type Request } from "../../lib/schemas";
 
 export function syncCategory(client: QueryClient, data: unknown, [method, , body]: Request) {
   if (method === "DELETE") return invalidate(client, ["categories", "transactions", "recurring"]);
-  if (method === "PUT" && z.object({ kind }).safeParse(body).success) return invalidate(client, ["categories", "transactions"]);
+  if (method === "PUT" && z.object({ kind }).safeParse(body).success)
+    return invalidate(client, ["categories", "transactions"]);
   const order = z.array(z.number()).safeParse(body).data;
   if (order)
     return client.setQueryData<Category[]>(["/api/categories"], (rows) => {

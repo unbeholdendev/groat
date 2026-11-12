@@ -28,7 +28,11 @@ chmodSync(credentialPath, 0o600);
 const credentials = new Database(credentialPath, { create: true });
 const app = createApp({ credentials, db, clock: () => new Date(), fetch });
 const timer = setInterval(() => {
-  try { app.generate(); } catch (error) { log("error", "background.generate.failed", { error: errorKind(error) }); }
+  try {
+    app.generate();
+  } catch (error) {
+    log("error", "background.generate.failed", { error: errorKind(error) });
+  }
 }, 86_400_000);
 app.use("*", serveStatic({ root: "./dist" }));
 app.get("*", serveStatic({ path: "./dist/index.html" }));

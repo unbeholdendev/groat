@@ -44,34 +44,42 @@ test("a tab's own write reaches its other tabs but is not echoed back to it", as
   expect(frames.filter((f) => f.includes('"changed"'))).toEqual(['{"type":"changed","resources":["transactions"]}']);
 });
 
-for (const change of ["revocation", "account switch"]) test(`a delayed token response cannot restore private cache after ${change}`, async ({ app: page }) => {
-  let release!: () => void;
-  let received!: () => void;
-  const held = new Promise<void>((resolve) => { release = resolve; });
-  const ready = new Promise<void>((resolve) => { received = resolve; });
-  if (change === "account switch") await page.request.post("/api/users", { data: { username: "partner", password: "secret" } });
-  await page.goto("/settings");
-  await page.route("**/api/tokens", async (route) => {
-    if (route.request().method() !== "POST") return route.continue();
-    const response = await route.fetch();
-    received();
-    await held;
-    await route.fulfill({ response });
+for (const change of ["revocation", "account switch"])
+  test(`a delayed token response cannot restore private cache after ${change}`, async ({ app: page }) => {
+    let release!: () => void;
+    let received!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const ready = new Promise<void>((resolve) => {
+      received = resolve;
+    });
+    if (change === "account switch")
+      await page.request.post("/api/users", { data: { username: "partner", password: "secret" } });
+    await page.goto("/settings");
+    await page.route("**/api/tokens", async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      const response = await route.fetch();
+      received();
+      await held;
+      await route.fulfill({ response });
+    });
+    await page.getByLabel("Token name").fill("Private held token");
+    await page.getByRole("button", { name: "Create", exact: true }).click();
+    await ready;
+    await page.request.post("/api/logout");
+    await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
+    if (change === "account switch") {
+      await page.getByLabel("Username").fill("partner");
+      await page.getByLabel("Password", { exact: true }).fill("secret");
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(page.getByLabel("Token name")).toBeVisible();
+    }
+    const finished = page.waitForEvent("requestfinished", {
+      predicate: (r) => r.url().endsWith("/api/tokens") && r.method() === "POST",
+    });
+    release();
+    await finished;
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    expect(await page.evaluate(() => localStorage.getItem("cache") ?? "")).not.toContain("Private held token");
   });
-  await page.getByLabel("Token name").fill("Private held token");
-  await page.getByRole("button", { name: "Create", exact: true }).click();
-  await ready;
-  await page.request.post("/api/logout");
-  await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
-  if (change === "account switch") {
-    await page.getByLabel("Username").fill("partner");
-    await page.getByLabel("Password", { exact: true }).fill("secret");
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await expect(page.getByLabel("Token name")).toBeVisible();
-  }
-  const finished = page.waitForEvent("requestfinished", { predicate: (r) => r.url().endsWith("/api/tokens") && r.method() === "POST" });
-  release();
-  await finished;
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  expect(await page.evaluate(() => localStorage.getItem("cache") ?? "")).not.toContain("Private held token");
-});

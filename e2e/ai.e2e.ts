@@ -84,8 +84,12 @@ test("an explicit chat request saves the expense and refreshes Home without manu
 test("a delayed chat reply cannot repopulate the device cache after revocation", async ({ app: page }) => {
   let release!: () => void;
   let received!: () => void;
-  const held = new Promise<void>((resolve) => { release = resolve; });
-  const ready = new Promise<void>((resolve) => { received = resolve; });
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const ready = new Promise<void>((resolve) => {
+    received = resolve;
+  });
   await page.route("**/api/chats", async (route) => {
     const response = await route.fetch();
     received();
@@ -97,7 +101,9 @@ test("a delayed chat reply cannot repopulate the device cache after revocation",
   await ready;
   await page.request.post("/api/logout");
   await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
-  const finished = page.waitForEvent("requestfinished", { predicate: (r) => r.url().endsWith("/api/chats") && r.method() === "POST" });
+  const finished = page.waitForEvent("requestfinished", {
+    predicate: (r) => r.url().endsWith("/api/chats") && r.method() === "POST",
+  });
   release();
   await finished;
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -109,7 +115,9 @@ test("chat requests fail offline instead of queuing actions for later", async ({
   await context.setOffline(true);
   await bar(page).fill("?Add test coffee for £3");
   await bar(page).press("Enter");
-  await expect(page.getByText("Couldn’t reach the server. Check your connection and try again.", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Couldn’t reach the server. Check your connection and try again.", { exact: true }),
+  ).toBeVisible();
   await expect(bar(page)).toHaveValue("?Add test coffee for £3");
   const cache = await page.evaluate(() => JSON.parse(localStorage.getItem("cache") ?? "{}"));
   expect(cache.mutations ?? []).toHaveLength(0);
@@ -119,7 +127,9 @@ test("expense entry works while AI availability is pending", async ({ fresh: pag
   await page.request.post("/api/setup", { data: { username: "admin", password: "secret" } });
   await page.request.post("/api/onboarding", { data: { baseCurrency: "GBP" } });
   let release!: () => void;
-  const pending = new Promise<void>((resolve) => { release = resolve; });
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   await page.route("**/api/ai/status", async (route) => {
     await pending;
     await route.continue();

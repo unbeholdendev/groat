@@ -1,15 +1,35 @@
 import { expect, test } from "bun:test";
 import { z } from "zod";
-import { aiStatus, apiToken, category, chat, transaction, member, models, period, session, settings, suggestion, tag, template } from "../web/lib/schemas";
+import {
+  aiStatus,
+  apiToken,
+  category,
+  chat,
+  transaction,
+  member,
+  models,
+  period,
+  session,
+  settings,
+  suggestion,
+  tag,
+  template,
+} from "../web/lib/schemas";
 import { completion, models as listing, setup } from "./harness";
 
 test("web schemas accept what the server sends", async () => {
   const ai = { baseUrl: "https://ai.test/v1", key: "k" };
   const reply = { role: "assistant", content: "hi" };
-  const { call } = setup(undefined, (url) => listing(["m"])(url) ?? (url.host === "ai.test" ? completion(reply) : undefined), ai);
+  const { call } = setup(
+    undefined,
+    (url) => listing(["m"])(url) ?? (url.host === "ai.test" ? completion(reply) : undefined),
+    ai,
+  );
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   const food = (await call("POST", "/api/categories", { name: "Food", icon: "x", color: "#f00" })).body;
-  const row = (await call("POST", "/api/transactions", { note: "milk", amount: "1.20", tags: ["a"], categoryId: food.id })).body;
+  const row = (
+    await call("POST", "/api/transactions", { note: "milk", amount: "1.20", tags: ["a"], categoryId: food.id })
+  ).body;
   await call("POST", "/api/recurring", { note: "rent", amount: "5", period: "month", every: 1 });
   const binned = (await call("DELETE", `/api/transactions/${row.id}`)).body;
   const c = (await call("POST", "/api/chats", { message: "hi" })).body;

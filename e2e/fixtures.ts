@@ -5,7 +5,10 @@ export const test = base.extend<{ ai: boolean | string[]; fresh: Page; app: Page
   fresh: async ({ page, ai }, use) => {
     const errors: string[] = [];
     // WebKit rejects fetches and imports cut off by a reload or navigation with these.
-    page.on("pageerror", (e) => !/due to access control checks\.$|^Context is stopped$/.test(e.message) && errors.push(e.message));
+    page.on(
+      "pageerror",
+      (e) => !/due to access control checks\.$|^Context is stopped$/.test(e.message) && errors.push(e.message),
+    );
     await page.request.post(ai ? `/__reset?ai=${ai === true ? "m" : ai.join(",")}` : "/__reset");
     await use(page);
     expect(errors).toEqual([]);
@@ -30,5 +33,12 @@ export async function add(page: Page, line: string) {
 
 export const today = () => new Date().toLocaleDateString("en-CA");
 
-export const seed = (page: Page, rows: { note: string; amount: string; currency?: string; date?: string; categoryId?: number; tags?: string[] }[]) =>
-  Promise.all(rows.map((r) => page.request.post("/api/transactions", { data: { currency: "GBP", date: today(), tags: [], ...r } })));
+export const seed = (
+  page: Page,
+  rows: { note: string; amount: string; currency?: string; date?: string; categoryId?: number; tags?: string[] }[],
+) =>
+  Promise.all(
+    rows.map((r) =>
+      page.request.post("/api/transactions", { data: { currency: "GBP", date: today(), tags: [], ...r } }),
+    ),
+  );

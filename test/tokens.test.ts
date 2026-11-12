@@ -24,7 +24,9 @@ test("a token is shown once, listed without its secret, and revoked", async () =
   expect(JSON.stringify(db.query("SELECT * FROM api_tokens").all())).not.toContain(token);
 
   const list = await call("GET", "/api/tokens");
-  expect(list.body).toEqual([{ id: created.body.id, name: "Phone", createdAt: "2026-10-10T12:00:00.000Z", lastUsedAt: null }]);
+  expect(list.body).toEqual([
+    { id: created.body.id, name: "Phone", createdAt: "2026-10-10T12:00:00.000Z", lastUsedAt: null },
+  ]);
 
   expect((await call("POST", "/api/tokens", { name: " " })).status).toBe(400);
   expect((await call("DELETE", `/api/tokens/${created.body.id}`)).status).toBe(200);
@@ -39,7 +41,14 @@ test("confident text saves an expense and marks the token used", async () => {
 
   const res = await capture("coffee 4.50 #work");
   expect(res.status).toBe(201);
-  expect(res.body).toMatchObject({ note: "coffee", amount: 450, categoryId: food.id, status: "normal", tags: ["work"], addedBy: "admin" });
+  expect(res.body).toMatchObject({
+    note: "coffee",
+    amount: 450,
+    categoryId: food.id,
+    status: "normal",
+    tags: ["work"],
+    addedBy: "admin",
+  });
   expect((await call("GET", "/api/tokens")).body[0].lastUsedAt).toBe("2026-10-10T12:00:00.000Z");
 });
 
@@ -62,7 +71,10 @@ test("unsure text waits as pending until confirmed", async () => {
   const amountless = await capture("lunch with sam");
   expect(amountless.body).toMatchObject({ note: "lunch with sam", amount: 0, status: "pending" });
 
-  expect((await call("GET", "/api/transactions?status=pending")).body.map((e: { note: string }) => e.note)).toEqual(["lunch with sam", "parking"]);
+  expect((await call("GET", "/api/transactions?status=pending")).body.map((e: { note: string }) => e.note)).toEqual([
+    "lunch with sam",
+    "parking",
+  ]);
   expect((await call("POST", `/api/transactions/${guessless.body.id}/confirm`)).body.status).toBe("normal");
   expect((await capture("")).status).toBe(400);
 });
@@ -78,9 +90,17 @@ test("a revoked or unknown token is refused, and tokens only open capture", asyn
 test("a member's capture is theirs, and removing the member revokes their tokens", async () => {
   const { app, call, capture } = await withToken();
   const bob = (await call("POST", "/api/users", { username: "bob", password: "pw" })).body;
-  const login = await app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "bob", password: "pw" }) });
+  const login = await app.request("/api/login", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ username: "bob", password: "pw" }),
+  });
   const cookie = login.headers.get("set-cookie")?.split(";")[0] ?? "";
-  const res = await app.request("/api/tokens", { method: "POST", headers: { "content-type": "application/json", cookie }, body: JSON.stringify({ name: "Bob's phone" }) });
+  const res = await app.request("/api/tokens", {
+    method: "POST",
+    headers: { "content-type": "application/json", cookie },
+    body: JSON.stringify({ name: "Bob's phone" }),
+  });
   const { token } = await res.json();
 
   expect((await capture("tea 2", token)).body).toMatchObject({ addedBy: "bob", status: "pending" });

@@ -1,7 +1,17 @@
 import { useRef } from "react";
 import { Icon } from "../../components/icon";
 
-export function PhotoButton({ online, onPhoto, off, onOff }: { online: boolean; onPhoto: (file: Blob) => void; off?: string; onOff: (e: Error) => void }) {
+export function PhotoButton({
+  online,
+  onPhoto,
+  off,
+  onOff,
+}: {
+  online: boolean;
+  onPhoto: (file: Blob) => void;
+  off?: string;
+  onOff: (e: Error) => void;
+}) {
   const picker = useRef<HTMLInputElement>(null);
   return (
     <>

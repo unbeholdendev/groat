@@ -10,8 +10,15 @@ test("offline admin recovery resets credentials and revokes only that admin's se
   await expect(recoverAdmin(db, "admin", "")).rejects.toThrow("Password must not be empty");
   await recoverAdmin(db, "admin", "new");
   expect(db.query("SELECT id FROM sessions").all()).toEqual([{ id: "bob" }]);
-  for (const [password, status] of [["secret", 401], ["new", 200]] as const) {
-    const res = await app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "admin", password }) });
+  for (const [password, status] of [
+    ["secret", 401],
+    ["new", 200],
+  ] as const) {
+    const res = await app.request("/api/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "admin", password }),
+    });
     expect(res.status).toBe(status);
   }
   db.close();

@@ -28,11 +28,21 @@ type Credential = z.infer<typeof token> & {
   revoked?: boolean;
   renewal?: z.infer<typeof token> & { receivedAt: number };
 };
-type Pending = { state: string; nonce: string; verifier: string; session: string; expires: number; client?: string; subject?: string; claimed?: boolean };
+type Pending = {
+  state: string;
+  nonce: string;
+  verifier: string;
+  session: string;
+  expires: number;
+  client?: string;
+  subject?: string;
+  claimed?: boolean;
+};
 const random = () => randomBytes(32).toString("base64url");
 const recovery = "ChatGPT sign-in has expired. Reconnect ChatGPT in Settings.";
 const unavailable = "ChatGPT is temporarily unavailable. Try again.";
-const wrongAddress = "That isn’t the address of the page that failed to load. Copy its whole address and paste it again.";
+const wrongAddress =
+  "That isn’t the address of the page that failed to load. Copy its whole address and paste it again.";
 const staleAttempt = "This sign-in attempt has expired. Select Connect ChatGPT to start again.";
 
 export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Database(":memory:")) {
@@ -42,7 +52,8 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
     const row = store.query<{ value: string }, [string]>("SELECT value FROM private WHERE key = ?").get(key);
     return row ? (JSON.parse(row.value) as T) : undefined;
   };
-  const put = (key: string, value: unknown) => store.run("INSERT OR REPLACE INTO private VALUES (?, ?)", [key, JSON.stringify(value)]);
+  const put = (key: string, value: unknown) =>
+    store.run("INSERT OR REPLACE INTO private VALUES (?, ?)", [key, JSON.stringify(value)]);
   const remove = (key: string) => store.run("DELETE FROM private WHERE key = ?", [key]);
   let host = read<string>("host") ?? `urn:uuid:${crypto.randomUUID()}`;
   put("host", host);
@@ -57,13 +68,19 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
     if (!res.ok) {
       const error = (await res.json().catch(() => null)) as { error?: string | { code?: string } } | null;
       const code = typeof error?.error === "string" ? error.error : error?.error?.code;
-      const terminal = ["invalid_grant", "invalid_refresh_token", "token_expired", "refresh_token_expired", "refresh_token_invalidated", "refresh_token_reused"].includes(
-        code ?? "",
-      );
+      const terminal = [
+        "invalid_grant",
+        "invalid_refresh_token",
+        "token_expired",
+        "refresh_token_expired",
+        "refresh_token_invalidated",
+        "refresh_token_reused",
+      ].includes(code ?? "");
       throw Object.assign(new Error(terminal ? recovery : unavailable), { terminal });
     }
     const parsed = token.safeParse(await res.json());
-    if (!parsed.success || !scopes.split(" ").every((s) => parsed.data.scope.split(" ").includes(s))) throw new Error(recovery);
+    if (!parsed.success || !scopes.split(" ").every((s) => parsed.data.scope.split(" ").includes(s)))
+      throw new Error(recovery);
     return parsed.data;
   };
   const verify = async (jwt: string, client: string, nonce?: string) => {
@@ -75,8 +92,18 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
     const jwks = (await res.json()) as { keys: (JsonWebKey & { kid: string })[] };
     const jwk = jwks.keys.find((k) => k.kid === header.kid && k.kty === "RSA");
     if (!jwk) throw new Error(recovery);
-    const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
-    if (!(await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, Buffer.from(parts[2], "base64url"), Buffer.from(`${parts[0]}.${parts[1]}`)))) throw new Error(recovery);
+    const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, [
+      "verify",
+    ]);
+    if (
+      !(await crypto.subtle.verify(
+        "RSASSA-PKCS1-v1_5",
+        key,
+        Buffer.from(parts[2], "base64url"),
+        Buffer.from(`${parts[0]}.${parts[1]}`),
+      ))
+    )
+      throw new Error(recovery);
     const claims = JSON.parse(Buffer.from(parts[1], "base64url").toString());
     const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
     if (
@@ -108,7 +135,14 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
         const fresh =
           pending && pending.receivedAt + pending.expires_in * 1000 > now() + 60000
             ? pending
-            : { ...(await exchange({ grant_type: "refresh_token", client_id: saved.client, refresh_token: pending?.refresh_token ?? saved.refresh_token })), receivedAt: now() };
+            : {
+                ...(await exchange({
+                  grant_type: "refresh_token",
+                  client_id: saved.client,
+                  refresh_token: pending?.refresh_token ?? saved.refresh_token,
+                })),
+                receivedAt: now(),
+              };
         const rotating = read<Credential>("instance");
         if (rotating?.refresh_token !== saved.refresh_token) throw new Error(recovery);
         put("instance", { ...rotating, renewal: fresh });
@@ -122,9 +156,17 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
         log("info", "chatgpt.refresh.completed");
         return updated;
       } catch (error) {
-        if (error instanceof Error && "terminal" in error && error.terminal && read<Credential>("instance")?.refresh_token === saved.refresh_token)
+        if (
+          error instanceof Error &&
+          "terminal" in error &&
+          error.terminal &&
+          read<Credential>("instance")?.refresh_token === saved.refresh_token
+        )
           put("instance", { ...saved, revoked: true });
-        log("warn", "chatgpt.refresh.failed", { error: errorKind(error), code: read<Credential>("instance")?.revoked ? "revoked" : "retryable" });
+        log("warn", "chatgpt.refresh.failed", {
+          error: errorKind(error),
+          code: read<Credential>("instance")?.revoked ? "revoked" : "retryable",
+        });
         throw error;
       }
     })();
@@ -137,7 +179,10 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
   const catalogue = async () => {
     const saved = await credential();
     if (!saved) return [];
-    const res = await deps.fetch(`${resource}/models`, { headers: { authorization: `Bearer ${saved.access_token}` }, signal: AbortSignal.timeout(10000) });
+    const res = await deps.fetch(`${resource}/models`, {
+      headers: { authorization: `Bearer ${saved.access_token}` },
+      signal: AbortSignal.timeout(10000),
+    });
     if (res.status === 401 || res.status === 403) throw new Error(recovery);
     if (!res.ok) throw new Error(unavailable);
     return z
@@ -170,8 +215,15 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
   routes.get("/api/chatgpt", (c) => {
     const saved = read<Credential>("instance");
     const pending = read<Pending>("pending");
-    const waiting = pending && !pending.claimed && pending.expires > now() && pending.session === getCookie(c, "session");
-    return c.json({ connected: !!saved, email: saved?.email ?? null, model: saved?.model ?? null, needsSignIn: !!saved?.revoked, signIn: waiting ? authorize(pending) : null });
+    const waiting =
+      pending && !pending.claimed && pending.expires > now() && pending.session === getCookie(c, "session");
+    return c.json({
+      connected: !!saved,
+      email: saved?.email ?? null,
+      model: saved?.model ?? null,
+      needsSignIn: !!saved?.revoked,
+      signIn: waiting ? authorize(pending) : null,
+    });
   });
   routes.post("/api/chatgpt/start", (c) => {
     const saved = read<Credential>("instance") ?? read<Pick<Credential, "client" | "subject">>("registration");
@@ -195,9 +247,22 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
     const pending = read<Pending>("pending");
     const input = z.object({ callback: z.string().max(16384) }).parse(await c.req.json());
     const url = URL.parse(input.callback.trim());
-    if (!url || url.origin + url.pathname !== redirect || url.hash || url.username || url.password || [...url.searchParams.keys()].some((k) => url.searchParams.getAll(k).length !== 1))
+    if (
+      !url ||
+      url.origin + url.pathname !== redirect ||
+      url.hash ||
+      url.username ||
+      url.password ||
+      [...url.searchParams.keys()].some((k) => url.searchParams.getAll(k).length !== 1)
+    )
       throw new Error(wrongAddress);
-    if (!pending || pending.claimed || pending.session !== getCookie(c, "session") || pending.expires <= now() || url.searchParams.get("state") !== pending.state)
+    if (
+      !pending ||
+      pending.claimed ||
+      pending.session !== getCookie(c, "session") ||
+      pending.expires <= now() ||
+      url.searchParams.get("state") !== pending.state
+    )
       throw new Error(staleAttempt);
     put("pending", { ...pending, claimed: true });
     if (url.searchParams.has("error")) {
@@ -206,9 +271,21 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
     }
     const client = url.searchParams.get("client_id") ?? pending.client;
     const code = url.searchParams.get("code");
-    if (!client || client === "dynamic_agent_client" || !/^oaiapp_[A-Za-z0-9_-]+$/.test(client) || (pending.client && pending.client !== client) || !code)
+    if (
+      !client ||
+      client === "dynamic_agent_client" ||
+      !/^oaiapp_[A-Za-z0-9_-]+$/.test(client) ||
+      (pending.client && pending.client !== client) ||
+      !code
+    )
       throw new Error(recovery);
-    const fresh = await exchange({ grant_type: "authorization_code", client_id: client, code, code_verifier: pending.verifier, redirect_uri: redirect });
+    const fresh = await exchange({
+      grant_type: "authorization_code",
+      client_id: client,
+      code,
+      code_verifier: pending.verifier,
+      redirect_uri: redirect,
+    });
     const identity = await verify(fresh.id_token, client, pending.nonce);
     if (pending.subject && pending.subject !== identity.subject) throw new Error(recovery);
     if (read<Pending>("pending")?.state !== pending.state || pending.expires <= now()) throw new Error(staleAttempt);
@@ -236,7 +313,11 @@ export function chatgpt(deps: Pick<Deps, "fetch" | "clock">, store = new Databas
           .fetch(`${issuer}/api/accounts/oauth/revoke`, {
             method: "POST",
             headers: { "content-type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ token: saved.renewal?.refresh_token ?? saved.refresh_token, token_type_hint: "refresh_token", client_id: saved.client }),
+            body: new URLSearchParams({
+              token: saved.renewal?.refresh_token ?? saved.refresh_token,
+              token_type_hint: "refresh_token",
+              client_id: saved.client,
+            }),
             signal: AbortSignal.timeout(5000),
           })
           .then((r) => r.ok)

@@ -23,13 +23,25 @@ test("malformed input gets a readable 400 on every route family", async () => {
     ["GET", "/api/stats?from=2026-10-10&to=2026-10-01", undefined, "Invalid date range"],
     ["POST", "/api/chats", { message: 4 }, "Enter a message"],
   ];
-  for (const [method, path, body, error] of cases) expect([method, path, await call(method, path, body)]).toEqual([method, path, { status: 400, body: { error } }]);
+  for (const [method, path, body, error] of cases)
+    expect([method, path, await call(method, path, body)]).toEqual([method, path, { status: 400, body: { error } }]);
 
-  const res = await request("/api/transactions", { method: "POST", headers: { "content-type": "application/json" }, body: "{not json" });
+  const res = await request("/api/transactions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: "{not json",
+  });
   expect([res.status, await res.json()]).toEqual([400, { error: "Invalid request" }]);
 });
 
 test("an unexpected AI provider reply is a clear error, not a crash", async () => {
-  const { call } = setup(undefined, (url) => listed(url) ?? (url.host === "ai.test" ? Response.json({ choices: [] }) : undefined), ai);
-  expect((await call("POST", "/api/chats", { message: "hi" })).body.messages.at(-1)).toEqual({ role: "assistant", content: "The AI provider sent an unexpected reply" });
+  const { call } = setup(
+    undefined,
+    (url) => listed(url) ?? (url.host === "ai.test" ? Response.json({ choices: [] }) : undefined),
+    ai,
+  );
+  expect((await call("POST", "/api/chats", { message: "hi" })).body.messages.at(-1)).toEqual({
+    role: "assistant",
+    content: "The AI provider sent an unexpected reply",
+  });
 });

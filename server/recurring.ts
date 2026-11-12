@@ -26,7 +26,11 @@ export function recurringRoutes(ctx: Ctx) {
   const app = new Hono();
 
   const { deletedAt: _, ...templateColumns } = getTableColumns(r);
-  const templates = (where?: SQL) => db.select(templateColumns).from(r).where(and(isNull(r.deletedAt), where));
+  const templates = (where?: SQL) =>
+    db
+      .select(templateColumns)
+      .from(r)
+      .where(and(isNull(r.deletedAt), where));
 
   const readTemplate = (raw: unknown, intent: Intent) => {
     const input = valid(schedule, raw);
@@ -52,11 +56,26 @@ export function recurringRoutes(ctx: Ctx) {
       db.transaction(() => {
         for (const tpl of rows) {
           let last = tpl.lastDate;
-          for (let d; (d = last && last >= tpl.startDate ? next(last, tpl) : tpl.startDate) <= today(clock) && (!tpl.endDate || d <= tpl.endDate); last = d) {
+          for (
+            let d;
+            (d = last && last >= tpl.startDate ? next(last, tpl) : tpl.startDate) <= today(clock) &&
+            (!tpl.endDate || d <= tpl.endDate);
+            last = d
+          ) {
             if (skip) continue;
             const status = tpl.needsConfirmation ? "pending" : "normal";
             const { note, amount, currency, categoryId } = tpl;
-            const values = { note, amount, currency, date: d, categoryId, recurringId: tpl.id, status, createdAt: now, updatedAt: now };
+            const values = {
+              note,
+              amount,
+              currency,
+              date: d,
+              categoryId,
+              recurringId: tpl.id,
+              status,
+              createdAt: now,
+              updatedAt: now,
+            };
             const { id } = db.insert(e).values(values).returning({ id: e.id }).get();
             saveTags(db, id, tpl.tags);
             count++;
@@ -66,7 +85,10 @@ export function recurringRoutes(ctx: Ctx) {
       });
       log("info", "recurring.generate.completed", { count, durationMs: Math.round(performance.now() - start) });
     } catch (error) {
-      log("error", "recurring.generate.failed", { error: errorKind(error), durationMs: Math.round(performance.now() - start) });
+      log("error", "recurring.generate.failed", {
+        error: errorKind(error),
+        durationMs: Math.round(performance.now() - start),
+      });
       throw error;
     }
   }
@@ -94,7 +116,12 @@ export function recurringRoutes(ctx: Ctx) {
 
   const setTemplate = (c: Context, set: Partial<typeof r.$inferInsert>) => {
     const id = Number(c.req.param("id"));
-    return db.update(r).set(set).where(and(eq(r.id, id), isNull(r.deletedAt))).returning({ id: r.id }).get()
+    return db
+      .update(r)
+      .set(set)
+      .where(and(eq(r.id, id), isNull(r.deletedAt)))
+      .returning({ id: r.id })
+      .get()
       ? c.json(templates(eq(r.id, id)).get() ?? {})
       : c.json({ error: "Not found" }, 404);
   };
@@ -109,7 +136,12 @@ export function recurringRoutes(ctx: Ctx) {
 function next(last: string, { period, every, startDate }: typeof t.recurring.$inferSelect) {
   const [y, m, d] = last.split("-").map(Number);
   const iso = (date: Date) => date.toISOString().slice(0, 10);
-  if (period === "day" || period === "week") return iso(new Date(Date.UTC(y, m - 1, d + every * (period === "week" ? 7 : 1))));
+  if (period === "day" || period === "week")
+    return iso(new Date(Date.UTC(y, m - 1, d + every * (period === "week" ? 7 : 1))));
   const month = m - 1 + every * (period === "year" ? 12 : 1);
-  return iso(new Date(Date.UTC(y, month, Math.min(Number(startDate.slice(8)), new Date(Date.UTC(y, month + 1, 0)).getUTCDate()))));
+  return iso(
+    new Date(
+      Date.UTC(y, month, Math.min(Number(startDate.slice(8)), new Date(Date.UTC(y, month + 1, 0)).getUTCDate())),
+    ),
+  );
 }

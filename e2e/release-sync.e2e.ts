@@ -6,7 +6,11 @@ test("failed offline entries survive reload and can be corrected and retried", a
   await expect(bar(page)).toBeVisible();
   await context.setOffline(true);
   await add(page, "bus 2.80");
-  await page.route("**/api/transactions", (route) => route.request().method() === "POST" ? route.fulfill({ status: 400, json: { error: "Check the note" } }) : route.continue());
+  await page.route("**/api/transactions", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 400, json: { error: "Check the note" } })
+      : route.continue(),
+  );
   await context.setOffline(false);
   const outbox = page.getByRole("region", { name: "Unsent changes" });
   await expect(outbox).toContainText("Check the note");
@@ -22,7 +26,11 @@ test("failed offline entries survive reload and can be corrected and retried", a
 });
 
 test("storage failure never promises that an offline expense is saved", async ({ app: page, context }) => {
-  await page.evaluate(() => { Storage.prototype.setItem = () => { throw new DOMException("Full", "QuotaExceededError"); }; });
+  await page.evaluate(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException("Full", "QuotaExceededError");
+    };
+  });
   await expect(bar(page)).toBeVisible();
   await context.setOffline(true);
   await bar(page).fill("tea 2");
@@ -58,7 +66,9 @@ test("discarding a paused entry never posts it after reconnecting", async ({ app
   await context.setOffline(false);
   await expect(page.getByRole("region", { name: "Unsent changes" })).toBeHidden();
   await add(page, "keep me 3");
-  expect((await (await page.request.get("/api/transactions")).json()).map((r: { note: string }) => r.note)).toEqual(["keep me"]);
+  expect((await (await page.request.get("/api/transactions")).json()).map((r: { note: string }) => r.note)).toEqual([
+    "keep me",
+  ]);
 });
 
 test("expired-session entries cannot replay as another member", async ({ app: page, context }) => {
@@ -91,8 +101,12 @@ test("reload during offline replay keeps the entry and retry never duplicates it
   await add(page, "interrupted 4");
   let accepted!: () => void;
   let release!: () => void;
-  const saved = new Promise<void>((resolve) => { accepted = resolve; });
-  const waiting = new Promise<void>((resolve) => { release = resolve; });
+  const saved = new Promise<void>((resolve) => {
+    accepted = resolve;
+  });
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   await page.route("**/api/transactions", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     const response = await route.fetch();
@@ -127,7 +141,9 @@ test("retrying an old change preserves a new unfinished quick entry", async ({ a
   await expect(bar(page)).toBeVisible();
   await context.setOffline(true);
   await add(page, "old entry 2");
-  await page.route("**/api/transactions", (r) => r.request().method() === "POST" ? r.fulfill({ status: 400, json: { error: "Try later" } }) : r.continue());
+  await page.route("**/api/transactions", (r) =>
+    r.request().method() === "POST" ? r.fulfill({ status: 400, json: { error: "Try later" } }) : r.continue(),
+  );
   await context.setOffline(false);
   const outbox = page.getByRole("region", { name: "Unsent changes" });
   await expect(outbox).toContainText("Try later");
@@ -146,7 +162,9 @@ test("editing cannot replace an entry while its replay is in flight", async ({ a
   await outbox.getByRole("button", { name: "Edit" }).click();
   await outbox.getByLabel("Note").fill("edited replay");
   let release!: () => void;
-  const waiting = new Promise<void>((resolve) => { release = resolve; });
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   await page.route("**/api/transactions", async (route) => {
     if (route.request().method() === "POST") await waiting;
     await route.continue();
@@ -189,8 +207,12 @@ test("legacy queued creations receive a stable ID before their first replay", as
   const reopened = await context.newPage();
   let accepted!: () => void;
   let release!: () => void;
-  const saved = new Promise<void>((resolve) => { accepted = resolve; });
-  const waiting = new Promise<void>((resolve) => { release = resolve; });
+  const saved = new Promise<void>((resolve) => {
+    accepted = resolve;
+  });
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   await reopened.route("**/api/transactions", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     const response = await route.fetch();
@@ -199,8 +221,13 @@ test("legacy queued creations receive a stable ID before their first replay", as
     await route.fulfill({ response }).catch(() => {});
   });
   await reopened.goto("/");
-  await Promise.race([saved, new Promise((_, reject) => setTimeout(() => reject(new Error("Legacy entry did not replay")), 5000))]);
-  const stored = await reopened.evaluate(() => JSON.parse(localStorage.getItem("cache")!).mutations[0].state.variables[2].requestId);
+  await Promise.race([
+    saved,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("Legacy entry did not replay")), 5000)),
+  ]);
+  const stored = await reopened.evaluate(
+    () => JSON.parse(localStorage.getItem("cache")!).mutations[0].state.variables[2].requestId,
+  );
   expect(stored).toMatch(/^[0-9a-f-]{36}$/);
   await reopened.reload();
   release();
@@ -212,36 +239,42 @@ test("legacy queued creations receive a stable ID before their first replay", as
 });
 
 for (const updateFails of [false, true])
-test(`editing an accepted creation with a lost response applies the correction once${updateFails ? " after a failed update" : ""}`, async ({ app: page, context }) => {
-  await expect(bar(page)).toBeVisible();
-  await context.setOffline(true);
-  await add(page, "original accepted 2");
-  await page.route("**/api/transactions", async (route) => {
-    if (route.request().method() !== "POST") return route.continue();
-    await route.fetch();
-    await route.abort();
-  });
-  await context.setOffline(false);
-  const outbox = page.getByRole("region", { name: "Unsent changes" });
-  await expect(outbox).toContainText("Couldn’t reach the server");
-  await outbox.getByRole("button", { name: "Edit" }).click();
-  await outbox.getByLabel("Note").fill("corrected accepted");
-  await outbox.getByLabel("Amount").fill("3.50");
-  await outbox.getByRole("button", { name: "Keep changes" }).click();
-  await page.reload();
-  await expect(outbox).toContainText("corrected accepted");
-  await page.unroute("**/api/transactions");
-  if (updateFails) await page.route("**/api/transactions/*", (route) => route.fulfill({ status: 400, json: { error: "Correction not saved" } }));
-  await outbox.getByRole("button", { name: "Retry" }).click();
-  if (updateFails) {
-    await expect(outbox).toContainText("Correction not saved");
+  test(`editing an accepted creation with a lost response applies the correction once${updateFails ? " after a failed update" : ""}`, async ({
+    app: page,
+    context,
+  }) => {
+    await expect(bar(page)).toBeVisible();
+    await context.setOffline(true);
+    await add(page, "original accepted 2");
+    await page.route("**/api/transactions", async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      await route.fetch();
+      await route.abort();
+    });
+    await context.setOffline(false);
+    const outbox = page.getByRole("region", { name: "Unsent changes" });
+    await expect(outbox).toContainText("Couldn’t reach the server");
+    await outbox.getByRole("button", { name: "Edit" }).click();
+    await outbox.getByLabel("Note").fill("corrected accepted");
+    await outbox.getByLabel("Amount").fill("3.50");
+    await outbox.getByRole("button", { name: "Keep changes" }).click();
     await page.reload();
     await expect(outbox).toContainText("corrected accepted");
-    await page.unroute("**/api/transactions/*");
+    await page.unroute("**/api/transactions");
+    if (updateFails)
+      await page.route("**/api/transactions/*", (route) =>
+        route.fulfill({ status: 400, json: { error: "Correction not saved" } }),
+      );
     await outbox.getByRole("button", { name: "Retry" }).click();
-  }
-  await expect(outbox).toBeHidden();
-  const rows = await (await page.request.get("/api/transactions")).json();
-  expect(rows).toHaveLength(1);
-  expect(rows[0]).toMatchObject({ note: "corrected accepted", amount: 350 });
-});
+    if (updateFails) {
+      await expect(outbox).toContainText("Correction not saved");
+      await page.reload();
+      await expect(outbox).toContainText("corrected accepted");
+      await page.unroute("**/api/transactions/*");
+      await outbox.getByRole("button", { name: "Retry" }).click();
+    }
+    await expect(outbox).toBeHidden();
+    const rows = await (await page.request.get("/api/transactions")).json();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ note: "corrected accepted", amount: 350 });
+  });

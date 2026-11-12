@@ -4,7 +4,13 @@ import { Button } from "../../components/button";
 import { useApi } from "../../lib/api";
 import { type Category, transaction } from "../../lib/schemas";
 
-export function MoveKind(props: { category: Category; kind: Kind; categories: Category[]; onKeep: () => void; onMove: () => void }) {
+export function MoveKind(props: {
+  category: Category;
+  kind: Kind;
+  categories: Category[];
+  onKeep: () => void;
+  onMove: () => void;
+}) {
   const { category: c, kind } = props;
   const affected = useApi(z.array(transaction), ["/api/transactions?", `category=${c.id}`]).data;
   const to = kind === "income" ? "Income" : "Expenses";

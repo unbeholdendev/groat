@@ -15,7 +15,16 @@ export function Bin() {
   const [asking, setAsking] = useState(false);
   const empty = useSend("bin");
   const restore = useSend("transaction");
-  if (!bin) return <><BackToSettings /><h1 className="mt-4 text-display font-bold">Bin</h1>{query.isPending && <p role="status">Loading bin…</p>}<FormError error={query.error} />{query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}</>;
+  if (!bin)
+    return (
+      <>
+        <BackToSettings />
+        <h1 className="mt-4 text-display font-bold">Bin</h1>
+        {query.isPending && <p role="status">Loading bin…</p>}
+        <FormError error={query.error} />
+        {query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}
+      </>
+    );
   return (
     <>
       <div className="flex items-center justify-between">
@@ -45,7 +54,11 @@ export function Bin() {
           {bin.map((e) => (
             <li key={e.id} className={`${rowClass} ${divide}`}>
               <TransactionRow transaction={e} dated />
-              <Button variant="quiet" className="hit h-8 px-3 text-[13px]" onClick={() => restore.mutate(["POST", `/api/bin/${e.id}/restore`])}>
+              <Button
+                variant="quiet"
+                className="hit h-8 px-3 text-[13px]"
+                onClick={() => restore.mutate(["POST", `/api/bin/${e.id}/restore`])}
+              >
                 Restore
               </Button>
             </li>

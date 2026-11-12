@@ -12,14 +12,26 @@ function provider(read: (body: any) => unknown) {
     const body = JSON.parse(String(init?.body));
     requests.push(body);
     const args = read(body);
-    return completion({ role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: typeof args === "string" ? args : JSON.stringify(args) } }] });
+    return completion({
+      role: "assistant",
+      content: null,
+      tool_calls: [
+        {
+          id: "c",
+          type: "function",
+          function: { name: "transaction", arguments: typeof args === "string" ? args : JSON.stringify(args) },
+        },
+      ],
+    });
   };
   return { handler, requests };
 }
 
 test("text becomes a draft with a category from the shared list, saving nothing", async () => {
   const ai = provider((body) => {
-    const food = JSON.parse(body.messages[0].content.match(/Categories: (.*)/)[1]).find((c: { name: string }) => c.name === "Food");
+    const food = JSON.parse(body.messages[0].content.match(/Categories: (.*)/)[1]).find(
+      (c: { name: string }) => c.name === "Food",
+    );
     return { note: "Lunch with Sam", amount: "18.40", date: "2026-10-09", categoryId: food.id, tags: ["friends"] };
   });
   const { call } = setup(undefined, ai.handler, config);
@@ -28,7 +40,14 @@ test("text becomes a draft with a category from the shared list, saving nothing"
 
   const res = await call("POST", "/api/drafts", { text: "lunch with sam yesterday eighteen forty #work" });
   expect(res.status).toBe(200);
-  expect(res.body).toEqual({ note: "Lunch with Sam", amount: 1840, currency: "GBP", date: "2026-10-09", categoryId: food.id, tags: ["work", "friends"] });
+  expect(res.body).toEqual({
+    note: "Lunch with Sam",
+    amount: 1840,
+    currency: "GBP",
+    date: "2026-10-09",
+    categoryId: food.id,
+    tags: ["work", "friends"],
+  });
   expect(draft.safeParse(res.body).error).toBeUndefined();
   expect(ai.requests[0].tool_choice).toEqual({ type: "function", function: { name: "transaction" } });
   expect((await call("GET", "/api/transactions")).body).toEqual([]);
@@ -56,10 +75,27 @@ test("capture with unsure text saves the AI's read as pending; sure text skips t
   await h.call("POST", "/api/transactions", { note: "Crisps", amount: "1", categoryId: food.id });
   const { token } = (await h.call("POST", "/api/tokens", { name: "Phone" })).body;
   const capture = async (text: string) =>
-    (await h.app.request("/api/capture", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ text }) })).json();
+    (
+      await h.app.request("/api/capture", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text }),
+      })
+    ).json();
 
-  expect(await capture("parked the car six quid")).toMatchObject({ note: "Parking", amount: 600, categoryId: 1, status: "pending", addedBy: "admin" });
-  expect(await capture("crisps 2")).toMatchObject({ note: "crisps", amount: 200, categoryId: food.id, status: "normal" });
+  expect(await capture("parked the car six quid")).toMatchObject({
+    note: "Parking",
+    amount: 600,
+    categoryId: 1,
+    status: "pending",
+    addedBy: "admin",
+  });
+  expect(await capture("crisps 2")).toMatchObject({
+    note: "crisps",
+    amount: 200,
+    categoryId: food.id,
+    status: "normal",
+  });
   expect(ai.requests).toHaveLength(1);
 });
 
@@ -67,6 +103,8 @@ test("drafts are offered expense categories only", async () => {
   const ai = provider(() => ({ note: "Pay" }));
   const { call } = setup(undefined, ai.handler, config);
   await call("POST", "/api/drafts", { text: "pay" });
-  const names = JSON.parse(ai.requests[0].messages[0].content.match(/Categories: (.*)/)[1]).map((c: { name: string }) => c.name);
+  const names = JSON.parse(ai.requests[0].messages[0].content.match(/Categories: (.*)/)[1]).map(
+    (c: { name: string }) => c.name,
+  );
   expect(names).toEqual(["Uncategorised"]);
 });

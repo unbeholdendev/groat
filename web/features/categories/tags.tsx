@@ -24,14 +24,28 @@ export function Tags() {
       <ul className="flex flex-wrap gap-2 text-sm">
         {tags.map((t) =>
           active?.id !== t.id ? (
-            <TagChip key={t.id} tag={t} onRename={() => (reset(), setActive({ id: t.id, deleting: false }))} onDelete={() => setActive({ id: t.id, deleting: true })} />
+            <TagChip
+              key={t.id}
+              tag={t}
+              onRename={() => (reset(), setActive({ id: t.id, deleting: false }))}
+              onDelete={() => setActive({ id: t.id, deleting: true })}
+            />
           ) : active.deleting ? (
             <li key={t.id}>
-              <Confirm ask={`Remove #${t.name} from every expense?`} yes="Delete" onYes={() => (close(), call(["DELETE", `/api/tags/${t.id}`]))} onNo={close} />
+              <Confirm
+                ask={`Remove #${t.name} from every expense?`}
+                yes="Delete"
+                onYes={() => (close(), call(["DELETE", `/api/tags/${t.id}`]))}
+                onNo={close}
+              />
             </li>
           ) : (
             <li key={t.id}>
-              <RenameTag tag={t} onSave={(name) => call(["PUT", `/api/tags/${t.id}`, { name }], { onSuccess: close })} onCancel={close} />
+              <RenameTag
+                tag={t}
+                onSave={(name) => call(["PUT", `/api/tags/${t.id}`, { name }], { onSuccess: close })}
+                onCancel={close}
+              />
             </li>
           ),
         )}

@@ -10,7 +10,15 @@ import type { Category } from "../../../lib/schemas";
 export const choice = (on: boolean) =>
   `press relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-chip border text-[13px] font-medium transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent ${on ? "border-accent bg-accent-soft text-ink" : "border-line2 bg-surface text-ink2"}`;
 
-export function CategoryChips({ kind, value, onChange }: { kind: Kind; value: number | null; onChange: (id: number | null) => void }) {
+export function CategoryChips({
+  kind,
+  value,
+  onChange,
+}: {
+  kind: Kind;
+  value: number | null;
+  onChange: (id: number | null) => void;
+}) {
   const categories = useCategories();
   const picked = categories.find((c) => c.id === value);
   const branch = picked?.parentId ?? picked?.id;
@@ -32,7 +40,11 @@ export function CategoryChips({ kind, value, onChange }: { kind: Kind; value: nu
       </span>
       <span className="flex w-full items-center justify-center gap-0.5">
         <span className="truncate">{c.name}</span>
-        {parents.has(c.id) && <Chevron className={`size-2.5 shrink-0 stroke-[2.5] text-ink3 transition-transform ${c.id === branch ? "rotate-180" : ""}`} />}
+        {parents.has(c.id) && (
+          <Chevron
+            className={`size-2.5 shrink-0 stroke-[2.5] text-ink3 transition-transform ${c.id === branch ? "rotate-180" : ""}`}
+          />
+        )}
       </span>
     </button>
   ));
@@ -40,9 +52,20 @@ export function CategoryChips({ kind, value, onChange }: { kind: Kind; value: nu
     cells.splice(
       Math.min(tops.length, (Math.floor(tops.findIndex((c) => c.id === branch) / 4) + 1) * 4),
       0,
-      <div key={`sub${branch}`} role="group" aria-label="Subcategory" className="rise col-span-4 flex flex-wrap gap-1.5 rounded-field bg-surface2 p-2">
+      <div
+        key={`sub${branch}`}
+        role="group"
+        aria-label="Subcategory"
+        className="rise col-span-4 flex flex-wrap gap-1.5 rounded-field bg-surface2 p-2"
+      >
         {kids.map((c) => (
-          <button type="button" key={c.id} aria-pressed={value === c.id} onClick={() => toggle(c)} className={`${choice(value === c.id)} pr-3 pl-px`}>
+          <button
+            type="button"
+            key={c.id}
+            aria-pressed={value === c.id}
+            onClick={() => toggle(c)}
+            className={`${choice(value === c.id)} pr-3 pl-px`}
+          >
             <Tile category={c} small />
             {c.name}
           </button>
@@ -65,7 +88,13 @@ export function DateChips({ value, onChange }: { value: string; onChange: (date:
         [today(), "Today"],
         [yesterday, "Yesterday"],
       ].map(([d, name]) => (
-        <button type="button" key={d} aria-pressed={value === d} onClick={() => onChange(d)} className={`${choice(value === d)} px-3.5`}>
+        <button
+          type="button"
+          key={d}
+          aria-pressed={value === d}
+          onClick={() => onChange(d)}
+          className={`${choice(value === d)} px-3.5`}
+        >
           {name}
         </button>
       ))}

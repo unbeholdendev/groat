@@ -27,7 +27,9 @@ test("install identity and icon purposes are explicit", async () => {
   const { app } = setup();
   const manifest = await (await app.request("/manifest.webmanifest")).json();
   expect(manifest).toMatchObject({ id: "/", scope: "/" });
-  expect(manifest.icons.find((icon: { purpose?: string }) => icon.purpose?.split(" ").includes("maskable"))).toMatchObject({ sizes: "512x512" });
+  expect(
+    manifest.icons.find((icon: { purpose?: string }) => icon.purpose?.split(" ").includes("maskable")),
+  ).toMatchObject({ sizes: "512x512" });
 });
 
 test("HTML advertises favicon and iOS installation metadata", async () => {
@@ -43,11 +45,26 @@ test("worker ignores private, unknown and cross-origin requests", async () => {
   runInNewContext(await Bun.file("server/sw.js").text(), {
     URL,
     location: { origin: "https://groat.test" },
-    self: { addEventListener: (type: string, handler: typeof fetchHandler) => { if (type === "fetch") fetchHandler = handler; } },
+    self: {
+      addEventListener: (type: string, handler: typeof fetchHandler) => {
+        if (type === "fetch") fetchHandler = handler;
+      },
+    },
   });
-  for (const path of ["/api", "/api/transactions", "/private.png", "https://other.test/icon-192.png", "https://other.test/share"]) {
+  for (const path of [
+    "/api",
+    "/api/transactions",
+    "/private.png",
+    "https://other.test/icon-192.png",
+    "https://other.test/share",
+  ]) {
     let intercepted = false;
-    fetchHandler({ request: new Request(new URL(path, "https://groat.test"), { method: path.endsWith("/share") ? "POST" : "GET" }), respondWith: () => { intercepted = true; } });
+    fetchHandler({
+      request: new Request(new URL(path, "https://groat.test"), { method: path.endsWith("/share") ? "POST" : "GET" }),
+      respondWith: () => {
+        intercepted = true;
+      },
+    });
     expect(intercepted).toBe(false);
   }
 });

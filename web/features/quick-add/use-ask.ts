@@ -8,13 +8,18 @@ export function useAsk(chat?: number) {
     mutationKey: ["ask", chat || null],
     networkMode: "always",
     onMutate: (_, { client }) => ({ session: client.getQueryData(["/api/session"]) }),
-    mutationFn: async (message: string) => chatSchema.parse(await send("POST", chat ? `/api/chats/${chat}/messages` : "/api/chats", { message })),
+    mutationFn: async (message: string) =>
+      chatSchema.parse(await send("POST", chat ? `/api/chats/${chat}/messages` : "/api/chats", { message })),
     onSuccess: (c, _, started, { client }) => {
-      if (!started?.session || client.getQueryData(["/api/session"]) !== started.session) throw new Error("Your session changed. Sign in again before continuing this chat.");
+      if (!started?.session || client.getQueryData(["/api/session"]) !== started.session)
+        throw new Error("Your session changed. Sign in again before continuing this chat.");
       const key = [`/api/chats/${c.id}`];
       if (!client.getQueryData(key)) client.setQueryData(key, c);
       void client.invalidateQueries({ queryKey: key, exact: true });
-      client.setQueryData<Chat[]>(["/api/chats"], (rows) => rows && (rows.some((r) => r.id === c.id) ? rows : [{ id: c.id, title: c.title }, ...rows]));
+      client.setQueryData<Chat[]>(
+        ["/api/chats"],
+        (rows) => rows && (rows.some((r) => r.id === c.id) ? rows : [{ id: c.id, title: c.title }, ...rows]),
+      );
     },
   });
   useEffect(() => asking.reset(), [chat]);

@@ -27,7 +27,9 @@ test("stats comparisons have a keyboard accessible table and legend", async ({ a
 test.describe("receipt review", () => {
   test.use({ ai: true });
   test("enlarging a receipt preserves edits and returns focus", async ({ app: page }) => {
-    await page.locator('input[type="file"]').setInputFiles({ name: "receipt.png", mimeType: "image/png", buffer: await page.screenshot() });
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles({ name: "receipt.png", mimeType: "image/png", buffer: await page.screenshot() });
     const review = page.getByRole("region", { name: "Review expense" });
     await review.getByLabel("Note", { exact: true }).fill("Checked receipt");
     await review.getByRole("button", { name: "Enlarge receipt" }).click();
@@ -45,7 +47,7 @@ test.describe("receipt review", () => {
 test("voice configuration keeps manual entry available", async ({ app: page }) => {
   await page.route("**/api/settings", async (route) => {
     const response = await route.fetch();
-    await route.fulfill({ response, json: { ...await response.json(), voice: true } });
+    await route.fulfill({ response, json: { ...(await response.json()), voice: true } });
   });
   await page.reload();
   await expect(page.getByRole("button", { name: "Dictate", exact: true })).toBeVisible();
@@ -53,7 +55,10 @@ test("voice configuration keeps manual entry available", async ({ app: page }) =
   await expect(page.getByRole("heading", { name: "New expense" })).toBeVisible();
 });
 
-test("dirty edits survive back and a cancelled reload, then save without a prompt", async ({ app: page, browserName }) => {
+test("dirty edits survive back and a cancelled reload, then save without a prompt", async ({
+  app: page,
+  browserName,
+}) => {
   await seed(page, [{ note: "Train", amount: "12" }]);
   await page.reload();
   await page.getByRole("button", { name: "Train", exact: true }).click();
@@ -68,12 +73,12 @@ test("dirty edits survive back and a cancelled reload, then save without a promp
     await page.reload();
     await expect(page.getByRole("status").filter({ hasText: "Recovered unsaved expense" })).toBeVisible();
   } else {
-  const unload = page.waitForEvent("dialog");
-  const reload = page.reload({ timeout: 2000 }).catch(() => {});
-  const prompt = await unload;
-  expect(prompt.type()).toBe("beforeunload");
-  await prompt.dismiss();
-  await reload;
+    const unload = page.waitForEvent("dialog");
+    const reload = page.reload({ timeout: 2000 }).catch(() => {});
+    const prompt = await unload;
+    expect(prompt.type()).toBe("beforeunload");
+    await prompt.dismiss();
+    await reload;
   }
   await expect(page.getByLabel("Amount", { exact: true })).toHaveValue("15");
   await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -125,7 +130,9 @@ test("the accessible comparison includes the full previous period and its actual
   await toggle.press("Enter");
   const table = page.getByRole("table", { name: "Cumulative spending by day" });
   await expect(table.getByRole("row")).toHaveCount(Math.max(now.getDate(), last.getDate()) + 1);
-  const closing = table.getByRole("row").filter({ hasText: last.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) });
+  const closing = table
+    .getByRole("row")
+    .filter({ hasText: last.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) });
   await expect(closing).toContainText("£19.00");
   if (now.getDate() < last.getDate()) await expect(closing).toContainText("Outside current range");
 });

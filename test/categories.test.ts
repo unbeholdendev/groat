@@ -28,7 +28,11 @@ test("expenses default to Uncategorised and keep their category and tags", async
     categoryId: find("Eating out").id,
     tags: ["holiday-2026", "work"],
   });
-  const edited = await call("PUT", `/api/transactions/${lunch.body.id}`, { note: "Lunch", amount: "12", tags: ["work"] });
+  const edited = await call("PUT", `/api/transactions/${lunch.body.id}`, {
+    note: "Lunch",
+    amount: "12",
+    tags: ["work"],
+  });
   expect(edited.body).toMatchObject({ categoryId: find("Eating out").id, tags: ["work"] });
   for (const body of [{ categoryId: 9999 }, { tags: "work" }, { tags: [""] }, { tags: [3] }])
     expect((await call("POST", "/api/transactions", { note: "x", amount: "1", ...body })).status).toBe(400);
@@ -38,11 +42,20 @@ test("categories can be created, renamed, recoloured and reordered, two levels d
   const { call, find, categories } = await onboarded();
   const pets = await call("POST", "/api/categories", { name: "Pets", icon: "🐶", color: "#000000" });
   expect(pets.status).toBe(201);
-  const vet = await call("POST", "/api/categories", { name: "Vet", icon: "🩺", color: "#111111", parentId: pets.body.id });
+  const vet = await call("POST", "/api/categories", {
+    name: "Vet",
+    icon: "🩺",
+    color: "#111111",
+    parentId: pets.body.id,
+  });
   expect(vet.body).toMatchObject({ name: "Vet", parentId: pets.body.id });
   const deep = { name: "Deep", icon: "x", color: "#fff", parentId: vet.body.id };
   expect((await call("POST", "/api/categories", deep)).status).toBe(400);
-  for (const body of [{ icon: "x", color: "#fff" }, { name: "x", color: "#fff" }, { ...deep, parentId: 9999 }])
+  for (const body of [
+    { icon: "x", color: "#fff" },
+    { name: "x", color: "#fff" },
+    { ...deep, parentId: 9999 },
+  ])
     expect((await call("POST", "/api/categories", body)).status).toBe(400);
 
   const renamed = await call("PUT", `/api/categories/${pets.body.id}`, { name: "Animals", color: "#222222" });
@@ -51,7 +64,11 @@ test("categories can be created, renamed, recoloured and reordered, two levels d
   expect((await call("PUT", "/api/categories/9999", { name: "x" })).status).toBe(404);
 
   const parents = (await categories()).filter((c) => c.parentId === null).map((c) => c.id);
-  const order = [find("Uncategorised").id, pets.body.id, ...parents.filter((id) => id !== pets.body.id && id !== find("Uncategorised").id)];
+  const order = [
+    find("Uncategorised").id,
+    pets.body.id,
+    ...parents.filter((id) => id !== pets.body.id && id !== find("Uncategorised").id),
+  ];
   expect((await call("PUT", "/api/categories/order", order)).status).toBe(200);
   const names = (await categories()).filter((c) => c.parentId === null).map((c) => c.name);
   expect(names.slice(0, 3)).toEqual(["Uncategorised", "Animals", "Food"]);
@@ -61,11 +78,22 @@ test("categories can be created, renamed, recoloured and reordered, two levels d
 test("each user keeps their own category order, and new categories go last for everyone", async () => {
   const { app, call, categories } = await onboarded();
   await call("POST", "/api/users", { username: "bob", password: "pw" });
-  const login = await app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "bob", password: "pw" }) });
+  const login = await app.request("/api/login", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ username: "bob", password: "pw" }),
+  });
   const cookie = login.headers.get("set-cookie")!.split(";")[0];
   const bob = async (method: string, path: string, body?: unknown) =>
-    (await app.request(path, { method, headers: { "content-type": "application/json", cookie }, body: JSON.stringify(body) })).json();
-  const names = (rows: Category[]) => rows.filter((c) => c.parentId === null && c.kind === "expense").map((c) => c.name);
+    (
+      await app.request(path, {
+        method,
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify(body),
+      })
+    ).json();
+  const names = (rows: Category[]) =>
+    rows.filter((c) => c.parentId === null && c.kind === "expense").map((c) => c.name);
 
   const shared = names(await categories());
   expect(names(await bob("GET", "/api/categories"))).toEqual(shared);
@@ -88,10 +116,16 @@ test("Uncategorised cannot be deleted", async () => {
 
 test("deleting a category moves its expenses to Uncategorised by default", async () => {
   const { call, find, categories } = await onboarded();
-  const e = await call("POST", "/api/transactions", { note: "Film", amount: "9", categoryId: find("Entertainment").id });
+  const e = await call("POST", "/api/transactions", {
+    note: "Film",
+    amount: "9",
+    categoryId: find("Entertainment").id,
+  });
   expect((await call("DELETE", `/api/categories/${find("Entertainment").id}`)).status).toBe(200);
   expect((await categories()).some((c) => c.name === "Entertainment")).toBe(false);
-  expect((await call("GET", "/api/transactions")).body).toMatchObject([{ id: e.body.id, categoryId: find("Uncategorised").id }]);
+  expect((await call("GET", "/api/transactions")).body).toMatchObject([
+    { id: e.body.id, categoryId: find("Uncategorised").id },
+  ]);
 });
 
 test("deleting a parent moves expenses under it and its subcategories to the chosen category", async () => {
@@ -99,7 +133,11 @@ test("deleting a parent moves expenses under it and its subcategories to the cho
   const food = find("Food").id;
   for (const categoryId of [food, find("Groceries").id, find("Eating out").id, find("Travel").id])
     await call("POST", "/api/transactions", { note: "x", amount: "1", categoryId });
-  const binned = await call("POST", "/api/transactions", { note: "binned", amount: "1", categoryId: find("Groceries").id });
+  const binned = await call("POST", "/api/transactions", {
+    note: "binned",
+    amount: "1",
+    categoryId: find("Groceries").id,
+  });
   await call("DELETE", `/api/transactions/${binned.body.id}`);
 
   expect((await call("DELETE", `/api/categories/${food}?moveTo=${find("Groceries").id}`)).status).toBe(400);

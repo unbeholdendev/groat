@@ -10,7 +10,8 @@ export function parse(text: string, recent: string[]) {
   const words: string[] = [];
   const parts: Part[] = [];
   const chunks = text.split(/(\s+)/);
-  const pick = chunks.find((w) => /^\d+([.,]\d+)?$/.test(w)) ?? chunks.find((w) => /^\(*\d[\d.,()]*([-+*/×÷][\d.,()]+)+$/.test(w));
+  const pick =
+    chunks.find((w) => /^\d+([.,]\d+)?$/.test(w)) ?? chunks.find((w) => /^\(*\d[\d.,()]*([-+*/×÷][\d.,()]+)+$/.test(w));
   for (const w of chunks) {
     const code = w.toUpperCase();
     if (/^#\S+$/.test(w)) {

@@ -18,11 +18,16 @@ export function LineInput(props: {
 }) {
   const { text, ask, inChat } = props;
   const mirror = useRef<HTMLDivElement>(null);
-  const sync = () => requestAnimationFrame(() => mirror.current && (mirror.current.scrollLeft = props.ref.current?.scrollLeft ?? 0));
+  const sync = () =>
+    requestAnimationFrame(() => mirror.current && (mirror.current.scrollLeft = props.ref.current?.scrollLeft ?? 0));
   useEffect(() => void sync(), [text]);
   return (
     <div className="relative h-10 min-w-0 flex-1 text-[17px] font-medium tracking-[-0.01em] [word-spacing:0.25em]">
-      <div ref={mirror} aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden leading-10 whitespace-pre">
+      <div
+        ref={mirror}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden leading-10 whitespace-pre"
+      >
         {ask ? (
           <>
             {!inChat && <span className="text-accent">?</span>}
@@ -47,7 +52,7 @@ export function LineInput(props: {
         onChange={(e) => props.onText(e.target.value)}
         onKeyDown={(e) => {
           const end = e.currentTarget.selectionStart === text.length;
-          if (props.ghost && (e.key === "Tab" || (e.key === "ArrowRight" && end))) (e.preventDefault(), props.onAccept());
+          if (props.ghost && (e.key === "Tab" || (e.key === "ArrowRight" && end))) e.preventDefault(), props.onAccept();
         }}
         onSelect={sync}
         onScroll={sync}

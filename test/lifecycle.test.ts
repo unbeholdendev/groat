@@ -3,10 +3,13 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const launch = (path: string) => Bun.spawn([process.execPath, `${import.meta.dir}/../server/index.ts`], {
-  env: { ...process.env, NODE_ENV: "test", DB_PATH: path, PORT: "0", LOG_LEVEL: "debug" },
-  stdout: "pipe", stderr: "pipe", timeout: 5000,
-});
+const launch = (path: string) =>
+  Bun.spawn([process.execPath, `${import.meta.dir}/../server/index.ts`], {
+    env: { ...process.env, NODE_ENV: "test", DB_PATH: path, PORT: "0", LOG_LEVEL: "debug" },
+    stdout: "pipe",
+    stderr: "pipe",
+    timeout: 5000,
+  });
 
 test("the real server logs readiness and drains live connections on SIGTERM", async () => {
   const dir = await mkdtemp(join(tmpdir(), "groat-lifecycle-"));
@@ -28,21 +31,36 @@ test("the real server logs readiness and drains live connections on SIGTERM", as
         if (entry.event !== "process.ready") continue;
         const origin = `http://127.0.0.1:${entry.port}`;
         const response = await fetch(origin + "/api/setup", {
-          method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "private-user", password: "private-password" }),
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ username: "private-user", password: "private-password" }),
         });
         expect(response.status).toBe(201);
-        socket = new (WebSocket as unknown as { new(url: string, options: Bun.WebSocketOptions): WebSocket })(origin.replace("http:", "ws:") + "/api/live", {
-          headers: { origin, cookie: response.headers.get("set-cookie")!.split(";")[0] },
+        socket = new (WebSocket as unknown as { new (url: string, options: Bun.WebSocketOptions): WebSocket })(
+          origin.replace("http:", "ws:") + "/api/live",
+          {
+            headers: { origin, cookie: response.headers.get("set-cookie")!.split(";")[0] },
+          },
+        );
+        await new Promise<void>((resolve, reject) => {
+          socket!.onmessage = () => resolve();
+          socket!.onerror = reject;
         });
-        await new Promise<void>((resolve, reject) => { socket!.onmessage = () => resolve(); socket!.onerror = reject; });
         child.kill("SIGTERM");
       }
     }
     expect(await child.exited).toBe(0);
     expect(await errorOutput).toBe("");
-    expect(logs.map((entry) => entry.event)).toEqual(expect.arrayContaining([
-      "process.starting", "database.migration.completed", "recurring.generate.completed", "process.ready", "process.shutdown.started", "process.shutdown.completed",
-    ]));
+    expect(logs.map((entry) => entry.event)).toEqual(
+      expect.arrayContaining([
+        "process.starting",
+        "database.migration.completed",
+        "recurring.generate.completed",
+        "process.ready",
+        "process.shutdown.started",
+        "process.shutdown.completed",
+      ]),
+    );
     expect(JSON.stringify(logs)).not.toContain("private");
   } finally {
     socket?.close();

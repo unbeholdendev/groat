@@ -1,4 +1,12 @@
-import { dehydrate, hydrate, keepPreviousData, MutationCache, onlineManager, QueryCache, QueryClient } from "@tanstack/react-query";
+import {
+  dehydrate,
+  hydrate,
+  keepPreviousData,
+  MutationCache,
+  onlineManager,
+  QueryCache,
+  QueryClient,
+} from "@tanstack/react-query";
 import { send } from "./lib/api";
 import { isLocallySignedOut, lockDevice, storeCache, unlockDevice } from "./lib/device";
 import { invalidate } from "./lib/resources";
@@ -11,7 +19,8 @@ import { liveUpdates } from "./lib/live";
 
 let sessionVersion = 0;
 let endingSession: Promise<unknown> = Promise.resolve();
-const endSession = () => (endingSession = fetch("/api/logout", { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => {}));
+const endSession = () =>
+  (endingSession = fetch("/api/logout", { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => {}));
 
 export const queryClient: QueryClient = new QueryClient({
   defaultOptions: {
@@ -55,11 +64,23 @@ const sync = (key: string[], patch: (client: QueryClient, data: unknown, request
       if (authentication) {
         await endingSession;
         const username = (r[2] as { username: string }).username.trim();
-        const other = client.getMutationCache().getAll().find((m) => m.meta?.retained && m.state.status !== "success" && m.meta.owner !== username);
-        if (other) throw new Error(`Unsent changes belong to ${other.meta?.owner ?? "the original user"}. Sign in with that account, or clear unsent changes first.`);
+        const other = client
+          .getMutationCache()
+          .getAll()
+          .find((m) => m.meta?.retained && m.state.status !== "success" && m.meta.owner !== username);
+        if (other)
+          throw new Error(
+            `Unsent changes belong to ${other.meta?.owner ?? "the original user"}. Sign in with that account, or clear unsent changes first.`,
+          );
       }
       if (!authentication) {
-        if (!client.getMutationCache().getAll().some((m) => m.state.variables === r)) throw new Error("This change was removed");
+        if (
+          !client
+            .getMutationCache()
+            .getAll()
+            .some((m) => m.state.variables === r)
+        )
+          throw new Error("This change was removed");
         if (isLocallySignedOut()) throw new Error("Sign in before retrying this change");
         if (!meta?.owner)
           throw Object.assign(new Error("Sign in as the original user to sync this change"), { status: 401 });
@@ -67,7 +88,10 @@ const sync = (key: string[], patch: (client: QueryClient, data: unknown, request
       const version = sessionVersion;
       const current = () => {
         const session = client.getQueryData<{ user: { username: string } | null }>(["/api/session"]);
-        if (version !== sessionVersion || (!authentication && (isLocallySignedOut() || (session && session.user?.username !== meta?.owner))))
+        if (
+          version !== sessionVersion ||
+          (!authentication && (isLocallySignedOut() || (session && session.user?.username !== meta?.owner)))
+        )
           throw new Error("Your session changed. Sign in again before retrying this change.");
       };
       let data = await send(r[0], r[1], r[2], authentication ? undefined : String(meta?.owner));
@@ -80,7 +104,11 @@ const sync = (key: string[], patch: (client: QueryClient, data: unknown, request
       if (authentication) {
         await client.cancelQueries();
         current();
-        await client.resetQueries({ predicate: (q) => q.queryKey[0] !== "/api/session" && !(q.queryKey[0] === "transaction-draft" && q.queryKey[1] === (data as { username: string }).username) });
+        await client.resetQueries({
+          predicate: (q) =>
+            q.queryKey[0] !== "/api/session" &&
+            !(q.queryKey[0] === "transaction-draft" && q.queryKey[1] === (data as { username: string }).username),
+        });
         current();
         unlockDevice();
         client.setQueryData(["/api/session"], { setup: false, user: data });
@@ -106,16 +134,36 @@ sync(["send", "chatgpt"], syncChatgpt);
 try {
   const cache = JSON.parse(localStorage.getItem("cache") ?? "null");
   if (cache && !isLocallySignedOut()) {
-    const owner = cache.owner ?? cache.queries?.find((q: { queryKey: string[] }) => q.queryKey[0] === "/api/session")?.state.data?.user?.username;
-    hydrate(queryClient, {
-      queries: cache.build === import.meta.env.BUILD ? cache.queries : [],
-      mutations: (cache.mutations ?? []).map((m: { meta?: Record<string, unknown>; state: { error?: { message?: string }; status?: string; isPaused?: boolean; variables?: unknown } }) => ({
-        ...m, meta: { owner, ...m.meta, retained: true },
-        state: { ...m.state, variables: identify(request.parse(m.state.variables)),
-          ...(m.state.status === "pending" && !m.state.isPaused ? { status: "error", error: new Error("Sync was interrupted. Retry to check whether it saved.") } : { error: m.state.error ? new Error(m.state.error.message ?? "Couldn’t sync. Check this change and retry.") : null }),
-        },
-      })),
-    }, { defaultOptions: { mutations: { gcTime: Infinity } } });
+    const owner =
+      cache.owner ??
+      cache.queries?.find((q: { queryKey: string[] }) => q.queryKey[0] === "/api/session")?.state.data?.user?.username;
+    hydrate(
+      queryClient,
+      {
+        queries: cache.build === import.meta.env.BUILD ? cache.queries : [],
+        mutations: (cache.mutations ?? []).map(
+          (m: {
+            meta?: Record<string, unknown>;
+            state: { error?: { message?: string }; status?: string; isPaused?: boolean; variables?: unknown };
+          }) => ({
+            ...m,
+            meta: { owner, ...m.meta, retained: true },
+            state: {
+              ...m.state,
+              variables: identify(request.parse(m.state.variables)),
+              ...(m.state.status === "pending" && !m.state.isPaused
+                ? { status: "error", error: new Error("Sync was interrupted. Retry to check whether it saved.") }
+                : {
+                    error: m.state.error
+                      ? new Error(m.state.error.message ?? "Couldn’t sync. Check this change and retry.")
+                      : null,
+                  }),
+            },
+          }),
+        ),
+      },
+      { defaultOptions: { mutations: { gcTime: Infinity } } },
+    );
   }
 } catch {}
 onlineManager.setOnline(navigator.onLine);
@@ -123,10 +171,17 @@ let persisting: ReturnType<typeof setTimeout>;
 export const persistCache = () => {
   clearTimeout(persisting);
   if (isLocallySignedOut()) return;
-  const cache = dehydrate(queryClient, { shouldDehydrateMutation: (m) => !!m.meta?.retained && (m.state.status !== "success") });
-  storeCache({ build: import.meta.env.BUILD, ...cache, mutations: cache.mutations.map((m) => ({
-    ...m, state: { ...m.state, error: m.state.error ? { message: String(m.state.error.message) } : null },
-  })) });
+  const cache = dehydrate(queryClient, {
+    shouldDehydrateMutation: (m) => !!m.meta?.retained && m.state.status !== "success",
+  });
+  storeCache({
+    build: import.meta.env.BUILD,
+    ...cache,
+    mutations: cache.mutations.map((m) => ({
+      ...m,
+      state: { ...m.state, error: m.state.error ? { message: String(m.state.error.message) } : null },
+    })),
+  });
 };
 queryClient.getQueryCache().subscribe(() => {
   clearTimeout(persisting);
@@ -134,15 +189,19 @@ queryClient.getQueryCache().subscribe(() => {
 });
 queryClient.getMutationCache().subscribe((event) => {
   const m = event.mutation;
-  if (m && (m.state.isPaused || (m.state.context as { queued?: boolean })?.queued) && !m.meta?.retained) m.setOptions({ ...m.options, gcTime: Infinity, meta: { ...m.meta, retained: true } });
-  if (event.type === "updated" && m?.meta?.retained && m.state.status === "success") queryClient.getMutationCache().remove(m);
+  if (m && (m.state.isPaused || (m.state.context as { queued?: boolean })?.queued) && !m.meta?.retained)
+    m.setOptions({ ...m.options, gcTime: Infinity, meta: { ...m.meta, retained: true } });
+  if (event.type === "updated" && m?.meta?.retained && m.state.status === "success")
+    queryClient.getMutationCache().remove(m);
   persistCache();
 });
 
 persistCache();
 void queryClient.resumePausedMutations();
 if (isLocallySignedOut() && onlineManager.isOnline()) endSession();
-onlineManager.subscribe((online) => { if (online && isLocallySignedOut()) endSession(); });
+onlineManager.subscribe((online) => {
+  if (online && isLocallySignedOut()) endSession();
+});
 
 export function signOutDevice() {
   endSession();
@@ -159,4 +218,6 @@ async function clearDevice(retainChanges = false) {
   if (retainChanges) persistCache();
 }
 
-liveUpdates(queryClient, () => { void clearDevice(true); });
+liveUpdates(queryClient, () => {
+  void clearDevice(true);
+});

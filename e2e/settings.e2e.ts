@@ -6,7 +6,10 @@ test("theme and base currency save as they change", async ({ app: page }) => {
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.getByRole("radio", { name: "Light" }).click();
   await expect(page.locator("html")).not.toHaveClass(/dark/);
-  await Promise.all([page.waitForResponse((r) => !!r.request().postData()?.includes("EUR")), page.getByLabel("Base currency").selectOption("EUR")]);
+  await Promise.all([
+    page.waitForResponse((r) => !!r.request().postData()?.includes("EUR")),
+    page.getByLabel("Base currency").selectOption("EUR"),
+  ]);
   await page.reload();
   await expect(page.getByLabel("Base currency")).toHaveValue("EUR");
   await expect(page.locator("html")).not.toHaveClass(/dark/);
@@ -31,7 +34,17 @@ test("recurring expenses are created, listed, paused and stopped", async ({ app:
 });
 
 test("pending recurring expenses confirm from Home", async ({ app: page }) => {
-  await page.request.post("/api/recurring", { data: { note: "Rent", amount: "900", currency: "GBP", period: "month", every: 1, startDate: today(), needsConfirmation: true } });
+  await page.request.post("/api/recurring", {
+    data: {
+      note: "Rent",
+      amount: "900",
+      currency: "GBP",
+      period: "month",
+      every: 1,
+      startDate: today(),
+      needsConfirmation: true,
+    },
+  });
   await page.reload();
   await expect(page.getByText(/due today/)).toBeVisible();
   await page.getByRole("button", { name: "Confirm" }).click();
@@ -52,7 +65,10 @@ test("members and API tokens", async ({ app: page }) => {
   await expect(page.getByText("Copy it now.")).toBeVisible();
   const token = await page.locator("code").textContent();
   await expect(page.locator("pre")).toContainText(`Bearer ${token}`);
-  const res = await page.request.post("/api/capture", { headers: { authorization: `Bearer ${token}` }, data: { text: "milk 1.20" } });
+  const res = await page.request.post("/api/capture", {
+    headers: { authorization: `Bearer ${token}` },
+    data: { text: "milk 1.20" },
+  });
   expect(res.ok()).toBe(true);
   await page.getByRole("link", { name: "Expenses" }).click();
   await expect(bar(page)).toBeVisible();
@@ -79,14 +95,20 @@ test("browser chrome colour follows the chosen theme", async ({ app: page }) => 
 
 test("a CSV previews and imports into an empty instance", async ({ app: page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
-  const csv = (rows: string[]) => ({ name: "expenses.csv", mimeType: "text/csv", buffer: Buffer.from(["date,note,amount,currency,category", ...rows].join("\n")) });
+  const csv = (rows: string[]) => ({
+    name: "expenses.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(["date,note,amount,currency,category", ...rows].join("\n")),
+  });
 
   await page.getByLabel("CSV file").setInputFiles(csv(["2025-03-01,Kibble,20.00,GBP,Pets", "2025-03-02,Bad,1,XYZ,"]));
   const preview = page.getByLabel("Import preview");
   await expect(preview).toContainText("Line 3: Invalid currency");
   await expect(preview.getByRole("button", { name: "Import 1" })).toBeDisabled();
 
-  await page.getByLabel("CSV file").setInputFiles(csv(["2025-03-01,Kibble,20.00,GBP,Pets", "2025-03-02,Pizza,0.00012345,BTC,Food"]));
+  await page
+    .getByLabel("CSV file")
+    .setInputFiles(csv(["2025-03-01,Kibble,20.00,GBP,Pets", "2025-03-02,Pizza,0.00012345,BTC,Food"]));
   await expect(preview).toContainText("2 expenses in expenses.csv");
   await expect(preview).toContainText("0.00012345 BTC · 20.00 GBP");
   await expect(preview).toContainText("New categories: Pets");
@@ -153,7 +175,9 @@ test.describe("with several AI models", () => {
   });
 });
 
-test("ChatGPT manual connection shows the sign-in link and recovers from a bad callback", async ({ app: page }, testInfo) => {
+test("ChatGPT manual connection shows the sign-in link and recovers from a bad callback", async ({
+  app: page,
+}, testInfo) => {
   await page.getByRole("link", { name: "Settings" }).click();
   await page.getByRole("button", { name: "Connect ChatGPT", exact: true }).click();
   const link = page.getByRole("link", { name: "Sign in to ChatGPT" });
@@ -166,9 +190,14 @@ test("ChatGPT manual connection shows the sign-in link and recovers from a bad c
   await expect(page.getByRole("alert")).toContainText("That isn’t the address of the page that failed to load.");
   await address.fill("http://127.0.0.1:1455/auth/callback?state=bad&code=bad");
   await page.getByRole("button", { name: "Finish connecting" }).click();
-  await expect(page.getByRole("alert")).toHaveText("This sign-in attempt has expired. Select Connect ChatGPT to start again.");
+  await expect(page.getByRole("alert")).toHaveText(
+    "This sign-in attempt has expired. Select Connect ChatGPT to start again.",
+  );
   await page.getByRole("heading", { name: "ChatGPT plan" }).scrollIntoViewIfNeeded();
-  await page.getByRole("heading", { name: "ChatGPT plan" }).locator("..").screenshot({ path: testInfo.outputPath("chatgpt-settings.png") });
+  await page
+    .getByRole("heading", { name: "ChatGPT plan" })
+    .locator("..")
+    .screenshot({ path: testInfo.outputPath("chatgpt-settings.png") });
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("button", { name: "Connect ChatGPT", exact: true })).toBeVisible();
 });

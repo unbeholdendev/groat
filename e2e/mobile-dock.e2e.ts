@@ -2,7 +2,10 @@ import { bar, expect, seed, test } from "./fixtures";
 
 test("expense input sits below the chart and the mobile shortcut returns to its draft", async ({ app: page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await seed(page, Array.from({ length: 18 }, (_, i) => ({ note: `Expense ${i}`, amount: "1" })));
+  await seed(
+    page,
+    Array.from({ length: 18 }, (_, i) => ({ note: `Expense ${i}`, amount: "1" })),
+  );
   await page.reload();
   const input = bar(page);
   const dock = page.getByRole("contentinfo");
@@ -43,7 +46,9 @@ test("settings only repeats secondary navigation on phones", async ({ app: page 
   } else {
     await expect(more).toBeHidden();
     await expect(page.locator("main").getByRole("link", { name: "Recurring", exact: true })).toBeHidden();
-    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Recurring", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Recurring", exact: true }),
+    ).toBeVisible();
   }
   await expect(page.getByRole("link", { name: "Privacy and data flows" })).toBeVisible();
 });

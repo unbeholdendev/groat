@@ -26,8 +26,19 @@ export function useDrafting(unit: Unit, onFail: () => void) {
   });
   const drop = () => (image && URL.revokeObjectURL(image), setImage(undefined));
   const unreview = () => (drafting.reset(), drop());
-  const photo = (file: Blob) => (unreview(), setCaptureError(null), setImage(URL.createObjectURL(file)), drafting.mutate({ photo: file }));
-  return { form, drafting, image, captureError, setCaptureError, unreview, photo, reviewing: drafting.isPending || drafting.isSuccess };
+  const photo = (file: Blob) => (
+    unreview(), setCaptureError(null), setImage(URL.createObjectURL(file)), drafting.mutate({ photo: file })
+  );
+  return {
+    form,
+    drafting,
+    image,
+    captureError,
+    setCaptureError,
+    unreview,
+    photo,
+    reviewing: drafting.isPending || drafting.isSuccess,
+  };
 }
 
 export type Drafting = ReturnType<typeof useDrafting>;

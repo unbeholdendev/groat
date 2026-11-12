@@ -45,14 +45,22 @@ export function Chart(props: {
   const [at, setAt] = useState<number | null>(null);
   const [fy, fm, fd] = props.range[0].split("-").map(Number);
   const scrub = (e: PointerEvent<HTMLDivElement>) => {
-    const n = Math.min(ex, Math.max(0, Math.round(((e.clientX - e.currentTarget.getBoundingClientRect().left) / w) * extent)));
+    const n = Math.min(
+      ex,
+      Math.max(0, Math.round(((e.clientX - e.currentTarget.getBoundingClientRect().left) / w) * extent)),
+    );
     setAt(n);
     props.onScrub(
       <>
         <span className="num text-ink">
-          {new Date(fy, fm - 1, fd + n).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {props.show(valueAt(now, n))}
+          {new Date(fy, fm - 1, fd + n).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} ·{" "}
+          {props.show(valueAt(now, n))}
         </span>
-        {props.ghost && <span className="num">vs {props.name} {props.show(valueAt(prev, n))}</span>}
+        {props.ghost && (
+          <span className="num">
+            vs {props.name} {props.show(valueAt(prev, n))}
+          </span>
+        )}
       </>,
     );
   };
@@ -71,7 +79,12 @@ export function Chart(props: {
         className="relative h-[112px] touch-pan-y select-none"
       >
         {w > 0 && (
-          <svg role="img" aria-label={props.aria} viewBox={`0 0 ${w} ${H}`} className="size-full overflow-visible text-accent">
+          <svg
+            role="img"
+            aria-label={props.aria}
+            viewBox={`0 0 ${w} ${H}`}
+            className="size-full overflow-visible text-accent"
+          >
             <defs>
               <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
                 <stop offset="0" stopColor="currentColor" stopOpacity="0.18" />
@@ -79,11 +92,40 @@ export function Chart(props: {
               </linearGradient>
             </defs>
             <line x1="0" x2={w} y1={H} y2={H} className="stroke-line2" />
-            {props.ghost && <path d={path(prev)} fill="none" className="stroke-ink3" strokeWidth="1.5" strokeDasharray="4 4" strokeLinejoin="round" />}
+            {props.ghost && (
+              <path
+                d={path(prev)}
+                fill="none"
+                className="stroke-ink3"
+                strokeWidth="1.5"
+                strokeDasharray="4 4"
+                strokeLinejoin="round"
+              />
+            )}
             {running && <line x1={x(ex)} x2={x(ex)} y1="0" y2={H} className="stroke-line2" />}
-            <path d={`${path(now)}L${x(ex)},${H}L0,${H}Z`} fill={`url(#${id})`} className="animate-fade [animation-delay:200ms]" />
-            <path d={path(now)} pathLength={1} fill="none" className="draw stroke-accent" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {running && <circle cx={x(ex)} cy={y(ey)} r="5.5" strokeWidth="3" className="animate-fade fill-accent stroke-bg [animation-delay:700ms]" />}
+            <path
+              d={`${path(now)}L${x(ex)},${H}L0,${H}Z`}
+              fill={`url(#${id})`}
+              className="animate-fade [animation-delay:200ms]"
+            />
+            <path
+              d={path(now)}
+              pathLength={1}
+              fill="none"
+              className="draw stroke-accent"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {running && (
+              <circle
+                cx={x(ex)}
+                cy={y(ey)}
+                r="5.5"
+                strokeWidth="3"
+                className="animate-fade fill-accent stroke-bg [animation-delay:700ms]"
+              />
+            )}
             {at !== null && (
               <>
                 <line x1={x(at)} x2={x(at)} y1="0" y2={H} className="stroke-ink3" />
@@ -108,15 +150,49 @@ export function Chart(props: {
         <span>{short(props.end)}</span>
       </div>
       <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink2">
-        <span><span aria-hidden className="mr-1 inline-block w-4 border-t-2 border-accent" />Cumulative spending</span>
-        {props.ghost && <span><span aria-hidden className="mr-1 inline-block w-4 border-t-2 border-dashed border-ink3" />{props.name}</span>}
+        <span>
+          <span aria-hidden className="mr-1 inline-block w-4 border-t-2 border-accent" />
+          Cumulative spending
+        </span>
+        {props.ghost && (
+          <span>
+            <span aria-hidden className="mr-1 inline-block w-4 border-t-2 border-dashed border-ink3" />
+            {props.name}
+          </span>
+        )}
       </p>
       <details className="mt-3 text-[13px] text-ink2">
         <summary className="min-h-11 cursor-pointer py-3">Compare daily totals</summary>
         <div role="region" aria-label="Daily comparison values" tabIndex={0} className="max-h-72 overflow-auto">
           <table className="num w-full text-left" aria-label="Cumulative spending by day">
-            <thead><tr><th scope="col">Date</th><th scope="col">Cumulative spending</th>{props.ghost && <><th scope="col">Comparison date</th><th scope="col">{props.name}</th></>}</tr></thead>
-            <tbody>{Array.from({ length: tableEnd + 1 }, (_, n) => <tr key={n} className="border-t border-line"><th scope="row" className="py-2 font-normal">{n <= ex ? dayAt(props.range[0], n) : "Outside current range"}</th><td>{n <= ex ? props.show(valueAt(now, n)) : "—"}</td>{props.ghost && <><td>{n <= previousEnd ? dayAt(props.full[0], n) : "Outside comparison range"}</td><td>{n <= previousEnd ? props.show(valueAt(prev, n)) : "—"}</td></>}</tr>)}</tbody>
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Cumulative spending</th>
+                {props.ghost && (
+                  <>
+                    <th scope="col">Comparison date</th>
+                    <th scope="col">{props.name}</th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: tableEnd + 1 }, (_, n) => (
+                <tr key={n} className="border-t border-line">
+                  <th scope="row" className="py-2 font-normal">
+                    {n <= ex ? dayAt(props.range[0], n) : "Outside current range"}
+                  </th>
+                  <td>{n <= ex ? props.show(valueAt(now, n)) : "—"}</td>
+                  {props.ghost && (
+                    <>
+                      <td>{n <= previousEnd ? dayAt(props.full[0], n) : "Outside comparison range"}</td>
+                      <td>{n <= previousEnd ? props.show(valueAt(prev, n)) : "—"}</td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
       </details>

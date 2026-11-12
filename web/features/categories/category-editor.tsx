@@ -12,18 +12,35 @@ import { DeleteCategory } from "./delete-category";
 import { MoveKind } from "./move-kind";
 import { categoryForm } from "./schema";
 
-export function CategoryEditor(props: { category?: Category; kind: Kind; categories: Category[]; onClose: () => void; onDelete: (moveTo: string) => void }) {
+export function CategoryEditor(props: {
+  category?: Category;
+  kind: Kind;
+  categories: Category[];
+  onClose: () => void;
+  onDelete: (moveTo: string) => void;
+}) {
   const { category: c, categories } = props;
-  const form = useZodForm(categoryForm, { name: c?.name ?? "", icon: c?.icon ?? "📁", color: c?.color ?? palette.Rose, parentId: "", kind: props.kind });
+  const form = useZodForm(categoryForm, {
+    name: c?.name ?? "",
+    icon: c?.icon ?? "📁",
+    color: c?.color ?? palette.Rose,
+    parentId: "",
+    kind: props.kind,
+  });
   const { errors } = form.formState;
   const save = useSend("category");
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
   const kind = form.watch("kind");
   const send = form.handleSubmit(({ parentId, kind, ...fields }) =>
-    save.mutate(c ? ["PUT", `/api/categories/${c.id}`, kind === c.kind ? fields : { ...fields, kind }] : ["POST", "/api/categories", { ...fields, parentId, kind }], {
-      onSuccess: props.onClose,
-    }),
+    save.mutate(
+      c
+        ? ["PUT", `/api/categories/${c.id}`, kind === c.kind ? fields : { ...fields, kind }]
+        : ["POST", "/api/categories", { ...fields, parentId, kind }],
+      {
+        onSuccess: props.onClose,
+      },
+    ),
   );
   const submit = c && kind !== c.kind ? form.handleSubmit(() => setMoving(true)) : send;
 
@@ -40,7 +57,9 @@ export function CategoryEditor(props: { category?: Category; kind: Kind; categor
       <Controller
         control={form.control}
         name="color"
-        render={({ field, fieldState }) => <ColourPicker value={field.value} onChange={field.onChange} error={fieldState.error?.message} />}
+        render={({ field, fieldState }) => (
+          <ColourPicker value={field.value} onChange={field.onChange} error={fieldState.error?.message} />
+        )}
       />
       {!c && (
         <Field label="Inside">
@@ -60,14 +79,27 @@ export function CategoryEditor(props: { category?: Category; kind: Kind; categor
         <Controller
           control={form.control}
           name="kind"
-          render={({ field }) => <Segmented label="Kind" options={kinds} names={{ expense: "Expense", income: "Income" }} value={field.value} onChange={field.onChange} />}
+          render={({ field }) => (
+            <Segmented
+              label="Kind"
+              options={kinds}
+              names={{ expense: "Expense", income: "Income" }}
+              value={field.value}
+              onChange={field.onChange}
+            />
+          )}
         />
       )}
       <FormError error={save.error} />
       {moving && c ? (
         <MoveKind category={c} kind={kind} categories={categories} onKeep={() => setMoving(false)} onMove={send} />
       ) : deleting && c ? (
-        <DeleteCategory category={c} categories={categories} onKeep={() => setDeleting(false)} onDelete={props.onDelete} />
+        <DeleteCategory
+          category={c}
+          categories={categories}
+          onKeep={() => setDeleting(false)}
+          onDelete={props.onDelete}
+        />
       ) : (
         <div className="flex items-center">
           {c && !c.builtin && (

@@ -4,9 +4,23 @@ import type { Draft } from "../../lib/schemas";
 
 export const review = (unit: Unit) =>
   z
-    .object({ note: z.string().trim().min(1, "Enter a note"), amount: z.string(), currency: z.string(), date: z.string(), categoryId: z.number().transform((n) => n || undefined), tags: z.string() })
+    .object({
+      note: z.string().trim().min(1, "Enter a note"),
+      amount: z.string(),
+      currency: z.string(),
+      date: z.string(),
+      categoryId: z.number().transform((n) => n || undefined),
+      tags: z.string(),
+    })
     .refine((f) => parseAmount(f.amount, f.currency, unit) !== null, { path: ["amount"], message: "Enter an amount" })
-    .transform((f) => ({ ...f, unit, tags: f.tags.split(/\s+/).map((t) => t.replace(/^#/, "")).filter(Boolean) }));
+    .transform((f) => ({
+      ...f,
+      unit,
+      tags: f.tags
+        .split(/\s+/)
+        .map((t) => t.replace(/^#/, ""))
+        .filter(Boolean),
+    }));
 
 export type Fields = z.input<ReturnType<typeof review>>;
 

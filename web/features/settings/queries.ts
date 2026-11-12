@@ -12,7 +12,9 @@ export function syncSettings(client: QueryClient, data: unknown, [, path]: Reque
 
 export function syncToken(client: QueryClient, data: unknown, [method]: Request) {
   const row = apiToken.parse(data);
-  client.setQueryData<ApiToken[]>(["/api/tokens"], (rows = []) => (method === "DELETE" ? rows.filter((r) => r.id !== row.id) : [row, ...rows]));
+  client.setQueryData<ApiToken[]>(["/api/tokens"], (rows = []) =>
+    method === "DELETE" ? rows.filter((r) => r.id !== row.id) : [row, ...rows],
+  );
 }
 
 export const syncUsers = (client: QueryClient) => invalidate(client, ["members"]);

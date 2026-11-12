@@ -4,7 +4,11 @@ import { Button } from "../../components/button";
 function Copy({ text, label = "Copy" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <Button variant="quiet" className="h-9 shrink-0 bg-surface text-[13px]" onClick={() => navigator.clipboard.writeText(text).then(() => setCopied(true))}>
+    <Button
+      variant="quiet"
+      className="h-9 shrink-0 bg-surface text-[13px]"
+      onClick={() => navigator.clipboard.writeText(text).then(() => setCopied(true))}
+    >
       {copied ? "Copied" : label}
     </Button>
   );

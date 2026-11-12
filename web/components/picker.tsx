@@ -5,14 +5,30 @@ import { Chevron } from "./icon";
 
 export const overlay = "absolute inset-0 opacity-0";
 
-export const Picker = ({ className, chevron = <Chevron />, children }: { className: string; chevron?: ReactNode; children: ReactNode }) => (
+export const Picker = ({
+  className,
+  chevron = <Chevron />,
+  children,
+}: {
+  className: string;
+  chevron?: ReactNode;
+  children: ReactNode;
+}) => (
   <label className={className}>
     {children}
     {chevron}
   </label>
 );
 
-export const DateInput = ({ value, onChange, className = overlay }: { value: string; onChange: (date: string) => void; className?: string }) => (
+export const DateInput = ({
+  value,
+  onChange,
+  className = overlay,
+}: {
+  value: string;
+  onChange: (date: string) => void;
+  className?: string;
+}) => (
   <input
     aria-label="Date"
     type="date"

@@ -9,7 +9,8 @@ import type { Category } from "../../lib/schemas";
 import type { Drafting } from "./use-drafting";
 
 const field = "min-w-0 rounded-token bg-transparent px-1 -mx-1 outline-none focus:bg-surface2";
-const chip = "press relative inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip bg-surface2 px-3 text-[13px] font-medium";
+const chip =
+  "press relative inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip bg-surface2 px-3 text-[13px] font-medium";
 
 export function Review(props: {
   form: Drafting["form"];
@@ -28,17 +29,31 @@ export function Review(props: {
   const shown = formState.errors.note ? "note" : formState.errors.amount ? "amount" : null;
   const error = shown && formState.errors[shown]?.message;
   const id = useId();
-  const invalid = (name: "note" | "amount") => ({ "aria-invalid": formState.errors[name] ? true : undefined, "aria-describedby": shown === name ? id : undefined });
+  const invalid = (name: "note" | "amount") => ({
+    "aria-invalid": formState.errors[name] ? true : undefined,
+    "aria-describedby": shown === name ? id : undefined,
+  });
   return (
-    <section aria-live="polite" aria-label="Review expense" className="rise rounded-card bg-surface px-5 pt-[18px] pb-2.5 shadow-lift">
+    <section
+      aria-live="polite"
+      aria-label="Review expense"
+      className="rise rounded-card bg-surface px-5 pt-[18px] pb-2.5 shadow-lift"
+    >
       {!props.ready ? (
-        <p className="text-[17px] leading-snug font-medium text-ink3">{props.image ? "Reading your receipt…" : "Reading your expense…"}</p>
+        <p className="text-[17px] leading-snug font-medium text-ink3">
+          {props.image ? "Reading your receipt…" : "Reading your expense…"}
+        </p>
       ) : (
         <>
           <div className="flex items-center gap-3">
             {props.image && <ReceiptPreview image={props.image} />}
             <Tile category={category} />
-            <input aria-label="Note" className={`${field} flex-1 text-[17px] font-medium`} {...invalid("note")} {...register("note")} />
+            <input
+              aria-label="Note"
+              className={`${field} flex-1 text-[17px] font-medium`}
+              {...invalid("note")}
+              {...register("note")}
+            />
             <input
               aria-label="Amount"
               inputMode="decimal"
@@ -69,13 +84,23 @@ export function Review(props: {
               <span className="num">{f.currency === "BTC" ? props.unit : f.currency}</span>
               <CurrencySelect recent={props.recent} className={overlay} {...register("currency")} />
             </Picker>
-            <input aria-label="Tags" placeholder="#tags" className={`${chip} w-28 text-ink2 outline-none focus:ring-2 focus:ring-accent-soft`} {...register("tags")} />
+            <input
+              aria-label="Tags"
+              placeholder="#tags"
+              className={`${chip} w-28 text-ink2 outline-none focus:ring-2 focus:ring-accent-soft`}
+              {...register("tags")}
+            />
           </div>
         </>
       )}
       <div className="mt-3 flex justify-end gap-1 border-t border-line pt-1.5">
         <Button onClick={props.onDismiss}>Dismiss</Button>
-        <button type="button" disabled={!props.ready || props.saving} onClick={props.onSave} className="press hit rounded-chip bg-accent px-3 py-1.5 text-[13px] font-medium text-on-accent disabled:opacity-50">
+        <button
+          type="button"
+          disabled={!props.ready || props.saving}
+          onClick={props.onSave}
+          className="press hit rounded-chip bg-accent px-3 py-1.5 text-[13px] font-medium text-on-accent disabled:opacity-50"
+        >
           Save
         </button>
       </div>

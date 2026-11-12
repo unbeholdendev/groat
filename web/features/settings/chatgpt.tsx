@@ -7,7 +7,13 @@ import { panel, subHead } from "../../components/styles";
 import { useApi, useSendNow } from "../../lib/api";
 import { SelectRow } from "./select-row";
 
-const status = z.object({ connected: z.boolean(), email: z.string().nullable(), model: z.string().nullable(), needsSignIn: z.boolean(), signIn: z.string().nullable() });
+const status = z.object({
+  connected: z.boolean(),
+  email: z.string().nullable(),
+  model: z.string().nullable(),
+  needsSignIn: z.boolean(),
+  signIn: z.string().nullable(),
+});
 const listing = z.object({ models: z.array(z.object({ slug: z.string(), display_name: z.string() })) });
 
 export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
@@ -35,7 +41,11 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
             ? `The sign-in for ${data.email} has expired, so AI is off. Reconnect to turn it back on.`
             : `Connected as ${data.email}. Everyone on this server uses this plan.`}
       </p>
-      {notice && <p role="status" className="px-1 text-sm text-ink2">{notice}</p>}
+      {notice && (
+        <p role="status" className="px-1 text-sm text-ink2">
+          {notice}
+        </p>
+      )}
       {usable && !!models.data?.models.length && chosen && (
         <div className={panel}>
           <SelectRow
@@ -64,7 +74,12 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
         >
           <ol className="flex list-decimal flex-col gap-1.5 pl-6 text-sm text-ink2">
             <li>
-              <a className="font-medium text-accent underline underline-offset-2" href={signIn} target="_blank" rel="noreferrer">
+              <a
+                className="font-medium text-accent underline underline-offset-2"
+                href={signIn}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Sign in to ChatGPT
               </a>{" "}
               in a new tab.
@@ -73,7 +88,15 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
             <li>Copy that page’s whole address and paste it here within ten minutes.</li>
           </ol>
           <Field label="Address of the error page">
-            <Input autoComplete="off" autoCapitalize="none" spellCheck={false} inputMode="url" placeholder="http://127.0.0.1:1455/auth/callback?…" value={callback} onChange={(e) => (mutation.reset(), setCallback(e.target.value))} />
+            <Input
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              inputMode="url"
+              placeholder="http://127.0.0.1:1455/auth/callback?…"
+              value={callback}
+              onChange={(e) => (mutation.reset(), setCallback(e.target.value))}
+            />
           </Field>
           <div className="flex justify-end gap-2">
             <Button onClick={() => run(["DELETE", "/api/chatgpt/start"])} disabled={busy}>
@@ -110,7 +133,12 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
       ) : (
         <div className="flex justify-end gap-2">
           {data?.connected && <Button onClick={() => setConfirming(true)}>Disconnect</Button>}
-          <Button variant={(data?.connected && !data.needsSignIn) || keyInUse ? "text" : "primary"} tone="accent" disabled={busy || !data} onClick={() => run(["POST", "/api/chatgpt/start"])}>
+          <Button
+            variant={(data?.connected && !data.needsSignIn) || keyInUse ? "text" : "primary"}
+            tone="accent"
+            disabled={busy || !data}
+            onClick={() => run(["POST", "/api/chatgpt/start"])}
+          >
             {busy ? "Starting…" : data?.connected ? "Reconnect" : "Connect ChatGPT"}
           </Button>
         </div>

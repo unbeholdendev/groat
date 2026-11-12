@@ -11,7 +11,10 @@ test("renaming a tag renames it on every expense", async () => {
   const tags = (await call("GET", "/api/tags")).body;
   expect(tags.map((t: { name: string }) => t.name)).toEqual(["hols", "work"]);
   const hols = tags[0].id;
-  expect((await call("PUT", `/api/tags/${hols}`, { name: "holiday-2026" })).body).toEqual({ id: hols, name: "holiday-2026" });
+  expect((await call("PUT", `/api/tags/${hols}`, { name: "holiday-2026" })).body).toEqual({
+    id: hols,
+    name: "holiday-2026",
+  });
   expect(await tagsOf(call)).toEqual([
     ["b", ["holiday-2026"]],
     ["a", ["holiday-2026", "work"]],
@@ -43,7 +46,14 @@ test("emptying the bin keeps tags working on other expenses", async () => {
 test("renaming or deleting a tag updates recurring templates", async () => {
   const { call } = setup();
   await call("POST", "/api/transactions", { note: "a", amount: "1", tags: ["hols", "work"] });
-  await call("POST", "/api/recurring", { note: "r", amount: "1", period: "month", every: 1, startDate: "2026-11-01", tags: ["hols", "work"] });
+  await call("POST", "/api/recurring", {
+    note: "r",
+    amount: "1",
+    period: "month",
+    every: 1,
+    startDate: "2026-11-01",
+    tags: ["hols", "work"],
+  });
   const [hols, work] = (await call("GET", "/api/tags")).body;
   await call("PUT", `/api/tags/${hols.id}`, { name: "holiday" });
   expect((await call("GET", "/api/recurring")).body[0].tags).toEqual(["holiday", "work"]);

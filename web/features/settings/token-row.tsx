@@ -12,7 +12,9 @@ export const TokenRow = ({ token: t, onRevoke }: { token: ApiToken; onRevoke: ()
     </SettingsIcon>
     <span className="min-w-0 flex-1">
       <span className="block truncate font-medium">{t.name}</span>
-      <span className="block text-xs font-medium text-ink3">{t.lastUsedAt ? `Last used ${dayLabel(t.lastUsedAt.slice(0, 10))}` : "Never used"}</span>
+      <span className="block text-xs font-medium text-ink3">
+        {t.lastUsedAt ? `Last used ${dayLabel(t.lastUsedAt.slice(0, 10))}` : "Never used"}
+      </span>
     </span>
     <Button tone="up" onClick={onRevoke}>
       Revoke

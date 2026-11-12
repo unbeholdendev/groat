@@ -13,7 +13,12 @@ import { apiTokens } from "./schema";
 import { extract, textInput } from "./draft";
 
 const hash = (token: string) => new Bun.CryptoHasher("sha256").update(token).digest("hex");
-const listed = { id: apiTokens.id, name: apiTokens.name, createdAt: apiTokens.createdAt, lastUsedAt: apiTokens.lastUsedAt };
+const listed = {
+  id: apiTokens.id,
+  name: apiTokens.name,
+  createdAt: apiTokens.createdAt,
+  lastUsedAt: apiTokens.lastUsedAt,
+};
 
 export function captureRoutes(ctx: Ctx) {
   const { db, clock } = ctx;
@@ -22,7 +27,14 @@ export function captureRoutes(ctx: Ctx) {
   app.post("/api/capture", async (c) => {
     const now = clock().toISOString();
     const token = c.req.header("authorization")?.match(/^Bearer (\S+)$/)?.[1];
-    const owner = token && db.update(apiTokens).set({ lastUsedAt: now }).where(eq(apiTokens.hash, hash(token))).returning({ userId: apiTokens.userId }).get();
+    const owner =
+      token &&
+      db
+        .update(apiTokens)
+        .set({ lastUsedAt: now })
+        .where(eq(apiTokens.hash, hash(token)))
+        .returning({ userId: apiTokens.userId })
+        .get();
     if (!owner) return c.json({ error: "Invalid token" }, 401);
     const parsed = await body(c, textInput);
     if ("error" in parsed) return c.json(parsed, 400);
@@ -53,7 +65,16 @@ export function tokenRoutes({ db, clock }: Ctx) {
   const app = new Hono<Env>();
   const mine = (userId: number) => eq(apiTokens.userId, userId);
 
-  app.get("/api/tokens", (c) => c.json(db.select(listed).from(apiTokens).where(mine(c.get("user").id)).orderBy(desc(apiTokens.id)).all()));
+  app.get("/api/tokens", (c) =>
+    c.json(
+      db
+        .select(listed)
+        .from(apiTokens)
+        .where(mine(c.get("user").id))
+        .orderBy(desc(apiTokens.id))
+        .all(),
+    ),
+  );
 
   app.post("/api/tokens", async (c) => {
     const parsed = await body(c, z.object({ name: z.string("Enter a name").trim().min(1, "Enter a name") }));
@@ -68,7 +89,11 @@ export function tokenRoutes({ db, clock }: Ctx) {
   });
 
   app.delete("/api/tokens/:id", (c) => {
-    const row = db.delete(apiTokens).where(and(eq(apiTokens.id, Number(c.req.param("id"))), mine(c.get("user").id))).returning(listed).get();
+    const row = db
+      .delete(apiTokens)
+      .where(and(eq(apiTokens.id, Number(c.req.param("id"))), mine(c.get("user").id)))
+      .returning(listed)
+      .get();
     return row ? c.json(row) : c.json({ error: "Not found" }, 404);
   });
 

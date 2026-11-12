@@ -13,10 +13,12 @@ export function Transactions() {
   const listed = useTransactions();
   const newest = useRef<number>(undefined);
   const open = !!(adding || Number(edit));
-  if (listed && (newest.current === undefined || open || view === "bin")) newest.current = Math.max(0, ...listed.map((e) => e.id));
+  if (listed && (newest.current === undefined || open || view === "bin"))
+    newest.current = Math.max(0, ...listed.map((e) => e.id));
 
   if (view === "bin") return <Bin />;
   if (open) return <TransactionForm />;
-  if (view === "recurring") return <Recurring onEdit={(template) => navigate({ search: { ...list, new: "1" }, state: { template } })} />;
+  if (view === "recurring")
+    return <Recurring onEdit={(template) => navigate({ search: { ...list, new: "1" }, state: { template } })} />;
   return <Month newest={newest.current ?? 0} />;
 }

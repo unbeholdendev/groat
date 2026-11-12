@@ -40,7 +40,9 @@ test("quick-add takes the kind from the matched category", async ({ app: page })
   await seed(page, [{ note: "Salary", amount: "2500", categoryId: salary, date: "2026-01-05" }]);
   await page.reload();
   await add(page, "salary 2600");
-  await expect(page.getByRole("listitem").filter({ hasText: "salary" }).filter({ hasText: "2,600" })).toContainText("+£2,600.00");
+  await expect(page.getByRole("listitem").filter({ hasText: "salary" }).filter({ hasText: "2,600" })).toContainText(
+    "+£2,600.00",
+  );
   await add(page, "lunch 8");
   await expect(page.getByRole("listitem").filter({ hasText: "lunch" })).not.toContainText("+");
   await expect(page.locator("header").getByText("£8.00").first()).toBeVisible();

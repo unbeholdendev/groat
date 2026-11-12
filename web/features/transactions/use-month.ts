@@ -28,7 +28,24 @@ export function useMonth() {
   const [y, m] = shown.split("-").map(Number);
   const end = new Date(y, m, 0);
   const step = (n: number) => iso(new Date(y, m - 1 + n, 1)).slice(0, 7);
-  const label = end.toLocaleDateString("en-GB", { month: "long", ...(y !== new Date().getFullYear() && { year: "numeric" }) });
-  const query = new URLSearchParams(Object.entries(filtered ? filter : { from: `${shown}-01`, to: iso(end) }).filter(([, v]) => v));
-  return { month, filter, setFilter, filtered, shown, end, step, label, query, kind: useSettings()?.income ? kindSchema.safeParse(kind).data : undefined, setKind };
+  const label = end.toLocaleDateString("en-GB", {
+    month: "long",
+    ...(y !== new Date().getFullYear() && { year: "numeric" }),
+  });
+  const query = new URLSearchParams(
+    Object.entries(filtered ? filter : { from: `${shown}-01`, to: iso(end) }).filter(([, v]) => v),
+  );
+  return {
+    month,
+    filter,
+    setFilter,
+    filtered,
+    shown,
+    end,
+    step,
+    label,
+    query,
+    kind: useSettings()?.income ? kindSchema.safeParse(kind).data : undefined,
+    setKind,
+  };
 }

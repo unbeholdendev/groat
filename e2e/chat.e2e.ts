@@ -35,7 +35,9 @@ test("desktop nav has Chats, current on /chat", async ({ app: page, isMobile }) 
   await openChats(page, isMobile);
   await expect(nav(page).getByRole("link", { name: "Chats" })).toHaveAttribute("aria-current", "page");
   await expect(nav(page).getByRole("link", { name: "Settings" })).not.toHaveAttribute("aria-current");
-  await expect(page.getByText("No chats yet. Ask about your spending in the bar below.", { exact: false })).toBeVisible();
+  await expect(
+    page.getByText("No chats yet. Ask about your spending in the bar below.", { exact: false }),
+  ).toBeVisible();
 });
 
 test("phone reaches chats from Home, with no tab current", async ({ app: page, isMobile }) => {
@@ -91,7 +93,8 @@ const slow = async (page: Page) => {
   await expect(page.getByText("Add transaction ✓")).toBeVisible();
   await expect(page.getByText("Working on it…")).toBeVisible();
 };
-const notes = async (page: Page) => (await (await page.request.get("/api/transactions")).json()).map((t: { note: string }) => t.note);
+const notes = async (page: Page) =>
+  (await (await page.request.get("/api/transactions")).json()).map((t: { note: string }) => t.note);
 
 test("each step of a run shows before the final reply", async ({ app: page }) => {
   await slow(page);
@@ -142,7 +145,10 @@ test("a reply that finishes before the question's response arrives stays shown",
 });
 
 for (const available of [true, false]) {
-  test(`saved chats open before AI availability resolves (${available ? "available" : "unavailable"})`, async ({ fresh: page, isMobile }) => {
+  test(`saved chats open before AI availability resolves (${available ? "available" : "unavailable"})`, async ({
+    fresh: page,
+    isMobile,
+  }) => {
     await page.request.post("/api/setup", { data: { username: "admin", password: "secret" } });
     await page.request.post("/api/onboarding", { data: { baseCurrency: "GBP" } });
     const created = await page.request.post("/api/chats", { data: { message: "Saved question" } });
@@ -150,10 +156,14 @@ for (const available of [true, false]) {
     const { id } = await created.json();
     await expect.poll(async () => (await (await page.request.get(`/api/chats/${id}`)).json()).running).toBe(false);
     let release!: () => void;
-    const pending = new Promise<void>((resolve) => { release = resolve; });
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     await page.route("**/api/ai/status", async (route) => {
       await pending;
-      await route.fulfill({ json: { ai: available, aiSource: available ? "key" : null, aiProblem: null, vision: available, voice: false } });
+      await route.fulfill({
+        json: { ai: available, aiSource: available ? "key" : null, aiProblem: null, vision: available, voice: false },
+      });
     });
     try {
       await page.goto("/");

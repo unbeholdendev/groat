@@ -23,6 +23,27 @@ test("arithmetic follows precedence and rounds to the minor unit", () => {
 });
 
 test("bad, zero or negative results are not amounts", () => {
-  for (const text of ["", "x", "1 2", "3+", "+3", "-3", "3--1", "(3", "3)", "1.2.3", "3.", "3,50", "3-5", "5-5", "1/0", "0/0", "1/(1/0)+1", "1/(2-2)", "1/1000", "1.001+1"])
+  for (const text of [
+    "",
+    "x",
+    "1 2",
+    "3+",
+    "+3",
+    "-3",
+    "3--1",
+    "(3",
+    "3)",
+    "1.2.3",
+    "3.",
+    "3,50",
+    "3-5",
+    "5-5",
+    "1/0",
+    "0/0",
+    "1/(1/0)+1",
+    "1/(2-2)",
+    "1/1000",
+    "1.001+1",
+  ])
     expect([text, parseAmount(text, "GBP")]).toEqual([text, null]);
 });

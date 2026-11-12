@@ -8,12 +8,21 @@ function providers(text: string, listed = models(["test-model", "whisper-1"])) {
   const heard: { url: string; auth: string | null; model: unknown; file: unknown }[] = [];
   const handler = (url: URL, init?: RequestInit) => {
     if (url.pathname.endsWith("/audio/transcriptions") && init?.body instanceof FormData) {
-      heard.push({ url: url.href, auth: new Headers(init.headers).get("authorization"), model: init.body.get("model"), file: init.body.get("file") });
+      heard.push({
+        url: url.href,
+        auth: new Headers(init.headers).get("authorization"),
+        model: init.body.get("model"),
+        file: init.body.get("file"),
+      });
       return Response.json({ text });
     }
     if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
     const args = { note: "Taxi home", amount: "14" };
-    return completion({ role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: JSON.stringify(args) } }] });
+    return completion({
+      role: "assistant",
+      content: null,
+      tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: JSON.stringify(args) } }],
+    });
   };
   return { handler, heard };
 }
@@ -35,7 +44,11 @@ test("a recording is transcribed and comes back as a draft, using the AI base an
   expect(body).toMatchObject({ note: "Taxi home", amount: 1400 });
   expect(draft.safeParse(body).error).toBeUndefined();
   expect(p.heard).toHaveLength(1);
-  expect(p.heard[0]).toMatchObject({ url: "https://ai.test/v1/audio/transcriptions", auth: "Bearer sk-test", model: "whisper-1" });
+  expect(p.heard[0]).toMatchObject({
+    url: "https://ai.test/v1/audio/transcriptions",
+    auth: "Bearer sk-test",
+    model: "whisper-1",
+  });
   expect(p.heard[0].file).toBeInstanceOf(File);
   expect((await call("GET", "/api/transactions")).body).toEqual([]);
 });
@@ -56,6 +69,10 @@ test("voice is off without a speech-to-text model, and bad input or replies are 
   expect((await record(silent.request)).status).toBe(422);
   expect((await silent.request("/api/voice", { method: "POST", body: new FormData() })).status).toBe(400);
 
-  const broken = setup(undefined, (url) => models(["test-model", "whisper-1"])(url) ?? new Response("down", { status: 500 }), ai);
+  const broken = setup(
+    undefined,
+    (url) => models(["test-model", "whisper-1"])(url) ?? new Response("down", { status: 500 }),
+    ai,
+  );
   expect((await record(broken.request)).status).toBe(502);
 });

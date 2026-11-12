@@ -22,7 +22,13 @@ test("an amount can be a sum", () => {
 
 test("a plain number wins over a sum, so dates stay in the note", () => {
   expect(parse("2026-11-08 lunch 15", [])).toMatchObject({ amount: "15", note: "2026-11-08 lunch" });
-  expect(parse("gym 24/7 30", []).parts).toEqual([["gym", ""], [" ", ""], ["24/7", ""], [" ", ""], ["30", "amount"]]);
+  expect(parse("gym 24/7 30", []).parts).toEqual([
+    ["gym", ""],
+    [" ", ""],
+    ["24/7", ""],
+    [" ", ""],
+    ["30", "amount"],
+  ]);
   expect(parse("lunch 12/3", [])).toMatchObject({ amount: "12/3", note: "lunch" });
 });
 

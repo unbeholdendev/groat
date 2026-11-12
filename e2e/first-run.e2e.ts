@@ -47,7 +47,10 @@ test.describe(() => {
 test("a downloaded backup restores on a new server's welcome screen", async ({ app: page }) => {
   await seed(page, [{ note: "Moving boxes", amount: "18.40" }]);
   await page.getByRole("link", { name: "Settings" }).click();
-  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: "Download backup" }).click()]);
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("link", { name: "Download backup" }).click(),
+  ]);
   const backup = await download.path();
 
   await page.request.post("/__reset");
@@ -64,7 +67,9 @@ test("a downloaded backup restores on a new server's welcome screen", async ({ a
 
 test("restoring a file that isn't a backup says so", async ({ fresh: page }) => {
   await page.goto("/");
-  await page.getByLabel("Backup file").setInputFiles({ name: "notes.sqlite", mimeType: "application/octet-stream", buffer: Buffer.from("hello") });
+  await page
+    .getByLabel("Backup file")
+    .setInputFiles({ name: "notes.sqlite", mimeType: "application/octet-stream", buffer: Buffer.from("hello") });
   await expect(page.getByRole("alert")).toHaveText("That file isn’t a backup from this app");
   await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
 });

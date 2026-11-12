@@ -8,7 +8,18 @@ import { readMigrationFiles } from "drizzle-orm/migrator";
 import { migrationsFolder } from "../server/db";
 import { frankfurter, models, setup } from "./harness";
 
-const kept = ["transactions", "settings", "categories", "category_order", "rates", "tags", "transaction_tags", "recurring", "users", "attachments"];
+const kept = [
+  "transactions",
+  "settings",
+  "categories",
+  "category_order",
+  "rates",
+  "tags",
+  "transaction_tags",
+  "recurring",
+  "users",
+  "attachments",
+];
 const dump = (db: Database, table: string) => db.query(`SELECT * FROM ${table} ORDER BY rowid`).all();
 
 function fresh() {
@@ -21,23 +32,51 @@ function fresh() {
     return { status: res.status, body: await res.json() };
   };
   const login = (username: string, password: string) =>
-    h.app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username, password }) });
+    h.app.request("/api/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
   return { ...h, restore, login };
 }
 
-const ai = { baseUrl: "https://ai.test/v1", key: "sk-live-backup-secret-1", sttBaseUrl: "https://stt.test/v1", sttKey: "stt-live-backup-secret-2" };
+const ai = {
+  baseUrl: "https://ai.test/v1",
+  key: "sk-live-backup-secret-1",
+  sttBaseUrl: "https://stt.test/v1",
+  sttKey: "stt-live-backup-secret-2",
+};
 
 async function household() {
-  const h = setup("2026-10-10T12:00:00Z", (url) => frankfurter({ "2026-10-01": { EUR: 0.9, GBP: 0.8 } })(url) ?? models(["gpt-4o-mini"])(url), ai);
+  const h = setup(
+    "2026-10-10T12:00:00Z",
+    (url) => frankfurter({ "2026-10-01": { EUR: 0.9, GBP: 0.8 } })(url) ?? models(["gpt-4o-mini"])(url),
+    ai,
+  );
   const { call, db } = h;
   await call("POST", "/api/onboarding", { baseCurrency: "GBP" });
   await call("POST", "/api/users", { username: "bob", password: "pw" });
-  const lunch = await call("POST", "/api/transactions", { note: "Lunch", amount: "12.50", currency: "EUR", tags: ["work"] });
+  const lunch = await call("POST", "/api/transactions", {
+    note: "Lunch",
+    amount: "12.50",
+    currency: "EUR",
+    tags: ["work"],
+  });
   const binned = await call("POST", "/api/transactions", { note: "Oops", amount: "1", currency: "GBP" });
   await call("DELETE", `/api/transactions/${binned.body.id}`);
-  await call("POST", "/api/recurring", { note: "Power", amount: "60", period: "month", every: 1, startDate: "2026-10-01", needsConfirmation: true });
+  await call("POST", "/api/recurring", {
+    note: "Power",
+    amount: "60",
+    period: "month",
+    every: 1,
+    startDate: "2026-10-01",
+    needsConfirmation: true,
+  });
   await call("POST", "/api/tokens", { name: "phone" });
-  db.run("INSERT INTO attachments (transaction_id, mime, bytes, created_at) VALUES (?, 'image/png', ?, '2026-10-10')", [lunch.body.id, new Uint8Array([1, 2, 3, 0, 255])]);
+  db.run("INSERT INTO attachments (transaction_id, mime, bytes, created_at) VALUES (?, 'image/png', ?, '2026-10-10')", [
+    lunch.body.id,
+    new Uint8Array([1, 2, 3, 0, 255]),
+  ]);
   db.run("INSERT INTO chats (title) VALUES ('Spending')");
   db.run("INSERT INTO chat_messages (chat_id, message) VALUES (1, '\"hi\"')");
   db.run("INSERT INTO sessions (id, user_id, expires_at) VALUES ('live-session-6f1c2', 1, '9999')");
@@ -64,8 +103,16 @@ test("a backup restores into a fresh instance with its financial data and accoun
 
   const target = fresh();
   expect(await target.restore(bytes)).toEqual({ status: 200, body: {} });
-  const blank = (db: Database) => dump(db, "settings").map((row) => ({ ...(row as object), ai_base_url: null, ai_key: null, stt_base_url: null, stt_key: null }));
-  for (const table of kept.filter((t) => t !== "settings")) expect([table, dump(target.db, table)]).toEqual([table, dump(source.db, table)]);
+  const blank = (db: Database) =>
+    dump(db, "settings").map((row) => ({
+      ...(row as object),
+      ai_base_url: null,
+      ai_key: null,
+      stt_base_url: null,
+      stt_key: null,
+    }));
+  for (const table of kept.filter((t) => t !== "settings"))
+    expect([table, dump(target.db, table)]).toEqual([table, dump(source.db, table)]);
   expect(dump(target.db, "settings")).toEqual(blank(source.db));
   for (const table of ["sessions", "api_tokens", "chats", "chat_messages"]) expect(dump(target.db, table)).toEqual([]);
   expect(dump(target.db, "transactions").length).toBe(3);
@@ -84,14 +131,26 @@ test("a backup leaves out the AI provider, so a restore leaves AI off until it i
 
   const target = fresh();
   expect((await target.restore(bytes)).status).toBe(200);
-  expect((await target.call("GET", "/api/ai")).body).toEqual({ baseUrl: null, keyEnding: null, sttBaseUrl: null, sttKeyEnding: null });
+  expect((await target.call("GET", "/api/ai")).body).toEqual({
+    baseUrl: null,
+    keyEnding: null,
+    sttBaseUrl: null,
+    sttKeyEnding: null,
+  });
   expect((await target.call("GET", "/api/ai/status")).body).toMatchObject({ ai: false, vision: false, voice: false });
 });
 
 test("only admins can download a backup", async () => {
   const h = await household();
-  const cookie = (await h.app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "bob", password: "pw" }) }))
-    .headers.get("set-cookie")!.split(";")[0];
+  const cookie = (
+    await h.app.request("/api/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "bob", password: "pw" }),
+    })
+  ).headers
+    .get("set-cookie")!
+    .split(";")[0];
   expect((await h.app.request("/api/backup", { headers: { cookie } })).status).toBe(403);
   expect((await h.app.request("/api/backup")).status).toBe(401);
 });
@@ -104,7 +163,9 @@ test("restore is refused once the instance has an account or expenses", async ()
   expect((await used.app.request("/api/restore", { method: "POST", body: form })).status).toBe(409);
 
   const legacy = fresh();
-  legacy.db.run("INSERT INTO transactions (note, amount, currency, date, created_at, updated_at) VALUES ('Old', 1, 'GBP', '2026-01-01', '', '')");
+  legacy.db.run(
+    "INSERT INTO transactions (note, amount, currency, date, created_at, updated_at) VALUES ('Old', 1, 'GBP', '2026-01-01', '', '')",
+  );
   expect((await legacy.restore(bytes)).status).toBe(409);
   expect(dump(legacy.db, "transactions").length).toBe(1);
 });
@@ -135,23 +196,37 @@ test("a backup from a newer version is refused", async () => {
   db.run("INSERT INTO __drizzle_migrations (hash, created_at) VALUES ('future', 99999999999999)");
   db.close();
   const target = fresh();
-  expect(await target.restore(readFileSync(path))).toEqual({ status: 400, body: { error: "This backup is from a newer version of the app. Update the app, then restore." } });
+  expect(await target.restore(readFileSync(path))).toEqual({
+    status: 400,
+    body: { error: "This backup is from a newer version of the app. Update the app, then restore." },
+  });
   expect(dump(target.db, "users")).toEqual([]);
 });
 
-test.skipIf(readMigrationFiles({ migrationsFolder }).length < 2)("a backup from an older version is migrated forward", async () => {
-  const folder = mkdtempSync(`${tmpdir()}/migrations-`);
-  cpSync(`${import.meta.dir}/../server/drizzle`, folder, { recursive: true });
-  const journal = JSON.parse(readFileSync(`${folder}/meta/_journal.json`, "utf8"));
-  writeFileSync(`${folder}/meta/_journal.json`, JSON.stringify({ ...journal, entries: journal.entries.slice(0, -1) }));
-  const old = new Database(tempFile(new Uint8Array()));
-  migrate(drizzle(old), { migrationsFolder: folder });
-  old.run("INSERT INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')", [Bun.password.hashSync("old", { algorithm: "argon2id", memoryCost: 8, timeCost: 1 })]);
-  old.run("INSERT INTO rates (date, currency, rate, source) VALUES ('2026-10-02', 'EUR', 0.8, 'frankfurter')");
-  old.close();
+test.skipIf(readMigrationFiles({ migrationsFolder }).length < 2)(
+  "a backup from an older version is migrated forward",
+  async () => {
+    const folder = mkdtempSync(`${tmpdir()}/migrations-`);
+    cpSync(`${import.meta.dir}/../server/drizzle`, folder, { recursive: true });
+    const journal = JSON.parse(readFileSync(`${folder}/meta/_journal.json`, "utf8"));
+    writeFileSync(
+      `${folder}/meta/_journal.json`,
+      JSON.stringify({ ...journal, entries: journal.entries.slice(0, -1) }),
+    );
+    const old = new Database(tempFile(new Uint8Array()));
+    migrate(drizzle(old), { migrationsFolder: folder });
+    old.run("INSERT INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')", [
+      Bun.password.hashSync("old", { algorithm: "argon2id", memoryCost: 8, timeCost: 1 }),
+    ]);
+    old.run("INSERT INTO rates (date, currency, rate, source) VALUES ('2026-10-02', 'EUR', 0.8, 'frankfurter')");
+    old.close();
 
-  const target = fresh();
-  expect((await target.restore(readFileSync(old.filename))).status).toBe(200);
-  expect((await target.login("admin", "old")).status).toBe(200);
-  expect(target.db.query("SELECT rate, rate_date FROM rates WHERE currency = 'EUR'").get()).toEqual({ rate: 0.8, rate_date: null });
-});
+    const target = fresh();
+    expect((await target.restore(readFileSync(old.filename))).status).toBe(200);
+    expect((await target.login("admin", "old")).status).toBe(200);
+    expect(target.db.query("SELECT rate, rate_date FROM rates WHERE currency = 'EUR'").get()).toEqual({
+      rate: 0.8,
+      rate_date: null,
+    });
+  },
+);

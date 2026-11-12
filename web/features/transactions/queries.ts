@@ -6,7 +6,8 @@ import { invalidate } from "../../lib/resources";
 import { type Transaction, transaction, type Request, request, template, unsent } from "../../lib/schemas";
 import { useMonth } from "./use-month";
 
-export const useTransactionQuery = () => useApi(z.array(transaction), ["/api/transactions?", useMonth().query.toString()]);
+export const useTransactionQuery = () =>
+  useApi(z.array(transaction), ["/api/transactions?", useMonth().query.toString()]);
 export const useTransactions = () => useTransactionQuery().data;
 export const usePending = () => useApi(z.array(transaction), ["/api/transactions?", "status=pending"]).data ?? [];
 export const useTemplates = () => useApi(z.array(template), ["/api/recurring"]).data ?? [];
@@ -30,13 +31,16 @@ export function syncTransaction(client: QueryClient, data: unknown, [method]: Re
     else
       client.setQueryData(
         key,
-        [...rows.filter((r) => r.id !== id), ...(row && fits ? [row] : [])].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id),
+        [...rows.filter((r) => r.id !== id), ...(row && fits ? [row] : [])].sort(
+          (a, b) => b.date.localeCompare(a.date) || b.id - a.id,
+        ),
       );
   }
   void invalidate(client, ["transactions"], ["/api/transactions?"]);
 }
 
-export const inBase = (rows: Transaction[], base: string) => rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === base ? e.amount : 0)), 0);
+export const inBase = (rows: Transaction[], base: string) =>
+  rows.reduce((s, e) => s + (e.baseAmount ?? (e.currency === base ? e.amount : 0)), 0);
 
 export const useKindOf = () => {
   const categories = useCategories();

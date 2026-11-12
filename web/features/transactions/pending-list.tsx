@@ -21,12 +21,16 @@ export function PendingList() {
       <FormError error={mutation.error} className="mt-5" />
       <ul className="mt-5 overflow-hidden rounded-panel bg-amber-soft">
         {pending.map((e) => (
-          <li key={e.id} className={`relative flex h-[62px] items-center gap-3 px-4 ${divide} not-last:after:bg-amber-line!`}>
+          <li
+            key={e.id}
+            className={`relative flex h-[62px] items-center gap-3 px-4 ${divide} not-last:after:bg-amber-line!`}
+          >
             <Tile category={categories.find((c) => c.id === e.categoryId)} />
             <button className="press min-w-0 flex-1 text-left" onClick={() => edit(e)}>
               <span className="block truncate font-medium">{e.note}</span>
               <span className="mt-0.5 block truncate text-xs font-medium text-amber">
-                <span className="num">{money(e.amount, e.currency, unit)}</span> · due {dayLabel(e.date).replace(/^(Today|Yesterday)$/, (w) => w.toLowerCase())}
+                <span className="num">{money(e.amount, e.currency, unit)}</span> · due{" "}
+                {dayLabel(e.date).replace(/^(Today|Yesterday)$/, (w) => w.toLowerCase())}
               </span>
             </button>
             <button

@@ -41,7 +41,11 @@ export function liveUpdates(client: QueryClient, revoked: () => void) {
     current.onmessage = (event) => {
       if (socket !== current) return;
       let raw;
-      try { raw = JSON.parse(event.data); } catch { return; }
+      try {
+        raw = JSON.parse(event.data);
+      } catch {
+        return;
+      }
       alive();
       const data = message.safeParse(raw).data;
       if (data?.type === "changed") void invalidate(client, data.resources);
@@ -74,7 +78,8 @@ export function liveUpdates(client: QueryClient, revoked: () => void) {
     };
   };
   const unsubscribe = client.getQueryCache().subscribe((event) => {
-    if (event.type !== "updated" || event.action.type !== "success" || event.query.queryKey[0] !== "/api/session") return;
+    if (event.type !== "updated" || event.action.type !== "success" || event.query.queryKey[0] !== "/api/session")
+      return;
     const next = session.safeParse(event.query.state.data).data?.user?.username;
     if (owner === next) return;
     const ended = !!owner && !next;
@@ -84,7 +89,17 @@ export function liveUpdates(client: QueryClient, revoked: () => void) {
     delay = 1000;
     connect();
   });
-  const online = () => { if (!socket) { clearTimeout(retry); connect(); } };
+  const online = () => {
+    if (!socket) {
+      clearTimeout(retry);
+      connect();
+    }
+  };
   window.addEventListener("online", online);
-  return () => { owner = undefined; stop(); unsubscribe(); window.removeEventListener("online", online); };
+  return () => {
+    owner = undefined;
+    stop();
+    unsubscribe();
+    window.removeEventListener("online", online);
+  };
 }

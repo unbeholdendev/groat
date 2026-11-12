@@ -4,7 +4,11 @@ import { setup } from "./harness";
 function anonymous() {
   const h = setup();
   const post = (path: string, body?: unknown, cookie = "") =>
-    h.app.request(path, { method: "POST", headers: { "content-type": "application/json", cookie }, body: JSON.stringify(body ?? {}) });
+    h.app.request(path, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify(body ?? {}),
+    });
   const get = (path: string, cookie = "") => h.app.request(path, { headers: { cookie } });
   const session = (res: Response) => res.headers.get("set-cookie")!.split(";")[0];
   return { ...h, post, get, session };
@@ -22,7 +26,10 @@ test("a fresh install asks for setup, which creates the admin and signs them in,
   expect(res.status).toBe(201);
   expect(res.headers.get("set-cookie")).toContain("HttpOnly");
   expect(res.headers.get("set-cookie")).toContain("SameSite=Lax");
-  expect(await (await get("/api/session", session(res))).json()).toEqual({ setup: false, user: { username: "ann", role: "admin" } });
+  expect(await (await get("/api/session", session(res))).json()).toEqual({
+    setup: false,
+    user: { username: "ann", role: "admin" },
+  });
   expect((await get("/api/settings", session(res))).status).toBe(200);
 
   expect((await post("/api/setup", { username: "bob", password: "x" })).status).toBe(409);
@@ -88,7 +95,11 @@ test("without a session the API refuses everything else", async () => {
 
 test("a queued write cannot run under a different signed-in user", async () => {
   const { request, call } = setup();
-  const res = await request("/api/transactions", { method: "POST", headers: { "content-type": "application/json", "x-transaction-user": "someone-else" }, body: JSON.stringify({ note: "Wrong owner", amount: "2" }) });
+  const res = await request("/api/transactions", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-transaction-user": "someone-else" },
+    body: JSON.stringify({ note: "Wrong owner", amount: "2" }),
+  });
   expect(res.status).toBe(409);
   expect((await call("GET", "/api/transactions")).body).toHaveLength(0);
 });
@@ -96,9 +107,17 @@ test("a queued write cannot run under a different signed-in user", async () => {
 test("queued writes support Unicode usernames", async () => {
   const { app, call } = setup();
   await call("POST", "/api/users", { username: "用户", password: "secret" });
-  const login = await app.request("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "用户", password: "secret" }) });
+  const login = await app.request("/api/login", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ username: "用户", password: "secret" }),
+  });
   const cookie = login.headers.get("set-cookie")!.split(";")[0];
-  const res = await app.request("/api/transactions", { method: "POST", headers: { cookie, "content-type": "application/json", "x-transaction-user": encodeURIComponent("用户") }, body: JSON.stringify({ note: "Lunch", amount: "2" }) });
+  const res = await app.request("/api/transactions", {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json", "x-transaction-user": encodeURIComponent("用户") },
+    body: JSON.stringify({ note: "Lunch", amount: "2" }),
+  });
   expect(res.status).toBe(201);
   expect((await res.json()).addedBy).toBe("用户");
 });

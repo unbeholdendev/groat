@@ -13,7 +13,12 @@ export const transactionForm = (unit: Unit) =>
       currency: z.string(),
       date: z.string(),
       categoryId: z.number().nullable(),
-      tags: z.string().transform((s) => s.split(",").map((t) => t.trim()).filter(Boolean)),
+      tags: z.string().transform((s) =>
+        s
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+      ),
       period: z.string(),
       every: z.string(),
       endDate: z.string(),
@@ -35,7 +40,16 @@ export type TransactionFormApi = UseFormReturn<TransactionValues, unknown, z.out
 
 const noRepeat = { period: "", every: "1", endDate: "", needsConfirmation: false };
 
-export const blank = (currency: string): TransactionValues => ({ note: "", amount: "", currency, date: today(), categoryId: null, tags: "", kind: "expense", ...noRepeat });
+export const blank = (currency: string): TransactionValues => ({
+  note: "",
+  amount: "",
+  currency,
+  date: today(),
+  categoryId: null,
+  tags: "",
+  kind: "expense",
+  ...noRepeat,
+});
 
 export const filled = (e: Draft, unit: Unit, kind: Kind = "expense"): TransactionValues => ({
   note: e.note,

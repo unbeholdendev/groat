@@ -4,7 +4,12 @@ import { Segmented } from "../../components/segmented";
 export const presets = ["This month", "Last month", "Year to date", "Custom"] as const;
 export type Preset = (typeof presets)[number];
 
-export function HeroHead(props: { preset: Preset; range: [string, string]; onPreset: (p: Preset) => void; onRange: (from: string, to: string) => void }) {
+export function HeroHead(props: {
+  preset: Preset;
+  range: [string, string];
+  onPreset: (p: Preset) => void;
+  onRange: (from: string, to: string) => void;
+}) {
   const [from, to] = props.range;
   return (
     <>

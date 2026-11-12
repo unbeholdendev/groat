@@ -10,7 +10,12 @@ export function stream(id: number, at: number, text: string) {
 
 export const useStreamed = (id: number | undefined, saved: number) =>
   useSyncExternalStore(
-    (f) => (listeners.add(f), () => { listeners.delete(f); }),
+    (f) => (
+      listeners.add(f),
+      () => {
+        listeners.delete(f);
+      }
+    ),
     () => {
       const reply = id === undefined ? undefined : replies.get(id);
       return reply?.at === saved ? reply.text : "";

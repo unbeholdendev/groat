@@ -37,7 +37,10 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   await expect(page.getByRole("heading", { name: "Stats" })).toBeVisible();
   await expect(page.locator("section").first()).toContainText("£42.00");
   await page.getByRole("button", { name: /Food/ }).click();
-  await page.getByRole("link", { name: /Groceries/ }).first().click();
+  await page
+    .getByRole("link", { name: /Groceries/ })
+    .first()
+    .click();
   await expect(page.getByRole("heading", { name: "Filtered" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Groceries run" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Cinema" })).toBeHidden();
@@ -55,7 +58,9 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
 
 test("a bitcoin total fits the Stats card", async ({ app: page }) => {
   await page.request.put("/api/settings", { data: { baseCurrency: "BTC" } });
-  await page.request.post("/api/transactions", { data: { note: "Coffee", amount: "1375", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
+  await page.request.post("/api/transactions", {
+    data: { note: "Coffee", amount: "1375", currency: "GBP", date: new Date().toLocaleDateString("en-CA") },
+  });
   await page.goto("/stats");
   const total = page.locator("section").first().locator("b").first();
   await expect(total).toContainText("BTC");
@@ -66,10 +71,16 @@ test("swiping the hero steps months", async ({ app: page }) => {
   const hero = page.locator("header").first();
   const box = (await hero.boundingBox())!;
   const drag = async (from: number, to: number) => {
-    await hero.dispatchEvent("pointerdown", { clientX: box.x + from, clientY: box.y + 100, pointerId: 1, isPrimary: true });
+    await hero.dispatchEvent("pointerdown", {
+      clientX: box.x + from,
+      clientY: box.y + 100,
+      pointerId: 1,
+      isPrimary: true,
+    });
     await hero.dispatchEvent("pointerup", { clientX: box.x + to, clientY: box.y + 110, pointerId: 1, isPrimary: true });
   };
-  const month = (n: number) => new Date(new Date().getFullYear(), new Date().getMonth() + n, 1).toLocaleDateString("en-GB", { month: "long" });
+  const month = (n: number) =>
+    new Date(new Date().getFullYear(), new Date().getMonth() + n, 1).toLocaleDateString("en-GB", { month: "long" });
   await drag(40, 260);
   await expect(page.getByRole("heading", { level: 1 })).toContainText(month(-1));
   await drag(260, 40);
@@ -113,18 +124,24 @@ test("the desktop sidebar opens Recurring and Bin", async ({ app: page }, info) 
 });
 
 test("scrubbing the spend line reads out a day", async ({ app: page }) => {
-  await page.request.post("/api/transactions", { data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
+  await page.request.post("/api/transactions", {
+    data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") },
+  });
   await page.goto("/stats");
   const chart = page.getByRole("img", { name: /so far/ }).locator("..");
   const b = (await chart.boundingBox())!;
   await chart.dispatchEvent("pointerdown", { clientX: b.x + b.width - 2, clientY: b.y + 50, pointerType: "touch" });
-  await expect(page.locator("section").first()).toContainText(`${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · £3.20`);
+  await expect(page.locator("section").first()).toContainText(
+    `${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · £3.20`,
+  );
   await chart.dispatchEvent("pointerup", { pointerType: "touch" });
   await expect(page.locator("section").first()).not.toContainText("· £3.20");
 });
 
 test("changing period clears a scrub readout", async ({ app: page }) => {
-  await page.request.post("/api/transactions", { data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") } });
+  await page.request.post("/api/transactions", {
+    data: { note: "Coffee", amount: "3.20", currency: "GBP", date: new Date().toLocaleDateString("en-CA") },
+  });
   await page.goto("/stats");
   const chart = page.getByRole("img", { name: /so far/ }).locator("..");
   const b = (await chart.boundingBox())!;
@@ -152,14 +169,15 @@ test("the desktop side column switches between amounts and shares", async ({ app
 
 test("a foreign expense shows its rate, in BTC or sats", async ({ app: page }) => {
   await page.request.put("/api/settings", { data: { baseCurrency: "BTC" } });
-  await page.request.post("/api/transactions", { data: { note: "Coffee", amount: "4.50", currency: "GBP", date: today() } });
+  await page.request.post("/api/transactions", {
+    data: { note: "Coffee", amount: "4.50", currency: "GBP", date: today() },
+  });
   await page.reload();
   await page.getByRole("button", { name: "Coffee" }).click();
   await expect(page.getByText("1 GBP = 0.00002083 BTC")).toBeVisible();
   await page.getByRole("radio", { name: "sats" }).click();
   await expect(page.getByText("1 GBP = 2,083 sats")).toBeVisible();
 });
-
 
 test("opening filters fills an editable date range and keeps full-size fields", async ({ app: page }) => {
   await page.getByRole("button", { name: "Filters", exact: true }).click();
@@ -190,7 +208,11 @@ test("reopening filters preserves deliberately cleared dates", async ({ app: pag
   await page.getByRole("button", { name: "Filters", exact: true }).click();
   const from = page.getByLabel("From", { exact: true });
   const to = page.getByLabel("To", { exact: true });
-  for (const [start, end] of [["", "2020-12-31"], ["2020-01-01", ""], ["", ""]]) {
+  for (const [start, end] of [
+    ["", "2020-12-31"],
+    ["2020-01-01", ""],
+    ["", ""],
+  ]) {
     await from.fill(start);
     await to.fill(end);
     await page.getByRole("button", { name: /^Filters/ }).click();

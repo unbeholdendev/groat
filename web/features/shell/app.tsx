@@ -34,7 +34,10 @@ export function App() {
       document.documentElement.style.removeProperty("--app-top");
     };
   }, []);
-  useEffect(() => void document.querySelector("main")?.scrollTo(0, 0), [location.pathname, location.search.new, location.search.edit]);
+  useEffect(
+    () => void document.querySelector("main")?.scrollTo(0, 0),
+    [location.pathname, location.search.new, location.search.edit],
+  );
   const storageWarning = useStorageWarning();
   const settings = config.data;
   const unitState = useState<Unit>("BTC");
@@ -42,18 +45,42 @@ export function App() {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   useTheme(settings?.theme);
 
-  if (!session) return error ? <LoadError error={error} onRetry={() => refetch()} /> : <Gate><p role="status" className="pt-12 text-ink2">Loading Groat…</p></Gate>;
+  if (!session)
+    return error ? (
+      <LoadError error={error} onRetry={() => refetch()} />
+    ) : (
+      <Gate>
+        <p role="status" className="pt-12 text-ink2">
+          Loading Groat…
+        </p>
+      </Gate>
+    );
   if (!session.user)
     return (
       <Gate>
         <SignIn setup={session.setup} />
       </Gate>
     );
-  if (!settings || config.isPlaceholderData) return config.isError ? <LoadError error={config.error} onRetry={() => config.refetch()} /> : <Gate><p role="status" className="pt-12 text-ink2">Loading settings…</p></Gate>;
+  if (!settings || config.isPlaceholderData)
+    return config.isError ? (
+      <LoadError error={config.error} onRetry={() => config.refetch()} />
+    ) : (
+      <Gate>
+        <p role="status" className="pt-12 text-ink2">
+          Loading settings…
+        </p>
+      </Gate>
+    );
   if (!settings.onboarded)
     return (
       <Gate>
-        <SettingsForm settings={settings} path="/api/onboarding" method="POST" title="Welcome" onSaved={() => setGuide(true)} />
+        <SettingsForm
+          settings={settings}
+          path="/api/onboarding"
+          method="POST"
+          title="Welcome"
+          onSaved={() => setGuide(true)}
+        />
       </Gate>
     );
   return (
@@ -61,7 +88,11 @@ export function App() {
       <QuickAddContext value={{ guide, onGuided: () => setGuide(false), host, onHost: setHost }}>
         <div className="fixed inset-x-0 top-[var(--app-top,0px)] flex h-[var(--app-height,100dvh)] flex-col">
           <main className="mx-auto min-h-0 w-full max-w-md flex-1 overflow-y-auto overscroll-y-contain px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[calc(var(--stack,0px)+1.5rem)]">
-            {storageWarning && <p role="alert" className="mb-4 text-sm text-up">{storageWarning}</p>}
+            {storageWarning && (
+              <p role="alert" className="mb-4 text-sm text-up">
+                {storageWarning}
+              </p>
+            )}
             <Outbox />
             <Outlet />
           </main>

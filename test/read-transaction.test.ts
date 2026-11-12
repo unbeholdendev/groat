@@ -10,12 +10,17 @@ async function ledger() {
   const all: { id: number; name: string }[] = (await s.call("GET", "/api/categories")).body;
   const id = (name: string) => all.find((c) => c.name === name)!.id;
   const ctx = { db: drizzle(s.db, { casing: "snake_case" }), clock: () => s.clock.now };
-  return { id, read: (raw: object, intent: Intent) => readTransaction(ctx, { note: "Lunch", amount: "12", ...raw }, intent) };
+  return {
+    id,
+    read: (raw: object, intent: Intent) => readTransaction(ctx, { note: "Lunch", amount: "12", ...raw }, intent),
+  };
 }
 
 type Case = [string, object, Record<string, unknown> | ((id: (name: string) => number) => Record<string, unknown>)];
 
-const defaults = (currency: string, category = "Uncategorised"): Case[2] => (id) => ({ amount: 1200, currency, date: "2026-10-10", categoryId: id(category) });
+const defaults =
+  (currency: string, category = "Uncategorised"): Case[2] =>
+  (id) => ({ amount: 1200, currency, date: "2026-10-10", categoryId: id(category) });
 
 const cases: [string, (id: (name: string) => number) => Intent, Case[]][] = [
   [
@@ -49,7 +54,11 @@ const cases: [string, (id: (name: string) => number) => Intent, Case[]][] = [
     () => ({ intent: "chat" }),
     [
       ["defaults to the last-used currency", {}, defaults("EUR")],
-      ["rejects income categories", { categoryId: "Salary" }, { error: "Drafts are expenses only; pick an expense category" }],
+      [
+        "rejects income categories",
+        { categoryId: "Salary" },
+        { error: "Drafts are expenses only; pick an expense category" },
+      ],
       ["rejects a missing category", { categoryId: 999 }, { error: "Invalid category" }],
       ["rejects a zero amount", { amount: "0" }, { error: "Invalid amount" }],
     ],
@@ -97,6 +106,8 @@ const cases: [string, (id: (name: string) => number) => Intent, Case[]][] = [
 for (const [name, intent, rows] of cases)
   test.each(rows)(`${name}: %s`, async (_, raw, expected) => {
     const { id, read } = await ledger();
-    const named = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, k === "categoryId" && typeof v === "string" ? id(v) : v]));
+    const named = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [k, k === "categoryId" && typeof v === "string" ? id(v) : v]),
+    );
     expect(read(named, intent(id))).toMatchObject(typeof expected === "function" ? expected(id) : expected);
   });

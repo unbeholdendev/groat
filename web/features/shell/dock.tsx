@@ -18,10 +18,16 @@ export function Dock() {
     const o = new ResizeObserver(fit);
     o.observe(dock);
     if (stack) o.observe(stack);
-    return () => { o.disconnect(); root.style.removeProperty("--stack"); };
+    return () => {
+      o.disconnect();
+      root.style.removeProperty("--stack");
+    };
   }, [bar, host]);
   return (
-    <footer ref={ref} className={`sticky bottom-0 z-10 shrink-0 border-t border-line bg-surface px-2 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] max-lg:[view-transition-name:dock] max-lg:shadow-lift lg:mx-auto lg:mb-4 lg:w-full lg:max-w-md lg:rounded-panel lg:border lg:shadow-panel ${!bar ? "lg:contents" : ""}`}>
+    <footer
+      ref={ref}
+      className={`sticky bottom-0 z-10 shrink-0 border-t border-line bg-surface px-2 pt-2 pb-[max(env(safe-area-inset-bottom),8px)] max-lg:[view-transition-name:dock] max-lg:shadow-lift lg:mx-auto lg:mb-4 lg:w-full lg:max-w-md lg:rounded-panel lg:border lg:shadow-panel ${!bar ? "lg:contents" : ""}`}
+    >
       <div className="mx-auto max-w-md">
         {!search.new && !search.edit && <QuickAdd />}
         <TabBar />

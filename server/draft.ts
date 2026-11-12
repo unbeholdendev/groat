@@ -37,22 +37,37 @@ export async function extract(ctx: Ctx, input: string | Photo) {
   const text = typeof input === "string" ? input : "";
   const { recentCurrencies } = settings(db);
   const day = today(clock);
-  const cats = db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).where(eq(categories.kind, "expense")).all();
-  const message = await ctx.ai.complete({
-    messages: [
-      {
-        role: "system",
-        content: [
-          "Read one expense from the user's text, or from a receipt photo: its total, with the merchant as the note.",
-          `Today is ${day}. Recent currencies: ${recentCurrencies.join(", ")}.`,
-          `Categories: ${JSON.stringify(cats)}`,
-        ].join("\n"),
-      },
-      { role: "user", content: typeof input === "string" ? input : [{ type: "image_url", image_url: { url: input.image } }] },
-    ],
-    tools: [{ type: "function", function: { name: "transaction", parameters: z.toJSONSchema(fields, { io: "input", target: "draft-07" }) } }],
-    tool_choice: { type: "function", function: { name: "transaction" } },
-  }, typeof input === "string" ? "chat" : "vision");
+  const cats = db
+    .select({ id: categories.id, name: categories.name, parentId: categories.parentId })
+    .from(categories)
+    .where(eq(categories.kind, "expense"))
+    .all();
+  const message = await ctx.ai.complete(
+    {
+      messages: [
+        {
+          role: "system",
+          content: [
+            "Read one expense from the user's text, or from a receipt photo: its total, with the merchant as the note.",
+            `Today is ${day}. Recent currencies: ${recentCurrencies.join(", ")}.`,
+            `Categories: ${JSON.stringify(cats)}`,
+          ].join("\n"),
+        },
+        {
+          role: "user",
+          content: typeof input === "string" ? input : [{ type: "image_url", image_url: { url: input.image } }],
+        },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: { name: "transaction", parameters: z.toJSONSchema(fields, { io: "input", target: "draft-07" }) },
+        },
+      ],
+      tool_choice: { type: "function", function: { name: "transaction" } },
+    },
+    typeof input === "string" ? "chat" : "vision",
+  );
   const read = reply.safeParse(message.tool_calls?.[0]?.function.arguments);
   if (!read.success) throw new Error("The AI provider sent an unexpected reply");
   const { note, amount, currency, date, categoryId, tags = [] } = read.data;

@@ -12,7 +12,11 @@ function provider(ids = ["text-model"]) {
     if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
     requests.push(JSON.parse(String(init?.body)));
     const args = JSON.stringify({ note: "Tesco", amount: "23.45", date: "2026-10-09" });
-    return completion({ role: "assistant", content: null, tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: args } }] });
+    return completion({
+      role: "assistant",
+      content: null,
+      tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: args } }],
+    });
   };
   return { handler, requests };
 }
@@ -41,7 +45,9 @@ test("a photo becomes a draft with an attachment, read by the vision model", asy
   expect(res.body).toMatchObject({ note: "Tesco", amount: 2345, date: "2026-10-09" });
   expect(draft.parse(res.body).attachmentId).toBeNumber();
   expect(ai.requests[0].model).toBe("vision-model");
-  expect(ai.requests[0].messages[1].content[0].image_url.url).toBe(`data:image/jpeg;base64,${Buffer.from(jpeg).toString("base64")}`);
+  expect(ai.requests[0].messages[1].content[0].image_url.url).toBe(
+    `data:image/jpeg;base64,${Buffer.from(jpeg).toString("base64")}`,
+  );
   expect((await call("GET", "/api/transactions")).body).toEqual([]);
   expect(aiStatus.parse((await call("GET", "/api/ai/status")).body).vision).toBe(true);
 });
@@ -60,7 +66,9 @@ test("the vision model defaults to the chat model, and photos are off without on
 test("saving links the image, served only to signed-in users, and purging the expense deletes it", async () => {
   const { upload, call, request, app } = photos();
   const { attachmentId } = draft.parse((await upload()).body);
-  const saved = transaction.parse((await call("POST", "/api/transactions", { note: "Tesco", amount: "23.45", attachmentId })).body);
+  const saved = transaction.parse(
+    (await call("POST", "/api/transactions", { note: "Tesco", amount: "23.45", attachmentId })).body,
+  );
   expect(saved.attachmentId).toBe(attachmentId);
 
   const image = await request(`/api/attachments/${attachmentId}`);

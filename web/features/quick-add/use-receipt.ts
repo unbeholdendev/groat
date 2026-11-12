@@ -34,11 +34,23 @@ export function useReceipt(categories: Category[], unit: Unit, send: (r: Request
   const category = shown && categories.find((c) => c.id === shown.row.categoryId);
   const text =
     shown &&
-    [`${shown.binned ? "Binned" : "Added"} ${shown.row.note}`.trim(), category && `${category.icon} ${category.name}`, money(shown.row.amount, shown.row.currency, unit), !shown.row.id && "will sync"]
+    [
+      `${shown.binned ? "Binned" : "Added"} ${shown.row.note}`.trim(),
+      category && `${category.icon} ${category.name}`,
+      money(shown.row.amount, shown.row.currency, unit),
+      !shown.row.id && "will sync",
+    ]
       .filter(Boolean)
       .join(" · ");
   const dismiss = () => shown && setDismissed(shown.id);
-  const undo = () => shown && (dismiss(), send(shown.binned ? ["POST", `/api/bin/${shown.row.id}/restore`] : ["DELETE", `/api/transactions/${shown.row.id}?purge`]));
+  const undo = () =>
+    shown &&
+    (dismiss(),
+    send(
+      shown.binned
+        ? ["POST", `/api/bin/${shown.row.id}/restore`]
+        : ["DELETE", `/api/transactions/${shown.row.id}?purge`],
+    ));
   return { shown, category, text, dismiss, undo, setHold };
 }
 

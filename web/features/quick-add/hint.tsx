@@ -15,9 +15,16 @@ import type { Receipt } from "./use-receipt";
 export function aiOff(s: Settings, admin: boolean, feature: "ai" | "voice") {
   if (s.aiLoading) return "Checking AI availability…";
   if (s.aiProblem) return s.aiProblem;
-  if (!s.aiSource) return admin ? "AI isn’t set up yet. Turn it on in Settings." : "AI isn’t set up. Ask an admin to turn it on.";
-  if (!s.ai) return admin ? "AI needs a chat model. Choose one in Settings." : "AI isn’t finished setting up. Ask an admin to choose a chat model.";
-  if (feature === "voice") return admin ? "Dictation needs a speech-to-text model. Add one in Settings." : "Dictation isn’t set up. Ask an admin to add it.";
+  if (!s.aiSource)
+    return admin ? "AI isn’t set up yet. Turn it on in Settings." : "AI isn’t set up. Ask an admin to turn it on.";
+  if (!s.ai)
+    return admin
+      ? "AI needs a chat model. Choose one in Settings."
+      : "AI isn’t finished setting up. Ask an admin to choose a chat model.";
+  if (feature === "voice")
+    return admin
+      ? "Dictation needs a speech-to-text model. Add one in Settings."
+      : "Dictation isn’t set up. Ask an admin to add it.";
   return "";
 }
 
@@ -39,7 +46,11 @@ export function Hint(props: {
   const storageWarning = useStorageWarning();
   const admin = useSession()?.user?.role === "admin";
   const other = settings.recentCurrencies.find((c) => c !== "BTC" && c !== settings.lastCurrency);
-  const examples = [other && `12 ${other.toLowerCase()}`, settings.recentCurrencies.includes("BTC") && "5000 sats", "#work"].filter((e) => typeof e === "string");
+  const examples = [
+    other && `12 ${other.toLowerCase()}`,
+    settings.recentCurrencies.includes("BTC") && "5000 sats",
+    "#work",
+  ].filter((e) => typeof e === "string");
   return (
     <p
       onMouseEnter={() => receipt.setHold(true)}
@@ -78,7 +89,9 @@ export function Hint(props: {
           {!shown.row.id && <span className="shrink-0 text-ink3">· will sync</span>}
         </span>
       ) : props.queued > 0 ? (
-        <span>{storageWarning ? "Not saved on this device. Keep this tab open." : "Offline. Saved here, will sync."}</span>
+        <span>
+          {storageWarning ? "Not saved on this device. Keep this tab open." : "Offline. Saved here, will sync."}
+        </span>
       ) : props.guide ? (
         <span className="text-ink2">Start with the last thing you paid for</span>
       ) : (
@@ -94,33 +107,35 @@ export function Hint(props: {
             <>
               {" · "}
               <span className="whitespace-nowrap">
-                Start with <kbd className="rounded-token border border-line2 bg-surface px-1 text-[11px] font-medium text-ink2">?</kbd> to ask
+                Start with{" "}
+                <kbd className="rounded-token border border-line2 bg-surface px-1 text-[11px] font-medium text-ink2">
+                  ?
+                </kbd>{" "}
+                to ask
               </span>
             </>
           )}
         </span>
       )}
-      {shown && !ask && !text ? (
-        shown.row.id > 0 && (
-          <Button variant="link" tone="accent" className="shrink-0" onClick={props.onUndo}>
-            Undo
-          </Button>
-        )
-      ) : (
-        !ask &&
-        p.amount && (
-          <button
-            type="button"
-            aria-label="Full form"
-            title="Full form"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={props.onForm}
-            className="press hit -my-1 grid size-7 shrink-0 place-items-center rounded-chip text-ink2 hover:bg-surface2 hover:text-ink"
-          >
-            <Icon d={paths.expand} className="size-4 stroke-2" />
-          </button>
-        )
-      )}
+      {shown && !ask && !text
+        ? shown.row.id > 0 && (
+            <Button variant="link" tone="accent" className="shrink-0" onClick={props.onUndo}>
+              Undo
+            </Button>
+          )
+        : !ask &&
+          p.amount && (
+            <button
+              type="button"
+              aria-label="Full form"
+              title="Full form"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={props.onForm}
+              className="press hit -my-1 grid size-7 shrink-0 place-items-center rounded-chip text-ink2 hover:bg-surface2 hover:text-ink"
+            >
+              <Icon d={paths.expand} className="size-4 stroke-2" />
+            </button>
+          )}
     </p>
   );
 }

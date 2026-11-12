@@ -20,21 +20,28 @@ export function Tokens() {
     <section>
       <h2 className={sectionHead}>API tokens</h2>
       <p className="-mt-1 mb-3 px-1 text-[13px] text-ink2">
-        A token lets a phone shortcut or script add expenses without signing in. It can only add expenses: post JSON like {'{"text": "coffee 4.50"}'} to /api/capture with the header{" "}
+        A token lets a phone shortcut or script add expenses without signing in. It can only add expenses: post JSON
+        like {'{"text": "coffee 4.50"}'} to /api/capture with the header{" "}
         <span className="num">Authorization: Bearer &lt;token&gt;</span>.
       </p>
       {shown && <TokenSecret key={shown} token={shown} />}
       {query.isPending && <p role="status">Loading tokens…</p>}
       <FormError error={query.error} />
-      {query.isError && <button type="button" className="press text-accent" onClick={() => void query.refetch()}>Try again</button>}
-      {query.data && <ul className={panel}>
-        {tokens.map((t) => (
-          <TokenRow key={t.id} token={t} onRevoke={() => revoke.mutate(["DELETE", `/api/tokens/${t.id}`])} />
-        ))}
-        <li>
-          <TokenForm create={create} />
-        </li>
-      </ul>}
+      {query.isError && (
+        <button type="button" className="press text-accent" onClick={() => void query.refetch()}>
+          Try again
+        </button>
+      )}
+      {query.data && (
+        <ul className={panel}>
+          {tokens.map((t) => (
+            <TokenRow key={t.id} token={t} onRevoke={() => revoke.mutate(["DELETE", `/api/tokens/${t.id}`])} />
+          ))}
+          <li>
+            <TokenForm create={create} />
+          </li>
+        </ul>
+      )}
       <FormError error={create.error ?? revoke.error} className="mt-2 px-1" />
     </section>
   );
