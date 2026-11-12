@@ -119,6 +119,6 @@ export function chatAgent(ctx: Ctx) {
 
 function failure(error: unknown, aborted: boolean) {
   if (aborted) return "Stopped.";
-  if (error instanceof Error) return error.message;
+  if (error instanceof HTTPException) return error.message;
   return "The AI provider sent an unexpected reply";
 }

@@ -56,7 +56,5 @@ export function attachmentRoutes(ctx: Pick<Ctx, "db" | "clock" | "ai">) {
       : c.json({ error: "Not found" }, 404);
   });
 
-  app.onError((e, c) => c.json({ error: e.message }, 502));
-
   return app;
 }

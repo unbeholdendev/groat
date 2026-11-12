@@ -1,6 +1,8 @@
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import type { Deps } from "../context";
 import type { Db } from "../db";
+import { fail } from "../request";
 import * as schema from "../schema";
 import type { ChatGpt } from "./chatgpt/account";
 import { complete as completion, type Streaming } from "./completion";
@@ -53,11 +55,16 @@ export function aiModels({
     const provider = current().chat;
     return provider ? (saved()?.chatModel ?? only(chatModels(await known(provider)))) : null;
   };
+  // ChatGPT routes report its failures as 400; used as the AI provider they are upstream failures.
+  const upstream = (e: unknown) => {
+    if (e instanceof HTTPException) fail(502, e.message);
+    throw e;
+  };
   const own = async () => {
-    const saved = await chatgpt.credential();
+    const saved = await chatgpt.credential().catch(upstream);
     if (!saved) return;
-    const model = saved.model ?? (await chatgpt.catalogue())[0]?.slug;
-    if (!model) throw new Error("Choose a ChatGPT model in Settings");
+    const model = saved.model ?? (await chatgpt.catalogue().catch(upstream))[0]?.slug;
+    if (!model) fail(502, "Choose a ChatGPT model in Settings");
     return { key: saved.access_token, model };
   };
   const sender = async (use: "chat" | "vision") => {
@@ -92,12 +99,12 @@ export function aiModels({
     (use === "voice" ? await stt() : await sender(use)) ? null : unset[use];
   const complete = async (request: Request, use: "chat" | "vision" = "chat", streaming?: Streaming) => {
     const send = await sender(use);
-    if (!send) throw new Error(unset.chat);
+    if (!send) fail(502, unset.chat);
     return send(request, streaming);
   };
   const transcribe = async (audio: File) => {
     const provider = await stt();
-    if (!provider) throw new Error(unset.voice);
+    if (!provider) fail(502, unset.voice);
     const form = new FormData();
     form.append("file", audio);
     form.append("model", provider.model);
@@ -105,10 +112,10 @@ export function aiModels({
       method: "POST",
       headers: { authorization: `Bearer ${provider.key}` },
       body: form,
-    });
-    if (!res.ok) throw new Error(`The speech-to-text provider returned an error (${res.status})`);
+    }).catch(() => fail(502, `Couldn’t reach ${provider.base}`));
+    if (!res.ok) fail(502, `The speech-to-text provider returned an error (${res.status})`);
     const heard = transcript.safeParse(await res.json().catch(() => undefined));
-    if (!heard.success) throw new Error("The speech-to-text provider sent an unexpected reply");
+    if (!heard.success) fail(502, "The speech-to-text provider sent an unexpected reply");
     return heard.data.text;
   };
   const source = () => {
@@ -127,7 +134,7 @@ export function aiModels({
     return {
       ai: working,
       aiSource: source(),
-      aiProblem: problem instanceof Error ? problem.message : null,
+      aiProblem: problem instanceof HTTPException ? problem.message : null,
       vision: await on("vision"),
       voice: await on("voice"),
     };

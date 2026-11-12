@@ -21,7 +21,5 @@ export function voiceRoutes(ctx: Pick<Ctx, "db" | "clock" | "ai">) {
     return c.json(await extract(ctx, text));
   });
 
-  app.onError((e, c) => c.json({ error: e.message }, 502));
-
   return app;
 }

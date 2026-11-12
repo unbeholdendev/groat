@@ -11,12 +11,13 @@ import { schedule } from "../../transactions/recurring";
 import { recurringRoutes } from "../../transactions/recurring-routes";
 import { transactionRoutes } from "../../transactions/routes";
 import { errorKind, log } from "../../logging";
+import { failed } from "../../request";
 
 export function chatActions(ctx: Ctx, cookie: string) {
   const app = new Hono<Env>();
   app.onError((error, c) => {
     log("warn", "ai.action.failed", { error: errorKind(error) });
-    return error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500);
+    return failed(error, c);
   });
   app.use("*", ctx.publishChanges);
   app.route("/", authRoutes(ctx));

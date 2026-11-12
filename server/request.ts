@@ -1,4 +1,6 @@
 import type { Context } from "hono";
+import { HTTPException } from "hono/http-exception";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
 
 export function valid<T extends z.ZodType>(schema: T, input: unknown): { data: z.output<T> } | { error: string } {
@@ -11,3 +13,13 @@ export const json = (c: Context) => c.req.json<unknown>().catch(() => undefined)
 export const body = async <T extends z.ZodType>(c: Context, schema: T) => valid(schema, await json(c));
 
 export const query = <T extends z.ZodType>(c: Context, schema: T) => valid(schema, c.req.query());
+
+export function fail(status: ContentfulStatusCode, message: string): never {
+  throw new HTTPException(status, { message });
+}
+
+export function failed(error: Error, c: Context) {
+  return error instanceof HTTPException
+    ? c.json({ error: error.message }, error.status)
+    : c.text("Internal Server Error", 500);
+}

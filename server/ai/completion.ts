@@ -4,6 +4,7 @@ import { stream as responses } from "@earendil-works/pi-ai/api/openai-responses"
 import { z } from "zod";
 import type { Deps } from "../context";
 import { diagnostic, log } from "../logging";
+import { fail } from "../request";
 import { piContext, requestSchema } from "./pi-context";
 
 type Provider = { api: "openai-completions" | "openai-responses"; base: string; key: string; model: string };
@@ -116,7 +117,8 @@ export async function complete(
   const reply = await stream.result();
   if (failed || !["stop", "toolUse"].includes(reply.stopReason)) {
     if (!subscribed)
-      throw new Error(
+      fail(
+        502,
         status && status >= 400
           ? `The AI provider returned an error (${status})`
           : "The AI provider sent an unexpected reply",
@@ -130,10 +132,10 @@ export async function complete(
         errorType: diagnostic(rejection?.type),
         param: diagnostic(rejection?.param),
       });
-    if (status === 401 || status === 403)
-      throw new Error("ChatGPT needs you to sign in again. Open Settings and reconnect.");
-    if (status && status >= 400) throw new Error(`ChatGPT returned an error (${status}). Try again.`);
-    throw new Error(
+    if (status === 401 || status === 403) fail(502, "ChatGPT needs you to sign in again. Open Settings and reconnect.");
+    if (status && status >= 400) fail(502, `ChatGPT returned an error (${status}). Try again.`);
+    fail(
+      502,
       "ChatGPT could not finish this response. Check your plan usage or reconnect in Settings, then try again.",
     );
   }
@@ -142,8 +144,7 @@ export async function complete(
 
 function replyMessage(reply: AssistantMessage, subscribed: boolean) {
   const toolCalls = reply.content.filter((c) => c.type === "toolCall");
-  if (toolCalls.some((c) => c.namespace && c.namespace !== "groat"))
-    throw new Error("ChatGPT returned an unknown tool");
+  if (toolCalls.some((c) => c.namespace && c.namespace !== "groat")) fail(502, "ChatGPT returned an unknown tool");
   return {
     role: "assistant",
     modelMessage: reply,

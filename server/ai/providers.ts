@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Deps } from "../context";
+import { fail } from "../request";
 import type * as schema from "../schema";
 
 const listing = z.object({
@@ -47,12 +48,10 @@ export async function fetchModels(fetch: Deps["fetch"], { base, key }: Provider,
   const res = await fetch(`${base}/models`, {
     headers: { authorization: `Bearer ${key}` },
     signal: AbortSignal.timeout(5000),
-  }).catch(() => {
-    throw new Error(`Couldn’t reach ${base}`);
-  });
-  if (res.status === 401 || res.status === 403) throw new Error(`The ${name} refused the key (${res.status})`);
-  if (!res.ok) throw new Error(`The ${name} returned an error (${res.status}) listing models`);
+  }).catch(() => fail(502, `Couldn’t reach ${base}`));
+  if (res.status === 401 || res.status === 403) fail(502, `The ${name} refused the key (${res.status})`);
+  if (!res.ok) fail(502, `The ${name} returned an error (${res.status}) listing models`);
   const parsed = listing.safeParse(await res.json().catch(() => undefined));
-  if (!parsed.success) throw new Error(`The ${name} sent an unexpected model list`);
+  if (!parsed.success) fail(502, `The ${name} sent an unexpected model list`);
   return parsed.data.data;
 }

@@ -14,7 +14,5 @@ export function draftRoutes(ctx: Pick<Ctx, "db" | "clock" | "ai">) {
     return c.json(await extract(ctx, parsed.data.text));
   });
 
-  app.onError((e, c) => c.json({ error: e.message }, 502));
-
   return app;
 }

@@ -222,3 +222,18 @@ test("a speech-to-text provider that can't list yet doesn't block choosing the c
   });
   expect((await flags(call)).voice).toBe(true);
 });
+
+test("choosing a model while the provider can't list is a 502 that says why", async () => {
+  const { call } = setup(
+    undefined,
+    (url) => (url.host === "stt.test" ? new Response("down", { status: 503 }) : undefined),
+    {
+      ...config,
+      sttBaseUrl: "https://stt.test/v1",
+    },
+  );
+  expect(await call("PUT", "/api/models", { stt: "whisper-large-v3" })).toEqual({
+    status: 502,
+    body: { error: "The AI provider returned an error (503) listing models" },
+  });
+});

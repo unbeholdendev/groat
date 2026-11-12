@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import type { Deps } from "../../context";
+import { fail } from "../../request";
 
 const issuer = "https://auth.openai.com";
 export const resource = "https://api.openai.com/v1";
@@ -14,31 +16,45 @@ const token = z.object({
   expires_in: z.number().positive(),
   scope: z.string(),
 });
-export type Credential = z.infer<typeof token> & {
-  client: string;
-  subject: string;
-  email: string;
-  expires: number;
-  model?: string;
-  revoked?: boolean;
-  renewal?: z.infer<typeof token> & { receivedAt: number };
-};
-export type Pending = {
-  state: string;
-  nonce: string;
-  verifier: string;
-  session: string;
-  expires: number;
-  client?: string;
-  subject?: string;
-  claimed?: boolean;
-};
+export const credentialRecord = token.extend({
+  client: z.string(),
+  subject: z.string(),
+  email: z.string(),
+  expires: z.number(),
+  model: z.string().optional(),
+  revoked: z.boolean().optional(),
+  renewal: token.extend({ receivedAt: z.number() }).optional(),
+});
+export type Credential = z.infer<typeof credentialRecord>;
+export const pendingRecord = z.object({
+  state: z.string(),
+  nonce: z.string(),
+  verifier: z.string(),
+  session: z.string(),
+  expires: z.number(),
+  client: z.string().optional(),
+  subject: z.string().optional(),
+  claimed: z.boolean().optional(),
+});
+export type Pending = z.infer<typeof pendingRecord>;
+const rejection = z.object({ error: z.union([z.string(), z.object({ code: z.string().optional() })]) });
+const keySet = z.object({ keys: z.array(z.looseObject({ kid: z.string(), kty: z.string() })) });
 export const random = () => randomBytes(32).toString("base64url");
 export const recovery = "ChatGPT sign-in has expired. Reconnect ChatGPT in Settings.";
 export const unavailable = "ChatGPT is temporarily unavailable. Try again.";
 export const wrongAddress =
   "That isn’t the address of the page that failed to load. Copy its whole address and paste it again.";
 export const staleAttempt = "This sign-in attempt has expired. Select Connect ChatGPT to start again.";
+export const unreachable = () => fail(400, unavailable);
+
+const header = z.object({ alg: z.literal("RS256"), kid: z.string() });
+const segment = (part: string): unknown => {
+  try {
+    return JSON.parse(Buffer.from(part, "base64url").toString());
+  } catch {
+    return undefined;
+  }
+};
 
 export async function exchange(fetch: Deps["fetch"], params: Record<string, string>) {
   const res = await fetch(`${issuer}/api/accounts/oauth/token`, {
@@ -46,10 +62,10 @@ export async function exchange(fetch: Deps["fetch"], params: Record<string, stri
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ resource, ...params }),
     signal: AbortSignal.timeout(15000),
-  });
+  }).catch(unreachable);
   if (!res.ok) {
-    const error = (await res.json().catch(() => null)) as { error?: string | { code?: string } } | null;
-    const code = typeof error?.error === "string" ? error.error : error?.error?.code;
+    const error = rejection.safeParse(await res.json().catch(() => null)).data?.error;
+    const code = typeof error === "string" ? error : error?.code;
     const terminal = [
       "invalid_grant",
       "invalid_refresh_token",
@@ -58,26 +74,27 @@ export async function exchange(fetch: Deps["fetch"], params: Record<string, stri
       "refresh_token_invalidated",
       "refresh_token_reused",
     ].includes(code ?? "");
-    throw Object.assign(new Error(terminal ? recovery : unavailable), { terminal });
+    throw Object.assign(new HTTPException(400, { message: terminal ? recovery : unavailable }), { terminal });
   }
-  const parsed = token.safeParse(await res.json());
-  if (!parsed.success || !scopes.split(" ").every((s) => parsed.data.scope.split(" ").includes(s)))
-    throw new Error(recovery);
+  const parsed = token.safeParse(await res.json().catch(unreachable));
+  if (!parsed.success || !scopes.split(" ").every((s) => parsed.data.scope.split(" ").includes(s))) fail(400, recovery);
   return parsed.data;
 }
 
 export async function verify(fetch: Deps["fetch"], now: () => number, jwt: string, client: string, nonce?: string) {
   const parts = jwt.split(".");
-  if (parts.length !== 3) throw new Error(recovery);
-  const header = JSON.parse(Buffer.from(parts[0], "base64url").toString());
-  if (header.alg !== "RS256" || typeof header.kid !== "string") throw new Error(recovery);
-  const res = await fetch(`${issuer}/.well-known/jwks.json`, { signal: AbortSignal.timeout(5000) });
-  const jwks = (await res.json()) as { keys: (JsonWebKey & { kid: string })[] };
-  const jwk = jwks.keys.find((k) => k.kid === header.kid && k.kty === "RSA");
-  if (!jwk) throw new Error(recovery);
-  const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, [
-    "verify",
-  ]);
+  if (parts.length !== 3) fail(400, recovery);
+  const head = header.safeParse(segment(parts[0]));
+  if (!head.success) fail(400, recovery);
+  const res = await fetch(`${issuer}/.well-known/jwks.json`, { signal: AbortSignal.timeout(5000) }).catch(unreachable);
+  if (!res.ok) fail(400, unavailable);
+  const jwks = keySet.safeParse(await res.json().catch(unreachable));
+  if (!jwks.success) fail(400, unavailable);
+  const jwk = jwks.data.keys.find((k) => k.kid === head.data.kid && k.kty === "RSA");
+  if (!jwk) fail(400, recovery);
+  const key = await crypto.subtle
+    .importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"])
+    .catch(unreachable);
   if (
     !(await crypto.subtle.verify(
       "RSASSA-PKCS1-v1_5",
@@ -86,7 +103,7 @@ export async function verify(fetch: Deps["fetch"], now: () => number, jwt: strin
       Buffer.from(`${parts[0]}.${parts[1]}`),
     ))
   )
-    throw new Error(recovery);
+    fail(400, recovery);
   const claims = JSON.parse(Buffer.from(parts[1], "base64url").toString());
   const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   if (
@@ -101,7 +118,7 @@ export async function verify(fetch: Deps["fetch"], now: () => number, jwt: strin
     !claims.sub ||
     (nonce && claims.nonce !== nonce)
   )
-    throw new Error(recovery);
+    fail(400, recovery);
   return { subject: String(claims.sub), email: typeof claims.email === "string" ? claims.email : String(claims.sub) };
 }
 

@@ -1,7 +1,6 @@
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
 import { chatRoutes } from "./ai/chat/routes";
 import { chatgptAccount } from "./ai/chatgpt/account";
 import { chatgptRoutes } from "./ai/chatgpt/routes";
@@ -19,6 +18,7 @@ import { migrationsFolder } from "./db";
 import { liveUpdates } from "./live";
 import { errorKind, log, loggedFetch, requestLogging } from "./logging";
 import { valuer } from "./rates/valuer";
+import { failed } from "./request";
 import { settingsRoutes } from "./settings/routes";
 import { statsRoutes } from "./stats/routes";
 import { tagRoutes } from "./tags/routes";
@@ -66,9 +66,7 @@ export function createApp(deps: Deps) {
   };
   const app = new Hono<Env>();
   app.use("*", requestLogging);
-  app.onError((error, c) =>
-    error instanceof HTTPException ? error.getResponse() : c.text("Internal Server Error", 500),
-  );
+  app.onError(failed);
   generateRecurring(ctx);
 
   for (const file of ["sw.js", "manifest.webmanifest"])

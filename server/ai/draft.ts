@@ -4,6 +4,7 @@ import { knownCurrencies } from "../../shared/amount";
 import { parse } from "../../shared/parse";
 import { isoDate } from "../../shared/schema";
 import { type Ctx, today } from "../context";
+import { fail } from "../request";
 import { settings } from "../settings/queries";
 import { readTransaction } from "../transactions/read-transaction";
 import { categories } from "../schema";
@@ -67,7 +68,7 @@ export async function extract(ctx: Pick<Ctx, "db" | "clock" | "ai">, input: stri
     typeof input === "string" ? "chat" : "vision",
   );
   const read = reply.safeParse(message.tool_calls?.[0]?.function.arguments);
-  if (!read.success) throw new Error("The AI provider sent an unexpected reply");
+  if (!read.success) fail(502, "The AI provider sent an unexpected reply");
   const { note, amount, currency, date, categoryId, tags = [] } = read.data;
   const code = currency?.toUpperCase();
   const draft = readTransaction(
@@ -82,6 +83,6 @@ export async function extract(ctx: Pick<Ctx, "db" | "clock" | "ai">, input: stri
     },
     { intent: "extract" },
   );
-  if ("error" in draft) throw new Error("The AI provider sent an unexpected reply");
+  if ("error" in draft) fail(502, "The AI provider sent an unexpected reply");
   return draft;
 }

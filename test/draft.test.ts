@@ -108,3 +108,16 @@ test("drafts are offered expense categories only", async () => {
   );
   expect(names).toEqual(["Uncategorised"]);
 });
+
+test("a provider failure is a 502 that says what went wrong", async () => {
+  const garbled = setup(undefined, provider(() => "not json").handler, config);
+  expect(await garbled.call("POST", "/api/drafts", { text: "coffee" })).toEqual({
+    status: 502,
+    body: { error: "The AI provider sent an unexpected reply" },
+  });
+  const down = setup(undefined, (url) => listed(url) ?? new Response("down", { status: 500 }), config);
+  expect(await down.call("POST", "/api/drafts", { text: "coffee" })).toEqual({
+    status: 502,
+    body: { error: "The AI provider returned an error (500)" },
+  });
+});

@@ -1,3 +1,4 @@
+import { HTTPException } from "hono/http-exception";
 import type { Ctx } from "../context";
 import * as schema from "../schema";
 import { chatModels, fetchModels, type Listed, type Provider, providerId, providers, sttModels } from "./providers";
@@ -7,10 +8,15 @@ type ProviderInput = { baseUrl: string; key?: string; sttBaseUrl: string; sttKey
 
 const ending = (key: string | null) => key && (key.length > 8 ? key.slice(-4) : "");
 
+const reported = (e: unknown) => {
+  if (e instanceof HTTPException) return e;
+  throw e;
+};
+
 const options = (ai: Ctx["ai"], provider: Provider, pick: (l: Listed) => string[]) =>
   ai.list(provider).then(
     (l) => ({ models: pick(l) }),
-    (e: Error) => ({ models: [], error: e.message }),
+    (e) => ({ models: [], error: reported(e).message }),
   );
 
 export async function modelChoices({ ai }: Pick<Ctx, "ai">) {
@@ -89,8 +95,8 @@ export async function configureProvider(ctx: Pick<Ctx, "db" | "ai" | "fetch">, i
     providerId(sttProvider) === providerId(chatProvider)
       ? null
       : fetchModels(fetch, sttProvider, "speech-to-text provider"),
-  ]).catch((e: Error) => e);
-  if (lists instanceof Error) return { error: lists.message };
+  ]).catch(reported);
+  if (lists instanceof HTTPException) return { error: lists.message };
   const [chats, separate] = lists;
   const heard = separate ?? chats;
   const keep = (model: string | null | undefined, ids: string[]) => (model && ids.includes(model) ? model : null);

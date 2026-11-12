@@ -748,3 +748,48 @@ test("ChatGPT refuses tool calls from an unknown namespace and reports expired a
       "sign in again",
     );
 });
+
+test("ChatGPT failures are a 400 on its own routes and a 502 where AI uses it", async () => {
+  const recovery = { error: "ChatGPT sign-in has expired. Reconnect ChatGPT in Settings." };
+  const unavailable = { error: "ChatGPT is temporarily unavailable. Try again." };
+  const connected = async (bad: string) => {
+    const f = await fixture();
+    await f.call("POST", "/api/chatgpt/callback", { callback: await f.start() });
+    f.advance();
+    f.bad(bad);
+    return f;
+  };
+
+  const down = await connected("unavailable");
+  expect(await down.call("GET", "/api/chatgpt/models")).toEqual({ status: 400, body: unavailable });
+  expect(await down.call("POST", "/api/drafts", { text: "coffee" })).toEqual({ status: 502, body: unavailable });
+
+  const keyless = await connected("jwks");
+  expect(await keyless.call("GET", "/api/chatgpt/models")).toEqual({ status: 400, body: unavailable });
+
+  const revoked = await connected("revoked");
+  expect(await revoked.call("GET", "/api/chatgpt/models")).toEqual({ status: 400, body: recovery });
+  expect(await revoked.call("PUT", "/api/chatgpt/model", { model: "chat-test" })).toEqual({
+    status: 400,
+    body: recovery,
+  });
+  expect(await revoked.call("POST", "/api/drafts", { text: "coffee" })).toEqual({ status: 502, body: recovery });
+  expect(await revoked.call("POST", "/api/chats", { message: "hi" })).toEqual({ status: 502, body: recovery });
+
+  const forged = await fixture();
+  forged.bad("signature");
+  expect(await forged.call("POST", "/api/chatgpt/callback", { callback: await forged.start() })).toEqual({
+    status: 400,
+    body: recovery,
+  });
+});
+
+test("a stored connection that doesn't validate counts as no connection", async () => {
+  const f = await fixture();
+  for (const value of ["{", JSON.stringify({ access_token: 1 })]) {
+    f.store.run("INSERT OR REPLACE INTO private VALUES ('instance', ?)", [value]);
+    expect((await f.call("GET", "/api/chatgpt")).body).toMatchObject({ connected: false, needsSignIn: false });
+    expect((await f.call("GET", "/api/ai/status")).body).toMatchObject({ ai: false, aiSource: null });
+    expect(await f.call("GET", "/api/chatgpt/models")).toEqual({ status: 200, body: { models: [] } });
+  }
+});

@@ -100,3 +100,16 @@ test("oversized or non-image uploads are refused", async () => {
   expect((await upload(form(new TextEncoder().encode("%PDF-1.4"), "application/pdf"))).status).toBe(400);
   expect((await upload(new FormData())).status).toBe(400);
 });
+
+test("a provider failure reading a photo is a 502 that says what went wrong", async () => {
+  const { request } = setup(
+    undefined,
+    (url) => models(["text-model"])(url) ?? new Response("down", { status: 500 }),
+    config,
+  );
+  const res = await request("/api/drafts/photo", { method: "POST", body: form(jpeg) });
+  expect({ status: res.status, body: await res.json() }).toEqual({
+    status: 502,
+    body: { error: "The AI provider returned an error (500)" },
+  });
+});

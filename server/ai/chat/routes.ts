@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import type { Env } from "../../auth/access";
 import type { Ctx } from "../../context";
@@ -19,8 +18,6 @@ export function chatRoutes(ctx: Ctx) {
 
   closeInterrupted(db);
   const agent = chatAgent(ctx);
-
-  app.onError((e, c) => c.json({ error: e.message }, e instanceof HTTPException ? e.status : 502));
 
   app.get("/", (c) => c.json(listChats(db)));
 

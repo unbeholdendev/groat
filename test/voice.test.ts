@@ -76,3 +76,16 @@ test("voice is off without a speech-to-text model, and bad input or replies are 
   );
   expect((await record(broken.request)).status).toBe(502);
 });
+
+test("a speech-to-text failure is a 502 that says what went wrong", async () => {
+  const broken = setup(
+    undefined,
+    (url) => models(["test-model", "whisper-1"])(url) ?? new Response("down", { status: 500 }),
+    ai,
+  );
+  const res = await record(broken.request);
+  expect({ status: res.status, body: await res.json() }).toEqual({
+    status: 502,
+    body: { error: "The speech-to-text provider returned an error (500)" },
+  });
+});

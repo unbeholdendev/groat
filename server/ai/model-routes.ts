@@ -48,7 +48,5 @@ export function modelRoutes(ctx: Pick<Ctx, "db" | "ai" | "fetch">) {
     return "error" in result ? c.json(result, 400) : c.json(result);
   });
 
-  routes.onError((e, c) => c.json({ error: e.message }, 502));
-
   return routes;
 }
