@@ -14,7 +14,7 @@ Single-context. See `docs/agents/domain.md`.
 
 ### Browser tests
 
-`bun run e2e` builds the app and drives it with Playwright (WebKit phone, Chromium desktop) against `e2e/server.ts`: an in-memory DB with stubbed rates and AI, reset per test. First time: `bunx playwright install --with-deps chromium webkit`.
+`bun run e2e` builds the app and drives it with Playwright (WebKit phone, Chromium desktop) against `e2e/server.ts`: an in-memory DB with stubbed rates and AI, reset per test. First time: `bunx playwright install chromium webkit`; the NixOS host supplies the system libraries (nix-ld), so skip `--with-deps`.
 
 ### Lint and format
 
