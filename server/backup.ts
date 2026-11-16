@@ -105,6 +105,9 @@ export function restoreRoutes({ db, chatgpt }: Pick<Ctx, "db" | "chatgpt">) {
               .join(", ");
             live.run(`INSERT INTO main.${quote(table)} (${columns}) SELECT ${columns} FROM backup.${quote(table)}`);
           }
+          live.run("DELETE FROM main.sqlite_sequence WHERE name = 'transactions'");
+          live.run(`INSERT INTO main.sqlite_sequence (name, seq)
+            SELECT name, seq FROM backup.sqlite_sequence WHERE name = 'transactions'`);
         })();
       } catch {
         return c.json({ error: notBackup }, 400);

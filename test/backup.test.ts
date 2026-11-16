@@ -230,3 +230,14 @@ test.skipIf(readMigrationFiles({ migrationsFolder }).length < 2)(
     });
   },
 );
+
+test("restore preserves transaction IDs reserved by purged expenses", async () => {
+  const source = setup();
+  const original = await source.call("POST", "/api/transactions", { note: "Purged", amount: "2" });
+  await source.call("DELETE", `/api/transactions/${original.body.id}?purge`);
+  const backup = await source.request("/api/backup");
+  const target = fresh();
+  expect((await target.restore(new Uint8Array(await backup.arrayBuffer()))).status).toBe(200);
+  const next = await target.call("POST", "/api/transactions", { note: "New", amount: "3" });
+  expect(next.body.id).toBeGreaterThan(original.body.id);
+});

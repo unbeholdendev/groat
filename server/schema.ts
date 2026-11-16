@@ -12,7 +12,7 @@ import { sql } from "drizzle-orm";
 import { kinds } from "../shared/schema";
 
 export const transactions = sqliteTable("transactions", {
-  id: integer().primaryKey(),
+  id: integer().primaryKey({ autoIncrement: true }),
   clientRequestId: text().unique(),
   note: text().notNull(),
   amount: integer().notNull(),

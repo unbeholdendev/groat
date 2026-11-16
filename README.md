@@ -22,7 +22,7 @@ For phones or remote access, put an HTTPS reverse proxy in front of port 3000 th
 
 Without Docker: `bun install && bun run build && bun start`.
 
-To upgrade, download a backup, then replace the container with the new image on the same volume. Migrations run at startup.
+To upgrade, sync or discard queued changes on every device and download a backup, then replace the container with the new image on the same volume. Migrations run at startup.
 
 ## Configuration
 

@@ -36,6 +36,7 @@ test("bin empties for good", async ({ app: page }) => {
   await page.reload();
   await page.getByRole("button", { name: "Mistake" }).click();
   await page.getByRole("button", { name: "Move to bin" }).click();
+  await expect(page).toHaveURL("/");
   await page.goto("/?view=bin");
   await page.getByRole("button", { name: "Empty bin" }).click();
   await page.getByRole("button", { name: "Delete" }).click();
