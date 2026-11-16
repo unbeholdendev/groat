@@ -30,6 +30,7 @@ function provider(url: URL, init: RequestInit | undefined, models: string[]) {
   if (new Headers(init?.headers).get("authorization") !== "Bearer sk-e2e-key-0000")
     return Response.json({ error: "bad key" }, { status: 401 });
   if (url.pathname === "/v1/models") return Response.json({ object: "list", data: models.map((id) => ({ id })) });
+  if (url.pathname === "/v1/audio/transcriptions") return Response.json({ text: "coffee 3" });
   const body = JSON.parse(String(init?.body));
   const last = body.messages.at(-1).content;
   if (

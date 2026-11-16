@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useMutationState } from "@tanstack/react-query";
+import { z } from "zod";
+import { useMutation, useMutationState } from "@tanstack/react-query";
 import type { Unit } from "../../../shared/amount";
-import { useSession } from "../../lib/api";
+import { send, useSession } from "../../lib/api";
 import { Icon, paths } from "../../components/icon";
 import { useOnline } from "../../lib/online";
 import type { Category, Draft, Settings, Suggestion } from "../../lib/schemas";
@@ -12,7 +13,7 @@ import { FloatingAdd } from "./floating-add";
 import { aiOff, Hint } from "./hint";
 import { Incoming, useShared } from "./incoming";
 import { LineInput } from "./line-input";
-import { Mic } from "./mic";
+import { Mic, recording } from "./mic";
 import { PastEntries } from "./past-entries";
 import { PhotoButton } from "./photo-button";
 import { Review } from "./review";
@@ -49,6 +50,16 @@ export function Bar(props: {
   const mode = modeOf(entry, inChat, reviewing);
   const asking = useAsk(props.chat);
   const answering = !asking.isIdle && !inChat;
+  const transcribing = useMutation({
+    mutationFn: async (audio: Blob) =>
+      z.object({ text: z.string() }).parse(await send("POST", "/api/voice", recording(audio))),
+    networkMode: "always",
+    onSuccess: ({ text }) => {
+      entry.setText((current) => (current.trimEnd() ? `${current.trimEnd()} ${text.trim()}` : text.trim()));
+      input.current?.focus();
+    },
+    onError: setCaptureError,
+  });
   const online = useOnline();
   const admin = useSession()?.user?.role === "admin";
   function clear() {
@@ -94,7 +105,10 @@ export function Bar(props: {
       <form
         className={inline ? "flex flex-col" : undefined}
         aria-label="Quick add"
-        onSubmit={submit}
+        onSubmit={(e) => {
+          if (transcribing.isPending) e.preventDefault();
+          else submit(e);
+        }}
         onKeyDown={(e) => {
           if (e.key !== "Escape") return;
           if (answering) close();
@@ -184,26 +198,23 @@ export function Bar(props: {
             onFocus={setFocused}
           />
           {mode === "idle" && (
-            <>
-              <PhotoButton
-                online={online}
-                onPhoto={photo}
-                off={settings.vision ? undefined : aiOff(settings, admin, "ai")}
-                onOff={setCaptureError}
-              />
-              {!settings.voice && (
-                <Mic onAudio={() => {}} onError={setCaptureError} off={aiOff(settings, admin, "voice")} />
-              )}
-              {settings.voice && online && (
-                <Mic
-                  onAudio={(audio) => {
-                    setCaptureError(null);
-                    drafting.mutate({ audio });
-                  }}
-                  onError={setCaptureError}
-                />
-              )}
-            </>
+            <PhotoButton
+              online={online}
+              onPhoto={photo}
+              off={settings.vision ? undefined : aiOff(settings, admin, "ai")}
+              onOff={setCaptureError}
+            />
+          )}
+          {!reviewing && !answering && (!settings.voice || online) && (
+            <Mic
+              onAudio={(audio) => {
+                setCaptureError(null);
+                transcribing.mutate(audio);
+              }}
+              onError={setCaptureError}
+              off={settings.voice ? undefined : aiOff(settings, admin, "voice")}
+              busy={transcribing.isPending}
+            />
           )}
           {blank ? (
             <button
@@ -221,7 +232,13 @@ export function Bar(props: {
               name={submitName(entry.ask, !!p.amount || settings.ai)}
               label={inline}
               dim={!text.trim() && !inChat}
-              disabled={adding.isPending || asking.isPending || drafting.isPending || (entry.ask && !entry.question)}
+              disabled={
+                adding.isPending ||
+                asking.isPending ||
+                drafting.isPending ||
+                transcribing.isPending ||
+                (entry.ask && !entry.question)
+              }
             />
           )}
         </div>

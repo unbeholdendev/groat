@@ -1,6 +1,5 @@
 import { expect, test } from "bun:test";
-import { draft } from "../web/lib/schemas";
-import { completion, models, setup } from "./harness";
+import { models, setup } from "./harness";
 
 const ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 
@@ -17,12 +16,7 @@ function providers(text: string, listed = models(["test-model", "whisper-1"])) {
       return Response.json({ text });
     }
     if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
-    const args = { note: "Taxi home", amount: "14" };
-    return completion({
-      role: "assistant",
-      content: null,
-      tool_calls: [{ id: "c", type: "function", function: { name: "transaction", arguments: JSON.stringify(args) } }],
-    });
+    throw new Error("Dictation must not extract an expense");
   };
   return { handler, heard };
 }
@@ -33,7 +27,7 @@ const record = (request: (path: string, init?: RequestInit) => Response | Promis
   return request("/api/voice", { method: "POST", body: form });
 };
 
-test("a recording is transcribed and comes back as a draft, using the AI base and key by default", async () => {
+test("a recording returns editable text without extracting an expense, using the AI base and key by default", async () => {
   const p = providers("taxi home fourteen pounds");
   const { request, call } = setup(undefined, p.handler, ai);
   expect((await call("GET", "/api/ai/status")).body.voice).toBe(true);
@@ -41,8 +35,7 @@ test("a recording is transcribed and comes back as a draft, using the AI base an
   const res = await record(request);
   const body = await res.json();
   expect(res.status).toBe(200);
-  expect(body).toMatchObject({ note: "Taxi home", amount: 1400 });
-  expect(draft.safeParse(body).error).toBeUndefined();
+  expect(body).toEqual({ text: "taxi home fourteen pounds" });
   expect(p.heard).toHaveLength(1);
   expect(p.heard[0]).toMatchObject({
     url: "https://ai.test/v1/audio/transcriptions",

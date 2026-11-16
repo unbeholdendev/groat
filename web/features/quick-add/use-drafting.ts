@@ -5,7 +5,6 @@ import { send } from "../../lib/api";
 import { shrink } from "../../lib/photo";
 import { draft } from "../../lib/schemas";
 import { useZodForm } from "../../lib/use-zod-form";
-import { recording } from "./mic";
 import { fields, review } from "./schema";
 
 export function useDrafting(unit: Unit, onFail: () => void) {
@@ -13,9 +12,8 @@ export function useDrafting(unit: Unit, onFail: () => void) {
   const [captureError, setCaptureError] = useState<Error | null>(null);
   const [image, setImage] = useState<string>();
   const drafting = useMutation({
-    mutationFn: async (input: string | { audio: Blob } | { photo: Blob }) => {
+    mutationFn: async (input: string | { photo: Blob }) => {
       if (typeof input === "string") return draft.parse(await send("POST", "/api/drafts", { text: input }));
-      if ("audio" in input) return draft.parse(await send("POST", "/api/voice", recording(input.audio)));
       const body = new FormData();
       body.set("image", await shrink(input.photo), "receipt.jpg");
       return draft.parse(await send("POST", "/api/drafts/photo", body));

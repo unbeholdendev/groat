@@ -7,7 +7,12 @@ export function recording(audio: Blob) {
   return form;
 }
 
-export function Mic(props: { onAudio: (audio: Blob) => void; onError: (e: Error) => void; off?: string }) {
+export function Mic(props: {
+  onAudio: (audio: Blob) => void;
+  onError: (e: Error) => void;
+  off?: string;
+  busy?: boolean;
+}) {
   const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
 
   useEffect(() => {
@@ -35,18 +40,21 @@ export function Mic(props: { onAudio: (audio: Blob) => void; onError: (e: Error)
     setRecorder(r);
   }
 
+  const label = recorder ? "Stop recording" : "Dictate";
   return (
     <button
       type="button"
-      aria-label={recorder ? "Stop recording" : "Dictate"}
+      aria-label={props.busy ? "Transcribing" : label}
       aria-pressed={!!recorder}
-      aria-disabled={!!props.off}
+      disabled={props.busy}
+      aria-busy={props.busy}
+      aria-disabled={!!props.off || !!props.busy}
       onClick={() => {
         if (props.off) props.onError(new Error(props.off));
         else if (recorder) recorder.stop();
         else void start();
       }}
-      className={`press hit grid size-10 shrink-0 place-items-center rounded-chip transition-[scale,background-color,color] duration-200 ${tone(!!recorder, !!props.off)}`}
+      className={`press hit grid size-10 disabled:opacity-50 shrink-0 place-items-center rounded-chip transition-[scale,background-color,color] duration-200 ${tone(!!recorder, !!props.off)}`}
     >
       <Icon className="size-[18px] stroke-2">
         {recorder ? (

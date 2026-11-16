@@ -54,7 +54,7 @@ test("with one chat model and one speech model listed, everything turns on with 
   expect(await flags(call)).toEqual({ ai: true, vision: true, voice: true });
   await call("POST", "/api/chats", { message: "hi" });
   expect((await record(request)).status).toBe(200);
-  expect(p.used).toEqual({ chat: ["gpt-4o-mini", "gpt-4o-mini"], stt: ["whisper-1"] });
+  expect(p.used).toEqual({ chat: ["gpt-4o-mini"], stt: ["whisper-1"] });
   expect(modelChoice.parse((await call("GET", "/api/models")).body)).toEqual({
     chat: { models: ["gpt-4o-mini"], model: "gpt-4o-mini" },
     vision: { models: ["gpt-4o-mini"], model: "gpt-4o-mini" },
@@ -85,7 +85,7 @@ test("with several candidates nothing is guessed, and an admin's picks apply wit
   const photo = new FormData();
   photo.set("image", new File([Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1])], "receipt", { type: "image/jpeg" }));
   expect((await request("/api/drafts/photo", { method: "POST", body: photo })).status).toBe(200);
-  expect(p.used).toEqual({ chat: ["gpt-4o-mini", "gpt-4o-mini", "gpt-4o"], stt: ["gpt-4o-transcribe"] });
+  expect(p.used).toEqual({ chat: ["gpt-4o-mini", "gpt-4o"], stt: ["gpt-4o-transcribe"] });
 });
 
 test("an unknown or missing model can't be saved", async () => {

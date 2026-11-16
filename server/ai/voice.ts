@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Ctx } from "../context";
-import { extract } from "./draft";
 import { valid } from "../request";
 
 const recording = z.object({
@@ -18,7 +17,7 @@ export function voiceRoutes(ctx: Pick<Ctx, "db" | "clock" | "ai">) {
     if ("error" in input) return c.json(input, 400);
     const text = await ctx.ai.transcribe(input.data.audio);
     if (!text.trim()) return c.json({ error: "Nothing was heard. Try again closer to the mic." }, 422);
-    return c.json(await extract(ctx, text));
+    return c.json({ text });
   });
 
   return app;
