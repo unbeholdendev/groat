@@ -39,6 +39,7 @@ export function ByTag({
                   now={t.total}
                   before={prev.tags.find((r) => r.name === t.name)?.total ?? 0}
                   pad={prev.total > 0}
+                  show={show}
                 />
               )}
             </Link>

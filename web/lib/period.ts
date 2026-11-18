@@ -52,11 +52,11 @@ export function span(preset: string, custom?: [string, string], now = new Date()
 export const usePeriod = ([from, to]: [string, string]) =>
   useApi(period, [`/api/stats?from=${from}&to=${to}&group=month`], { enabled: from <= to }).data;
 
-export function change(now: number, before: number) {
+export function change(now: number, before: number, show: (n: number) => string) {
   if (!before) return null;
   const pct = Math.round(((now - before) / before) * 100);
   return {
-    text: `${sign(pct)}${Math.abs(pct)}%`,
+    text: `${sign(pct)}${pct > 500 ? show(now - before) : `${Math.abs(pct)}%`}`,
     tone: trend(pct, "text-up", "text-down"),
   };
 }

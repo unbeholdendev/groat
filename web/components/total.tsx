@@ -11,7 +11,8 @@ export const Pill = ({ d }: { d: NonNullable<ReturnType<typeof change>> }) => (
         <path d="M12 19V5m-6 6 6-6 6 6" />
       </Icon>
     )}
-    {d.text.replace(/^[+−]/, "")}
+    <span className="sr-only">{d.text}</span>
+    <span aria-hidden>{d.text.replace(/^[+−]/, "")}</span>
   </span>
 );
 

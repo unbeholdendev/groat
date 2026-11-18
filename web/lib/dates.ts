@@ -13,6 +13,16 @@ export function dayLabel(date: string) {
   });
 }
 
+export function rangeLabel(from: string, to: string) {
+  const [a, b] = [new Date(`${from}T00:00`), new Date(`${to}T00:00`)];
+  const year = new Date().getFullYear();
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    ...((a.getFullYear() !== year || b.getFullYear() !== year) && { year: "numeric" }),
+  }).formatRange(a, b);
+}
+
 export const dated = /^\d{4}-\d{2}-\d{2}$/;
 export function pick<K extends string>(search: Record<string, unknown>, rules: Record<K, RegExp>) {
   const valid: Partial<Record<K, string>> = {};

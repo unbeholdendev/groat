@@ -3,6 +3,7 @@ import { type ReactNode, useContext, useState } from "react";
 import { Pill, Total } from "../../components/total";
 import { Segmented } from "../../components/segmented";
 import { useApi, useCategories, useSettings } from "../../lib/api";
+import { rangeLabel } from "../../lib/dates";
 import { money } from "../../lib/money";
 import { change, days, span } from "../../lib/period";
 import { period } from "../../lib/schemas";
@@ -62,9 +63,9 @@ export function StatsPage() {
   const show = (n: number) => money(n, now.baseCurrency, unit);
   const running = s.end > s.range[1];
   const n = days(...s.range);
-  const vs = preset !== "Custom" ? s.name : daysBefore(n);
+  const vs = (running && rangeLabel(...s.ref)) || (preset === "Custom" ? daysBefore(n) : s.name);
   const incomplete = now.unconverted > 0 || ref.unconverted > 0 || full.unconverted > 0;
-  const d = !incomplete && change(now.total, ref.total);
+  const d = !incomplete && change(now.total, ref.total, show);
 
   return (
     <>
@@ -79,10 +80,9 @@ export function StatsPage() {
                 <>
                   <Pill d={d} />
                   vs {vs}
-                  {running && " by today"}
                 </>
               ) : (
-                `Nothing in ${vs}${running ? " by today" : ""}`
+                `Nothing in ${vs}`
               )))}
         </p>
         <Chart

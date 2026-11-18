@@ -23,7 +23,6 @@ export function CategoryRow(props: {
   const { slice: c, before, pad, tile, range, show, open } = props;
   const subs = c.children.some((k) => k.id !== c.id);
   const t = tile(c.id);
-  const share = c.total / props.total;
   const cells = (
     <>
       <Tile category={t ?? c} />
@@ -36,12 +35,15 @@ export function CategoryRow(props: {
             />
           )}
           <span className="num ml-auto">{show(c.total)}</span>
-          {props.compare && <Delta now={c.total} before={before?.total ?? 0} pad={pad} />}
+          {props.compare && <Delta now={c.total} before={before?.total ?? 0} pad={pad} show={show} />}
         </span>
-        <span className="mt-2 flex items-center gap-2.5">
-          <ShareBar share={share} color={c.color} builtin={t?.builtin} index={props.index} className="h-1.5 flex-1" />
-          <span className="num w-9 text-right text-[12px] text-ink3">{Math.round(share * 100)}%</span>
-        </span>
+        <ShareBar
+          share={c.total / props.total}
+          color={c.color}
+          builtin={t?.builtin}
+          index={props.index}
+          className="mt-2 block h-1.5"
+        />
       </span>
     </>
   );
@@ -65,7 +67,12 @@ export function CategoryRow(props: {
                 <span className="min-w-0 flex-1 truncate">{k.id === c.id ? `${k.name}, general` : k.name}</span>
                 <span className="num">{show(k.total)}</span>
                 {props.compare && (
-                  <Delta now={k.total} before={before?.children.find((b) => b.id === k.id)?.total ?? 0} pad={pad} />
+                  <Delta
+                    now={k.total}
+                    before={before?.children.find((b) => b.id === k.id)?.total ?? 0}
+                    pad={pad}
+                    show={show}
+                  />
                 )}
               </>
             );

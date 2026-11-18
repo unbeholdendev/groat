@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { cumulative, valueAt } from "../web/features/stats/cumulative";
-import { dayLabel, pick, today } from "../web/lib/dates";
+import { dayLabel, pick, rangeLabel, today } from "../web/lib/dates";
 import { money } from "../web/lib/money";
 import { change, days, span } from "../web/lib/period";
 import { invalidate, stale } from "../web/lib/resources";
@@ -74,11 +74,21 @@ test("span compares each preset with the matching earlier stretch", () => {
   expect(days("2026-03-28", "2026-04-02")).toBe(6);
 });
 
-test("change gives signed percent and tone", () => {
-  expect(change(110, 100)).toEqual({ text: "+10%", tone: "text-up" });
-  expect(change(90, 100)).toEqual({ text: "−10%", tone: "text-down" });
-  expect(change(100, 100)).toEqual({ text: "0%", tone: "text-ink3" });
-  expect(change(5, 0)).toBeNull();
+test("change gives signed percent and tone, or the amount for a jump past 500%", () => {
+  const show = (n: number) => `£${n}`;
+  expect(change(110, 100, show)).toEqual({ text: "+10%", tone: "text-up" });
+  expect(change(90, 100, show)).toEqual({ text: "−10%", tone: "text-down" });
+  expect(change(100, 100, show)).toEqual({ text: "0%", tone: "text-ink3" });
+  expect(change(600, 100, show)).toEqual({ text: "+500%", tone: "text-up" });
+  expect(change(2131, 100, show)).toEqual({ text: "+£2031", tone: "text-up" });
+  expect(change(5, 0, show)).toBeNull();
+});
+
+test("rangeLabel names a date range, with the year only when it is not this one", () => {
+  const year = new Date().getFullYear();
+  expect(rangeLabel(`${year}-10-01`, `${year}-10-18`)).toMatch(/^1\s?–\s?18 Oct$/);
+  expect(rangeLabel("2025-01-01", "2025-11-18")).toMatch(/^1 Jan\s?–\s?18 Nov 2025$/);
+  expect(rangeLabel("2025-12-01", "2026-01-05")).toMatch(/^1 Dec 2025\s?–\s?5 Jan 2026$/);
 });
 
 test("cumulative builds a running total over the range", () => {

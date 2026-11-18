@@ -43,5 +43,4 @@ test("missing income rates hide category, tag and income comparisons", async ({ 
   await expect(page.getByText(/^New since /)).toHaveCount(0);
   await expect(page.getByText(/^vs /)).toHaveCount(0);
   await expect(page.getByText(/^[+−]\d+%$/)).toHaveCount(0);
-  await expect(page.getByText("100%", { exact: true })).toHaveCount(1);
 });

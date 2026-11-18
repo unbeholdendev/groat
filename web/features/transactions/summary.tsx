@@ -17,7 +17,7 @@ export function Summary({ unit, end, rows, month }: { unit: Unit; end?: Date; ro
   useEffect(() => setHover(undefined), [month]);
   if (!now) return <div className="h-[222px]" />;
   const incomplete = now.unconverted > 0 || !!ref?.unconverted;
-  const d = !incomplete && ref && change(now.total, ref.total);
+  const d = !incomplete && ref && change(now.total, ref.total, (n) => money(n, now.baseCurrency, unit));
   const share = (n: number) => `${Math.round((n / now.total) * 100)}%`;
   const builtin = (id: number | null) => !id || categories.find((c) => c.id === id)?.builtin;
   const name = (id: number | null) => categories.find((c) => c.id === id)?.name ?? "Uncategorised";
