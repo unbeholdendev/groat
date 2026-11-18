@@ -18,6 +18,11 @@ export function useEdit() {
   return (e: Transaction) => e.id > 0 && navigate({ search: { ...list, edit: String(e.id) } });
 }
 
+export const editSearch = (e: Transaction) => {
+  const month = e.date.slice(0, 7);
+  return { edit: String(e.id), month: month === today().slice(0, 7) ? undefined : month };
+};
+
 export function useMonth() {
   const { new: adding, edit, view, month, kind, ...filter } = route.useSearch();
   const navigate = route.useNavigate();

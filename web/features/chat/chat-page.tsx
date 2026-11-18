@@ -6,6 +6,7 @@ import { FormError } from "../../components/form";
 import { send, useApi } from "../../lib/api";
 import { type Chat, chat as chatSchema } from "../../lib/schemas";
 import { useStreamed } from "../../lib/streams";
+import { editSearch } from "../transactions/use-month";
 import { ChatHeader } from "./chat-header";
 import { ChatList } from "./chat-list";
 import { Messages } from "./messages";
@@ -72,6 +73,7 @@ export function ChatPage({ openId }: { openId: number | null }) {
         streamed={streamed}
         onStop={open?.running ? () => stopping.mutate(open.id) : undefined}
         onDraft={(draft) => navigate({ to: "/", search: { new: "1" }, state: { draft } })}
+        onOpen={(t) => navigate({ to: "/", search: editSearch(t) })}
       />
     </div>
   );

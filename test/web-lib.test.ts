@@ -4,6 +4,7 @@ import { dayLabel, pick, today } from "../web/lib/dates";
 import { money } from "../web/lib/money";
 import { change, days, span } from "../web/lib/period";
 import { invalidate, stale } from "../web/lib/resources";
+import { savedBy } from "../web/lib/schemas";
 import { QueryClient } from "@tanstack/react-query";
 import { syncCategory } from "../web/features/categories/queries";
 import { syncAi } from "../web/features/settings/queries";
@@ -149,4 +150,15 @@ test("saving an AI provider refreshes capabilities but keeps the patched provide
   expect(client.getQueryState(["/api/models"])?.isInvalidated).toBe(true);
   expect(client.getQueryState(["/api/settings"])?.isInvalidated).toBe(false);
   client.clear();
+});
+
+test("saved cards come only from actions that leave the transaction editable", () => {
+  const row = { id: 7, note: "Coffee", amount: 300, currency: "GBP", date: "2026-11-18", categoryId: null, tags: [] };
+  const result = JSON.stringify({ outcome: "completed", result: row });
+  const messages = ["add_transaction", "bin_transaction"].flatMap((name) => [
+    { role: "assistant", tool_calls: [{ id: name, function: { name } }] },
+    { role: "tool", tool_call_id: name, content: result },
+  ]);
+  const saved = savedBy(messages);
+  expect(messages.filter((m) => m.role === "tool").map((m) => saved(m)?.id)).toEqual([7, undefined]);
 });

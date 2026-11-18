@@ -88,6 +88,7 @@ export const draft = z.object({
 });
 export type Draft = z.infer<typeof draft>;
 const drafted = z.object({ draft });
+const saved = z.object({ outcome: z.literal("completed"), result: transaction });
 
 export function draftIn(content: string | null | undefined) {
   try {
@@ -104,6 +105,22 @@ export const chatMessage = z.object({
   tool_call_id: z.string().optional(),
 });
 export type ChatMessage = z.infer<typeof chatMessage>;
+
+const saves = new Set(["add_transaction", "update_transaction", "confirm_transaction", "restore_transaction"]);
+
+export function savedBy(messages: ChatMessage[]) {
+  const calls = new Set(
+    messages.flatMap((m) => m.tool_calls?.filter((c) => saves.has(c.function.name)) ?? []).map((c) => c.id),
+  );
+  return (m: ChatMessage) => {
+    if (!m.tool_call_id || !calls.has(m.tool_call_id)) return undefined;
+    try {
+      return saved.parse(JSON.parse(m.content ?? "")).result;
+    } catch {
+      return undefined;
+    }
+  };
+}
 export const chat = z.object({
   id: z.number(),
   title: z.string(),

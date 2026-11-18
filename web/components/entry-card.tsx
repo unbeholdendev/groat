@@ -3,13 +3,15 @@ import { dayLabel } from "../lib/dates";
 import { money } from "../lib/money";
 import type { Draft } from "../lib/schemas";
 
-export const DraftCard = ({
-  draft,
+export const EntryCard = ({
+  label,
+  entry,
   unit,
   className,
   onClick,
 }: {
-  draft: Draft;
+  label: string;
+  entry: Draft;
   unit: Unit;
   className: string;
   onClick: () => void;
@@ -20,8 +22,8 @@ export const DraftCard = ({
     className={`press flex justify-between gap-3 rounded-field px-3.5 py-2.5 text-left ${className}`}
   >
     <span>
-      Review draft: <b className="font-medium">{draft.note}</b>, {dayLabel(draft.date)}
+      {label}: <b className="font-medium">{entry.note}</b>, {dayLabel(entry.date)}
     </span>
-    <span className="num whitespace-nowrap">{money(draft.amount, draft.currency, unit)}</span>
+    <span className="num whitespace-nowrap">{money(entry.amount, entry.currency, unit)}</span>
   </button>
 );

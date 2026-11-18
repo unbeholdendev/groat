@@ -1,7 +1,8 @@
 import { Fragment, use } from "react";
 import { Button } from "../../components/button";
-import { DraftCard } from "../../components/draft-card";
-import { type ChatMessage, type Draft, draftIn } from "../../lib/schemas";
+import { EntryCard } from "../../components/entry-card";
+import { RichText } from "../../components/rich-text";
+import { type ChatMessage, type Draft, draftIn, savedBy, type Transaction } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
 
 const reply =
@@ -14,31 +15,48 @@ export function Messages({
   streamed,
   onStop,
   onDraft,
+  onOpen,
 }: {
   messages: ChatMessage[];
   running: boolean;
   streamed: string;
   onStop?: () => void;
   onDraft: (draft: Draft) => void;
+  onOpen: (saved: Transaction) => void;
 }) {
   const [unit] = use(UnitContext);
   const results = new Map(
     messages.flatMap((m) => (m.role === "tool" && m.tool_call_id ? [[m.tool_call_id, m.content ?? ""] as const] : [])),
   );
   const acting = messages.some((m) => m.tool_calls?.some((c) => !results.has(c.id)));
+  const savedIn = savedBy(messages);
   return (
     <div className="grid gap-2.5">
       {messages.map((m, i) => {
         if (m.role === "tool") {
-          const draft = m.content?.startsWith('{"draft"') && draftIn(m.content);
-          return (
-            draft && (
-              <DraftCard
+          const draft = draftIn(m.content);
+          const saved = !draft && savedIn(m);
+          const card = "mr-8 bg-surface text-sm shadow-panel";
+          if (draft)
+            return (
+              <EntryCard
                 key={i}
-                draft={draft}
+                label="Review draft"
+                entry={draft}
                 unit={unit}
-                className="mr-8 bg-surface text-sm shadow-panel"
+                className={card}
                 onClick={() => onDraft(draft)}
+              />
+            );
+          return (
+            saved && (
+              <EntryCard
+                key={i}
+                label="Saved"
+                entry={saved}
+                unit={unit}
+                className={card}
+                onClick={() => onOpen(saved)}
               />
             )
           );
@@ -53,7 +71,7 @@ export function Messages({
                     : reply
                 }
               >
-                {m.content}
+                {m.role === "user" ? m.content : <RichText text={m.content} />}
               </p>
             )}
             {m.tool_calls?.map((c) => {
@@ -70,7 +88,9 @@ export function Messages({
       })}
       {running &&
         (streamed ? (
-          <p className={reply}>{streamed}</p>
+          <p className={reply}>
+            <RichText text={streamed} />
+          </p>
         ) : (
           !acting && <p className={`${reply} text-ink3`}>Working on it…</p>
         ))}

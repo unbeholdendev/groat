@@ -6,7 +6,7 @@ import type { Unit } from "../../../shared/amount";
 import { send, useSession } from "../../lib/api";
 import { Icon, paths } from "../../components/icon";
 import { useOnline } from "../../lib/online";
-import type { Category, Draft, Settings, Suggestion } from "../../lib/schemas";
+import type { Category, Draft, Settings, Suggestion, Transaction } from "../../lib/schemas";
 import { AnswerCard } from "./answer-card";
 import { Chips } from "./chips";
 import { FloatingAdd } from "./floating-add";
@@ -37,6 +37,7 @@ export function Bar(props: {
   onGuided: () => void;
   chat?: number;
   onForm: (d: Draft) => void;
+  onOpen: (t: Transaction) => void;
   onChat: (id: number) => void;
 }) {
   const { settings, unit, categories, inline, target } = props;
@@ -138,6 +139,7 @@ export function Bar(props: {
               unit={unit}
               onClose={close}
               onForm={props.onForm}
+              onOpen={props.onOpen}
               onChat={(id) => {
                 clear();
                 props.onChat(id);

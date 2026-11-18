@@ -81,6 +81,18 @@ test("an explicit chat request saves the expense and refreshes Home without manu
   expect(rows.filter((r: { note: string }) => r.note === "Test coffee")).toHaveLength(1);
 });
 
+test("an expense the agent saves links to the saved expense", async ({ app: page }) => {
+  await bar(page).fill("?Add test coffee for £3");
+  await bar(page).press("Enter");
+  await expect(page.getByText("Added test coffee.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Saved: Test coffee/ })).toBeVisible();
+  await page.getByRole("button", { name: "Continue in chat", exact: true }).click();
+  await page.getByRole("button", { name: /^Saved: Test coffee/ }).click();
+  await expect(page).toHaveURL(/[?&]edit=\d+/);
+  await expect(page.getByRole("heading", { name: "Edit expense" })).toBeVisible();
+  await expect(page.getByLabel("Note")).toHaveValue("Test coffee");
+});
+
 test("a delayed chat reply cannot repopulate the device cache after revocation", async ({ app: page }) => {
   let release!: () => void;
   let received!: () => void;

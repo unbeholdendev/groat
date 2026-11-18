@@ -2,6 +2,7 @@ import { createContext, use } from "react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCategories, useSettings } from "../../lib/api";
 import { UnitContext } from "../../lib/unit";
+import { editSearch } from "../transactions/use-month";
 import { Bar } from "./bar";
 
 export const QuickAddContext = createContext<{
@@ -32,6 +33,7 @@ export function QuickAdd() {
       onGuided={onGuided}
       chat={path === "/chat" ? Number(search.id) || 0 : undefined}
       onForm={(draft) => navigate({ to: "/", search: { new: "1" }, state: { draft } })}
+      onOpen={(t) => navigate({ to: "/", search: editSearch(t) })}
       onChat={(id) =>
         id !== Number(search.id) &&
         navigate({ to: "/chat", search: { id: String(id) }, state: { fromList: path === "/chat" } })
