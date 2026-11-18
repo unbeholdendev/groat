@@ -7,7 +7,7 @@ import { active, credentials, type Env, hashCost } from "./access";
 
 const days = 30;
 
-export function authRoutes({ db, clock }: Pick<Ctx, "db" | "clock">) {
+export function authRoutes({ db, clock, version }: Pick<Ctx, "db" | "clock" | "version">) {
   const app = new Hono<Env>();
 
   const session = (c: Context) =>
@@ -35,6 +35,7 @@ export function authRoutes({ db, clock }: Pick<Ctx, "db" | "clock">) {
     return c.json({
       setup: !db.select().from(users).get(),
       user: user ? { username: user.username, role: user.role } : null,
+      ...(user && { version: version ?? "dev" }),
     });
   });
 

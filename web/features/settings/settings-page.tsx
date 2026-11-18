@@ -24,7 +24,8 @@ const Go = ({ d, children }: { d: string; children: ReactNode }) => (
 
 export function SettingsPage() {
   const settings = useSettings()!;
-  const admin = useSession()?.user?.role === "admin";
+  const session = useSession();
+  const admin = session?.user?.role === "admin";
   return (
     <>
       <SettingsForm settings={settings} path="/api/settings" method="PUT" title="Settings" />
@@ -49,6 +50,7 @@ export function SettingsPage() {
       <Tokens />
       <PasswordForm />
       <SignOut />
+      {session?.version && <p className="mt-4 text-center text-xs text-ink3">Groat {session.version}</p>}
     </>
   );
 }

@@ -70,7 +70,11 @@ export const aiProvider = z.object({
 export type AiProvider = z.infer<typeof aiProvider>;
 
 const role = z.enum(["admin", "member"]);
-export const session = z.object({ setup: z.boolean(), user: z.object({ username: z.string(), role }).nullable() });
+export const session = z.object({
+  setup: z.boolean(),
+  user: z.object({ username: z.string(), role }).nullable(),
+  version: z.string().optional(),
+});
 export const member = z.object({ id: z.number(), username: z.string(), role });
 
 export const draft = z.object({

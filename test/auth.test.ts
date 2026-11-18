@@ -29,6 +29,7 @@ test("a fresh install asks for setup, which creates the admin and signs them in,
   expect(await (await get("/api/session", session(res))).json()).toEqual({
     setup: false,
     user: { username: "ann", role: "admin" },
+    version: "dev",
   });
   expect((await get("/api/settings", session(res))).status).toBe(200);
 

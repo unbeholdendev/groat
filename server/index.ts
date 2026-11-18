@@ -14,8 +14,9 @@ process.once("unhandledRejection", (error) => {
 });
 
 const start = performance.now();
-const version = process.env.GROAT_VERSION ?? "dev";
-log("info", "process.starting", { version: /^[a-zA-Z0-9._+-]{1,80}$/.test(version) ? version : "unknown" });
+const configured = process.env.GROAT_VERSION ?? "dev";
+const version = /^[a-zA-Z0-9._+-]{1,80}$/.test(configured) ? configured : "unknown";
+log("info", "process.starting", { version });
 const ignored = Object.keys(process.env).filter((k) => k.startsWith("AI_"));
 if (ignored.length) log("warn", "config.legacy_ai_ignored", { count: ignored.length });
 
@@ -26,7 +27,7 @@ const credentialPath = `${process.env.DB_PATH ?? "data.db"}.chatgpt`;
 closeSync(openSync(credentialPath, "a", 0o600));
 chmodSync(credentialPath, 0o600);
 const credentials = new Database(credentialPath, { create: true });
-const app = createApp({ credentials, db, clock: () => new Date(), fetch });
+const app = createApp({ credentials, db, version, clock: () => new Date(), fetch });
 const timer = setInterval(() => {
   try {
     app.generate();

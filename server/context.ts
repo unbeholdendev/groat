@@ -8,6 +8,7 @@ import type { Valuer } from "./rates/valuer";
 export type Deps = {
   db: Database;
   credentials?: Database;
+  version?: string;
   clock: () => Date;
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 };
