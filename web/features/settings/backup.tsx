@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "../../components/button";
 import { FormError } from "../../components/form";
-import { divide, panel, sectionHead } from "../../components/styles";
+import { divide, panel } from "../../components/styles";
 import { send } from "../../lib/api";
 import { SettingsIcon } from "./settings-icon";
 
@@ -56,7 +56,6 @@ export function Backup({ admin }: { admin: boolean }) {
 
   return (
     <section>
-      <h2 className={sectionHead}>Backup and export</h2>
       {admin && (
         <input
           ref={picker}

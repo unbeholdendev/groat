@@ -51,7 +51,7 @@ export function TabBar() {
   const path = useLocation().pathname;
   const { view } = useSearch({ strict: false });
   const wide = useSyncExternalStore(onResize, () => lg().matches);
-  const current = view && !wide ? "/settings" : (view ?? path);
+  const current = view && !wide ? "/settings" : (view ?? path.replace(/^(\/[^/]*).*/, "$1"));
   return (
     <nav
       aria-label="Main"

@@ -38,10 +38,8 @@ export function SettingsForm(props: {
 
   return (
     <form onSubmit={save} className="flex flex-col">
-      {onboarding ? (
+      {onboarding && (
         <Masthead title={props.title}>Pick the currency totals are shown in. You can change it later.</Masthead>
-      ) : (
-        <h1 className="text-display font-bold">{props.title}</h1>
       )}
       <h2 className={sectionHead}>Currencies</h2>
       <div className={panel}>

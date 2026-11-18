@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "../../components/button";
 import { Field, FormError, Input } from "../../components/form";
-import { sectionHead } from "../../components/styles";
 import { useSendNow } from "../../lib/api";
 
 export function PasswordForm() {
@@ -10,7 +9,6 @@ export function PasswordForm() {
   const [password, setPassword] = useState("");
   return (
     <section>
-      <h2 className={sectionHead}>Password</h2>
       <form
         className="flex flex-col gap-4"
         onSubmit={(e) => {

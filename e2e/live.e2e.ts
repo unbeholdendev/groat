@@ -56,7 +56,7 @@ for (const change of ["revocation", "account switch"])
     });
     if (change === "account switch")
       await page.request.post("/api/users", { data: { username: "partner", password: "secret" } });
-    await page.goto("/settings");
+    await page.goto("/settings/tokens");
     await page.route("**/api/tokens", async (route) => {
       if (route.request().method() !== "POST") return route.continue();
       const response = await route.fetch();

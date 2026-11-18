@@ -152,6 +152,7 @@ test("expense entry works while AI availability is pending", async ({ fresh: pag
     await bar(page).press("Enter");
     await expect(page.getByRole("listitem").filter({ hasText: "Coffee" })).toContainText("£3.00");
     await page.getByRole("link", { name: "Settings", exact: true }).click();
+    await page.getByRole("link", { name: "AI" }).click();
     await expect(page.getByText("Checking AI availability…")).toBeVisible();
     release();
     await expect(page.getByText("Checking AI availability…")).toBeHidden();

@@ -144,7 +144,7 @@ test("without AI the camera and mic show dimmed and say why", async ({ app: page
   await bar(page).fill("?where");
   await expect(off).toBeVisible();
   await page.getByRole("link", { name: "Open Settings" }).click();
-  await expect(page).toHaveURL(/\/settings$/);
+  await expect(page).toHaveURL(/\/settings\/ai$/);
 });
 
 test("saves over plain HTTP, where crypto.randomUUID is missing", async ({ app: page }) => {

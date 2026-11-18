@@ -2,7 +2,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { FormError } from "../../components/form";
 import { Icon, paths } from "../../components/icon";
-import { panel, sectionHead } from "../../components/styles";
+import { panel } from "../../components/styles";
 import { useApi, useSendNow } from "../../lib/api";
 import { member, type Request } from "../../lib/schemas";
 import { AddMember } from "./add-member";
@@ -21,7 +21,6 @@ export function Members() {
 
   return (
     <section>
-      <h2 className={sectionHead}>Members</h2>
       {query.isPending && <p role="status">Loading members…</p>}
       <FormError error={query.error} />
       {query.isError && (

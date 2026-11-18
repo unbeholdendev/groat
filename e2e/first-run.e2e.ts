@@ -18,6 +18,7 @@ test("first run creates the admin, picks a base currency and lands on an empty m
 
 test("sign out and back in", async ({ app: page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Account" }).click();
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await page.getByLabel("Username").fill("admin");
@@ -26,7 +27,7 @@ test("sign out and back in", async ({ app: page }) => {
   await expect(page.getByText("Wrong username or password")).toBeVisible();
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
 });
 
 test.describe(() => {
@@ -47,6 +48,7 @@ test.describe(() => {
 test("a downloaded backup restores on a new server's welcome screen", async ({ app: page }) => {
   await seed(page, [{ note: "Moving boxes", amount: "18.40" }]);
   await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Backup and export" }).click();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("link", { name: "Download backup" }).click(),

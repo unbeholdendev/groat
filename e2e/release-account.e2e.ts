@@ -3,7 +3,7 @@ import { expect, test } from "./fixtures";
 test.use({ serviceWorkers: "block" });
 
 test("change password and sign in with the new password", async ({ app: page }) => {
-  await page.goto("/settings");
+  await page.goto("/settings/account");
   await page.getByLabel("Current password", { exact: true }).fill("secret");
   await page.getByLabel("New password", { exact: true }).fill("replacement");
   await page.getByRole("button", { name: "Change password", exact: true }).click();
@@ -20,8 +20,8 @@ test("change password and sign in with the new password", async ({ app: page }) 
 for (const [name, path, route] of [
   ["Bin", "/api/bin", "/?view=bin"],
   ["Recurring", "/api/recurring", "/?view=recurring"],
-  ["Members", "/api/users", "/settings"],
-  ["API tokens", "/api/tokens", "/settings"],
+  ["Members", "/api/users", "/settings/members"],
+  ["API tokens", "/api/tokens", "/settings/tokens"],
 ]) {
   test(`${name} shows a failed load and retries`, async ({ app: page }) => {
     await page.route(`**${path}`, (r) => r.fulfill({ status: 400, json: { error: "Load failed" } }));
@@ -38,7 +38,7 @@ for (const [name, path, route] of [
 }
 
 test("currency save reports failure, rolls back and can be retried", async ({ app: page }) => {
-  await page.goto("/settings");
+  await page.goto("/settings/general");
   await page.route("**/api/settings", async (route) => {
     if (route.request().method() !== "PUT") return route.continue();
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -58,8 +58,8 @@ test("currency save reports failure, rolls back and can be retried", async ({ ap
 for (const [path, route, message] of [
   ["/api/bin", "/?view=bin", "Loading bin"],
   ["/api/recurring", "/?view=recurring", "Loading recurring"],
-  ["/api/users", "/settings", "Loading members"],
-  ["/api/tokens", "/settings", "Loading tokens"],
+  ["/api/users", "/settings/members", "Loading members"],
+  ["/api/tokens", "/settings/tokens", "Loading tokens"],
 ]) {
   test(`${message} appears before empty content`, async ({ app: page }) => {
     let release!: () => void;

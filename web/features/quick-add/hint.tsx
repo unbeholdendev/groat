@@ -61,7 +61,7 @@ export function Hint(props: {
           {admin && (
             <>
               {" "}
-              <Link to="/settings" className="font-medium text-accent">
+              <Link to="/settings/$section" params={{ section: "ai" }} className="font-medium text-accent">
                 Open Settings
               </Link>
             </>

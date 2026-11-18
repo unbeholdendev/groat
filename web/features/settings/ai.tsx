@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { paths } from "../../components/icon";
-import { divide, panel, sectionHead } from "../../components/styles";
+import { divide, panel } from "../../components/styles";
 import { useSettings } from "../../lib/api";
 import type { Settings } from "../../lib/schemas";
 import { AiModels } from "./ai-models";
@@ -49,7 +49,6 @@ export function Ai({ admin }: { admin: boolean }) {
   const settings = useSettings()!;
   return (
     <section>
-      <h2 className={sectionHead}>AI</h2>
       <div className={panel}>
         <Status icon={<path d={paths.chat} />} label="Asking and receipts" value={askingStatus(settings)} />
         <Status

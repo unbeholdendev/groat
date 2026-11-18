@@ -41,12 +41,14 @@ test("storage failure never promises that an offline expense is saved", async ({
 
 test("offline sign-out confirms unsent changes and clears cached data", async ({ app: page, context }) => {
   await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("link", { name: "Account" }).click();
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Expenses", exact: true }).click();
   await expect(bar(page)).toBeVisible();
   await context.setOffline(true);
   await add(page, "private 2");
   await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("link", { name: "Account" }).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page.getByText(/Unsent changes will be removed/)).toBeVisible();
   await page.getByRole("button", { name: "Remove changes and sign out" }).click();
@@ -128,7 +130,7 @@ test("reload during offline replay keeps the entry and retry never duplicates it
 });
 
 test("password changes are never persisted while offline", async ({ app: page, context }) => {
-  await page.goto("/settings");
+  await page.goto("/settings/account");
   await page.getByLabel("Current password", { exact: true }).fill("secret");
   await page.getByLabel("New password", { exact: true }).fill("never-store-me");
   await context.setOffline(true);

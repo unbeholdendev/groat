@@ -2,6 +2,7 @@ import { bar, expect, test, today } from "./fixtures";
 
 test("theme and base currency save as they change", async ({ app: page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Currencies and theme" }).click();
   await page.getByRole("radio", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.getByRole("radio", { name: "Light" }).click();
@@ -54,12 +55,14 @@ test("pending recurring expenses confirm from Home", async ({ app: page }) => {
 
 test("members and API tokens", async ({ app: page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Members" }).click();
   await page.getByRole("button", { name: "Add member" }).click();
   await page.getByPlaceholder("Username").fill("sam");
   await page.getByPlaceholder("Password").fill("pw");
   await page.getByRole("button", { name: "Add member" }).click();
   await expect(page.getByText("sam", { exact: true })).toBeVisible();
 
+  await page.goto("/settings/tokens");
   await page.getByLabel("Token name").fill("iPhone");
   await page.getByRole("button", { name: "Create" }).click();
   await expect(page.getByText("Copy it now.")).toBeVisible();
@@ -78,6 +81,10 @@ test("members export CSV but cannot back up or import", async ({ app: page }) =>
   await page.request.post("/api/users", { data: { username: "sam", password: "pw" } });
   await page.request.post("/api/login", { data: { username: "sam", password: "pw" } });
   await page.goto("/settings");
+  await expect(page.getByRole("link", { name: "Members" })).toBeHidden();
+  await page.goto("/settings/members");
+  await expect(page).toHaveURL(/\/settings$/);
+  await page.getByRole("link", { name: "Backup and export" }).click();
   await expect(page.getByRole("link", { name: "Export all as CSV" })).toHaveAttribute("href", "/api/export");
   await expect(page.getByRole("link", { name: "Download backup" })).toBeHidden();
   await expect(page.getByRole("button", { name: "Import from CSV" })).toBeHidden();
@@ -89,12 +96,14 @@ test("browser chrome colour follows the chosen theme", async ({ app: page }) => 
   await page.reload();
   await expect.poll(color).toBe("rgb(16, 28, 23)");
   await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Currencies and theme" }).click();
   await page.getByRole("radio", { name: "Light" }).click();
   await expect.poll(color).toBe("rgb(227, 232, 221)");
 });
 
 test("a CSV previews and imports into an empty instance", async ({ app: page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Backup and export" }).click();
   const csv = (rows: string[]) => ({
     name: "expenses.csv",
     mimeType: "text/csv",
@@ -122,6 +131,7 @@ test("a CSV previews and imports into an empty instance", async ({ app: page }) 
 test("an admin connects an AI provider in Settings and AI turns on without a restart", async ({ app: page }) => {
   await expect(bar(page)).toHaveAccessibleName("Add an expense");
   await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "AI" }).click();
   await expect(page.getByRole("heading", { name: "Models" })).toBeHidden();
   await page.getByLabel("Base URL").fill("https://ai.test/v1/");
   await page.getByLabel("API key", { exact: true }).fill("sk-wrong");
@@ -136,6 +146,7 @@ test("an admin connects an AI provider in Settings and AI turns on without a res
   await page.getByRole("link", { name: "Expenses" }).click();
   await expect(bar(page)).toHaveAccessibleName("Add an expense, or start with ? to ask");
   await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "AI" }).click();
   await expect(page.getByText("Asking and receipts", { exact: true }).locator("..")).toContainText("API key");
 });
 
@@ -145,6 +156,7 @@ test.describe("with several AI models", () => {
   test("an admin picks models in Settings and AI turns on without a restart", async ({ app: page }) => {
     await expect(bar(page)).toHaveAccessibleName("Add an expense");
     await page.getByRole("link", { name: "Settings" }).click();
+    await page.getByRole("link", { name: "AI" }).click();
     await expect(page.getByText("Choose a chat model to turn on asking")).toBeVisible();
     await page.getByLabel("Chat", { exact: true }).selectOption("gpt-4o-mini");
     await expect(page.getByLabel("Receipt photos")).toHaveValue("gpt-4o-mini");
@@ -158,8 +170,7 @@ test.describe("with several AI models", () => {
   test("members don't see the AI models", async ({ app: page }) => {
     await page.request.post("/api/users", { data: { username: "sam", password: "pw" } });
     await page.request.post("/api/login", { data: { username: "sam", password: "pw" } });
-    await page.goto("/settings");
-    await expect(page.getByRole("heading", { name: "Members" })).toBeHidden();
+    await page.goto("/settings/ai");
     await expect(page.getByRole("heading", { name: "Models" })).toBeHidden();
     await expect(page.getByRole("heading", { name: "API key" })).toBeHidden();
     await expect(page.getByText("AI isn’t finished setting up. Ask an admin to choose a chat model.")).toBeVisible();
@@ -167,6 +178,7 @@ test.describe("with several AI models", () => {
 
   test("clearing the base URL turns AI off", async ({ app: page }) => {
     await page.getByRole("link", { name: "Settings" }).click();
+    await page.getByRole("link", { name: "AI" }).click();
     await expect(page.getByText("Saved key ends in 0000.")).toBeVisible();
     await page.getByLabel("Base URL").fill("");
     await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -179,6 +191,7 @@ test("ChatGPT manual connection shows the sign-in link and recovers from a bad c
   app: page,
 }, testInfo) => {
   await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "AI" }).click();
   await page.getByRole("button", { name: "Connect ChatGPT", exact: true }).click();
   const link = page.getByRole("link", { name: "Sign in to ChatGPT" });
   await expect(link).toHaveAttribute("href", /^https:\/\/auth.openai.com\/api\/accounts\/authorize\?/);
@@ -200,4 +213,21 @@ test("ChatGPT manual connection shows the sign-in link and recovers from a bad c
     .screenshot({ path: testInfo.outputPath("chatgpt-settings.png") });
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("button", { name: "Connect ChatGPT", exact: true })).toBeVisible();
+});
+
+test("every Settings section is reachable from the first screen", async ({ app: page }, info) => {
+  const phone = info.project.name === "phone";
+  if (phone) await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/settings");
+  const sections = page.getByRole("navigation", { name: "Settings" });
+  for (const name of ["Currencies and theme", "AI", "Members", "Backup and export", "API tokens", "Account"])
+    await expect(sections.getByRole("link", { name, exact: true })).toBeInViewport({ ratio: 1 });
+  await sections.getByRole("link", { name: "API tokens" }).click();
+  await expect(page).toHaveURL(/\/settings\/tokens$/);
+  await expect(page.getByRole("heading", { name: "API tokens", level: 1 })).toBeVisible();
+  const tabs = page.getByRole("navigation", { name: "Main" });
+  await expect(tabs.getByRole("link", { name: "Settings", exact: true })).toHaveAttribute("aria-current", "page");
+  if (phone) await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
+  else await tabs.getByRole("link", { name: "Settings", exact: true }).click();
+  await expect(page).toHaveURL(/\/settings$/);
 });

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { FormError } from "../../components/form";
-import { panel, sectionHead } from "../../components/styles";
+import { panel } from "../../components/styles";
 import { useApi, useSend } from "../../lib/api";
 import { apiToken } from "../../lib/schemas";
 import { TokenForm } from "./token-form";
@@ -18,8 +18,7 @@ export function Tokens() {
 
   return (
     <section>
-      <h2 className={sectionHead}>API tokens</h2>
-      <p className="-mt-1 mb-3 px-1 text-[13px] text-ink2">
+      <p className="mb-3 px-1 text-[13px] text-ink2">
         A token lets a phone shortcut or script add expenses without signing in. It can only add expenses: post JSON
         like {'{"text": "coffee 4.50"}'} to /api/capture with the header{" "}
         <span className="num">Authorization: Bearer &lt;token&gt;</span>.

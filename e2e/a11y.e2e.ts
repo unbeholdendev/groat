@@ -21,7 +21,17 @@ for (const theme of ["light", "dark"])
       },
     });
     const found: string[] = [];
-    for (const path of ["/", "/stats", "/categories", "/settings", "/?new=1", "/?view=recurring", "/?view=bin"]) {
+    for (const path of [
+      "/",
+      "/stats",
+      "/categories",
+      "/settings",
+      "/settings/ai",
+      "/settings/backup",
+      "/?new=1",
+      "/?view=recurring",
+      "/?view=bin",
+    ]) {
       await page.goto(path);
       await page.waitForTimeout(1200);
       const { violations } = await new AxeBuilder({ page }).analyze();

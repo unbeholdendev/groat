@@ -12,8 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as ChatRouteImport } from './routes/chat'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsSectionRouteImport } from './routes/settings.$section'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -30,14 +31,19 @@ const ChatRoute = ChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
   path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsSectionRoute = SettingsSectionRouteImport.update({
+  id: '/settings/$section',
+  path: '/settings/$section',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -45,38 +51,61 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
   '/chat': typeof ChatRoute
-  '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
+  '/settings/$section': typeof SettingsSectionRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
   '/chat': typeof ChatRoute
-  '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
+  '/settings/$section': typeof SettingsSectionRoute
+  '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
   '/chat': typeof ChatRoute
-  '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
+  '/settings/$section': typeof SettingsSectionRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/categories' | '/chat' | '/settings' | '/stats'
+  fullPaths:
+    | '/'
+    | '/categories'
+    | '/chat'
+    | '/stats'
+    | '/settings/$section'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/categories' | '/chat' | '/settings' | '/stats'
-  id: '__root__' | '/' | '/categories' | '/chat' | '/settings' | '/stats'
+  to:
+    | '/'
+    | '/categories'
+    | '/chat'
+    | '/stats'
+    | '/settings/$section'
+    | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/categories'
+    | '/chat'
+    | '/stats'
+    | '/settings/$section'
+    | '/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CategoriesRoute: typeof CategoriesRoute
   ChatRoute: typeof ChatRoute
-  SettingsRoute: typeof SettingsRoute
   StatsRoute: typeof StatsRoute
+  SettingsSectionRoute: typeof SettingsSectionRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -102,18 +131,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/stats': {
       id: '/stats'
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/$section': {
+      id: '/settings/$section'
+      path: '/settings/$section'
+      fullPath: '/settings/$section'
+      preLoaderRoute: typeof SettingsSectionRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -123,8 +159,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CategoriesRoute: CategoriesRoute,
   ChatRoute: ChatRoute,
-  SettingsRoute: SettingsRoute,
   StatsRoute: StatsRoute,
+  SettingsSectionRoute: SettingsSectionRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
