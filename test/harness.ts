@@ -79,6 +79,8 @@ export function models(ids: (string | object)[], base = "https://ai.test/v1"): H
       : undefined;
 }
 
+export const titling = (init?: RequestInit) => !JSON.parse(String(init?.body)).tools;
+
 type Called = { status: number; body: any };
 
 export function settling<A extends unknown[]>(

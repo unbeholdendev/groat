@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { models as modelChoice } from "../web/lib/schemas";
-import { completion, models, setup, type Ai } from "./harness";
+import { completion, models, setup, titling, type Ai } from "./harness";
 
 const config: Ai = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 
@@ -16,6 +16,7 @@ function provider(ids: (string | object)[], stt?: { ids: string[]; base: string 
       return Response.json({ text: "taxi" });
     }
     if (url.href !== "https://ai.test/v1/chat/completions") return;
+    if (titling(init)) return completion({ role: "assistant", content: "" });
     const body = JSON.parse(String(init?.body));
     used.chat.push(body.model);
     const args = JSON.stringify({ note: "Taxi", amount: "14" });

@@ -21,6 +21,9 @@ export const listChats = (db: Db) => db.select().from(chats).orderBy(desc(chats.
 
 export const createChat = (db: Db, title: string) => db.insert(chats).values({ title }).returning().get().id;
 
+export const retitleChat = (db: Db, id: number, title: string) =>
+  db.update(chats).set({ title }).where(eq(chats.id, id)).returning().get();
+
 export const deleteChat = (db: Db, id: number) => db.delete(chats).where(eq(chats.id, id)).returning().get();
 
 export function closeInterrupted(db: Db) {

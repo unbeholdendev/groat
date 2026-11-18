@@ -3,12 +3,13 @@ import type { Ctx } from "../../context";
 import { errorKind, log } from "../../logging";
 import { chatActions } from "./actions";
 import type { Message } from "./message";
-import { createChat, findChat, saveMessage } from "./store";
+import { createChat, findChat, retitleChat, saveMessage } from "./store";
 import { readTools, systemPrompt, type Tool } from "./tools";
 
 export function chatAgent(ctx: Ctx) {
   const { db, ai } = ctx;
   const runs = new Map<number, AbortController>();
+  const titles = new Map<number, AbortController>();
   const save = (chatId: number, message: object) => saveMessage(db, chatId, message);
   const tools = readTools(ctx);
 
@@ -85,6 +86,33 @@ export function chatAgent(ctx: Ctx) {
     }
   };
 
+  const retitle = async (id: number, question: string) => {
+    const request = new AbortController();
+    titles.set(id, request);
+    try {
+      const { content } = await ai.complete(
+        {
+          messages: [
+            { role: "system", content: "Title this chat in at most six words. Reply with the title only." },
+            { role: "user", content: question },
+          ],
+        },
+        "chat",
+        { signal: request.signal },
+      );
+      const title = content
+        .trim()
+        .replace(/^["'“]|["'”.]$/g, "")
+        .slice(0, 60);
+      if (title && titles.get(id) === request && retitleChat(db, id, title))
+        ctx.broadcast({ type: "changed", resources: ["chats"] });
+    } catch (error) {
+      if (!request.signal.aborted) log("warn", "ai.title.failed", { error: errorKind(error) });
+    } finally {
+      if (titles.get(id) === request) titles.delete(id);
+    }
+  };
+
   const ask = (chatId: number | null, message: string, cookie: string) => {
     const history = (chatId && chat(chatId)?.messages) || [];
     const question = { role: "user", content: message };
@@ -93,6 +121,7 @@ export function chatAgent(ctx: Ctx) {
       save(id, question);
       return id;
     });
+    if (!chatId) void retitle(id, message);
     const run = new AbortController();
     runs.set(id, run);
     answer(id, [...history, question], cookie, run)
@@ -113,6 +142,8 @@ export function chatAgent(ctx: Ctx) {
     forget: (id: number) => {
       runs.get(id)?.abort();
       runs.delete(id);
+      titles.get(id)?.abort();
+      titles.delete(id);
     },
   };
 }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
-import { completion, setup } from "./harness";
+import { completion, setup, titling } from "./harness";
 import { request } from "node:http";
 import { websocket } from "hono/bun";
 
@@ -147,12 +147,8 @@ test("concurrent requests keep their correlation IDs separate", async () => {
   expect(new Set(ids).size).toBe(2);
   const calls = () =>
     entries().filter((e) => e.event === "http.outbound.response" && e.operation === "chat_completions");
-  while (calls().length < 2) await Bun.sleep(1);
-  expect(
-    calls()
-      .map((e) => e.requestId)
-      .sort(),
-  ).toEqual(ids.sort());
+  while (calls().length < 4) await Bun.sleep(1);
+  expect([...new Set(calls().map((e) => e.requestId))].sort()).toEqual(ids.sort());
 });
 
 test("LOG_LEVEL filters routine logs and silent disables output", async () => {
@@ -234,8 +230,9 @@ test("internal AI action failures cannot write raw database exceptions to stderr
   let turn = 0;
   const s = setup(
     undefined,
-    (url) => {
+    (url, init) => {
       if (url.pathname.endsWith("/models")) return Response.json({ data: [{ id: "test" }] });
+      if (titling(init)) return completion({ role: "assistant", content: "" });
       const message = turn++
         ? { role: "assistant", content: "Failed" }
         : {

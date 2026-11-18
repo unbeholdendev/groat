@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { websocket } from "hono/bun";
 import { changed } from "../server/live";
-import { completion, models, setup } from "./harness";
+import { completion, models, setup, titling } from "./harness";
 
 const cleanups: (() => void)[] = [];
 afterEach(() => {
@@ -142,9 +142,9 @@ test("chat runs stream their reply and announce each saved step, separately from
     { content: "Added." },
   ];
   const listed = models(["test-model"]);
-  const ai = (url: URL) =>
+  const ai = (url: URL, init?: RequestInit) =>
     url.href === "https://ai.test/v1/chat/completions"
-      ? completion({ role: "assistant", content: null, ...replies.shift() })
+      ? completion({ role: "assistant", content: null, ...(titling(init) ? { content: "" } : replies.shift()) })
       : listed(url);
   const h = server(undefined, ai, { baseUrl: "https://ai.test/v1", key: "sk-test" });
   const client = h.connect(undefined, "a");

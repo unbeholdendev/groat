@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { completion, frankfurter, models, setup } from "./harness";
+import { completion, frankfurter, models, setup, titling } from "./harness";
 
 const config = { baseUrl: "https://ai.test/v1", key: "sk-test" };
 const listed = models(["test-model"]);
@@ -8,6 +8,7 @@ function provider(script: Record<string, unknown>[] = []) {
   const requests: { auth: string | null; body: any }[] = [];
   const handler = (url: URL, init?: RequestInit) => {
     if (url.href !== "https://ai.test/v1/chat/completions") return listed(url);
+    if (titling(init)) return completion({ role: "assistant", content: '"Food spending"' });
     requests.push({ auth: new Headers(init?.headers).get("authorization"), body: JSON.parse(String(init?.body)) });
     return completion({ role: "assistant", content: null, ...script.shift() });
   };
@@ -26,13 +27,12 @@ test("without a key inference refuses but shared history remains available", asy
   expect((await s.call("POST", "/api/chats", { message: "hi" })).status).toBe(403);
 });
 
-test("a chat is answered, saved with a title from the first question, listed and deleted", async () => {
+test("a chat is answered, titled by the AI from the first question, listed and deleted", async () => {
   const ai = provider([{ content: "About £40." }, { content: "Cook more." }]);
   const { call } = setup(undefined, ai.handler, config);
   expect((await call("GET", "/api/ai/status")).body.ai).toBe(true);
   const chat = await call("POST", "/api/chats", { message: "How much did I spend on food this month?" });
   expect(chat.status).toBe(202);
-  expect(chat.body.title).toBe("How much did I spend on food this month?");
   expect(chat.body.messages.at(-1)).toMatchObject({ role: "assistant", content: "About £40." });
   expect(ai.requests[0].auth).toBe("Bearer sk-test");
   expect(ai.requests[0].body.model).toBe("test-model");
@@ -46,7 +46,7 @@ test("a chat is answered, saved with a title from the first question, listed and
   ]);
   expect(ai.requests[1].body.messages.filter((m: { role: string }) => m.role !== "system")).toHaveLength(3);
   expect((await call("GET", `/api/chats/${chat.body.id}`)).body).toEqual(next.body);
-  expect((await call("GET", "/api/chats")).body).toEqual([{ id: chat.body.id, title: chat.body.title }]);
+  expect((await call("GET", "/api/chats")).body).toEqual([{ id: chat.body.id, title: "Food spending" }]);
 
   expect((await call("DELETE", `/api/chats/${chat.body.id}`)).status).toBe(200);
   expect((await call("GET", "/api/chats")).body).toEqual([]);
@@ -313,7 +313,8 @@ test("a provider failure after an action preserves its outcome for continuation"
   const s = setup(
     undefined,
     (url, init) => {
-      if (url.href.endsWith("/chat/completions") && ++requests === 2) return new Response("down", { status: 500 });
+      if (url.href.endsWith("/chat/completions") && !titling(init) && ++requests === 2)
+        return new Response("down", { status: 500 });
       return ai.handler(url, init);
     },
     config,
@@ -453,7 +454,7 @@ function held(script: Record<string, unknown>[], round: number) {
   });
   let rounds = 0;
   const handler = async (url: URL, init?: RequestInit) => {
-    if (url.pathname.endsWith("/chat/completions") && ++rounds === round) {
+    if (url.pathname.endsWith("/chat/completions") && !titling(init) && ++rounds === round) {
       reached();
       await new Promise<void>((resolve, reject) => {
         void gate.then(resolve);
@@ -497,6 +498,33 @@ test("stopping a run aborts the provider call, keeps the steps so far and runs n
   expect(await finished(s)).toEqual({ role: "assistant", content: "Stopped." });
   expect(roles((await s.call("GET", `/api/chats/${id}`)).body)).toEqual(["user", "assistant", "tool", "assistant"]);
   expect(s.db.query("SELECT note FROM transactions").all()).toEqual([{ note: "First" }]);
+});
+
+test("a deleted chat's late title cannot rename a new chat that reuses its ID", async () => {
+  const prefix = "x".repeat(60);
+  const gates = new Map<string, () => void>();
+  const ai = provider(Array(2).fill({ content: "Hi" }));
+  const s = setup(
+    undefined,
+    async (url, init) => {
+      if (!url.pathname.endsWith("/chat/completions") || !titling(init))
+        return ai.handler(url, init) ?? new Response("not found", { status: 404 });
+      const asked = JSON.parse(String(init?.body)).messages.at(-1).content;
+      await new Promise<void>((resolve) => gates.set(asked.slice(-3), resolve));
+      return completion({ role: "assistant", content: `Title ${asked.slice(-3)}` });
+    },
+    config,
+  );
+  const { id } = (await s.call("POST", "/api/chats", { message: `${prefix}old` })).body;
+  await s.call("DELETE", `/api/chats/${id}`);
+  const next = (await s.call("POST", "/api/chats", { message: `${prefix}new` })).body;
+  expect(next.id).toBe(id);
+  while (gates.size < 2) await Bun.sleep(1);
+  gates.get("old")?.();
+  await Bun.sleep(20);
+  gates.get("new")?.();
+  await Bun.sleep(20);
+  expect((await s.call("GET", "/api/chats")).body).toEqual([{ id, title: "Title new" }]);
 });
 
 test("a deleted chat's unfinished run cannot write into a new chat that reuses its ID", async () => {
@@ -614,7 +642,7 @@ test("revoking a session between tool rounds stops every later action", async ()
   const s = setup(
     undefined,
     async (url, init) => {
-      if (url.pathname.endsWith("/chat/completions") && ++rounds === 2) {
+      if (url.pathname.endsWith("/chat/completions") && !titling(init) && ++rounds === 2) {
         started();
         await pending;
       }

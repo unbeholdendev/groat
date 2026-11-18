@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { expect, spyOn, test } from "bun:test";
 import { createApp } from "../server/app";
 import { complete } from "../server/ai/completion";
-import { settling } from "./harness";
+import { settling, titling } from "./harness";
 
 const responses = (fetch: Parameters<typeof complete>[0], provider: { key: string; model: string }, request: object) =>
   complete(fetch, { ...provider, api: "openai-responses", base: "https://api.openai.com/v1" }, request);
@@ -75,6 +75,7 @@ async function fixture() {
       if (url.endsWith("/models"))
         return Response.json({ models: [{ slug: "chat-test", display_name: "Test model", visibility: "list" }] });
       if (url.endsWith("/responses")) {
+        if (titling(init)) return sse("response.completed", { output: [] });
         auths.push(new Headers(init?.headers).get("authorization")!);
         requests.push(JSON.parse(String(init?.body)));
         if (requests.at(-1).tool_choice?.namespace)
