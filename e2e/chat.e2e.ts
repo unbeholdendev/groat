@@ -182,3 +182,16 @@ for (const available of [true, false]) {
     }
   });
 }
+
+test("the chat header stays in view when a long chat scrolls", async ({ app: page }) => {
+  const chat = await (await page.request.post("/api/chats", { data: { message: "First question" } })).json();
+  for (let i = 0; i < 8; i++)
+    await page.request.post(`/api/chats/${chat.id}/messages`, { data: { message: `Question ${i}` } });
+  await page.goto(`/chat?id=${chat.id}`);
+  await expect(page.getByText("Question 7", { exact: true })).toBeVisible();
+  const main = page.locator("main");
+  await main.evaluate((m) => m.scrollTo(0, m.scrollHeight));
+  expect(await main.evaluate((m) => m.scrollTop)).toBeGreaterThan(0);
+  await expect(page.getByRole("button", { name: "Chats" })).toBeInViewport();
+  await expect(page.getByRole("button", { name: "Delete" })).toBeInViewport();
+});

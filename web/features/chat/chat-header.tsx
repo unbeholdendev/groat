@@ -6,7 +6,7 @@ import { Chevron } from "../../components/icon";
 export function ChatHeader({ back, onBack, onDelete }: { back: string; onBack: () => void; onDelete?: () => void }) {
   const [confirming, setConfirming] = useState(false);
   return (
-    <div className="flex items-center justify-between">
+    <div className="sticky top-0 z-10 -mx-5 -my-3 flex items-center justify-between bg-bg px-5 py-3 before:absolute before:inset-x-0 before:bottom-full before:h-[max(env(safe-area-inset-top),20px)] before:bg-bg">
       <button type="button" className="hit inline-flex items-center gap-1 text-ink2" onClick={onBack}>
         <Chevron className="size-4 rotate-90 text-ink2" />
         {back}
