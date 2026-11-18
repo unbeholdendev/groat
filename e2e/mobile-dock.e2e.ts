@@ -68,3 +68,37 @@ test("desktop quick add is in the page without an empty footer", async ({ app: p
   await bar(page).press("Enter");
   await expect(bar(page)).toHaveValue("");
 });
+
+test("the keyboard keeps the expense input in view and hides the tab bar", async ({ app: page }, testInfo) => {
+  test.skip(testInfo.project.name !== "phone");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await seed(
+    page,
+    Array.from({ length: 18 }, (_, i) => ({ note: `Expense ${i}`, amount: "1" })),
+  );
+  await page.reload();
+  const keyboard = (open: boolean) =>
+    page.evaluate((open) => {
+      const height = open ? innerHeight - 380 : innerHeight;
+      Object.defineProperty(visualViewport, "height", { configurable: true, get: () => height });
+      visualViewport!.dispatchEvent(new Event("resize"));
+    }, open);
+  const tabs = page.getByRole("navigation", { name: "Main" });
+  await bar(page).focus();
+  await keyboard(true);
+  await expect(tabs).toBeHidden();
+  await expect(bar(page)).toBeInViewport({ ratio: 1 });
+  await expect.poll(async () => (await bar(page).boundingBox())!.y).toBeLessThan(200);
+  await keyboard(false);
+  await expect(tabs).toBeVisible();
+});
+
+test("only the expenses page and chat show the input", async ({ app: page }) => {
+  for (const path of ["/stats", "/categories", "/settings", "/?view=recurring", "/?view=bin"]) {
+    await page.goto(path);
+    await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
+    await expect(page.getByRole("form", { name: "Quick add" })).toHaveCount(0);
+  }
+  await page.goto("/chat");
+  await expect(page.getByRole("form", { name: "Quick add" })).toHaveCount(1);
+});

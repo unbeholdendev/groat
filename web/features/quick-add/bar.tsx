@@ -28,6 +28,7 @@ import { useSubmit } from "./use-submit";
 
 export function Bar(props: {
   inline?: boolean;
+  hidden?: boolean;
   target?: HTMLElement | null;
   settings: Settings;
   unit: Unit;
@@ -86,6 +87,13 @@ export function Bar(props: {
     if (props.guide) input.current?.focus();
   }, [props.guide, target]);
   useSlash(input);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!inline || !focused || !viewport) return;
+    const reveal = () => input.current?.form?.scrollIntoView({ block: "start", behavior: "smooth" });
+    viewport.addEventListener("resize", reveal);
+    return () => viewport.removeEventListener("resize", reveal);
+  }, [inline, focused]);
 
   function fill(s: Suggestion) {
     entry.setText(entry.line(s));
@@ -99,11 +107,11 @@ export function Bar(props: {
   const blank = !text.trim() && (mode === "idle" || mode === "typing");
 
   const content = (
-    <div className={inline ? "relative z-10 isolate" : undefined}>
-      <Incoming enabled={settings.vision && online && !inChat} onImage={photo} />
+    <div hidden={props.hidden} className={inline ? "relative z-10 isolate" : undefined}>
+      <Incoming enabled={!props.hidden && settings.vision && online && !inChat} onImage={photo} />
       {answering && <div className="fixed inset-0 -z-20 bg-bg/70" onClick={close} />}
       <form
-        className={inline ? "flex flex-col" : undefined}
+        className={inline ? "flex scroll-mt-3 flex-col" : undefined}
         aria-label="Quick add"
         onSubmit={(e) => {
           if (transcribing.isPending) e.preventDefault();

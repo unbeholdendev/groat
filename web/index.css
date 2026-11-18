@@ -8,6 +8,7 @@
 @import "@fontsource/source-sans-3/700.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant keyboard (&:where([data-keyboard] *));
 
 :root {
   --bg: #e3e8dd;

@@ -23,6 +23,7 @@ export function QuickAdd() {
   return (
     <Bar
       inline={inline}
+      hidden={path !== "/chat" && (path !== "/" || !!search.view)}
       target={inline ? host : undefined}
       settings={settings}
       unit={unit}

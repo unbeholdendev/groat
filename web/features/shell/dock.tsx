@@ -7,8 +7,7 @@ export function Dock() {
   const { host } = use(QuickAddContext);
   const search = useSearch({ strict: false });
   const path = useLocation().pathname;
-  const inline = path === "/" && !search.new && !search.edit && !search.view;
-  const bar = !search.new && !search.edit && !inline;
+  const bar = path === "/chat";
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     const dock = ref.current!;

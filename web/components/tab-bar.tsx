@@ -55,7 +55,7 @@ export function TabBar() {
   return (
     <nav
       aria-label="Main"
-      className="grid grid-cols-4 gap-1 max-lg:rounded-panel max-lg:bg-ink max-lg:dark:bg-surface2 max-lg:p-1 lg:[view-transition-name:tabs] lg:fixed lg:top-6 lg:left-[calc(50%-432px)] lg:flex lg:w-44 lg:flex-col lg:gap-1"
+      className="grid grid-cols-4 gap-1 max-lg:keyboard:hidden max-lg:rounded-panel max-lg:bg-ink max-lg:dark:bg-surface2 max-lg:p-1 lg:[view-transition-name:tabs] lg:fixed lg:top-6 lg:left-[calc(50%-432px)] lg:flex lg:w-44 lg:flex-col lg:gap-1"
     >
       {tabs.map(({ to, label, icon }) => (
         <Link

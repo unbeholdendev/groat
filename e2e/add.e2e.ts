@@ -80,10 +80,10 @@ test("Enter on an empty bar does nothing; the expand button opens the full form"
 });
 
 test("Cancel returns to the page the form was opened from", async ({ app: page }) => {
-  await page.getByRole("link", { name: "Settings" }).click();
+  await page.goto("/?month=2026-01");
   await page.getByRole("button", { name: "Full form" }).click();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page).toHaveURL(/\/settings$/);
+  await expect(page).toHaveURL(/\/\?month=2026-01$/);
 });
 
 test("Cancel on a directly opened form goes to the list", async ({ app: page }) => {
@@ -158,7 +158,7 @@ test("quick entry survives navigation between Home and Settings", async ({ app: 
   await bar(page).fill("Coffee 3.20 #work");
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
-  await expect(bar(page)).toHaveValue("Coffee 3.20 #work");
+  await expect(bar(page)).toBeHidden();
   await page.getByRole("link", { name: "Expenses", exact: true }).click();
   await expect(bar(page)).toHaveValue("Coffee 3.20 #work");
 });

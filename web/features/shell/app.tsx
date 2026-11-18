@@ -20,9 +20,11 @@ export function App() {
   useEffect(() => {
     const viewport = window.visualViewport;
     if (!viewport) return;
+    const root = document.documentElement;
     const fit = () => {
-      document.documentElement.style.setProperty("--app-height", `${viewport.height}px`);
-      document.documentElement.style.setProperty("--app-top", `${viewport.offsetTop}px`);
+      root.style.setProperty("--app-height", `${viewport.height}px`);
+      root.style.setProperty("--app-top", `${viewport.offsetTop}px`);
+      root.toggleAttribute("data-keyboard", root.clientHeight - viewport.height * viewport.scale > 150);
     };
     fit();
     viewport.addEventListener("resize", fit);
@@ -30,8 +32,9 @@ export function App() {
     return () => {
       viewport.removeEventListener("resize", fit);
       viewport.removeEventListener("scroll", fit);
-      document.documentElement.style.removeProperty("--app-height");
-      document.documentElement.style.removeProperty("--app-top");
+      root.style.removeProperty("--app-height");
+      root.style.removeProperty("--app-top");
+      root.removeAttribute("data-keyboard");
     };
   }, []);
   useEffect(
