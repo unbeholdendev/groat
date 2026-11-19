@@ -68,7 +68,8 @@ export function Hint(props: {
           )}
         </span>
       );
-    if (text && settings.ai && !p.amount) return <span>Press Enter to create an expense draft for review.</span>;
+    if (text && settings.ai && !p.amount)
+      return <span>Press Enter for an expense draft, or an answer if it’s a question.</span>;
     if (text && !p.amount) return <span>Add an amount, like 24.50, or press Enter for the full form.</span>;
     if (text) return <span />;
     if (shown)

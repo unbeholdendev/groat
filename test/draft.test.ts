@@ -121,3 +121,22 @@ test("a provider failure is a 502 that says what went wrong", async () => {
     body: { error: "The AI provider returned an error (500)" },
   });
 });
+
+test("a question is flagged instead of drafted", async () => {
+  const ai = provider(() => ({ note: "", question: true }));
+  const { call } = setup(undefined, ai.handler, config);
+  const res = await call("POST", "/api/drafts", { text: "how much on food this month" });
+  expect(res).toEqual({ status: 200, body: { question: true } });
+});
+
+test("capture keeps the AI's read even when it flags a question", async () => {
+  const ai = provider(() => ({ note: "Parking", amount: "6", question: true }));
+  const h = setup(undefined, ai.handler, config);
+  const { token } = (await h.call("POST", "/api/tokens", { name: "Phone" })).body;
+  const res = await h.app.request("/api/capture", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify({ text: "parked the car six quid?" }),
+  });
+  expect(await res.json()).toMatchObject({ note: "Parking", amount: 600, status: "pending" });
+});

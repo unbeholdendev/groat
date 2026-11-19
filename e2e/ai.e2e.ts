@@ -21,7 +21,7 @@ test("a note and amount save without a category or AI review", async ({ app: pag
 
 test("a new line goes to AI and saves from the review card", async ({ app: page }) => {
   await bar(page).fill("corner shop");
-  await expect(page.getByText("Press Enter to create an expense draft for review.")).toBeVisible();
+  await expect(page.getByText("Press Enter for an expense draft, or an answer if it’s a question.")).toBeVisible();
   await bar(page).press("Enter");
   const card = page.getByRole("region", { name: "Review expense" });
   await expect(card.getByLabel("Amount")).toHaveValue("9.99");
@@ -30,6 +30,23 @@ test("a new line goes to AI and saves from the review card", async ({ app: page 
   await card.getByRole("button", { name: "Save" }).click();
   await expect(card).toBeHidden();
   await expect(page.getByRole("listitem").filter({ hasText: "Corner shop" })).toContainText("£9.99");
+});
+
+test("a question without ? gets an answer, and can still become an expense", async ({ app: page }) => {
+  await bar(page).fill("how much on food");
+  await bar(page).press("Enter");
+  await expect(page.getByText("Mostly on food.")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Review expense" })).toBeHidden();
+  await expect(bar(page)).toHaveValue("");
+  await page.getByRole("button", { name: "Add as expense" }).click();
+  await expect(page.getByLabel("Note")).toHaveValue("how much on food");
+});
+
+test("a ? answer offers no expense", async ({ app: page }) => {
+  await bar(page).fill("?how much on food");
+  await bar(page).press("Enter");
+  await expect(page.getByText("Mostly on food.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add as expense" })).toBeHidden();
 });
 
 test("a question leaves the input as soon as it is sent", async ({ app: page }) => {

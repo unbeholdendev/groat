@@ -42,7 +42,7 @@ In Kubernetes, use `kubectl -n groat logs deployment/groat -c groat --since=30m 
 
 All AI features are optional, and an admin sets them up once for everyone in Settings → AI. The status rows there show what powers asking, receipts and dictation. Earlier versions read `AI_*` environment variables; Groat now ignores them and logs a warning if they are set.
 
-To use an API key, an admin enters the base URL and API key of any OpenAI-compatible API under API key, plus a speech-to-text URL and key if dictation uses another service. That turns on asking (start the add bar with `?`), AI reading of unclear lines, receipt photos and dictation, with no restart. Saving checks the URL and key by listing the provider's models. Groat stores keys as plain text in the database and shows only their last 4 characters.
+To use an API key, an admin enters the base URL and API key of any OpenAI-compatible API under API key, plus a speech-to-text URL and key if dictation uses another service. That turns on asking (start the add bar with `?`, or type a question with no amount), AI reading of unclear lines, receipt photos and dictation, with no restart. Saving checks the URL and key by listing the provider's models. Groat stores keys as plain text in the database and shows only their last 4 characters.
 
 An admin then picks the chat, receipt photo and dictation models under Models, from the list the provider returns. If the provider offers only one chat model, or one speech-to-text model, Groat uses it until an admin picks another.
 

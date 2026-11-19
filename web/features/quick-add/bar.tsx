@@ -69,7 +69,7 @@ export function Bar(props: {
     unreview();
     props.onGuided();
   }
-  const { adding, save, submit } = useSubmit({
+  const { adding, save, submit, misread } = useSubmit({
     entry,
     mode,
     unit,
@@ -139,6 +139,7 @@ export function Bar(props: {
               unit={unit}
               onClose={close}
               onForm={props.onForm}
+              misread={misread}
               onOpen={props.onOpen}
               onChat={(id) => {
                 clear();

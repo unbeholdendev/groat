@@ -13,6 +13,7 @@ export function AnswerCard({
   unit,
   onClose,
   onForm,
+  misread,
   onOpen,
   onChat,
 }: {
@@ -20,6 +21,7 @@ export function AnswerCard({
   unit: Unit;
   onClose: () => void;
   onForm: (d: Draft) => void;
+  misread?: Draft;
   onOpen: (t: Transaction) => void;
   onChat: (id: number) => void;
 }) {
@@ -77,6 +79,16 @@ export function AnswerCard({
       ))}
       <div className="mt-3 flex justify-end gap-1 border-t border-line pt-1.5">
         <Button onClick={onClose}>Close</Button>
+        {misread && (
+          <Button
+            onClick={() => {
+              onForm(misread);
+              asking.reset();
+            }}
+          >
+            Add as expense
+          </Button>
+        )}
         {asking.error && (
           <Button tone="accent" onClick={() => asking.variables && asking.mutate(asking.variables)}>
             Try again

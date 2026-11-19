@@ -1,6 +1,7 @@
-import { type FormEvent, useEffect } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import type { Unit } from "../../../shared/amount";
 import { useSend } from "../../lib/api";
+import type { Draft } from "../../lib/schemas";
 import type { Asking } from "./use-ask";
 import type { Drafting } from "./use-drafting";
 import type { Entry, Mode } from "./use-entry";
@@ -27,8 +28,13 @@ export function useSubmit({
   onChat: (id: number) => void;
 }) {
   const adding = useSend("transaction", clear);
+  const [misread, setMisread] = useState<Draft>();
   const save = form.handleSubmit((v) =>
-    adding.mutate(["POST", "/api/transactions", { ...v, attachmentId: drafting.data?.attachmentId }]),
+    adding.mutate([
+      "POST",
+      "/api/transactions",
+      { ...v, attachmentId: drafting.data && "attachmentId" in drafting.data ? drafting.data.attachmentId : undefined },
+    ]),
   );
   useEffect(() => {
     if (!adding.isPaused) return;
@@ -36,11 +42,12 @@ export function useSubmit({
     adding.reset();
   }, [adding.isPaused]);
 
-  function ask() {
-    if (!entry.question) return;
+  function ask(question = entry.question, expense?: Draft) {
+    if (!question) return;
     const sent = entry.text;
     clear();
-    asking.mutate(entry.question, {
+    setMisread(expense);
+    asking.mutate(question, {
       onSuccess: (c) => mode === "chat" && onChat(c.id),
       onError: () => entry.setText((t) => t || sent),
     });
@@ -50,7 +57,10 @@ export function useSubmit({
     const text = entry.text.trim();
     if (!text) return;
     const { p, currency, date, category } = entry;
-    if (ai && !p.amount) return drafting.mutate(text);
+    if (ai && !p.amount) {
+      const expense = entry.seed();
+      return drafting.mutate(text, { onSuccess: (d) => "question" in d && ask(text, expense) });
+    }
     if (!p.amount) return onForm();
     adding.mutate([
       "POST",
@@ -66,5 +76,5 @@ export function useSubmit({
     add();
   }
 
-  return { adding, save, submit };
+  return { adding, save, submit, misread };
 }

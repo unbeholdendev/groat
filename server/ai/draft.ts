@@ -16,6 +16,7 @@ const fields = z.object({
   date: z.string().optional().describe("YYYY-MM-DD, only if the text gives a day"),
   categoryId: z.number().optional().describe("id from the category list; omit if none fits"),
   tags: z.array(z.string()).optional(),
+  question: z.boolean().optional().describe("true if the text asks about spending instead of recording an expense"),
 });
 
 const reply = z.string().transform((s, ctx) => {
@@ -31,7 +32,7 @@ export const textInput = z.object({ text: z.string("Enter some text").trim().min
 
 type Photo = { image: string };
 
-export async function extract(ctx: Pick<Ctx, "db" | "clock" | "ai">, input: string | Photo) {
+export async function extract(ctx: Pick<Ctx, "db" | "clock" | "ai">, input: string | Photo, asks = false) {
   const { db, clock } = ctx;
   const text = typeof input === "string" ? input : "";
   const { recentCurrencies } = settings(db);
@@ -69,7 +70,8 @@ export async function extract(ctx: Pick<Ctx, "db" | "clock" | "ai">, input: stri
   );
   const read = reply.safeParse(message.tool_calls?.[0]?.function.arguments);
   if (!read.success) fail(502, "The AI provider sent an unexpected reply");
-  const { note, amount, currency, date, categoryId, tags = [] } = read.data;
+  const { note, amount, currency, date, categoryId, tags = [], question } = read.data;
+  if (asks && question) return null;
   const code = currency?.toUpperCase();
   const draft = readTransaction(
     ctx,

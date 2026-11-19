@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { Unit } from "../../../shared/amount";
 import { send } from "../../lib/api";
 import { shrink } from "../../lib/photo";
-import { draft } from "../../lib/schemas";
+import { draft, lineRead } from "../../lib/schemas";
 import { useZodForm } from "../../lib/use-zod-form";
 import { fields, review } from "./schema";
 
@@ -13,13 +13,13 @@ export function useDrafting(unit: Unit, onFail: () => void) {
   const [image, setImage] = useState<string>();
   const drafting = useMutation({
     mutationFn: async (input: string | { photo: Blob }) => {
-      if (typeof input === "string") return draft.parse(await send("POST", "/api/drafts", { text: input }));
+      if (typeof input === "string") return lineRead.parse(await send("POST", "/api/drafts", { text: input }));
       const body = new FormData();
       body.set("image", await shrink(input.photo), "receipt.jpg");
       return draft.parse(await send("POST", "/api/drafts/photo", body));
     },
     networkMode: "always",
-    onSuccess: (d) => form.reset(fields(d, unit)),
+    onSuccess: (d) => "question" in d || form.reset(fields(d, unit)),
     onError: (e, input) => {
       if (typeof input === "string") return onFail();
       setCaptureError(e);

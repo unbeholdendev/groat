@@ -79,6 +79,7 @@ function provider(url: URL, init: RequestInit | undefined, models: string[]) {
               arguments: JSON.stringify({
                 note: typeof last === "string" ? last.replace(/[\d.]+/g, "").trim() : "Corner shop",
                 amount: "9.99",
+                question: typeof last === "string" && last.startsWith("how"),
               }),
             },
           },

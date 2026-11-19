@@ -90,6 +90,7 @@ export const draft = z.object({
   attachmentId: z.number().nullish(),
 });
 export type Draft = z.infer<typeof draft>;
+export const lineRead = z.union([draft, z.object({ question: z.literal(true) })]);
 const drafted = z.object({ draft });
 const saved = z.object({ outcome: z.literal("completed"), result: transaction });
 
