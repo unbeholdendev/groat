@@ -5,9 +5,10 @@ import type { Period } from "./types";
 
 export function ByCategory(props: {
   now: Period;
-  prev: Period;
+  prev?: Period;
   categories: Category[];
   range: [string, string];
+  tag?: string;
   vs: string;
   show: (n: number) => string;
   open: number | null;
@@ -16,7 +17,7 @@ export function ByCategory(props: {
 }) {
   const { now, prev, vs } = props;
   const tile = (id: number) => props.categories.find((c) => c.id === id);
-  const compare = !now.unconverted && !prev.unconverted;
+  const compare = !!prev && !now.unconverted && !prev.unconverted;
   const fresh =
     compare && prev.total
       ? now.categories.filter((c) => !prev.categories.find((r) => r.id === c.id)?.total && !tile(c.id)?.builtin)
@@ -33,10 +34,11 @@ export function ByCategory(props: {
             compare={compare}
             index={i}
             total={now.total}
-            before={prev.categories.find((p) => p.id === c.id)}
-            pad={prev.total > 0}
+            before={prev?.categories.find((p) => p.id === c.id)}
+            pad={!!prev?.total}
             tile={tile}
             range={props.range}
+            tag={props.tag}
             show={props.show}
             open={props.open === c.id}
             onToggle={() => props.onOpen(props.open === c.id ? null : c.id)}

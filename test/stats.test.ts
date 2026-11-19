@@ -64,20 +64,6 @@ test("buckets by day, week (Monday start) and month include empty ones", async (
   ]);
 });
 
-test("previous period is the equal-length window just before the range", async () => {
-  const { call, id, spend } = await onboarded();
-  await spend("in range", "5.00", "GBP", "2026-09-01", "Food");
-  await spend("first day of previous", "2.00", "GBP", "2026-08-02", "Food");
-  await spend("last day of previous", "3.00", "GBP", "2026-08-31", "Health");
-  await spend("too early", "100.00", "GBP", "2026-08-01", "Food");
-  const { previous } = (await call("GET", "/api/stats?from=2026-09-01&to=2026-09-30&group=month")).body;
-  expect(previous).toMatchObject({ from: "2026-08-02", to: "2026-08-31", total: 500 });
-  expect(previous.categories.map((c: { id: number; total: number }) => [c.id, c.total])).toEqual([
-    [id("Health"), 300],
-    [id("Food"), 200],
-  ]);
-});
-
 test("binned expenses are left out", async () => {
   const { call, spend } = await onboarded();
   await spend("kept", "1.00", "GBP", "2026-09-03", "Food");
@@ -117,5 +103,23 @@ test("tag totals count each tagged expense in base currency, largest first", asy
   expect(body.tags).toEqual([
     { name: "holiday", total: 1750 },
     { name: "friends", total: 1000 },
+  ]);
+});
+
+test("a tag scopes totals to its expenses and splits them by original currency", async () => {
+  const { call, id } = await onboarded();
+  const spend = (amount: string, currency: string, date: string, category: string, tags: string[]) =>
+    call("POST", "/api/transactions", { note: "x", amount, currency, date, categoryId: id(category), tags });
+  await spend("10.00", "GBP", "2026-09-03", "Groceries", ["trip"]);
+  await spend("8.00", "EUR", "2026-09-05", "Eating out", ["trip"]);
+  await spend("300", "JPY", "2020-01-01", "Food", ["trip"]);
+  await spend("1.00", "GBP", "2026-09-03", "Groceries", []);
+  const { body } = await call("GET", "/api/stats?from=2020-01-01&to=2026-09-30&group=month&tag=trip");
+  expect(body).toMatchObject({ total: 1750, unconverted: 1 });
+  expect(body.categories.map((c: { id: number; total: number }) => [c.id, c.total])).toEqual([[id("Food"), 1750]]);
+  expect(body.currencies).toEqual([
+    { currency: "GBP", amount: 1000, base: 1000 },
+    { currency: "EUR", amount: 800, base: 750 },
+    { currency: "JPY", amount: 300, base: null },
   ]);
 });

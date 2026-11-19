@@ -41,6 +41,16 @@ export const transactionQuery = z
   })
   .partial();
 
+export const taggedWith = (db: Db, name: string) =>
+  inArray(
+    schema.transactions.id,
+    db
+      .select({ id: schema.transactionTags.transactionId })
+      .from(schema.transactionTags)
+      .innerJoin(schema.tags, eq(schema.tags.id, schema.transactionTags.tagId))
+      .where(eq(schema.tags.name, name)),
+  );
+
 export function transactionFilter(db: Db, q: z.infer<typeof transactionQuery>, base = visible) {
   const category = q.category;
   return and(
@@ -56,16 +66,7 @@ export function transactionFilter(db: Db, q: z.infer<typeof transactionQuery>, b
             .where(or(eq(schema.categories.id, category), eq(schema.categories.parentId, category))),
         )
       : undefined,
-    q.tag
-      ? inArray(
-          schema.transactions.id,
-          db
-            .select({ id: schema.transactionTags.transactionId })
-            .from(schema.transactionTags)
-            .innerJoin(schema.tags, eq(schema.tags.id, schema.transactionTags.tagId))
-            .where(eq(schema.tags.name, q.tag)),
-        )
-      : undefined,
+    q.tag ? taggedWith(db, q.tag) : undefined,
     q.currency ? eq(schema.transactions.currency, q.currency) : undefined,
     q.status ? eq(schema.transactions.status, q.status) : undefined,
     q.kind ? eq(kindOf, q.kind) : undefined,

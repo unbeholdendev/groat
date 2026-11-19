@@ -5,19 +5,7 @@ import { Delta } from "./delta";
 import { Head } from "./head";
 import { type Period, row } from "./types";
 
-export function ByTag({
-  now,
-  prev,
-  range: [from, to],
-  vs,
-  show,
-}: {
-  now: Period;
-  prev: Period;
-  range: [string, string];
-  vs: string;
-  show: (n: number) => string;
-}) {
+export function ByTag({ now, prev, vs, show }: { now: Period; prev: Period; vs: string; show: (n: number) => string }) {
   const compare = !now.unconverted && !prev.unconverted;
   if (now.tags.length === 0) return null;
   return (
@@ -26,7 +14,7 @@ export function ByTag({
       <ul className="overflow-hidden rounded-panel bg-surface shadow-panel">
         {now.tags.map((t) => (
           <li key={t.name} className={divide}>
-            <Link to="/" search={{ tag: t.name, from, to }} className={`${row} press h-[62px]`}>
+            <Link to="/stats" search={{ tag: t.name }} className={`${row} press h-[62px]`}>
               <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-tile bg-track text-ink3">
                 <Icon className="size-[18px] stroke-2">
                   <path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16" />

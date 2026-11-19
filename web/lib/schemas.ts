@@ -133,7 +133,12 @@ export const chat = z.object({
 });
 export type Chat = z.infer<typeof chat>;
 
-export const tag = z.object({ id: z.number(), name: z.string() });
+export const tag = z.object({
+  id: z.number(),
+  name: z.string(),
+  first: z.string().nullable(),
+  last: z.string().nullable(),
+});
 
 export const apiToken = z.object({
   id: z.number(),
@@ -170,6 +175,7 @@ export const period = z.object({
   categories: breakdown,
   income: z.object({ total: z.number(), categories: breakdown }),
   tags: z.array(z.object({ name: z.string(), total: z.number() })),
+  currencies: z.array(z.object({ currency: z.string(), amount: z.number(), base: z.number().nullable() })),
   buckets: z.array(z.object({ start: z.string(), total: z.number() })),
   sats: z
     .object({

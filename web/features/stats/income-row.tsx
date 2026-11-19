@@ -23,11 +23,11 @@ export function IncomeRow({
   sats,
 }: {
   now: Period;
-  prev: Period;
+  prev?: Period;
   show: (n: number) => string;
   sats?: { income: string[]; net: string[] } | null;
 }) {
-  const compare = !now.unconverted && !prev.unconverted;
+  const compare = !!prev && !now.unconverted && !prev.unconverted;
   const saved = now.unconverted ? null : rate(now);
   const cells = [
     {
@@ -35,21 +35,21 @@ export function IncomeRow({
       value: show(now.income.total),
       sats: sats?.income,
       now: now.income.total,
-      before: prev.income.total,
+      before: prev?.income.total ?? null,
     },
     {
       name: "Net",
       value: show(now.income.total - now.total),
       sats: sats?.net,
       now: now.income.total - now.total,
-      before: prev.income.total - prev.total,
+      before: prev ? prev.income.total - prev.total : null,
     },
     {
       name: "Savings rate",
       value: saved === null ? "–" : `${Math.round(saved * 100)}%`,
       sats: undefined,
       now: saved,
-      before: rate(prev),
+      before: prev ? rate(prev) : null,
       points: true,
     },
   ];

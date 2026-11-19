@@ -16,11 +16,12 @@ export function CategoryRow(props: {
   pad: boolean;
   tile: (id: number) => Category | undefined;
   range: [string, string];
+  tag?: string;
   show: (n: number) => string;
   open: boolean;
   onToggle: () => void;
 }) {
-  const { slice: c, before, pad, tile, range, show, open } = props;
+  const { slice: c, before, pad, tile, range, tag, show, open } = props;
   const subs = c.children.some((k) => k.id !== c.id);
   const t = tile(c.id);
   const cells = (
@@ -54,7 +55,7 @@ export function CategoryRow(props: {
           {cells}
         </button>
       ) : (
-        <Link {...list(c.id, range)} className={`${row} press py-3`}>
+        <Link {...list(c.id, range, tag)} className={`${row} press py-3`}>
           {cells}
         </Link>
       )}
@@ -81,7 +82,7 @@ export function CategoryRow(props: {
                 {k.id === c.id ? (
                   <div className={`${row} h-12 hover:bg-transparent`}>{inner}</div>
                 ) : (
-                  <Link {...list(k.id, range)} className={`${row} h-12`}>
+                  <Link {...list(k.id, range, tag)} className={`${row} h-12`}>
                     {inner}
                   </Link>
                 )}
@@ -89,7 +90,7 @@ export function CategoryRow(props: {
             );
           })}
           <li>
-            <Link {...list(c.id, range)} className={`${row} h-12 text-[13px] font-medium text-accent`}>
+            <Link {...list(c.id, range, tag)} className={`${row} h-12 text-[13px] font-medium text-accent`}>
               All {c.name} expenses
             </Link>
           </li>

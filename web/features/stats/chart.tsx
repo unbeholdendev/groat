@@ -165,7 +165,9 @@ export function Chart(props: {
         )}
       </p>
       <details className="mt-3 text-[13px] text-ink2">
-        <summary className="min-h-11 cursor-pointer py-3">Compare daily totals</summary>
+        <summary className="min-h-11 cursor-pointer py-3">
+          {props.ghost ? "Compare daily totals" : "Daily totals"}
+        </summary>
         <div role="region" aria-label="Daily comparison values" tabIndex={0} className="max-h-72 overflow-auto">
           <table className="num w-full text-left" aria-label="Cumulative spending by day">
             <thead>

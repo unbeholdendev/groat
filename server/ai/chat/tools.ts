@@ -49,7 +49,7 @@ export function callTool(tools: Record<string, Tool>, { name, arguments: args }:
 export function readTools(ctx: Pick<Ctx, "db" | "clock" | "value">): Record<string, Tool> {
   const { db, value } = ctx;
   const totals = async ({ from, to }: z.infer<typeof range>) => {
-    const { categories, buckets, ...rest } = await period(ctx, from, to, "month");
+    const { categories, buckets, ...rest } = await period(ctx, { from, to, group: "month" });
     return { ...rest, categories };
   };
 

@@ -1,10 +1,11 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, max, min, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Env } from "../auth/access";
 import type { Ctx } from "../context";
 import { body } from "../request";
 import * as schema from "../schema";
+import { countable } from "../transactions/queries";
 import { retag } from "./queries";
 
 export const tagInput = z.object({ name: z.string("Enter a name").trim().min(1, "Enter a name") });
@@ -12,7 +13,23 @@ export const tagInput = z.object({ name: z.string("Enter a name").trim().min(1, 
 export function tagRoutes({ db }: Pick<Ctx, "db">) {
   const app = new Hono<Env>();
 
-  app.get("/api/tags", (c) => c.json(db.select().from(schema.tags).orderBy(schema.tags.name).all()));
+  app.get("/api/tags", (c) =>
+    c.json(
+      db
+        .select({
+          id: schema.tags.id,
+          name: schema.tags.name,
+          first: min(schema.transactions.date),
+          last: max(schema.transactions.date),
+        })
+        .from(schema.tags)
+        .leftJoin(schema.transactionTags, eq(schema.transactionTags.tagId, schema.tags.id))
+        .leftJoin(schema.transactions, and(eq(schema.transactions.id, schema.transactionTags.transactionId), countable))
+        .groupBy(schema.tags.id)
+        .orderBy(schema.tags.name)
+        .all(),
+    ),
+  );
 
   app.put("/api/tags/:id", async (c) => {
     const input = await body(c, tagInput);

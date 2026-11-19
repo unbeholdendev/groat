@@ -98,8 +98,19 @@ export function MonthHeader({
           <p className="mt-4">
             <Total amount={inBase(counted, base)} currency={base} unit={unit} />
           </p>
-          <p className="mt-2.5 text-[13px] font-medium text-ink2">
-            {shown.length} matching{unrated > 0 && ` + ${unrated} without rates · incomplete`}
+          <p className="mt-2.5 flex flex-wrap justify-between gap-x-4 text-[13px] font-medium text-ink2">
+            <span>
+              {shown.length} matching{unrated > 0 && ` + ${unrated} without rates · incomplete`}
+            </span>
+            {filter.tag && (
+              <Link
+                to="/stats"
+                search={{ tag: filter.tag, ...(filter.from && filter.to && { from: filter.from, to: filter.to }) }}
+                className="hit text-accent"
+              >
+                Stats for #{filter.tag}
+              </Link>
+            )}
           </p>
         </>
       ) : (

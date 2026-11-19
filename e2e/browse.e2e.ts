@@ -53,7 +53,40 @@ test("month steps, filters and the stats drill-down", async ({ app: page }) => {
   await page.getByLabel("To", { exact: true }).fill(today());
   await expect(page.locator("section").first()).toContainText("£50.00");
   await page.getByRole("link", { name: "home" }).click();
+  await expect(page.getByRole("radio", { name: "Whole tag" })).toBeChecked();
+  await expect(page.locator("section").first()).toContainText("£30.00");
+  await page.getByRole("link", { name: "See transactions" }).click();
   await expect(page.getByRole("button", { name: "Groceries run" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cinema" })).toBeHidden();
+});
+
+test("a tag opens its own stats, split by original currency", async ({ app: page }) => {
+  await seed(page, [
+    { note: "Hotel", amount: "90", currency: "EUR", categoryId: 5, date: lastMonth(), tags: ["lisbon"] },
+    { note: "Taxi", amount: "20", currency: "GBP", categoryId: 5, tags: ["lisbon"] },
+    { note: "Ramen", amount: "1000", currency: "JPY", categoryId: 5, tags: ["lisbon"] },
+    { note: "Elsewhere", amount: "5", currency: "GBP", categoryId: 5 },
+  ]);
+  await page.goto("/?tag=lisbon");
+  await page.getByRole("link", { name: "Stats for #lisbon" }).click();
+  await expect(page.getByRole("radio", { name: "Whole tag" })).toBeChecked();
+  const hero = page.locator("section").first();
+  await expect(hero).toContainText("£100.00");
+  await expect(hero).toContainText("incomplete");
+  await expect(hero).not.toContainText("vs");
+  await expect(page.getByRole("listitem").filter({ hasText: "EUR" })).toContainText("£80.00");
+  await expect(page.getByRole("listitem").filter({ hasText: "JPY" })).toContainText("No rate");
+  await expect(page.getByRole("heading", { name: "By tag" })).toBeHidden();
+
+  await page.getByRole("link", { name: "Show all stats, not just #lisbon" }).click();
+  await expect(page.getByRole("radio", { name: "This month" })).toBeChecked();
+  await expect(page.getByRole("heading", { name: "By tag" })).toBeVisible();
+
+  await page.goto("/stats?tag=nowhere");
+  await expect(page.getByText("Nothing tagged #nowhere.")).toBeVisible();
+  await page.getByRole("radio", { name: "Custom" }).click();
+  await page.getByLabel("From", { exact: true }).fill(today());
+  await expect(page.getByLabel("From", { exact: true })).toHaveValue(today());
 });
 
 test("a bitcoin total fits the Stats card", async ({ app: page }) => {

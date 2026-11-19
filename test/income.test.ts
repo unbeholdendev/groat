@@ -103,8 +103,6 @@ test("income never counts as spending; stats report income separately", async ()
     [(await find("Salary")).id, 300000],
     [(await find("Other income")).id, 5000],
   ]);
-  expect(body.previous.income.total).toBe(200000);
-  expect(body.previous.total).toBe(0);
 });
 
 test("the list filters by kind, and settings say whether any income exists", async () => {

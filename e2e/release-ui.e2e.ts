@@ -20,7 +20,7 @@ test("stats comparisons have a keyboard accessible table and legend", async ({ a
   await seed(page, [{ note: "Train", amount: "12" }]);
   await page.getByRole("link", { name: "Stats", exact: true }).click();
   await expect(page.getByText("Cumulative spending", { exact: true }).first()).toBeVisible();
-  await page.getByText("Compare daily totals", { exact: true }).click();
+  await page.getByText("Daily totals", { exact: true }).click();
   await expect(page.getByRole("table", { name: "Cumulative spending by day" })).toBeVisible();
 });
 

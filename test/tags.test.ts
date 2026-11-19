@@ -60,3 +60,20 @@ test("renaming or deleting a tag updates recurring templates", async () => {
   await call("DELETE", `/api/tags/${work.id}`);
   expect((await call("GET", "/api/recurring")).body[0].tags).toEqual(["holiday"]);
 });
+
+test("each tag carries the dates of its first and last countable transaction", async () => {
+  const { call } = setup();
+  await call("POST", "/api/transactions", { note: "a", amount: "1", date: "2026-09-10", tags: ["trip"] });
+  await call("POST", "/api/transactions", { note: "b", amount: "1", date: "2026-09-03", tags: ["trip"] });
+  const gone = await call("POST", "/api/transactions", {
+    note: "c",
+    amount: "1",
+    date: "2026-09-01",
+    tags: ["trip", "old"],
+  });
+  await call("DELETE", `/api/transactions/${gone.body.id}`);
+  expect((await call("GET", "/api/tags")).body).toMatchObject([
+    { name: "old", first: null, last: null },
+    { name: "trip", first: "2026-09-03", last: "2026-09-10" },
+  ]);
+});

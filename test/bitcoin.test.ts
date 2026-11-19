@@ -106,3 +106,18 @@ test("sats totals stay off with BTC as base, keeping the stored choice", async (
   expect(await sats()).toBeNull();
   expect((await call("GET", "/api/settings")).body.sats).toBe(true);
 });
+
+test("sats totals follow a tag scope", async () => {
+  const { call, add } = await spending("GBP");
+  await add("76.00", "2026-10-02", "Groceries");
+  await call("POST", "/api/transactions", {
+    note: "x",
+    amount: "38.00",
+    currency: "GBP",
+    date: "2026-10-02",
+    tags: ["trip"],
+  });
+  await call("PUT", "/api/settings", { sats: true });
+  const { body } = await call("GET", "/api/stats?from=2026-09-01&to=2026-10-31&group=month&tag=trip");
+  expect(body.sats).toMatchObject({ total: 50000, unconverted: 0 });
+});

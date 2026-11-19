@@ -4,10 +4,15 @@ import { isoDate, type Kind } from "../../shared/schema";
 import { type Ctx, today } from "../context";
 import * as schema from "../schema";
 import { settings } from "../settings/queries";
-import { countable, kindOf } from "../transactions/queries";
+import { countable, kindOf, taggedWith } from "../transactions/queries";
 
 export const range = z
-  .object({ from: isoDate, to: isoDate, group: z.enum(["day", "week", "month"]).default("day") })
+  .object({
+    from: isoDate,
+    to: isoDate,
+    group: z.enum(["day", "week", "month"]).default("day"),
+    tag: z.string().min(1).optional(),
+  })
   .refine((r) => r.from <= r.to);
 type Group = z.infer<typeof range>["group"];
 type Category = { id: number; name: string; icon: string; color: string; parentId: number | null; kind: Kind };
@@ -34,7 +39,12 @@ const nextBucket = (start: string, group: Group) => {
 
 const byTotal = (a: Total, b: Total) => b.total - a.total;
 
-const entries = (db: Ctx["db"], from: string, to: string) =>
+type Range = z.infer<typeof range>;
+
+const scope = (db: Ctx["db"], { from, to, tag }: Range) =>
+  and(countable, between(schema.transactions.date, from, to), tag ? taggedWith(db, tag) : undefined);
+
+const entries = (db: Ctx["db"], q: Range) =>
   db
     .select({
       id: schema.transactions.id,
@@ -45,13 +55,14 @@ const entries = (db: Ctx["db"], from: string, to: string) =>
       kind: kindOf,
     })
     .from(schema.transactions)
-    .where(and(countable, between(schema.transactions.date, from, to)))
+    .where(scope(db, q))
     .all();
 
 const sum = (rs: { baseAmount: number }[]) => rs.reduce((s, r) => s + r.baseAmount, 0);
 
-export async function period({ db, value }: Pick<Ctx, "db" | "value">, from: string, to: string, group: Group) {
-  const valued = await value(entries(db, from, to));
+export async function period({ db, value }: Pick<Ctx, "db" | "value">, q: Range) {
+  const { from, to, group } = q;
+  const valued = await value(entries(db, q));
   const rated = valued.filter((r): r is (typeof valued)[number] & { baseAmount: number } => r.baseAmount !== null);
   const counted = rated.filter((r) => r.kind === "expense");
   const earned = rated.filter((r) => r.kind === "income");
@@ -88,12 +99,20 @@ export async function period({ db, value }: Pick<Ctx, "db" | "value">, from: str
     .from(schema.transactionTags)
     .innerJoin(schema.tags, eq(schema.tags.id, schema.transactionTags.tagId))
     .innerJoin(schema.transactions, eq(schema.transactions.id, schema.transactionTags.transactionId))
-    .where(and(countable, between(schema.transactions.date, from, to)))
+    .where(scope(db, q))
     .all()) {
     const amount = amounts.get(id);
     if (amount !== undefined) tagged.set(name, (tagged.get(name) ?? 0) + amount);
   }
   const tags = [...tagged].map(([name, total]) => ({ name, total })).sort(byTotal);
+
+  const currencies = new Map<string, { currency: string; amount: number; base: number | null }>();
+  for (const r of valued.filter((r) => r.kind === "expense")) {
+    const c = currencies.get(r.currency) ?? { currency: r.currency, amount: 0, base: 0 };
+    c.amount += r.amount;
+    c.base = c.base === null || r.baseAmount === null ? null : c.base + r.baseAmount;
+    currencies.set(r.currency, c);
+  }
 
   const buckets = new Map<string, number>();
   for (let start = bucketOf(from, group); start <= to; start = nextBucket(start, group)) buckets.set(start, 0);
@@ -110,15 +129,16 @@ export async function period({ db, value }: Pick<Ctx, "db" | "value">, from: str
     unconverted: valued.length - rated.length,
     categories: breakdown("expense", counted),
     tags,
+    currencies: [...currencies.values()].sort((a, b) => (b.base ?? -1) - (a.base ?? -1)),
     buckets: [...buckets].map(([start, total]) => ({ start, total })),
     income: { total: sum(earned), categories: breakdown("income", earned) },
   };
 }
 
-async function sats({ db, value, clock }: Pick<Ctx, "db" | "value" | "clock">, from: string, to: string) {
+async function sats({ db, value, clock }: Pick<Ctx, "db" | "value" | "clock">, q: Range) {
   const { baseCurrency, sats } = settings(db);
   if (!sats || baseCurrency === "BTC") return null;
-  const valued = await value(entries(db, from, to), "BTC");
+  const valued = await value(entries(db, q), "BTC");
   const rated = valued.filter((r): r is (typeof valued)[number] & { baseAmount: number } => r.baseAmount !== null);
   const total = sum(rated.filter((r) => r.kind === "expense"));
   const income = sum(rated.filter((r) => r.kind === "income"));
@@ -138,11 +158,7 @@ async function sats({ db, value, clock }: Pick<Ctx, "db" | "value" | "clock">, f
   };
 }
 
-export async function stats(ctx: Pick<Ctx, "db" | "value" | "clock">, from: string, to: string, group: Group) {
-  const days = (Date.parse(to) - Date.parse(from)) / 864e5 + 1;
-  return {
-    ...(await period(ctx, from, to, group)),
-    sats: await sats(ctx, from, to),
-    previous: await period(ctx, shift(from, -days), shift(from, -1), group),
-  };
-}
+export const stats = async (ctx: Pick<Ctx, "db" | "value" | "clock">, q: Range) => ({
+  ...(await period(ctx, q)),
+  sats: await sats(ctx, q),
+});
