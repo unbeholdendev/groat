@@ -5,6 +5,7 @@ import { useSettings } from "../../lib/api";
 import type { Settings } from "../../lib/schemas";
 import { AiModels } from "./ai-models";
 import { AiProvider } from "./ai-provider";
+import { CheckIn } from "./check-in";
 import { Chatgpt } from "./chatgpt";
 import { SettingsIcon } from "./settings-icon";
 
@@ -60,6 +61,7 @@ export function Ai({ admin }: { admin: boolean }) {
       <p className={`mt-2 px-1 text-[13px] ${settings.aiProblem ? "text-up" : "text-ink2"}`}>
         {caption(settings, admin)}
       </p>
+      {settings.ai && <CheckIn />}
       {admin && (
         <>
           <Chatgpt keyInUse={settings.aiSource === "key"} />

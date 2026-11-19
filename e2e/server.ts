@@ -34,6 +34,8 @@ function provider(url: URL, init: RequestInit | undefined, models: string[]) {
   const body = JSON.parse(String(init?.body));
   const last = body.messages.at(-1).content;
   if (!body.tools) return completion({ role: "assistant", content: last });
+  if (body.messages[0].content.includes("This is the weekly check-in"))
+    return completion({ role: "assistant", content: "**Coffee** costs more lately. [See coffee](/?q=coffee)" });
   if (
     !body.tool_choice &&
     body.messages.findLast((m: { role: string }) => m.role === "user")?.content === "Add test coffee for £3"

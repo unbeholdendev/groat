@@ -7,6 +7,7 @@ import type { Transaction } from "../../lib/schemas";
 import { iso } from "../../lib/period";
 import { today } from "../../lib/dates";
 import { UnitContext } from "../../lib/unit";
+import { CheckInCard } from "../chat/check-in-card";
 import { QuickAddContext } from "../quick-add/quick-add";
 import { Breakdown } from "./breakdown";
 import { DayList } from "./day-list";
@@ -52,6 +53,7 @@ export function Month({ newest }: { newest: number }) {
       {!filtered && <Breakdown unit={unit} end={month ? end : undefined} />}
       <div ref={onHost} className="my-6" />
       {showFilters && <Filters />}
+      {!filtered && !month && <CheckInCard />}
       {income && <KindFilter />}
       <PendingList />
       {query.isPending && (

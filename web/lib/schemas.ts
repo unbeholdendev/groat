@@ -48,6 +48,8 @@ export const settings = z.object({
   theme,
   onboarded: z.boolean(),
   income: z.boolean(),
+  checkIns: z.boolean(),
+  lastCheckInAt: z.string().nullable(),
 });
 export const aiStatus = z.object({
   ai: z.boolean(),
@@ -124,6 +126,7 @@ export function savedBy(messages: ChatMessage[]) {
 export const chat = z.object({
   id: z.number(),
   title: z.string(),
+  unread: z.boolean().optional(),
   running: z.boolean().optional(),
   messages: z.array(chatMessage).optional(),
 });

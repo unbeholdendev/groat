@@ -16,6 +16,7 @@ export function Messages({
   onStop,
   onDraft,
   onOpen,
+  onLink,
 }: {
   messages: ChatMessage[];
   running: boolean;
@@ -23,6 +24,7 @@ export function Messages({
   onStop?: () => void;
   onDraft: (draft: Draft) => void;
   onOpen: (saved: Transaction) => void;
+  onLink: (href: string) => void;
 }) {
   const [unit] = use(UnitContext);
   const results = new Map(
@@ -71,7 +73,7 @@ export function Messages({
                     : reply
                 }
               >
-                {m.role === "user" ? m.content : <RichText text={m.content} />}
+                {m.role === "user" ? m.content : <RichText text={m.content} onLink={onLink} />}
               </p>
             )}
             {m.tool_calls?.map((c) => {
@@ -89,7 +91,7 @@ export function Messages({
       {running &&
         (streamed ? (
           <p className={reply}>
-            <RichText text={streamed} />
+            <RichText text={streamed} onLink={onLink} />
           </p>
         ) : (
           !acting && <p className={`${reply} text-ink3`}>Working on it…</p>

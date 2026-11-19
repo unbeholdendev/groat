@@ -4,7 +4,7 @@ import type { Env } from "../../auth/access";
 import type { Ctx } from "../../context";
 import { body } from "../../request";
 import { chatAgent } from "./agent";
-import { closeInterrupted, deleteChat, listChats } from "./store";
+import { closeInterrupted, deleteChat, listChats, markRead } from "./store";
 
 const question = z.object({ message: z.string("Enter a message").trim().min(1, "Enter a message") });
 
@@ -12,7 +12,7 @@ export function chatRoutes(ctx: Ctx) {
   const { db, ai } = ctx;
   const app = new Hono<Env>();
   app.use("*", async (c, next) => {
-    const off = c.req.method === "POST" && !c.req.path.endsWith("/stop") && (await ai.unavailable("chat"));
+    const off = c.req.method === "POST" && !/\/(stop|read)$/.test(c.req.path) && (await ai.unavailable("chat"));
     return off ? c.json({ error: off }, 403) : next();
   });
 
@@ -47,6 +47,10 @@ export function chatRoutes(ctx: Ctx) {
     agent.stop(id);
     return c.json({});
   });
+
+  app.post("/:id/read", (c) =>
+    markRead(db, Number(c.req.param("id"))) ? c.json({}) : c.json({ error: "Not found" }, 404),
+  );
 
   app.delete("/:id", (c) => {
     const id = Number(c.req.param("id"));

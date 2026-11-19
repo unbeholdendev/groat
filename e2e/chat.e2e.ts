@@ -195,3 +195,38 @@ test("the chat header stays in view when a long chat scrolls", async ({ app: pag
   await expect(page.getByRole("button", { name: "Chats" })).toBeInViewport();
   await expect(page.getByRole("button", { name: "Delete" })).toBeInViewport();
 });
+
+test("a check-in shows as unread until opened, and its links open the filtered list", async ({
+  app: page,
+  isMobile,
+}) => {
+  const entry = isMobile ? page.getByRole("link", { name: "Chats" }) : nav(page).getByRole("link", { name: "Chats" });
+  await expect(entry.getByRole("img", { name: "Unread" })).toHaveCount(0);
+  expect((await page.request.post("/api/check-in")).ok()).toBe(true);
+  await expect(entry.getByRole("img", { name: "Unread" })).toBeVisible();
+  await page.getByRole("link", { name: /Check-in/ }).click();
+  await expect(page.getByText("costs more lately")).toBeVisible();
+  await page.getByRole("link", { name: "See coffee" }).click();
+  await expect(page).toHaveURL(/\/\?q=coffee$/);
+  await expect(entry.getByRole("img", { name: "Unread" })).toHaveCount(0);
+  await expect(page.getByText("New from your weekly check-in")).toHaveCount(0);
+});
+
+test("a check-in card can be dismissed for everyone", async ({ app: page }) => {
+  await page.request.post("/api/check-in");
+  await page.getByRole("button", { name: "Dismiss" }).click();
+  await expect(page.getByText("New from your weekly check-in")).toHaveCount(0);
+  expect((await (await page.request.get("/api/chats")).json())[0].unread).toBe(false);
+});
+
+test("Check now in Settings runs a check-in, and the switch turns weekly runs off", async ({ app: page }) => {
+  await page.goto("/settings/ai");
+  await expect(page.getByText("Not checked yet")).toBeVisible();
+  await page.getByRole("button", { name: "Check now" }).click();
+  await expect(page.getByText(/^Last checked \d+ \w+$/)).toBeVisible();
+  const weekly = page.getByRole("checkbox", { name: "Check in every week" });
+  await expect(weekly).toBeChecked();
+  await weekly.click();
+  await expect(weekly).not.toBeChecked();
+  expect((await (await page.request.get("/api/settings")).json()).checkIns).toBe(false);
+});

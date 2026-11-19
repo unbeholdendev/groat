@@ -17,12 +17,21 @@ export function findChat(db: Db, id: number | string) {
   return { row, messages: messages.map((m) => chatMessage.parse(m.message)) };
 }
 
-export const listChats = (db: Db) => db.select().from(chats).orderBy(desc(chats.id)).all();
+export const listChats = (db: Db) =>
+  db.select({ id: chats.id, title: chats.title, unread: chats.unread }).from(chats).orderBy(desc(chats.id)).all();
 
-export const createChat = (db: Db, title: string) => db.insert(chats).values({ title }).returning().get().id;
+export const createChat = (db: Db, title: string, flags: { checkIn?: boolean; unread?: boolean } = {}) =>
+  db
+    .insert(chats)
+    .values({ title, ...flags })
+    .returning()
+    .get().id;
 
 export const retitleChat = (db: Db, id: number, title: string) =>
   db.update(chats).set({ title }).where(eq(chats.id, id)).returning().get();
+
+export const markRead = (db: Db, id: number) =>
+  db.update(chats).set({ unread: false }).where(eq(chats.id, id)).returning().get();
 
 export const deleteChat = (db: Db, id: number) => db.delete(chats).where(eq(chats.id, id)).returning().get();
 

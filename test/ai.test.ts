@@ -46,7 +46,7 @@ test("a chat is answered, titled by the AI from the first question, listed and d
   ]);
   expect(ai.requests[1].body.messages.filter((m: { role: string }) => m.role !== "system")).toHaveLength(3);
   expect((await call("GET", `/api/chats/${chat.body.id}`)).body).toEqual(next.body);
-  expect((await call("GET", "/api/chats")).body).toEqual([{ id: chat.body.id, title: "Food spending" }]);
+  expect((await call("GET", "/api/chats")).body).toEqual([{ id: chat.body.id, title: "Food spending", unread: false }]);
 
   expect((await call("DELETE", `/api/chats/${chat.body.id}`)).status).toBe(200);
   expect((await call("GET", "/api/chats")).body).toEqual([]);
@@ -524,7 +524,7 @@ test("a deleted chat's late title cannot rename a new chat that reuses its ID", 
   await Bun.sleep(20);
   gates.get("new")?.();
   await Bun.sleep(20);
-  expect((await s.call("GET", "/api/chats")).body).toEqual([{ id, title: "Title new" }]);
+  expect((await s.call("GET", "/api/chats")).body).toEqual([{ id, title: "Title new", unread: false }]);
 });
 
 test("a deleted chat's unfinished run cannot write into a new chat that reuses its ID", async () => {

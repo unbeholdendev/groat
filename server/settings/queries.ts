@@ -4,7 +4,7 @@ import * as schema from "../schema";
 import { visible } from "../transactions/queries";
 
 export function settings(db: Db) {
-  const { baseCurrency, theme, onboarded } = seeded(db.select().from(schema.settings).get());
+  const { baseCurrency, theme, onboarded, checkIns, lastCheckInAt } = seeded(db.select().from(schema.settings).get());
   const last = db
     .select({ currency: schema.transactions.currency })
     .from(schema.transactions)
@@ -34,5 +34,7 @@ export function settings(db: Db) {
     theme,
     onboarded,
     income,
+    checkIns,
+    lastCheckInAt,
   };
 }

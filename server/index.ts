@@ -35,6 +35,7 @@ const timer = setInterval(() => {
     log("error", "background.generate.failed", { error: errorKind(error) });
   }
 }, 86_400_000);
+const checkIns = setInterval(() => void app.checkIn(), 3_600_000);
 app.use("*", serveStatic({ root: "./dist" }));
 app.get("*", serveStatic({ path: "./dist/index.html" }));
 
@@ -48,6 +49,7 @@ async function shutdown(signal: string) {
   const start = performance.now();
   log("info", "process.shutdown.started", { signal });
   clearInterval(timer);
+  clearInterval(checkIns);
   app.close();
   const deadline = setTimeout(() => {
     log("error", "process.shutdown.timed_out");

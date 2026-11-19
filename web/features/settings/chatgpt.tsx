@@ -34,7 +34,7 @@ export function Chatgpt({ keyInUse }: { keyInUse: boolean }) {
   const chosen = models.data?.models.find((m) => m.slug === data?.model) ?? models.data?.models[0];
   return (
     <div className="flex flex-col gap-3">
-      <h3 className={subHead}>ChatGPT plan</h3>
+      <h2 className={subHead}>ChatGPT plan</h2>
       <p className="px-1 text-sm text-ink2">{planStatus(data, keyInUse)}</p>
       {notice && (
         <p role="status" className="px-1 text-sm text-ink2">

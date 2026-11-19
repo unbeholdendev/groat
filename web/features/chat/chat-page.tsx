@@ -10,6 +10,7 @@ import { editSearch } from "../transactions/use-month";
 import { ChatHeader } from "./chat-header";
 import { ChatList } from "./chat-list";
 import { Messages } from "./messages";
+import { useMarkRead } from "./unread";
 
 export function ChatPage({ openId }: { openId: number | null }) {
   const navigate = useNavigate();
@@ -35,6 +36,10 @@ export function ChatPage({ openId }: { openId: number | null }) {
     const main = document.querySelector("main");
     if (openId) main?.scrollTo(0, main.scrollHeight);
   }, [messages.length, streamed]);
+  const reading = useMarkRead();
+  useEffect(() => {
+    if (open?.unread) reading.mutate(open.id);
+  }, [open?.id, open?.unread]);
   const stopping = useMutation({ mutationFn: (id: number) => send("POST", `/api/chats/${id}/stop`) });
   const deleting = useMutation({
     mutationFn: (id: number) => send("DELETE", `/api/chats/${id}`),
@@ -74,6 +79,7 @@ export function ChatPage({ openId }: { openId: number | null }) {
         onStop={open?.running ? () => stopping.mutate(open.id) : undefined}
         onDraft={(draft) => navigate({ to: "/", search: { new: "1" }, state: { draft } })}
         onOpen={(t) => navigate({ to: "/", search: editSearch(t) })}
+        onLink={(href) => navigate({ href })}
       />
     </div>
   );

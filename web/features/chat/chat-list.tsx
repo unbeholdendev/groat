@@ -2,6 +2,7 @@ import { Chevron } from "../../components/icon";
 import { divide, panel } from "../../components/styles";
 import { useSettings } from "../../lib/api";
 import type { Chat } from "../../lib/schemas";
+import { Dot } from "./unread";
 
 export function ChatList({ chats, onOpen }: { chats: Chat[]; onOpen: (id: number) => void }) {
   const ai = useSettings()?.ai;
@@ -21,6 +22,7 @@ export function ChatList({ chats, onOpen }: { chats: Chat[]; onOpen: (id: number
             className="press flex h-[52px] w-full items-center gap-3 px-4 text-left font-medium hover:bg-surface2"
           >
             <span className="min-w-0 flex-1 truncate">{c.title}</span>
+            {c.unread && <Dot />}
             <Chevron className="size-4 -rotate-90 text-ink3" />
           </button>
         </li>

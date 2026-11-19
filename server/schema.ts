@@ -41,6 +41,8 @@ export const settings = sqliteTable(
     aiKey: text(),
     sttBaseUrl: text(),
     sttKey: text(),
+    checkIns: integer({ mode: "boolean" }).notNull().default(true),
+    lastCheckInAt: text(),
   },
   (t) => [check("single_row", sql`${t.id} = 1`)],
 );
@@ -143,6 +145,8 @@ export const attachments = sqliteTable("attachments", {
 export const chats = sqliteTable("chats", {
   id: integer().primaryKey(),
   title: text().notNull(),
+  checkIn: integer({ mode: "boolean" }).notNull().default(false),
+  unread: integer({ mode: "boolean" }).notNull().default(false),
 });
 
 export const chatMessages = sqliteTable("chat_messages", {

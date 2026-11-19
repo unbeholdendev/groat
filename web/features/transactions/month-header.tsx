@@ -6,6 +6,7 @@ import { useSettings } from "../../lib/api";
 import { today } from "../../lib/dates";
 import type { Transaction } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
+import { Dot, useUnread } from "../chat/unread";
 import { inBase, useKindOf } from "./queries";
 import { Summary } from "./summary";
 import { route, useMonth } from "./use-month";
@@ -23,6 +24,7 @@ export function MonthHeader({
 }) {
   const { month, filter, filtered, end, step, label, kind } = useMonth();
   const kindOf = useKindOf();
+  const unread = useUnread().length > 0;
   const counted = rows.filter((e) => kindOf(e) === (kind ?? "expense"));
   const shown = kind ? counted : rows;
   const { baseCurrency: base } = useSettings()!;
@@ -86,8 +88,9 @@ export function MonthHeader({
             </b>
           )}
         </button>
-        <Link to="/chat" aria-label="Chats" title="Chats" className={`${stepper} lg:hidden`}>
+        <Link to="/chat" aria-label="Chats" title="Chats" className={`${stepper} relative lg:hidden`}>
           <Icon d={paths.chat} className="size-[18px] stroke-2" />
+          {unread && <Dot className="absolute top-1 right-1 ring-2 ring-bg" />}
         </Link>
       </div>
       {filtered ? (

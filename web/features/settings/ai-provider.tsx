@@ -16,7 +16,7 @@ export function AiProvider({ dictationOnly }: { dictationOnly: boolean }) {
   const query = useApi(aiProvider, ["/api/ai"], { throwOnError: false });
   return (
     <div className="flex flex-col gap-3">
-      <h3 className={subHead}>{dictationOnly ? "Dictation" : "API key"}</h3>
+      <h2 className={subHead}>{dictationOnly ? "Dictation" : "API key"}</h2>
       <FormError error={query.error} className="px-1" />
       {query.isError && (
         <button type="button" className="press text-accent" onClick={() => void query.refetch()}>

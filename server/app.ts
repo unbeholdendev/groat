@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { Hono } from "hono";
+import { checkInRoutes, checkIns } from "./ai/check-in";
 import { chatRoutes } from "./ai/chat/routes";
 import { chatgptAccount } from "./ai/chatgpt/account";
 import { chatgptRoutes } from "./ai/chatgpt/routes";
@@ -68,6 +69,7 @@ export function createApp(deps: Deps) {
   app.use("*", requestLogging);
   app.onError(failed);
   generateRecurring(ctx);
+  const checkIn = checkIns(ctx);
 
   for (const file of ["sw.js", "manifest.webmanifest"])
     app.get(`/${file}`, () => new Response(Bun.file(`${import.meta.dir}/${file}`)));
@@ -99,6 +101,7 @@ export function createApp(deps: Deps) {
   app.route("/", backupRoutes(ctx));
   app.route("/", statsRoutes(ctx));
   app.route("/", recurringRoutes(ctx));
+  app.route("/", checkInRoutes(ctx, checkIn));
   app.route("/api/chats", chatRoutes(ctx));
   app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
@@ -107,6 +110,7 @@ export function createApp(deps: Deps) {
       generateRecurring(ctx);
       live.publish(["recurring", "transactions"]);
     },
+    checkIn: checkIn.tick,
     close: live.close,
   });
 }

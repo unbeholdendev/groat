@@ -32,7 +32,7 @@ export function AiModels({ dictationOnly }: { dictationOnly: boolean }) {
   if (!query.isError && !data) return null;
   return (
     <div className="flex flex-col">
-      <h3 className={`${subHead} mb-3`}>Models</h3>
+      <h2 className={`${subHead} mb-3`}>Models</h2>
       <FormError error={query.error} className="px-1" />
       {query.isError && (
         <button type="button" className="press text-accent" onClick={() => void query.refetch()}>

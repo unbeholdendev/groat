@@ -4,7 +4,7 @@ import { errorKind, log } from "../../logging";
 import { chatActions } from "./actions";
 import type { Message } from "./message";
 import { createChat, findChat, retitleChat, saveMessage } from "./store";
-import { readTools, systemPrompt, type Tool } from "./tools";
+import { callTool, readTools, systemPrompt, type Tool, toolSpecs } from "./tools";
 
 export function chatAgent(ctx: Ctx) {
   const { db, ai } = ctx;
@@ -37,10 +37,7 @@ export function chatAgent(ctx: Ctx) {
           await ai.complete(
             {
               messages: [{ role: "system", content: systemPrompt(ctx) }, ...history, ...added],
-              tools: Object.entries(available).map(([name, { description, parameters }]) => ({
-                type: "function",
-                function: { name, description, parameters },
-              })),
+              tools: toolSpecs(available),
             },
             "chat",
             { signal, onText: (text) => ctx.broadcast({ type: "chat", id, at, text }) },
@@ -51,27 +48,7 @@ export function chatAgent(ctx: Ctx) {
         for (const { id: callId, function: f } of calls) {
           signal.throwIfAborted();
           const mutates = f.name in actions && f.name !== "list_recurring";
-          const operation = Object.hasOwn(available, f.name) ? f.name : "unknown";
-          const result =
-            mutates && results.has(callId)
-              ? results.get(callId)
-              : await Promise.resolve()
-                  .then(() => {
-                    const selected = available[f.name];
-                    if (!selected) throw new Error("Unsupported action");
-                    const args = JSON.parse(f.arguments);
-                    log("debug", "ai.tool.started", { operation });
-                    return selected.run(args);
-                  })
-                  .then((result) => {
-                    log("debug", "ai.tool.completed", { operation });
-                    return result;
-                  })
-                  .catch((e) => {
-                    log("warn", "ai.tool.failed", { operation, error: errorKind(e) });
-                    if (e instanceof HTTPException && e.status === 401) throw e;
-                    return { error: String(e) };
-                  });
+          const result = mutates && results.has(callId) ? results.get(callId) : await callTool(available, f);
           if (mutates) results.set(callId, result);
           step({ role: "tool", tool_call_id: callId, content: JSON.stringify(result) });
         }

@@ -22,6 +22,7 @@ const changes: [string, Resource[]][] = [
   ["/api/chatgpt", ["ai"]],
   ["/api/import/preview", []],
   ["/api/chats", ["chats"]],
+  ["/api/check-in", []],
   ["/api/drafts", []],
   ["/api/voice", []],
   ["/api/password", []],

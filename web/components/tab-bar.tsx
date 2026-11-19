@@ -1,5 +1,6 @@
 import { type ReactNode, useSyncExternalStore } from "react";
 import { Link, useLocation, useSearch } from "@tanstack/react-router";
+import { Dot, useUnread } from "../features/chat/unread";
 import { Icon, paths } from "./icon";
 
 const tabs: { to: string; label: string; icon: ReactNode }[] = [
@@ -51,6 +52,7 @@ export function TabBar() {
   const path = useLocation().pathname;
   const { view } = useSearch({ strict: false });
   const wide = useSyncExternalStore(onResize, () => lg().matches);
+  const unread = useUnread().length > 0;
   const current = view && !wide ? "/settings" : (view ?? path.replace(/^(\/[^/]*).*/, "$1"));
   return (
     <nav
@@ -81,6 +83,7 @@ export function TabBar() {
         >
           <Icon d={d} className={`ml-0.5 size-[18px] stroke-2 ${current === id ? "text-accent" : ""}`} />
           {label}
+          {unread && id === "/chat" && <Dot className="ml-auto" />}
         </Link>
       ))}
     </nav>
