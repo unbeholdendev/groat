@@ -13,10 +13,12 @@ jobs:
     if: github.server_url == 'https://github.com'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
@@ -49,3 +51,14 @@ jobs:
           DIGEST: ${{ steps.image.outputs.digest }}
         run: |
           echo "Published $IMAGE:$VERSION ($IMAGE@$DIGEST) for linux/amd64." >> "$GITHUB_STEP_SUMMARY"
+      # (#n) is a PR number on Forgejo; on GitHub it would link to the wrong issue.
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prev=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          git log --format="- %s ([%h]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/%H))" "${prev:+$prev..}$GITHUB_REF_NAME" \
+            | sed -E 's/ \(#[0-9]+\)( \(\[)/\1/' \
+            > notes.md
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md \
+            $([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease)
