@@ -38,9 +38,9 @@ export function SettingsPage() {
         <Link to="/" search={{ view: "bin" }} className={`${linkRow} lg:hidden`}>
           <Go icon={<path d={paths.bin} />}>Bin</Go>
         </Link>
-        <a href="/privacy.html" className={linkRow}>
+        <Link to="/settings/privacy" className={linkRow}>
           <Go icon={<path d="M12 3 4 6v6c0 4 8 9 8 9s8-5 8-9V6z" />}>Privacy and data flows</Go>
-        </a>
+        </Link>
       </nav>
       {session?.version && <p className="mt-4 text-center text-xs text-ink3">Groat {session.version}</p>}
     </>

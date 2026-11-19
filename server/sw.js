@@ -20,7 +20,6 @@ self.addEventListener("fetch", (e) => {
     !url.pathname.startsWith("/assets/") &&
     ![
       "/",
-      "/privacy.html",
       "/favicon.ico",
       "/favicon.svg",
       "/icon-192.png",
@@ -30,7 +29,7 @@ self.addEventListener("fetch", (e) => {
     ].includes(url.pathname)
   )
     return;
-  const key = e.request.mode === "navigate" && url.pathname !== "/privacy.html" ? "/" : e.request;
+  const key = e.request.mode === "navigate" ? "/" : e.request;
   e.respondWith(
     caches.open("shell").then(async (cache) => {
       const cached = await cache.match(key);
