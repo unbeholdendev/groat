@@ -1,4 +1,4 @@
-import { bar, expect, test, today } from "./fixtures";
+import { bar, expect, seed, test, today } from "./fixtures";
 
 test("theme and base currency save as they change", async ({ app: page }) => {
   await page.getByRole("link", { name: "Settings" }).click();
@@ -230,4 +230,15 @@ test("every Settings section is reachable from the first screen", async ({ app: 
   if (phone) await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   else await tabs.getByRole("link", { name: "Settings", exact: true }).click();
   await expect(page).toHaveURL(/\/settings$/);
+});
+
+test("opting in shows spending in sats at the time and today on Stats", async ({ app: page }) => {
+  await seed(page, [{ note: "Dinner", amount: "48.00" }]);
+  await page.goto("/stats");
+  await expect(page.getByText("BTC then")).toBeHidden();
+  await page.goto("/settings/general");
+  await page.getByRole("checkbox", { name: "Show spending in sats" }).check();
+  await expect(page.getByText("Settings saved.")).toBeVisible();
+  await page.goto("/stats");
+  await expect(page.getByText("0.00100000 BTC then · £48.00 today")).toBeVisible();
 });

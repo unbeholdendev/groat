@@ -50,6 +50,7 @@ export const settings = z.object({
   income: z.boolean(),
   checkIns: z.boolean(),
   lastCheckInAt: z.string().nullable(),
+  sats: z.boolean(),
 });
 export const aiStatus = z.object({
   ai: z.boolean(),
@@ -170,6 +171,14 @@ export const period = z.object({
   income: z.object({ total: z.number(), categories: breakdown }),
   tags: z.array(z.object({ name: z.string(), total: z.number() })),
   buckets: z.array(z.object({ start: z.string(), total: z.number() })),
+  sats: z
+    .object({
+      total: z.number(),
+      income: z.number(),
+      unconverted: z.number(),
+      today: z.object({ total: z.number(), income: z.number() }).nullable(),
+    })
+    .nullish(),
 });
 
 export function unsent(body: unknown, id: number): Transaction | undefined {

@@ -1,7 +1,7 @@
 import { and, between, eq } from "drizzle-orm";
 import { z } from "zod";
 import { isoDate, type Kind } from "../../shared/schema";
-import type { Ctx } from "../context";
+import { type Ctx, today } from "../context";
 import * as schema from "../schema";
 import { settings } from "../settings/queries";
 import { countable, kindOf } from "../transactions/queries";
@@ -34,8 +34,8 @@ const nextBucket = (start: string, group: Group) => {
 
 const byTotal = (a: Total, b: Total) => b.total - a.total;
 
-export async function period({ db, value }: Pick<Ctx, "db" | "value">, from: string, to: string, group: Group) {
-  const rows = db
+const entries = (db: Ctx["db"], from: string, to: string) =>
+  db
     .select({
       id: schema.transactions.id,
       amount: schema.transactions.amount,
@@ -47,11 +47,14 @@ export async function period({ db, value }: Pick<Ctx, "db" | "value">, from: str
     .from(schema.transactions)
     .where(and(countable, between(schema.transactions.date, from, to)))
     .all();
-  const valued = await value(rows);
+
+const sum = (rs: { baseAmount: number }[]) => rs.reduce((s, r) => s + r.baseAmount, 0);
+
+export async function period({ db, value }: Pick<Ctx, "db" | "value">, from: string, to: string, group: Group) {
+  const valued = await value(entries(db, from, to));
   const rated = valued.filter((r): r is (typeof valued)[number] & { baseAmount: number } => r.baseAmount !== null);
   const counted = rated.filter((r) => r.kind === "expense");
   const earned = rated.filter((r) => r.kind === "income");
-  const sum = (rs: { baseAmount: number }[]) => rs.reduce((s, r) => s + r.baseAmount, 0);
 
   const all: Category[] = db
     .select({
@@ -112,10 +115,34 @@ export async function period({ db, value }: Pick<Ctx, "db" | "value">, from: str
   };
 }
 
-export async function stats(ctx: Pick<Ctx, "db" | "value">, from: string, to: string, group: Group) {
+async function sats({ db, value, clock }: Pick<Ctx, "db" | "value" | "clock">, from: string, to: string) {
+  const { baseCurrency, sats } = settings(db);
+  if (!sats || baseCurrency === "BTC") return null;
+  const valued = await value(entries(db, from, to), "BTC");
+  const rated = valued.filter((r): r is (typeof valued)[number] & { baseAmount: number } => r.baseAmount !== null);
+  const total = sum(rated.filter((r) => r.kind === "expense"));
+  const income = sum(rated.filter((r) => r.kind === "income"));
+  const date = today(clock);
+  const [spent, earned] = await value([
+    { amount: total, currency: "BTC", date },
+    { amount: income, currency: "BTC", date },
+  ]);
+  return {
+    total,
+    income,
+    unconverted: valued.length - rated.length,
+    today:
+      spent.baseAmount === null || earned.baseAmount === null
+        ? null
+        : { total: spent.baseAmount, income: earned.baseAmount },
+  };
+}
+
+export async function stats(ctx: Pick<Ctx, "db" | "value" | "clock">, from: string, to: string, group: Group) {
   const days = (Date.parse(to) - Date.parse(from)) / 864e5 + 1;
   return {
     ...(await period(ctx, from, to, group)),
+    sats: await sats(ctx, from, to),
     previous: await period(ctx, shift(from, -days), shift(from, -1), group),
   };
 }

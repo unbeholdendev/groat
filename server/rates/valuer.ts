@@ -14,8 +14,7 @@ export function valuer({ db, fetch, clock }: Pick<Ctx, "db" | "fetch" | "clock">
   const recent = new Map<string, { at: number; rate?: number }>();
 
   const provenance = new Map<string, { source: string; rateDate: string | null }>();
-  const value = async <T extends Row>(rows: T[]) => {
-    const { baseCurrency: base } = settings(db);
+  const value = async <T extends Row>(rows: T[], base = settings(db).baseCurrency) => {
     const now = today(clock);
     const rates = new Map<string, Map<string, number>>();
 

@@ -3,11 +3,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../components/button";
 import { FormError } from "../../components/form";
 import { Masthead } from "../../components/masthead";
-import { panel, sectionHead } from "../../components/styles";
+import { divide, panel, sectionHead } from "../../components/styles";
 import { useSend } from "../../lib/api";
 import type { z } from "zod";
 import type { settings } from "../../lib/schemas";
 import { BaseCurrency } from "./base-currency";
+import { SettingsIcon } from "./settings-icon";
 import { ThemeSection } from "./theme-section";
 
 export function SettingsForm(props: {
@@ -31,6 +32,13 @@ export function SettingsForm(props: {
       });
   }
 
+  function update(change: Partial<Pick<z.infer<typeof settings>, "theme" | "sats">>) {
+    queryClient.setQueryData(["/api/settings"], { ...props.settings, ...change });
+    mutation.mutate([props.method, props.path, change], {
+      onError: () => queryClient.setQueryData(["/api/settings"], props.settings),
+    });
+  }
+
   function save(e: FormEvent) {
     e.preventDefault();
     mutation.mutate([props.method, props.path, { baseCurrency }]);
@@ -45,19 +53,25 @@ export function SettingsForm(props: {
       <div className={panel}>
         <fieldset disabled={mutation.isPending}>
           <BaseCurrency value={baseCurrency} onChange={change} />
+          {!onboarding && baseCurrency !== "BTC" && (
+            <label className={`flex h-[62px] items-center gap-3 px-4 ${divide}`}>
+              <SettingsIcon>
+                <path d="M9 6h5a3 3 0 0 1 0 6H9zm0 6h6a3 3 0 0 1 0 6H9zm0-6v12M7 6h2m-2 12h2m2-14v2m0 12v2m3-16v2m0 12v2" />
+              </SettingsIcon>
+              <span className="flex-1 font-medium">Show spending in sats</span>
+              <input
+                type="checkbox"
+                className="size-5 accent-accent"
+                checked={props.settings.sats}
+                onChange={(e) => update({ sats: e.target.checked })}
+              />
+            </label>
+          )}
         </fieldset>
       </div>
       {!onboarding && (
         <fieldset disabled={mutation.isPending}>
-          <ThemeSection
-            value={props.settings.theme}
-            onChange={(theme) => {
-              queryClient.setQueryData(["/api/settings"], { ...props.settings, theme });
-              mutation.mutate([props.method, props.path, { theme }], {
-                onError: () => queryClient.setQueryData(["/api/settings"], props.settings),
-              });
-            }}
-          />
+          <ThemeSection value={props.settings.theme} onChange={(theme) => update({ theme })} />
         </fieldset>
       )}
       {!onboarding && (

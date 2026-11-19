@@ -34,6 +34,7 @@ export const settings = sqliteTable(
     baseCurrency: text().notNull(),
     theme: text().notNull(),
     onboarded: integer({ mode: "boolean" }).notNull(),
+    sats: integer({ mode: "boolean" }).notNull().default(false),
     chatModel: text(),
     visionModel: text(),
     sttModel: text(),

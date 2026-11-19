@@ -47,7 +47,11 @@ const defaultCategories: [string, string, string, [string, string][]?][] = [
 const currency = z.string("Invalid currency").refine((c) => knownCurrencies.has(c), "Invalid currency");
 const onboarding = z.object({ baseCurrency: currency });
 const update = onboarding
-  .extend({ theme: z.enum(["system", "light", "dark"], "Invalid theme"), checkIns: z.boolean("Invalid check-ins") })
+  .extend({
+    theme: z.enum(["system", "light", "dark"], "Invalid theme"),
+    checkIns: z.boolean("Invalid check-ins"),
+    sats: z.boolean("Invalid sats"),
+  })
   .partial();
 
 export function settingsRoutes({ db }: Pick<Ctx, "db">) {
@@ -58,8 +62,8 @@ export function settingsRoutes({ db }: Pick<Ctx, "db">) {
   app.put("/api/settings", async (c) => {
     const input = await body(c, update);
     if ("error" in input) return c.json(input, 400);
-    const { baseCurrency, theme, checkIns } = { ...stored(db), ...input.data };
-    db.update(schema.settings).set({ baseCurrency, theme, checkIns }).run();
+    const { baseCurrency, theme, checkIns, sats } = { ...stored(db), ...input.data };
+    db.update(schema.settings).set({ baseCurrency, theme, checkIns, sats }).run();
     return c.json(stored(db));
   });
 

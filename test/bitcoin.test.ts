@@ -57,3 +57,52 @@ test("with BTC as base, fiat expenses show in sats at each date's rate", async (
   const list = (await call("GET", "/api/transactions")).body;
   expect(list.map((e: { baseAmount: number }) => e.baseAmount)).toEqual([100000, 10000]);
 });
+
+async function spending(baseCurrency: string) {
+  const t = setup(
+    "2026-10-10T12:00:00Z",
+    (url) => fiat(url) ?? mempool({ "2026-10-01": 120000, "2026-10-02": 100000, "2026-10-10": 125000 })(url),
+  );
+  await t.call("POST", "/api/onboarding", { baseCurrency });
+  const all: { id: number; name: string }[] = (await t.call("GET", "/api/categories")).body;
+  const add = (amount: string, date: string, category: string) =>
+    t.call("POST", "/api/transactions", {
+      note: category,
+      amount,
+      currency: "GBP",
+      date,
+      categoryId: all.find((c) => c.name === category)!.id,
+    });
+  const sats = async () => (await t.call("GET", "/api/stats?from=2026-09-01&to=2026-10-31&group=month")).body.sats;
+  return { ...t, add, sats };
+}
+
+test("stats show spending and income in sats at the time and valued today once opted in", async () => {
+  const { call, add, sats } = await spending("GBP");
+  await add("76.00", "2026-10-02", "Groceries");
+  await add("152.00", "2026-10-02", "Salary");
+  expect(await sats()).toBeNull();
+  expect((await call("PUT", "/api/settings", { sats: true })).body.sats).toBe(true);
+  expect(await sats()).toEqual({
+    total: 100000,
+    income: 200000,
+    unconverted: 0,
+    today: { total: 9500, income: 19000 },
+  });
+});
+
+test("sats totals leave out entries without a BTC rate and count them", async () => {
+  const { call, add, sats } = await spending("GBP");
+  await add("76.00", "2026-10-02", "Groceries");
+  await add("5.00", "2026-09-01", "Groceries");
+  await call("PUT", "/api/settings", { sats: true });
+  expect(await sats()).toMatchObject({ total: 100000, unconverted: 1 });
+});
+
+test("sats totals stay off with BTC as base, keeping the stored choice", async () => {
+  const { call, sats } = await spending("GBP");
+  await call("PUT", "/api/settings", { sats: true });
+  await call("PUT", "/api/settings", { baseCurrency: "BTC" });
+  expect(await sats()).toBeNull();
+  expect((await call("GET", "/api/settings")).body.sats).toBe(true);
+});

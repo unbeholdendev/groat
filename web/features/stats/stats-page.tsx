@@ -61,6 +61,9 @@ export function StatsPage() {
     );
 
   const show = (n: number) => money(n, now.baseCurrency, unit);
+  const inSats = (then: number, today: number | undefined) =>
+    [`${money(then, "BTC", unit)} then`, today !== undefined && `${show(today)} today`].filter((t) => t !== false);
+  const sats = now.sats;
   const running = s.end > s.range[1];
   const n = days(...s.range);
   const vs = (running && rangeLabel(...s.ref)) || (preset === "Custom" ? daysBefore(n) : s.name);
@@ -72,6 +75,11 @@ export function StatsPage() {
       <section>
         {head}
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="mt-7 block" />
+        {sats && (
+          <p className="num mt-1.5 text-[13px] font-medium text-ink2">
+            {[...inSats(sats.total, sats.today?.total), ...(sats.unconverted ? ["incomplete"] : [])].join(" · ")}
+          </p>
+        )}
         <p className="mt-2.5 flex min-h-[26px] flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-ink2">
           {incomplete
             ? "Incomplete totals · comparison unavailable"
@@ -112,7 +120,19 @@ export function StatsPage() {
             : `${now.unconverted} entries have no rate and are left out.`}
         </p>
       )}
-      {income && <IncomeRow now={now} prev={ref} show={show} />}
+      {income && (
+        <IncomeRow
+          now={now}
+          prev={ref}
+          show={show}
+          sats={
+            sats && {
+              income: inSats(sats.income, sats.today?.income),
+              net: inSats(sats.income - sats.total, sats.today ? sats.today.income - sats.today.total : undefined),
+            }
+          }
+        />
+      )}
       {income && (
         <div className="mt-7">
           <Segmented

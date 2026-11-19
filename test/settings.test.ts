@@ -28,6 +28,7 @@ test("settings changes persist", async () => {
     income: false,
     checkIns: true,
     lastCheckInAt: null,
+    sats: false,
   });
   await call("PUT", "/api/settings", { theme: "light" });
   expect((await call("GET", "/api/settings")).body).toMatchObject({ baseCurrency: "BTC", theme: "light" });

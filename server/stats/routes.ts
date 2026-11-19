@@ -3,7 +3,7 @@ import type { Ctx } from "../context";
 import { query } from "../request";
 import { range, stats } from "./period";
 
-export function statsRoutes(ctx: Pick<Ctx, "db" | "value">) {
+export function statsRoutes(ctx: Pick<Ctx, "db" | "value" | "clock">) {
   const app = new Hono();
 
   app.get("/api/stats", async (c) => {

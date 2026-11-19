@@ -16,20 +16,38 @@ function Change({ now, before, points }: { now: number | null; before: number | 
   );
 }
 
-export function IncomeRow({ now, prev, show }: { now: Period; prev: Period; show: (n: number) => string }) {
+export function IncomeRow({
+  now,
+  prev,
+  show,
+  sats,
+}: {
+  now: Period;
+  prev: Period;
+  show: (n: number) => string;
+  sats?: { income: string[]; net: string[] } | null;
+}) {
   const compare = !now.unconverted && !prev.unconverted;
   const saved = now.unconverted ? null : rate(now);
   const cells = [
-    { name: "Income", value: show(now.income.total), now: now.income.total, before: prev.income.total },
+    {
+      name: "Income",
+      value: show(now.income.total),
+      sats: sats?.income,
+      now: now.income.total,
+      before: prev.income.total,
+    },
     {
       name: "Net",
       value: show(now.income.total - now.total),
+      sats: sats?.net,
       now: now.income.total - now.total,
       before: prev.income.total - prev.total,
     },
     {
       name: "Savings rate",
       value: saved === null ? "–" : `${Math.round(saved * 100)}%`,
+      sats: undefined,
       now: saved,
       before: rate(prev),
       points: true,
@@ -41,6 +59,11 @@ export function IncomeRow({ now, prev, show }: { now: Period; prev: Period; show
         <div key={c.name} className="flex min-w-0 flex-col gap-1 px-4 py-3 not-first:border-l not-first:border-line">
           <dt className="text-[12px] font-medium text-ink2">{c.name}</dt>
           <dd className="num truncate text-[15px] font-medium">{c.value}</dd>
+          {c.sats?.map((t) => (
+            <dd key={t} className="num truncate text-[12px] text-ink2">
+              {t}
+            </dd>
+          ))}
           <dd>{compare && <Change now={c.now} before={c.before} points={c.points} />}</dd>
         </div>
       ))}
