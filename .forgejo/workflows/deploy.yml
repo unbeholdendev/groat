@@ -8,7 +8,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: docker
+    runs-on: docker-build
     env:
       IMAGE: ${{ vars.REGISTRY }}/${{ github.repository }}-site:${{ github.sha }}
     steps:
