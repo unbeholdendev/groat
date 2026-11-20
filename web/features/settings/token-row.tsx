@@ -1,6 +1,6 @@
 import { Button } from "../../components/button";
 import { divide } from "../../components/styles";
-import { dayLabel } from "../../lib/dates";
+import { dayLabel } from "../../../shared/dates";
 import type { ApiToken } from "../../lib/schemas";
 import { SettingsIcon } from "./settings-icon";
 

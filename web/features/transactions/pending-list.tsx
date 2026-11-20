@@ -3,7 +3,7 @@ import { Tile } from "../../components/category";
 import { FormError } from "../../components/form";
 import { divide } from "../../components/styles";
 import { useCategories, useSend } from "../../lib/api";
-import { dayLabel } from "../../lib/dates";
+import { dayLabel } from "../../../shared/dates";
 import { money } from "../../lib/money";
 import { UnitContext } from "../../lib/unit";
 import { usePending } from "./queries";

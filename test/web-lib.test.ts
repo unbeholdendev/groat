@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { cumulative, valueAt } from "../web/features/stats/cumulative";
-import { dayLabel, pick, rangeLabel, today } from "../web/lib/dates";
+import { dayLabel, pick, rangeLabel, today } from "../shared/dates";
 import { money } from "../web/lib/money";
 import { change, days, span } from "../web/lib/period";
 import { invalidate, stale } from "../web/lib/resources";

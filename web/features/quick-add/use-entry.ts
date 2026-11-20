@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { parseAmount, type Unit } from "../../../shared/amount";
 import { parse } from "../../../shared/parse";
-import { today } from "../../lib/dates";
+import { today } from "../../../shared/dates";
 import type { Category, Draft, Settings } from "../../lib/schemas";
 import { useSuggestions } from "./use-suggestions";
 

@@ -1,6 +1,6 @@
 import { CategoryOptions, Tile } from "../../components/category";
 import { CurrencySelect, DateInput, Picker } from "../../components/picker";
-import { dayLabel } from "../../lib/dates";
+import { dayLabel } from "../../../shared/dates";
 import type { Category } from "../../lib/schemas";
 import { pill } from "./tokens";
 

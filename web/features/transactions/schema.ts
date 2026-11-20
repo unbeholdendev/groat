@@ -2,7 +2,7 @@ import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { formatAmount, parseAmount, type Unit } from "../../../shared/amount";
 import { type Kind, kind } from "../../../shared/schema";
-import { today } from "../../lib/dates";
+import { today } from "../../../shared/dates";
 import type { Draft, Template } from "../../lib/schemas";
 
 export const transactionForm = (unit: Unit) =>

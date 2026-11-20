@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { byRecent } from "../../shared/amount";
-import { today } from "../lib/dates";
+import { today } from "../../shared/dates";
 import { Chevron } from "./icon";
 
 export const overlay = "absolute inset-0 opacity-0";

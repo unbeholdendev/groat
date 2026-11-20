@@ -1,5 +1,5 @@
 import type { Unit } from "../../shared/amount";
-import { dayLabel } from "../lib/dates";
+import { dayLabel } from "../../shared/dates";
 import { money } from "../lib/money";
 import type { Draft } from "../lib/schemas";
 

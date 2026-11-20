@@ -2,7 +2,7 @@ import { useContext } from "react";
 import { Tile } from "../../components/category";
 import { Icon, paths } from "../../components/icon";
 import { useCategories, useSession, useSettings } from "../../lib/api";
-import { dayLabel } from "../../lib/dates";
+import { dayLabel } from "../../../shared/dates";
 import { money } from "../../lib/money";
 import type { Transaction } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";

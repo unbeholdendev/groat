@@ -4,7 +4,7 @@ import { categoryForm, tagForm } from "../web/features/categories/schema";
 import { blank, transactionForm, filled, fromTemplate } from "../web/features/transactions/schema";
 import { fields, review } from "../web/features/quick-add/schema";
 import { newPassword, tokenName } from "../web/features/settings/schema";
-import { today } from "../web/lib/dates";
+import { today } from "../shared/dates";
 import type { z } from "zod";
 
 const errors = (r: z.ZodSafeParseResult<unknown>) => (r.success ? [] : r.error.issues.map((i) => i.path.join(".")));

@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Chevron, Icon, paths } from "../../components/icon";
 import { Total } from "../../components/total";
 import { useSettings } from "../../lib/api";
-import { today } from "../../lib/dates";
+import { today } from "../../../shared/dates";
 import type { Transaction } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";
 import { Dot, useUnread } from "../chat/unread";

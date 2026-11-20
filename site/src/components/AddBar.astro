@@ -1,4 +1,5 @@
 ---
+import { byRecent } from "../../../shared/amount";
 import { defaultCategories } from "../../../shared/categories";
 
 const total = 1284.6;
@@ -18,8 +19,7 @@ const words: Record<string, string> = {
   Travel: "flights|hotel",
   Gifts: "present|gift|flowers",
 };
-const dates = ["Today", "Yesterday", "2 days ago", "3 days ago", "Last week"];
-const currencies = ["GBP", "EUR", "USD", "BTC"];
+const recent = ["GBP", "EUR", "USD"];
 const chevron = '<svg class="chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3"/></svg>';
 const palette = ["#f16f7e", "#f98942", "#f4bf3f", "#3fbe90", "#26c0cf", "#bf73df"];
 const days = Array.from({ length: 30 }, (_, d) =>
@@ -65,35 +65,34 @@ const days = Array.from({ length: 30 }, (_, d) =>
       <select aria-label="Category" data-category>
         <option value="">Category</option>
         {
-          defaultCategories.map(([name, emoji, colour, children]) => {
-            const option = (n: string, e: string) => (
+          defaultCategories.flatMap(([name, emoji, colour, children = []]) => {
+            const option = (n: string, e: string, indent = "") => (
               <option value={n} data-emoji={e} data-colour={colour} data-words={words[n]}>
-                {n}
+                {`${indent}${e} ${n}`}
               </option>
             );
-            return children ? (
-              <optgroup label={name}>{children.map(([n, e]) => option(n, e))}</optgroup>
-            ) : (
-              option(name, emoji)
-            );
+            return [option(name, emoji), ...children.map(([n, e]) => option(n, e, "   "))];
           })
         }
       </select>
     </label>
     <label class="chip pick">
       <span data-date-label>Today</span><Fragment set:html={chevron} />
-      <select aria-label="Date" data-date>{dates.map((d) => <option>{d}</option>)}</select>
+      <input type="date" aria-label="Date" data-date />
     </label>
     <label class="chip pick">
       <span data-currency-label>GBP</span><Fragment set:html={chevron} />
-      <select aria-label="Currency" data-currency>{currencies.map((c) => <option>{c}</option>)}</select>
+      <select aria-label="Currency" data-currency>{byRecent(recent).map((c) => <option>{c}</option>)}</select>
     </label>
   </div>
   <p class="demo-note" id="demo-note">Try your own line. This is a demo; nothing is saved.</p>
 </div>
 
 <script>
+  import { dayLabel, today } from "../../../shared/dates";
   import { parse } from "../../../shared/parse";
+
+  const recent = ["GBP", "EUR", "USD"];
 
   const still = matchMedia("(prefers-reduced-motion: reduce)");
   for (const demo of document.querySelectorAll<HTMLElement>("[data-demo]")) {
@@ -103,7 +102,8 @@ const days = Array.from({ length: 30 }, (_, d) =>
     const categoryChip = demo.querySelector("[data-category-chip]") as HTMLElement;
     const categoryLabel = demo.querySelector("[data-category-label]") as HTMLElement;
     const tile = demo.querySelector("[data-tile]") as HTMLElement;
-    const date = demo.querySelector("[data-date]") as HTMLSelectElement;
+    const date = demo.querySelector("[data-date]") as HTMLInputElement;
+    const dateLabel = demo.querySelector("[data-date-label]") as HTMLElement;
     const currency = demo.querySelector("[data-currency]") as HTMLSelectElement;
     const currencyLabel = demo.querySelector("[data-currency-label]") as HTMLElement;
     let picked = false;
@@ -115,13 +115,13 @@ const days = Array.from({ length: 30 }, (_, d) =>
       tile.hidden = !set;
       tile.textContent = o.dataset.emoji ?? "";
       tile.style.setProperty("--c", o.dataset.colour ?? "");
-      categoryLabel.textContent = o.textContent?.trim() ?? "";
+      categoryLabel.textContent = o.value || "Category";
     };
     const count = demo.querySelector("[data-count]") as HTMLElement;
     const totalEl = demo.querySelector("[data-total]") as HTMLElement;
 
     const render = () => {
-      const p = parse(input.value, ["GBP", "EUR", "USD"]);
+      const p = parse(input.value, recent);
       mirror.replaceChildren(
         ...p.parts.map(([w, kind]) => {
           const span = document.createElement("span");
@@ -132,7 +132,6 @@ const days = Array.from({ length: 30 }, (_, d) =>
       );
       mirror.scrollLeft = input.scrollLeft;
       if (p.currency) {
-        if (![...currency.options].some((o) => o.value === p.currency)) currency.add(new Option(p.currency));
         currency.value = p.currency;
         currencyLabel.textContent = p.currency;
       }
@@ -162,9 +161,14 @@ const days = Array.from({ length: 30 }, (_, d) =>
 
     input.addEventListener("input", render);
     category.addEventListener("change", () => ((picked = true), showCategory()));
-    date.addEventListener("change", () => ((demo.querySelector("[data-date-label]") as HTMLElement).textContent = date.value));
+    date.max = date.value = today();
+    date.addEventListener("click", () => date.showPicker?.());
+    date.addEventListener("change", () => {
+      date.value ||= today();
+      dateLabel.textContent = dayLabel(date.value);
+    });
     currency.addEventListener("change", () => {
-      const { parts } = parse(input.value, ["GBP", "EUR", "USD"]);
+      const { parts } = parse(input.value, recent);
       input.value = parts.map(([w, kind]) => (kind === "currency" ? currency.value : w)).join("");
       currencyLabel.textContent = currency.value;
       render();

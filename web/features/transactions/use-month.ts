@@ -1,7 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { type Kind, kind as kindSchema } from "../../../shared/schema";
 import { useSettings } from "../../lib/api";
-import { today } from "../../lib/dates";
+import { today } from "../../../shared/dates";
 import { iso } from "../../lib/period";
 import type { Transaction } from "../../lib/schemas";
 

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { pick } from "../lib/dates";
+import { pick } from "../../shared/dates";
 import { ChatPage } from "../features/chat/chat-page";
 
 export const Route = createFileRoute("/chat")({

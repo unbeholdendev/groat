@@ -3,7 +3,7 @@ import type { Unit } from "../../../shared/amount";
 import { Icon } from "../../components/icon";
 import { Pill, Total } from "../../components/total";
 import { useCategories } from "../../lib/api";
-import { dayLabel, today } from "../../lib/dates";
+import { dayLabel, today } from "../../../shared/dates";
 import { money } from "../../lib/money";
 import { change, span, usePeriod } from "../../lib/period";
 import type { Transaction } from "../../lib/schemas";

@@ -4,7 +4,7 @@ import { Pill, Total } from "../../components/total";
 import { Segmented } from "../../components/segmented";
 import { z } from "zod";
 import { useApi, useCategories, useSettings } from "../../lib/api";
-import { rangeLabel } from "../../lib/dates";
+import { rangeLabel } from "../../../shared/dates";
 import { money } from "../../lib/money";
 import { change, days, span } from "../../lib/period";
 import { period, tag as tagSchema } from "../../lib/schemas";

@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { panel } from "../../components/styles";
 import { useSettings } from "../../lib/api";
-import { dayLabel } from "../../lib/dates";
+import { dayLabel } from "../../../shared/dates";
 import { money } from "../../lib/money";
 import type { Transaction } from "../../lib/schemas";
 import { UnitContext } from "../../lib/unit";

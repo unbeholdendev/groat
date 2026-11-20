@@ -2,7 +2,7 @@ import { Tile } from "../../../components/category";
 import { Chevron } from "../../../components/icon";
 import { DateInput, Picker } from "../../../components/picker";
 import { useCategories } from "../../../lib/api";
-import { dayLabel, today } from "../../../lib/dates";
+import { dayLabel, today } from "../../../../shared/dates";
 import { iso } from "../../../lib/period";
 import type { Kind } from "../../../../shared/schema";
 import type { Category } from "../../../lib/schemas";

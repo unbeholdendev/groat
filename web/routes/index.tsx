@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Transactions } from "../features/transactions/transactions";
-import { dated, pick } from "../lib/dates";
+import { dated, pick } from "../../shared/dates";
 
 export const Route = createFileRoute("/")({
   validateSearch: (s) =>

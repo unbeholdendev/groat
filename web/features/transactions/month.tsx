@@ -5,7 +5,7 @@ import { panel } from "../../components/styles";
 import { useSettings } from "../../lib/api";
 import type { Transaction } from "../../lib/schemas";
 import { iso } from "../../lib/period";
-import { today } from "../../lib/dates";
+import { today } from "../../../shared/dates";
 import { UnitContext } from "../../lib/unit";
 import { CheckInCard } from "../chat/check-in-card";
 import { QuickAddContext } from "../quick-add/quick-add";
