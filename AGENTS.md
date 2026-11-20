@@ -19,3 +19,7 @@ Single-context. See `docs/agents/domain.md`.
 ### Lint and format
 
 Run `bun run lint` before committing; it must pass. `bun run format` fixes layout.
+
+### Landing site
+
+`site/` is the Astro landing page, with its own `package.json` (`cd site && bun install && bun run build`). `bun run clips [name…]` re-records the clips in `site/public/clips` against a seeded throwaway server and a real model. It needs ffmpeg, an emoji font, and `CLIPS_AI_URL`, `CLIPS_AI_KEY` and `CLIPS_AI_MODEL`; AI replies differ each run, so look at the clips before committing.

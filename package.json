@@ -9,7 +9,8 @@
     "start": "bun server/index.ts",
     "e2e": "playwright test",
     "lint": "biome check --error-on-warnings .",
-    "format": "biome check --write ."
+    "format": "biome check --write .",
+    "clips": "bun site/clips/record.ts"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "1.5.0",

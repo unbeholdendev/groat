@@ -1,0 +1,132 @@
+---
+const total = 1284.6;
+const palette = ["#f16f7e", "#f98942", "#f4bf3f", "#3fbe90", "#26c0cf", "#bf73df"];
+const days = Array.from({ length: 30 }, (_, d) =>
+  d > 18
+    ? []
+    : [0, 1, 2]
+        .slice(0, 1 + ((d * 5) % 3))
+        .map((k) => ({ c: palette[(d * 5 + k * 2) % 6], h: 3 + ((d * 11 + k * 7) % 17) })),
+);
+---
+
+<div class="demo" data-demo>
+  <p class="total" data-total={total}>
+    <span class="sr">£1,284.60</span>
+    <span aria-hidden="true" data-count>£1,284<span class="pence">.60</span></span>
+  </p>
+  <div class="skyline" aria-hidden="true">
+    {
+      days.map((segs) => (
+        <span class={segs.length ? "day" : "day empty"}>
+          {segs.map((s) => (
+            <i style={`--c:${s.c};--h:${s.h}`} />
+          ))}
+        </span>
+      ))
+    }
+  </div>
+  <div class="bar">
+    <div class="mirror" aria-hidden="true" data-mirror></div>
+    <input
+      data-line
+      aria-label="Try the add bar: a note, an amount and #tags"
+      aria-describedby="demo-note"
+      placeholder="ramen 24.50 #friends"
+      autocomplete="off"
+      spellcheck="false"
+      enterkeyhint="done"
+    />
+  </div>
+  <div class="chips" data-chips>
+    <span class="chip" data-category>Category</span>
+    <span class="chip">Today</span>
+    <span class="chip" data-currency>GBP</span>
+  </div>
+  <p class="demo-note" id="demo-note">Try your own line. This is a demo; nothing is saved.</p>
+</div>
+
+<script>
+  import { parse } from "../../../shared/parse";
+
+  const categories: [RegExp, string, string, string][] = [
+    [/^(ramen|lunch|dinner|pizza|sushi|burger|curry|pho)$/, "🍜", "Eating out", "#f98942"],
+    [/^(coffee|tea|latte|flat)$/, "☕", "Coffee", "#f4bf3f"],
+    [/^(groceries|milk|bread|eggs|tesco|market)$/, "🛒", "Groceries", "#99d352"],
+    [/^(taxi|bus|train|tube|uber|fuel|petrol)$/, "🚕", "Transport", "#26c0cf"],
+    [/^(cinema|tickets|gig|concert|book|books)$/, "🎟️", "Fun", "#bf73df"],
+    [/^(rent|power|water|internet|phone)$/, "🏠", "Home", "#3fbe90"],
+  ];
+
+  const still = matchMedia("(prefers-reduced-motion: reduce)");
+  for (const demo of document.querySelectorAll<HTMLElement>("[data-demo]")) {
+    const input = demo.querySelector("[data-line]") as HTMLInputElement;
+    const mirror = demo.querySelector("[data-mirror]") as HTMLElement;
+    const category = demo.querySelector("[data-category]") as HTMLElement;
+    const currency = demo.querySelector("[data-currency]") as HTMLElement;
+    const count = demo.querySelector("[data-count]") as HTMLElement;
+    const totalEl = demo.querySelector("[data-total]") as HTMLElement;
+
+    const render = () => {
+      const p = parse(input.value, ["GBP", "EUR", "USD"]);
+      mirror.replaceChildren(
+        ...p.parts.map(([w, kind]) => {
+          const span = document.createElement("span");
+          span.textContent = w;
+          if (kind) span.className = `tok-${kind}`;
+          return span;
+        }),
+      );
+      mirror.scrollLeft = input.scrollLeft;
+      currency.textContent = p.currency ?? "GBP";
+      const first = p.note.split(" ")[0]?.toLowerCase() ?? "";
+      const hit = categories.find(([re]) => re.test(first));
+      category.replaceChildren();
+      category.classList.toggle("set", !!hit);
+      if (!hit) return void (category.textContent = "Category");
+      const tile = document.createElement("span");
+      tile.className = "tile";
+      tile.style.setProperty("--c", hit[3]);
+      tile.textContent = hit[1];
+      category.append(tile, hit[2]);
+    };
+
+    const format = (n: number) => {
+      const [whole, pence] = n.toFixed(2).split(".");
+      count.replaceChildren(`£${Number(whole).toLocaleString("en-GB")}`);
+      const small = document.createElement("span");
+      small.className = "pence";
+      small.textContent = `.${pence}`;
+      count.append(small);
+    };
+
+    let typing = 0;
+    const stopTyping = () => clearTimeout(typing);
+    const type = (text: string, i = 0) => {
+      input.value = text.slice(0, i);
+      render();
+      if (i < text.length) typing = window.setTimeout(() => type(text, i + 1), i === 0 ? 500 : 70);
+    };
+
+    input.addEventListener("input", render);
+    input.addEventListener("scroll", () => (mirror.scrollLeft = input.scrollLeft));
+    input.addEventListener("pointerdown", stopTyping);
+    input.addEventListener("focus", stopTyping);
+
+    const end = Number(totalEl.dataset.total);
+    if (still.matches) {
+      input.value = "ramen 24.50 #friends";
+      render();
+      continue;
+    }
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 1400);
+      format(end * (1 - (1 - t) ** 4));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    format(0);
+    requestAnimationFrame(step);
+    type("ramen 24.50 #friends");
+  }
+</script>

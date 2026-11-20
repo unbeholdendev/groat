@@ -1,0 +1,98 @@
+---
+import sizes from "../../public/clips/clips.json";
+
+interface Props {
+  name: string;
+  label: string;
+}
+const { name, label } = Astro.props;
+const light = sizes[name as keyof typeof sizes];
+const dark = sizes[`${name}-dark` as keyof typeof sizes];
+---
+
+<figure class="clip" data-clip={name} style={`--light: ${light.width}/${light.height}; --dark: ${dark.width}/${dark.height}`}>
+  <video muted loop playsinline preload="none" aria-label={label} width={light.width} height={light.height}>
+    <source src={`/clips/${name}-dark.webm`} type="video/webm" media="(prefers-color-scheme: dark)" />
+    <source src={`/clips/${name}-dark.mp4`} type="video/mp4" media="(prefers-color-scheme: dark)" />
+    <source src={`/clips/${name}.webm`} type="video/webm" />
+    <source src={`/clips/${name}.mp4`} type="video/mp4" />
+  </video>
+  <button type="button" class="hold" aria-pressed="false">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path class="pause" d="M4 3h3v10H4zM9 3h3v10H9z"></path><path
+        class="play"
+        d="M4.5 2.5v11l9-5.5z"></path></svg>
+    <span class="sr">Pause clips</span>
+  </button>
+</figure>
+
+<script>
+  const still = matchMedia("(prefers-reduced-motion: reduce)");
+  const dark = matchMedia("(prefers-color-scheme: dark)");
+  const clips = [...document.querySelectorAll<HTMLElement>("[data-clip]")];
+  const videos = clips.map((c) => c.querySelector("video") as HTMLVideoElement);
+  const holds = clips.map((c) => c.querySelector(".hold") as HTMLButtonElement);
+  const seen = new Set<HTMLVideoElement>();
+  const visible = new Set<HTMLVideoElement>();
+  let held = false;
+
+  const poster = (clip: HTMLElement, video: HTMLVideoElement) => {
+    if (seen.has(video)) video.poster = `/clips/${clip.dataset.clip}${dark.matches ? "-dark" : ""}.jpg`;
+  };
+
+  const run = (video: HTMLVideoElement) => {
+    if (visible.has(video) && !held && !still.matches) void video.play().catch(() => {});
+    else video.pause();
+  };
+
+  const apply = () => {
+    for (const [i, video] of videos.entries()) {
+      video.controls = still.matches;
+      holds[i].hidden = still.matches;
+      holds[i].setAttribute("aria-pressed", String(held));
+      (holds[i].querySelector(".sr") as HTMLElement).textContent = held ? "Play clips" : "Pause clips";
+      run(video);
+    }
+  };
+
+  const near = new IntersectionObserver(
+    (entries) => {
+      for (const { target, isIntersecting } of entries) {
+        if (!isIntersecting) continue;
+        const video = target as HTMLVideoElement;
+        seen.add(video);
+        poster(video.parentElement as HTMLElement, video);
+        near.unobserve(video);
+      }
+    },
+    { rootMargin: "300px 0px" },
+  );
+  const view = new IntersectionObserver(
+    (entries) => {
+      for (const { target, isIntersecting } of entries) {
+        const video = target as HTMLVideoElement;
+        if (isIntersecting) visible.add(video);
+        else visible.delete(video);
+        run(video);
+      }
+    },
+    { threshold: 0.4 },
+  );
+
+  for (const hold of holds) hold.addEventListener("click", () => ((held = !held), apply()));
+  still.addEventListener("change", apply);
+  dark.addEventListener("change", () =>
+    clips.forEach((clip, i) => {
+      const video = videos[i];
+      const at = video.currentTime;
+      poster(clip, video);
+      if (video.readyState === 0) return;
+      video.load();
+      video.addEventListener("loadedmetadata", () => ((video.currentTime = at), run(video)), { once: true });
+    }),
+  );
+  apply();
+  for (const video of videos) {
+    near.observe(video);
+    view.observe(video);
+  }
+</script>

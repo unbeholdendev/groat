@@ -1,0 +1,91 @@
+---
+import Clip from "./Clip.astro";
+
+interface Props {
+  label: string;
+  clips: { name: string; tab: string; label: string; caption: string; ai: boolean }[];
+}
+const { label, clips } = Astro.props;
+---
+
+<div class="player" data-player>
+  <div role="tablist" aria-label={label} class="tabs">
+    {
+      clips.map((c, i) => (
+        <button
+          role="tab"
+          id={`tab-${c.name}`}
+          aria-controls={`panel-${c.name}`}
+          aria-selected={i === 0 ? "true" : "false"}
+          tabindex={i === 0 ? 0 : -1}
+        >
+          {c.tab}
+          <small>{c.ai ? "Needs AI" : "No AI needed"}</small>
+        </button>
+      ))
+    }
+  </div>
+  {
+    clips.map((c, i) => (
+      <div role="tabpanel" id={`panel-${c.name}`} aria-labelledby={`tab-${c.name}`} hidden={i !== 0}>
+        <Clip name={c.name} label={c.label} />
+        <p class="caption">{c.caption}</p>
+      </div>
+    ))
+  }
+  <p class="sr" aria-live="polite" data-said></p>
+</div>
+
+<script>
+  const still = matchMedia("(prefers-reduced-motion: reduce)");
+  for (const player of document.querySelectorAll<HTMLElement>("[data-player]")) {
+    const tabs = [...player.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const panels = tabs.map((t) => document.getElementById(t.getAttribute("aria-controls") ?? "") as HTMLElement);
+    const videos = panels.map((p) => p.querySelector("video") as HTMLVideoElement);
+    const said = player.querySelector("[data-said]") as HTMLElement;
+    let rotating = !still.matches;
+    player.toggleAttribute("data-rotating", rotating);
+    const tick = () => {
+      if (!rotating) return;
+      tabs.forEach((tab, i) => {
+        const v = videos[i];
+        const shown = tab.getAttribute("aria-selected") === "true" && v.duration ? v.currentTime / v.duration : 0;
+        tab.style.setProperty("--progress", String(shown));
+      });
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    const select = (n: number, by?: "user") => {
+      tabs.forEach((tab, i) => {
+        tab.setAttribute("aria-selected", String(i === n));
+        tab.tabIndex = i === n ? 0 : -1;
+        panels[i].hidden = i !== n;
+      });
+      videos[n].currentTime = 0;
+      if (by) said.textContent = panels[n].querySelector(".caption")?.textContent ?? "";
+    };
+    const stop = () => {
+      rotating = false;
+      player.removeAttribute("data-rotating");
+      for (const video of videos) video.loop = true;
+    };
+    for (const video of videos) video.loop = !rotating;
+    videos.forEach((video, i) =>
+      video.addEventListener("ended", () => rotating && select((i + 1) % tabs.length)),
+    );
+    player.addEventListener("click", (e) => (e.target as Element).closest(".hold") && stop());
+    tabs.forEach((tab, i) => {
+      tab.addEventListener("click", () => (stop(), select(i, "user")));
+      tab.addEventListener("keydown", (e) => {
+        const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+        if (to === undefined) return;
+        e.preventDefault();
+        stop();
+        const n = (to + tabs.length) % tabs.length;
+        select(n, "user");
+        tabs[n].focus();
+      });
+    });
+    still.addEventListener("change", () => still.matches && stop());
+  }
+</script>

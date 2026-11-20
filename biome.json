@@ -13,6 +13,7 @@
       "!.impeccable",
       "!bun.lock",
       "!web/public",
+      "!site/public",
       "!**/*.md"
     ]
   },
@@ -79,8 +80,13 @@
       "includes": ["server/**"],
       "linter": {
         "rules": {
-          "complexity": { "noCommaOperator": "error" },
-          "style": { "noNestedTernary": "error", "noNonNullAssertion": "error" },
+          "complexity": {
+            "noCommaOperator": "error"
+          },
+          "style": {
+            "noNestedTernary": "error",
+            "noNonNullAssertion": "error"
+          },
           "suspicious": {
             "noAssignInExpressions": "error",
             "noImplicitAnyLet": "error",
@@ -106,6 +112,17 @@
             "noAssignInExpressions": "error",
             "noImplicitAnyLet": "error",
             "useIterableCallbackReturn": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.astro"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
           }
         }
       }

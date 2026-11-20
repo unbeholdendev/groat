@@ -1,0 +1,192 @@
+---
+import "@fontsource/cinzel/600.css";
+import "@fontsource/cinzel/700.css";
+import "@fontsource/libre-caslon-text/700.css";
+import "@fontsource/source-sans-3/500.css";
+import "@fontsource/source-sans-3/600.css";
+import "../styles.css";
+import AddBar from "../components/AddBar.astro";
+import Clip from "../components/Clip.astro";
+import Player from "../components/Player.astro";
+
+const repo = "https://github.com/unbeholdendev/groat";
+const install = `${repo}#run`;
+const command = `docker volume create groat-data
+docker run -d --name groat \\
+  -p 127.0.0.1:3000:3000 \\
+  -v groat-data:/data \\
+  ghcr.io/unbeholdendev/groat:latest`;
+const ways = [
+  {
+    name: "add",
+    ai: false,
+    tab: "Type",
+    label: "Typing “ramen 24.50 #friends” fills in Eating out and adds the expense.",
+    caption: "A note, an amount and #tags. The category fills in from past notes.",
+  },
+  {
+    name: "dictate",
+    ai: true,
+    tab: "Say",
+    label: "Dictating “taxi home 14.80” fills the add bar and adds the expense.",
+    caption: "Tap the mic and say it. The words land in the add bar to check.",
+  },
+  {
+    name: "receipt",
+    ai: true,
+    tab: "Photo",
+    label: "A receipt photo is read and becomes an expense to review.",
+    caption: "Snap a receipt and check the expense it becomes.",
+  },
+  {
+    name: "ask",
+    ai: true,
+    tab: "Ask",
+    label: "A question about eating out is answered from the ledger.",
+    caption: "Start with ? and ask about your spending.",
+  },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#e3e8dd" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#101c17" media="(prefers-color-scheme: dark)" />
+    <title>Groat: a self-hosted expense tracker</title>
+    <meta name="description" content="A self-hosted expense tracker for one person or a group sharing a ledger." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <span class="mark">Groat</span>
+        <nav><a href={repo}>GitHub</a><a href={install}>Install</a></nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <h1>One line per expense.</h1>
+          <AddBar />
+          <div class="hero-text">
+            <p class="lede">
+              Type a note and an amount; the category fills in from what you wrote before. For one person or a group
+              sharing a ledger.
+            </p>
+            <p class="free">Free, open source under Apache-2.0, and self-hosted.</p>
+            <div class="buttons">
+              <a class="button" href="#run">Run it yourself</a>
+              <a class="button quiet" href={repo}>Source on GitHub</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="feature">
+          <div>
+            <h2>Four ways in</h2>
+            <p>Type it, say it, snap the receipt, or ask a question. Everything lands in the ledger you check.</p>
+          </div>
+          <Player label="Ways to use the add bar" clips={ways} />
+        </section>
+
+        <section class="feature flip">
+          <div>
+            <h2>Weekly check-in</h2>
+            <p>
+              Once a week Groat looks over the ledger and, if something stands out, leaves an unread chat: a price that
+              crept up, a category well above usual, a recurring expense that changed. Reply to act on it.
+            </p>
+          </div>
+          <Clip name="check-in" label="An unread check-in flags a monthly charge; a reply makes it recurring." />
+        </section>
+
+        <section class="feature">
+          <div>
+            <h2>Stats</h2>
+            <p>Any period against the one before. Open a category to see what is in it.</p>
+          </div>
+          <Clip name="stats" label="Stats compares this month with last and opens the Food category." />
+        </section>
+
+        <section class="plain box">
+          <h2>Also in the box</h2>
+          <div class="ranked">
+            <div class="lead">
+              <h3>Every currency, Bitcoin included</h3>
+              <p>Rates fetched for you; totals in your base currency. Bitcoin in BTC or sats, toggleable.</p>
+            </div>
+            <dl>
+              <div>
+                <dt>Recurring</dt>
+                <dd>Every N days, weeks, months or years, optionally confirmed each time.</dd>
+              </div>
+              <div>
+                <dt>Shared ledger</dt>
+                <dd>One household, each member with their own sign-in.</dd>
+              </div>
+              <div>
+                <dt>Add from your phone</dt>
+                <dd>Create a token in Settings, then post a line from an iOS Shortcut or Tasker.</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        <section class="plain">
+          <h2>Yours</h2>
+          <div class="yours">
+            <div><h3>One image, SQLite</h3><p>One container and one database file, receipt photos included.</p></div>
+            <div><h3>Backups</h3><p>Download one file from Settings, or copy the database on a schedule.</p></div>
+          </div>
+          <div class="ai">
+            <h3>AI is optional</h3>
+            <p>
+              Everything works without it, except dictation, receipt photos, asking with ? and the weekly check-in. An
+              admin turns it on with any API that speaks OpenAI’s format, or a ChatGPT plan. It reads the ledger and
+              never changes it.
+            </p>
+          </div>
+        </section>
+
+        <section class="cta" id="run">
+          <h2>Run it yourself</h2>
+          <p>Two commands, then open localhost:3000 and create the first account.</p>
+          <div class="command">
+            <pre><code data-command>{command}</code></pre>
+            <button type="button" class="copy" data-copy aria-live="polite">Copy</button>
+          </div>
+          <div class="buttons">
+            <a class="button" href={install}>Install guide</a>
+            <a class="button quiet" href={repo}>Source on GitHub</a>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span class="mark">Groat</span>
+        <nav aria-label="Footer">
+          <a href={repo}>Source</a><a href={install}>Install guide</a><a href={`${repo}/blob/main/LICENSE`}
+            >Apache License 2.0</a
+          >
+        </nav>
+      </footer>
+    </div>
+
+    <script>
+      const copy = document.querySelector<HTMLButtonElement>("[data-copy]");
+      const code = document.querySelector<HTMLElement>("[data-command]");
+      copy?.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(code?.textContent ?? "");
+          copy.textContent = "Copied";
+        } catch {
+          copy.textContent = "Select and copy";
+        }
+        setTimeout(() => (copy.textContent = "Copy"), 2000);
+      });
+    </script>
+  </body>
+</html>

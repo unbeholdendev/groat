@@ -232,7 +232,7 @@ Keep the existing category palette. Category colour appears in tinted emoji circ
 
 ## Typography
 
-Self-host fonts through Fontsource. Cinzel 600 and 700 supplies Roman capitals for page titles, the month and section headings. Libre Caslon Text 700 supplies the Home and Stats total. Source Sans 3 supplies notes, controls and other amounts.
+Self-host fonts through Fontsource. Cinzel 600 and 700 supplies Roman capitals for page titles, the month and section headings. Libre Caslon Text 700 supplies the Home and Stats total, and the landing page's h1 and hero total. Source Sans 3 supplies notes, controls and other amounts.
 
 - Page titles: 34px, 700, 1.1 line height, 0.06em tracking.
 - Month: the existing 15px label, Cinzel capitals.
