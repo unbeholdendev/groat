@@ -24,28 +24,28 @@ const ways = [
     name: "add",
     ai: false,
     tab: "Type",
-    label: "Typing “ramen 24.50 #friends” fills in Eating out and adds the expense.",
-    caption: "A note, an amount and #tags. The category fills in from past notes.",
+    label: 'Typing "ramen 24.50 #friends" fills in Eating out and adds the expense.',
+    caption: "Type a note, an amount and #tags. The category fills in from past notes.",
   },
   {
     name: "dictate",
     ai: true,
     tab: "Say",
-    label: "Dictating “taxi home 14.80” fills the add bar and adds the expense.",
-    caption: "Tap the mic and say it. The words land in the add bar to check.",
+    label: 'Dictating "taxi home 14.80" fills the add bar and adds the expense.',
+    caption: "Tap the mic and say it. The words appear in the add bar for you to check.",
   },
   {
     name: "receipt",
     ai: true,
     tab: "Photo",
-    label: "A receipt photo is read and becomes an expense to review.",
+    label: "Groat reads a receipt photo and turns it into an expense to review.",
     caption: "Snap a receipt and check the expense it becomes.",
   },
   {
     name: "ask",
     ai: true,
     tab: "Ask",
-    label: "A question about eating out is answered from the ledger.",
+    label: "Groat answers a question about eating out from the ledger.",
     caption: "Start with ? and ask about your spending.",
   },
 ];
@@ -66,7 +66,7 @@ const ways = [
     <div class="wrap">
       <header class="top">
         <span class="mark"><img src="/favicon.svg" alt="" width="28" height="28" />Groat</span>
-        <nav><a href={repo}>GitHub</a></nav>
+        <nav><a href="#run">Install</a><a href={repo}>GitHub</a></nav>
       </header>
 
       <main>
@@ -75,8 +75,8 @@ const ways = [
           <AddBar />
           <div class="hero-text">
             <p class="lede">
-              Type a note and an amount; the category fills in from what you wrote before. For one person or a group
-              sharing a ledger.
+              Type a note and an amount; the category fills in from what you wrote before. It works for one person or a
+              group sharing a ledger.
             </p>
             <p class="free">Free, open source under Apache-2.0, and self-hosted.</p>
             <div class="command">
@@ -89,6 +89,9 @@ const ways = [
               </button>
               <span class="sr" aria-live="polite" data-copied></span>
             </div>
+            <p class="command-note">
+              Groat listens on this machine only. For phones, put an HTTPS reverse proxy in front of port 3000.
+            </p>
             <div class="buttons">
               <a class="button" href={install}>Install guide</a>
             </div>
@@ -98,7 +101,10 @@ const ways = [
         <section class="feature">
           <div>
             <h2>Four ways in</h2>
-            <p>Type it, say it, snap the receipt, or ask a question. Everything lands in the ledger you check.</p>
+            <p>
+              Type it, say it, snap the receipt, or ask a question. Typing works without AI; the other three need it,
+              and an admin turns it on once.
+            </p>
           </div>
           <Player label="Ways to use the add bar" clips={ways} />
         </section>
@@ -117,26 +123,29 @@ const ways = [
         <section class="feature">
           <div>
             <h2>Stats</h2>
-            <p>Any period against the one before. Open a category to see what is in it.</p>
+            <p>
+              Compare this month with last, or any period with the one before, by day, week or month. Open a
+              category to see what is in it.
+            </p>
           </div>
           <Clip name="stats" label="Stats compares this month with last and opens the Food category." />
         </section>
 
         <section class="plain box">
-          <h2>Also in the box</h2>
+          <h2>Also included</h2>
           <div class="ranked">
             <div class="lead">
               <h3>Every currency, Bitcoin included</h3>
-              <p>Rates fetched for you; totals in your base currency. Bitcoin in BTC or sats, toggleable.</p>
+              <p>Groat fetches exchange rates and shows totals in your base currency. Show Bitcoin in BTC or sats.</p>
             </div>
             <dl>
               <div>
                 <dt>Recurring</dt>
-                <dd>Every N days, weeks, months or years, optionally confirmed each time.</dd>
+                <dd>Repeat every N days, weeks, months or years, and optionally confirm each one.</dd>
               </div>
               <div>
                 <dt>Shared ledger</dt>
-                <dd>One household, each member with their own sign-in.</dd>
+                <dd>One household shares the ledger, and each member signs in separately.</dd>
               </div>
               <div>
                 <dt>Add from your phone</dt>
@@ -146,22 +155,24 @@ const ways = [
           </div>
         </section>
 
-        <section class="plain">
-          <h2>Yours</h2>
-          <div class="yours">
-            <div><h3>One image, SQLite</h3><p>One container and one database file, receipt photos included.</p></div>
+        <section class="plain" id="run">
+          <h2>Runs on your server</h2>
+          <div class="facts">
+            <div><h3>One image, SQLite</h3><p>One amd64 container and one database file, which also holds receipt photos.</p></div>
+            <div><h3>First sign-in</h3><p>The first account becomes the admin, who adds everyone else. Finish setup before exposing it.</p></div>
+            <div><h3>On your phone</h3><p>Behind HTTPS, add it to your home screen. It keeps working offline.</p></div>
+            <div><h3>Updates</h3><p><code>latest</code> follows stable releases. Pin a release tag to choose when to upgrade.</p></div>
             <div><h3>Backups</h3><p>Download one file from Settings, or copy the database on a schedule.</p></div>
+            <div>
+              <h3>AI is optional</h3>
+              <p>Dictation, receipt photos, asking and the check-in need it. An admin connects any OpenAI-compatible API or a ChatGPT plan.</p>
+            </div>
           </div>
-          <div class="ai">
-            <h3>AI is optional</h3>
-            <p>
-              Everything works without it, except dictation, receipt photos, asking with ? and the weekly check-in. An
-              admin turns it on with any API that speaks OpenAI’s format, or a ChatGPT plan. In chat it can also add
-              and change expenses, recurring expenses and categories.
-            </p>
+          <div class="buttons">
+            <a class="button" href={install}>Install guide</a>
+            <a class="button quiet" href={repo}>Source on GitHub</a>
           </div>
         </section>
-
       </main>
 
       <footer>

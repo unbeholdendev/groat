@@ -22,6 +22,7 @@ const words: Record<string, string> = {
 const recent = ["GBP", "EUR", "USD"];
 const chevron = '<svg class="chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3"/></svg>';
 const palette = ["#f16f7e", "#f98942", "#f4bf3f", "#3fbe90", "#26c0cf", "#bf73df"];
+const today = 18;
 const days = Array.from({ length: 30 }, (_, d) =>
   d > 18
     ? []
@@ -38,8 +39,8 @@ const days = Array.from({ length: 30 }, (_, d) =>
   </p>
   <div class="skyline" aria-hidden="true">
     {
-      days.map((segs) => (
-        <span class={segs.length ? "day" : "day empty"}>
+      days.map((segs, d) => (
+        <span class={segs.length ? "day" : "day empty"} data-today={d === today ? "" : undefined}>
           {segs.map((s) => (
             <i style={`--c:${s.c};--h:${s.h}`} />
           ))}
@@ -47,17 +48,21 @@ const days = Array.from({ length: 30 }, (_, d) =>
       ))
     }
   </div>
-  <div class="bar">
+  <form class="bar" data-form>
     <div class="mirror" aria-hidden="true" data-mirror></div>
     <input
       data-line
-      aria-label="Try the add bar: a note, an amount and #tags"
+      aria-label="Try the add bar: a note, an amount and #tags, or ? and a question"
       aria-describedby="demo-note"
-      placeholder="ramen 24.50 #friends"
+      placeholder="ramen 24.50, or ? to ask"
       autocomplete="off"
       spellcheck="false"
-      enterkeyhint="done"
+      enterkeyhint="go"
     />
+  </form>
+  <div class="answer" data-answer hidden>
+    <p class="question" data-question></p>
+    <p data-reply></p>
   </div>
   <div class="chips">
     <label class="chip pick" data-category-chip>
@@ -85,7 +90,7 @@ const days = Array.from({ length: 30 }, (_, d) =>
       <select aria-label="Currency" data-currency>{byRecent(recent).map((c) => <option>{c}</option>)}</select>
     </label>
   </div>
-  <p class="demo-note" id="demo-note">Try your own line. This is a demo; nothing is saved.</p>
+  <p class="demo-note" id="demo-note" aria-live="polite" data-note>Try your own line. This is a demo; nothing is saved.</p>
 </div>
 
 <script>
@@ -106,6 +111,12 @@ const days = Array.from({ length: 30 }, (_, d) =>
     const dateLabel = demo.querySelector("[data-date-label]") as HTMLElement;
     const currency = demo.querySelector("[data-currency]") as HTMLSelectElement;
     const currencyLabel = demo.querySelector("[data-currency-label]") as HTMLElement;
+    const form = demo.querySelector("[data-form]") as HTMLFormElement;
+    const todayBar = demo.querySelector("[data-today]") as HTMLElement;
+    const answer = demo.querySelector("[data-answer]") as HTMLElement;
+    const question = demo.querySelector("[data-question]") as HTMLElement;
+    const reply = demo.querySelector("[data-reply]") as HTMLElement;
+    const note = demo.querySelector("[data-note]") as HTMLElement;
     let picked = false;
 
     const showCategory = () => {
@@ -120,16 +131,24 @@ const days = Array.from({ length: 30 }, (_, d) =>
     const count = demo.querySelector("[data-count]") as HTMLElement;
     const totalEl = demo.querySelector("[data-total]") as HTMLElement;
 
+    const token = (text: string, kind = "") => {
+      const span = document.createElement("span");
+      span.textContent = text;
+      if (kind) span.className = `tok-${kind}`;
+      return span;
+    };
+
     const render = () => {
+      const asking = input.value.startsWith("?");
+      demo.toggleAttribute("data-asking", asking);
+      if (!asking) answer.hidden = true;
+      if (asking) {
+        mirror.replaceChildren(token("?", "ask"), token(input.value.slice(1)));
+        mirror.scrollLeft = input.scrollLeft;
+        return;
+      }
       const p = parse(input.value, recent);
-      mirror.replaceChildren(
-        ...p.parts.map(([w, kind]) => {
-          const span = document.createElement("span");
-          span.textContent = w;
-          if (kind) span.className = `tok-${kind}`;
-          return span;
-        }),
-      );
+      mirror.replaceChildren(...p.parts.map(([w, kind]) => token(w, kind)));
       mirror.scrollLeft = input.scrollLeft;
       if (p.currency) {
         currency.value = p.currency;
@@ -151,12 +170,83 @@ const days = Array.from({ length: 30 }, (_, d) =>
       count.append(small);
     };
 
-    let typing = 0;
-    const stopTyping = () => clearTimeout(typing);
-    const type = (text: string, i = 0) => {
-      input.value = text.slice(0, i);
+    let shown = Number(totalEl.dataset.total);
+    let total = shown;
+    let counting = 0;
+    const countTo = (to: number, ms: number) => {
+      cancelAnimationFrame(counting);
+      const from = shown;
+      const start = performance.now();
+      const step = (now: number) => {
+        const t = still.matches ? 1 : Math.min(1, (now - start) / ms);
+        shown = from + (to - from) * (1 - (1 - t) ** 4);
+        format(shown);
+        if (t < 1) counting = requestAnimationFrame(step);
+      };
+      counting = requestAnimationFrame(step);
+    };
+
+    const rates: Record<string, number> = { GBP: 1, EUR: 0.86, USD: 0.76 };
+    const pounds = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    let eatingOut = 187.8;
+    let meals = 11;
+
+    const add = () => {
+      const p = parse(input.value, recent);
+      const amount = Number(p.amount);
+      const rate = rates[p.currency ?? currency.value];
+      if (!p.amount || !(amount > 0)) return (note.textContent = "Add an amount, like 24.50.");
+      if (!rate) return (note.textContent = "This demo only converts GBP, EUR and USD.");
+      const value = amount * rate;
+      const chosen = category.selectedOptions[0];
+      if (category.value === "Eating out") {
+        eatingOut += value;
+        meals++;
+      }
+      const seg = document.createElement("i");
+      seg.className = "new";
+      seg.style.setProperty("--c", chosen.dataset.colour || "var(--accent)");
+      seg.style.setProperty("--h", String(Math.min(24, Math.max(3, Math.round(value / 3)))));
+      todayBar.append(seg);
+      total += value;
+      countTo(total, 700);
+      note.textContent = `Added ${p.note || "an expense"}, ${pounds(value)}. Nothing is saved.`;
+      input.value = "";
+      picked = false;
       render();
-      if (i < text.length) typing = window.setTimeout(() => type(text, i + 1), i === 0 ? 500 : 70);
+    };
+
+    const ask = () => {
+      const q = input.value.slice(1).trim();
+      if (!q) return (note.textContent = "Type a question after the ?.");
+      question.textContent = q;
+      reply.textContent = /eat|food|restaurant|lunch|dinner|meal/i.test(q)
+        ? `${pounds(eatingOut)} on eating out this month, across ${meals} expenses.`
+        : "This demo only knows about eating out. On your server, the answer comes from your ledger.";
+      input.value = "";
+      render();
+      answer.hidden = false;
+      note.textContent = "Asking needs AI. Answers come from your own data.";
+    };
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (input.value.startsWith("?")) ask();
+      else add();
+    });
+
+    let typing = 0;
+    let auto = true;
+    const stopTyping = () => ((auto = false), clearTimeout(typing));
+    const wait = (ms: number) => new Promise((done) => (typing = window.setTimeout(done, ms)));
+    const type = async (text: string) => {
+      for (let i = 0; i <= text.length && auto; i++) {
+        input.value = text.slice(0, i);
+        render();
+        await wait(i === 0 ? 500 : 70);
+      }
+      await wait(900);
+      if (auto) form.requestSubmit();
     };
 
     input.addEventListener("input", render);
@@ -177,20 +267,14 @@ const days = Array.from({ length: 30 }, (_, d) =>
     input.addEventListener("pointerdown", stopTyping);
     input.addEventListener("focus", stopTyping);
 
-    const end = Number(totalEl.dataset.total);
     if (still.matches) {
       input.value = "ramen 24.50 #friends";
       render();
       continue;
     }
-    const start = performance.now();
-    const step = (now: number) => {
-      const t = Math.min(1, (now - start) / 1400);
-      format(end * (1 - (1 - t) ** 4));
-      if (t < 1) requestAnimationFrame(step);
-    };
+    shown = 0;
     format(0);
-    requestAnimationFrame(step);
-    type("ramen 24.50 #friends");
+    countTo(total, 1400);
+    void type("ramen 24.50 #friends").then(() => auto && type("? eating out this month"));
   }
 </script>

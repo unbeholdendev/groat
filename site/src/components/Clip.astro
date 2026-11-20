@@ -18,7 +18,7 @@ const size = sizes[name as keyof typeof sizes];
     <svg viewBox="0 0 16 16" aria-hidden="true"><path class="pause" d="M4 3h3v10H4zM9 3h3v10H9z"></path><path
         class="play"
         d="M4.5 2.5v11l9-5.5z"></path></svg>
-    <span class="sr">Pause clips</span>
+    <span class="sr">Pause all clips</span>
   </button>
 </figure>
 
@@ -40,7 +40,7 @@ const size = sizes[name as keyof typeof sizes];
       video.controls = still.matches;
       holds[i].hidden = still.matches;
       holds[i].setAttribute("aria-pressed", String(held));
-      (holds[i].querySelector(".sr") as HTMLElement).textContent = held ? "Play clips" : "Pause clips";
+      (holds[i].querySelector(".sr") as HTMLElement).textContent = held ? "Play all clips" : "Pause all clips";
       run(video);
     }
   };
