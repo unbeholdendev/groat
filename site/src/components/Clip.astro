@@ -6,14 +6,11 @@ interface Props {
   label: string;
 }
 const { name, label } = Astro.props;
-const light = sizes[name as keyof typeof sizes];
-const dark = sizes[`${name}-dark` as keyof typeof sizes];
+const size = sizes[name as keyof typeof sizes];
 ---
 
-<figure class="clip" data-clip={name} style={`--light: ${light.width}/${light.height}; --dark: ${dark.width}/${dark.height}`}>
-  <video muted loop playsinline preload="none" aria-label={label} width={light.width} height={light.height}>
-    <source src={`/clips/${name}-dark.webm`} type="video/webm" media="(prefers-color-scheme: dark)" />
-    <source src={`/clips/${name}-dark.mp4`} type="video/mp4" media="(prefers-color-scheme: dark)" />
+<figure class="clip" data-clip={name} style={`--ratio: ${size.width}/${size.height}`}>
+  <video muted loop playsinline preload="none" aria-label={label} width={size.width} height={size.height}>
     <source src={`/clips/${name}.webm`} type="video/webm" />
     <source src={`/clips/${name}.mp4`} type="video/mp4" />
   </video>
@@ -27,17 +24,11 @@ const dark = sizes[`${name}-dark` as keyof typeof sizes];
 
 <script>
   const still = matchMedia("(prefers-reduced-motion: reduce)");
-  const dark = matchMedia("(prefers-color-scheme: dark)");
   const clips = [...document.querySelectorAll<HTMLElement>("[data-clip]")];
   const videos = clips.map((c) => c.querySelector("video") as HTMLVideoElement);
   const holds = clips.map((c) => c.querySelector(".hold") as HTMLButtonElement);
-  const seen = new Set<HTMLVideoElement>();
   const visible = new Set<HTMLVideoElement>();
   let held = false;
-
-  const poster = (clip: HTMLElement, video: HTMLVideoElement) => {
-    if (seen.has(video)) video.poster = `/clips/${clip.dataset.clip}${dark.matches ? "-dark" : ""}.jpg`;
-  };
 
   const run = (video: HTMLVideoElement) => {
     if (visible.has(video) && !held && !still.matches) void video.play().catch(() => {});
@@ -59,8 +50,7 @@ const dark = sizes[`${name}-dark` as keyof typeof sizes];
       for (const { target, isIntersecting } of entries) {
         if (!isIntersecting) continue;
         const video = target as HTMLVideoElement;
-        seen.add(video);
-        poster(video.parentElement as HTMLElement, video);
+        video.poster = `/clips/${(video.parentElement as HTMLElement).dataset.clip}.jpg`;
         near.unobserve(video);
       }
     },
@@ -80,16 +70,6 @@ const dark = sizes[`${name}-dark` as keyof typeof sizes];
 
   for (const hold of holds) hold.addEventListener("click", () => ((held = !held), apply()));
   still.addEventListener("change", apply);
-  dark.addEventListener("change", () =>
-    clips.forEach((clip, i) => {
-      const video = videos[i];
-      const at = video.currentTime;
-      poster(clip, video);
-      if (video.readyState === 0) return;
-      video.load();
-      video.addEventListener("loadedmetadata", () => ((video.currentTime = at), run(video)), { once: true });
-    }),
-  );
   apply();
   for (const video of videos) {
     near.observe(video);

@@ -3,23 +3,11 @@
     "width": 780,
     "height": 784
   },
-  "add-dark": {
-    "width": 780,
-    "height": 784
-  },
   "ask": {
     "width": 780,
     "height": 736
   },
-  "ask-dark": {
-    "width": 780,
-    "height": 642
-  },
   "check-in": {
-    "width": 780,
-    "height": 786
-  },
-  "check-in-dark": {
     "width": 780,
     "height": 786
   },
@@ -27,23 +15,11 @@
     "width": 780,
     "height": 592
   },
-  "dictate-dark": {
-    "width": 780,
-    "height": 592
-  },
   "receipt": {
     "width": 780,
     "height": 784
   },
-  "receipt-dark": {
-    "width": 780,
-    "height": 784
-  },
   "stats": {
-    "width": 780,
-    "height": 1114
-  },
-  "stats-dark": {
     "width": 780,
     "height": 1114
   }

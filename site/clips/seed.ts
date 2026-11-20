@@ -106,11 +106,7 @@ function rows(): Row[] {
   return out;
 }
 
-export async function seed(
-  api: APIRequestContext,
-  ai: { url: string; key: string; model: string },
-  theme: "light" | "dark",
-) {
+export async function seed(api: APIRequestContext, ai: { url: string; key: string; model: string }) {
   const ok = async (res: Promise<{ ok(): boolean; status(): number; text(): Promise<string> }>, what: string) => {
     const r = await res;
     if (!r.ok()) throw new Error(`${what}: ${r.status()} ${await r.text()}`);
@@ -118,7 +114,7 @@ export async function seed(
   };
   await ok(api.post("/api/setup", { data: { username: "sam", password: crypto.randomUUID() } }), "setup");
   await ok(api.post("/api/onboarding", { data: { baseCurrency: "GBP" } }), "onboarding");
-  await ok(api.put("/api/settings", { data: { theme } }), "theme");
+  await ok(api.put("/api/settings", { data: { theme: "light" } }), "theme");
   await ok(api.post("/api/users", { data: { username: "alex", password: crypto.randomUUID() } }), "member");
   await ok(
     api.put("/api/ai", { data: { baseUrl: ai.url, key: ai.key, sttBaseUrl: `${ai.url}/stt`, sttKey: "stub" } }),

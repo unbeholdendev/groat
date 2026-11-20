@@ -5,16 +5,10 @@ A self-hosted expense tracker for one person or a group sharing a ledger.
 ## Run
 
 ```sh
-touch groat.env
-docker volume create groat-data
-docker run -d --name groat --restart unless-stopped \
-  -p 127.0.0.1:3000:3000 \
-  --mount source=groat-data,target=/data \
-  --env-file groat.env \
-  ghcr.io/unbeholdendev/groat:vX.Y.Z
+docker run -d --name groat --restart unless-stopped -p 127.0.0.1:3000:3000 -v groat-data:/data ghcr.io/unbeholdendev/groat:latest
 ```
 
-Use a released version tag; `latest` follows stable releases. To build the image yourself: `docker build -t groat .` in a checkout.
+`latest` follows stable releases; pin a release tag (`vX.Y.Z`) to choose when to upgrade. To build the image yourself: `docker build -t groat .` in a checkout.
 
 Open `http://localhost:3000` and create the first account, which becomes the admin. Anyone who reaches a fresh instance can do this, so finish setup before exposing it.
 
@@ -26,7 +20,7 @@ To upgrade, sync or discard queued changes on every device and download a backup
 
 ## Configuration
 
-Set these as environment variables, e.g. in `groat.env` (`NAME=value` per line) or `.env` from source. Recreate the container to apply changes.
+Set these as environment variables: `-e NAME=value` on `docker run`, or `.env` from source. Recreate the container to apply changes.
 
 | Variable | Default | Use |
 |---|---|---|

@@ -20,30 +20,6 @@
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101c17;
-    --surface: #1a2a22;
-    --surface2: #24372c;
-    --ink: #edf2e5;
-    --ink2: #c3d1c3;
-    --ink3: #a1b5a5;
-    --line: #304638;
-    --line-strong: #486350;
-    --track: #2a4032;
-    --accent: #a6d6b2;
-    --accent-soft: #2e4c3b;
-    --on-accent: #10271b;
-    --glass: rgb(26 42 34 / 0.94);
-    --glass-line: rgb(237 242 229 / 0.08);
-    --code: #0a130f;
-    --code-ink: #c3d1c3;
-    --panel: 0 1px 0 rgb(255 255 255 / 0.04) inset;
-    --lift: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 18px 48px -16px rgb(0 0 0 / 0.8);
-    color-scheme: dark;
-  }
-}
-
 * {
   box-sizing: border-box;
 }
@@ -96,7 +72,15 @@ a {
   padding: 8px 0;
 }
 
+.mark img {
+  width: 28px;
+  height: 28px;
+}
+
 .mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font:
     700 20px Cinzel,
     Georgia,
@@ -217,6 +201,7 @@ dd {
 .hero-text {
   grid-area: text;
   align-self: start;
+  min-width: 0;
 }
 
 .demo {
@@ -371,6 +356,39 @@ dd {
   padding-left: 4px;
 }
 
+.pick {
+  position: relative;
+  cursor: pointer;
+}
+
+.pick select {
+  position: absolute;
+  inset: -7px 0;
+  width: 100%;
+  opacity: 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.pick:hover {
+  border-color: var(--accent);
+}
+
+.pick:has(select:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pick .chev {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: var(--ink2);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .tile {
   display: inline-grid;
   place-items: center;
@@ -379,12 +397,6 @@ dd {
   border-radius: 9999px;
   background: color-mix(in srgb, var(--c) 16%, var(--surface));
   font-size: 13px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .tile {
-    background: color-mix(in srgb, var(--c) 24%, var(--surface));
-  }
 }
 
 .demo-note {
@@ -408,13 +420,7 @@ dd {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: var(--light);
-}
-
-@media (prefers-color-scheme: dark) {
-  .clip video {
-    aspect-ratio: var(--dark);
-  }
+  aspect-ratio: var(--ratio);
 }
 
 .hold {
@@ -542,24 +548,11 @@ dd {
   margin: 0;
 }
 
-.cta {
-  padding: 80px 0 72px;
-  border-top: 1px solid var(--line);
-  display: grid;
-  justify-items: center;
-  text-align: center;
-}
-
-.cta h2 {
-  font-size: clamp(32px, 5vw, 48px);
-}
-
-.cta p {
-  margin: 0 auto 24px;
-}
-
 .command {
-  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-radius: 6px;
+  background: var(--code);
   width: min(100%, 520px);
   margin-bottom: 24px;
   text-align: left;
@@ -569,41 +562,67 @@ pre {
   background: var(--code);
   color: var(--code-ink);
   border-radius: 6px;
-  padding: 16px 92px 16px 16px;
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
   font:
     13px / 1.6 ui-monospace,
     SFMono-Regular,
     Menlo,
     monospace;
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
   margin: 0;
 }
 
+pre span {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .copy {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  min-height: 44px;
-  min-width: 76px;
-  padding: 0 14px;
+  flex: none;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 6px;
+  padding: 0;
   border: 0;
   border-radius: 6px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font:
-    600 14px "Source Sans 3",
-    system-ui,
-    sans-serif;
+  background: none;
+  color: var(--code-ink);
+  opacity: 0.8;
   cursor: pointer;
+}
+
+.copy:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--code-ink) 12%, transparent);
+}
+
+.copy svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.copy .i-done,
+.copy.done .i-copy {
+  display: none;
+}
+
+.copy.done .i-done {
+  display: inline;
 }
 
 .copy:focus-visible {
   outline-color: var(--code-ink);
-}
-
-.cta .buttons {
-  justify-content: center;
 }
 
 footer {
@@ -618,6 +637,23 @@ footer {
 
 footer .mark {
   font-size: 16px;
+}
+
+.made {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 14px;
+  color: var(--ink2);
+}
+
+.made a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink);
+  text-underline-offset: 3px;
 }
 
 .player {

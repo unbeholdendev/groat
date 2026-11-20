@@ -48,8 +48,6 @@ const raw = "site/clips/.raw";
 const out = "site/public/clips";
 const viewport = { width: 390, height: 844 };
 const scale = 2;
-const themes = ["light", "dark"] as const;
-type Theme = (typeof themes)[number];
 const manifest = join(out, "clips.json");
 
 export type Band = { top: number; bottom: number };
@@ -73,7 +71,7 @@ function serve() {
 
 type Frame = { t: number; file: string };
 
-async function record(browser: Browser, storageState: string, name: string, theme: Theme, scene: Scene) {
+async function record(browser: Browser, storageState: string, name: string, scene: Scene) {
   const context = await browser.newContext({
     baseURL,
     storageState,
@@ -81,7 +79,7 @@ async function record(browser: Browser, storageState: string, name: string, them
     deviceScaleFactor: scale,
     isMobile: true,
     hasTouch: true,
-    colorScheme: theme,
+    colorScheme: "light",
     reducedMotion: "no-preference",
     serviceWorkers: "block",
     permissions: ["microphone"],
@@ -174,26 +172,23 @@ try {
   browser = await chromium.launch({
     args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
   });
-  for (const theme of themes) {
-    const stop = serve();
-    try {
-      const setup = await browser.newContext({ baseURL });
-      await seed(setup.request, ai, theme);
-      const storageState = join(raw, `${theme}.json`);
-      await setup.storageState({ path: storageState });
-      for (const [name, scene] of Object.entries(clips)) {
-        if (only.length && !only.includes(name)) continue;
-        const file = theme === "light" ? name : `${name}-${theme}`;
-        await scene.before?.(setup.request);
-        const { shots, crop } = await record(browser, storageState, file, theme, scene);
-        encode(file, shots, crop);
-        sizes[file] = { width: viewport.width * scale, height: crop.height };
-        console.log(`${file}: ${shots.reduce((s, f) => s + f.duration, 0).toFixed(1)} s, ${crop.height} px`);
-      }
-      await setup.close();
-    } finally {
-      await stop();
+  const stop = serve();
+  try {
+    const setup = await browser.newContext({ baseURL });
+    await seed(setup.request, ai);
+    const storageState = join(raw, "state.json");
+    await setup.storageState({ path: storageState });
+    for (const [name, scene] of Object.entries(clips)) {
+      if (only.length && !only.includes(name)) continue;
+      await scene.before?.(setup.request);
+      const { shots, crop } = await record(browser, storageState, name, scene);
+      encode(name, shots, crop);
+      sizes[name] = { width: viewport.width * scale, height: crop.height };
+      console.log(`${name}: ${shots.reduce((s, f) => s + f.duration, 0).toFixed(1)} s, ${crop.height} px`);
     }
+    await setup.close();
+  } finally {
+    await stop();
   }
 } finally {
   await browser?.close();

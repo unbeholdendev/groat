@@ -1,48 +1,11 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { knownCurrencies } from "../../shared/amount";
+import { defaultCategories } from "../../shared/categories";
 import type { Ctx } from "../context";
 import { settings as stored } from "./queries";
 import { body } from "../request";
 import * as schema from "../schema";
-
-const defaultCategories: [string, string, string, [string, string][]?][] = [
-  [
-    "Food",
-    "🍽️",
-    "#f98942",
-    [
-      ["Groceries", "🛒"],
-      ["Eating out", "🍜"],
-    ],
-  ],
-  [
-    "Transport",
-    "🚗",
-    "#26c0cf",
-    [
-      ["Fuel", "⛽"],
-      ["Public transport", "🚆"],
-      ["Taxi", "🚕"],
-    ],
-  ],
-  [
-    "Home",
-    "🏠",
-    "#3fbe90",
-    [
-      ["Rent/Mortgage", "🔑"],
-      ["Utilities", "💡"],
-      ["Maintenance", "🧰"],
-    ],
-  ],
-  ["Subscriptions", "📺", "#bf73df"],
-  ["Health", "💊", "#f16f7e"],
-  ["Shopping", "🛍️", "#e977bb"],
-  ["Entertainment", "🎬", "#f4bf3f"],
-  ["Travel", "✈️", "#99d352"],
-  ["Gifts", "🎁", "#e977bb"],
-];
 
 const currency = z.string("Invalid currency").refine((c) => knownCurrencies.has(c), "Invalid currency");
 const onboarding = z.object({ baseCurrency: currency });

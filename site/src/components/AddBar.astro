@@ -1,5 +1,26 @@
 ---
+import { defaultCategories } from "../../../shared/categories";
+
 const total = 1284.6;
+const words: Record<string, string> = {
+  Groceries: "groceries|tesco|lidl|sainsbury's|market|milk|bread",
+  "Eating out": "ramen|pizza|thai|dim|lunch|dinner|coffee|sushi|curry",
+  Fuel: "fuel|petrol|diesel",
+  "Public transport": "tube|train|bus",
+  Taxi: "taxi|uber",
+  "Rent/Mortgage": "rent|mortgage",
+  Utilities: "electricity|gas|water|phone|internet",
+  Maintenance: "plumber|repair|paint",
+  Subscriptions: "spotify|netflix",
+  Health: "pharmacy|dentist|gym",
+  Shopping: "clothes|shoes|amazon",
+  Entertainment: "cinema|gig|bowling|concert",
+  Travel: "flights|hotel",
+  Gifts: "present|gift|flowers",
+};
+const dates = ["Today", "Yesterday", "2 days ago", "3 days ago", "Last week"];
+const currencies = ["GBP", "EUR", "USD", "BTC"];
+const chevron = '<svg class="chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3"/></svg>';
 const palette = ["#f16f7e", "#f98942", "#f4bf3f", "#3fbe90", "#26c0cf", "#bf73df"];
 const days = Array.from({ length: 30 }, (_, d) =>
   d > 18
@@ -38,10 +59,35 @@ const days = Array.from({ length: 30 }, (_, d) =>
       enterkeyhint="done"
     />
   </div>
-  <div class="chips" data-chips>
-    <span class="chip" data-category>Category</span>
-    <span class="chip">Today</span>
-    <span class="chip" data-currency>GBP</span>
+  <div class="chips">
+    <label class="chip pick" data-category-chip>
+      <span class="tile" data-tile hidden></span><span data-category-label>Category</span><Fragment set:html={chevron} />
+      <select aria-label="Category" data-category>
+        <option value="">Category</option>
+        {
+          defaultCategories.map(([name, emoji, colour, children]) => {
+            const option = (n: string, e: string) => (
+              <option value={n} data-emoji={e} data-colour={colour} data-words={words[n]}>
+                {n}
+              </option>
+            );
+            return children ? (
+              <optgroup label={name}>{children.map(([n, e]) => option(n, e))}</optgroup>
+            ) : (
+              option(name, emoji)
+            );
+          })
+        }
+      </select>
+    </label>
+    <label class="chip pick">
+      <span data-date-label>Today</span><Fragment set:html={chevron} />
+      <select aria-label="Date" data-date>{dates.map((d) => <option>{d}</option>)}</select>
+    </label>
+    <label class="chip pick">
+      <span data-currency-label>GBP</span><Fragment set:html={chevron} />
+      <select aria-label="Currency" data-currency>{currencies.map((c) => <option>{c}</option>)}</select>
+    </label>
   </div>
   <p class="demo-note" id="demo-note">Try your own line. This is a demo; nothing is saved.</p>
 </div>
@@ -49,21 +95,28 @@ const days = Array.from({ length: 30 }, (_, d) =>
 <script>
   import { parse } from "../../../shared/parse";
 
-  const categories: [RegExp, string, string, string][] = [
-    [/^(ramen|lunch|dinner|pizza|sushi|burger|curry|pho)$/, "🍜", "Eating out", "#f98942"],
-    [/^(coffee|tea|latte|flat)$/, "☕", "Coffee", "#f4bf3f"],
-    [/^(groceries|milk|bread|eggs|tesco|market)$/, "🛒", "Groceries", "#99d352"],
-    [/^(taxi|bus|train|tube|uber|fuel|petrol)$/, "🚕", "Transport", "#26c0cf"],
-    [/^(cinema|tickets|gig|concert|book|books)$/, "🎟️", "Fun", "#bf73df"],
-    [/^(rent|power|water|internet|phone)$/, "🏠", "Home", "#3fbe90"],
-  ];
-
   const still = matchMedia("(prefers-reduced-motion: reduce)");
   for (const demo of document.querySelectorAll<HTMLElement>("[data-demo]")) {
     const input = demo.querySelector("[data-line]") as HTMLInputElement;
     const mirror = demo.querySelector("[data-mirror]") as HTMLElement;
-    const category = demo.querySelector("[data-category]") as HTMLElement;
-    const currency = demo.querySelector("[data-currency]") as HTMLElement;
+    const category = demo.querySelector("[data-category]") as HTMLSelectElement;
+    const categoryChip = demo.querySelector("[data-category-chip]") as HTMLElement;
+    const categoryLabel = demo.querySelector("[data-category-label]") as HTMLElement;
+    const tile = demo.querySelector("[data-tile]") as HTMLElement;
+    const date = demo.querySelector("[data-date]") as HTMLSelectElement;
+    const currency = demo.querySelector("[data-currency]") as HTMLSelectElement;
+    const currencyLabel = demo.querySelector("[data-currency-label]") as HTMLElement;
+    let picked = false;
+
+    const showCategory = () => {
+      const o = category.selectedOptions[0];
+      const set = !!category.value;
+      categoryChip.classList.toggle("set", set);
+      tile.hidden = !set;
+      tile.textContent = o.dataset.emoji ?? "";
+      tile.style.setProperty("--c", o.dataset.colour ?? "");
+      categoryLabel.textContent = o.textContent?.trim() ?? "";
+    };
     const count = demo.querySelector("[data-count]") as HTMLElement;
     const totalEl = demo.querySelector("[data-total]") as HTMLElement;
 
@@ -78,17 +131,16 @@ const days = Array.from({ length: 30 }, (_, d) =>
         }),
       );
       mirror.scrollLeft = input.scrollLeft;
-      currency.textContent = p.currency ?? "GBP";
+      if (p.currency) {
+        if (![...currency.options].some((o) => o.value === p.currency)) currency.add(new Option(p.currency));
+        currency.value = p.currency;
+        currencyLabel.textContent = p.currency;
+      }
+      if (picked) return;
       const first = p.note.split(" ")[0]?.toLowerCase() ?? "";
-      const hit = categories.find(([re]) => re.test(first));
-      category.replaceChildren();
-      category.classList.toggle("set", !!hit);
-      if (!hit) return void (category.textContent = "Category");
-      const tile = document.createElement("span");
-      tile.className = "tile";
-      tile.style.setProperty("--c", hit[3]);
-      tile.textContent = hit[1];
-      category.append(tile, hit[2]);
+      const hit = [...category.options].find((o) => o.dataset.words && new RegExp(`^(${o.dataset.words})$`).test(first));
+      category.value = hit?.value ?? "";
+      showCategory();
     };
 
     const format = (n: number) => {
@@ -109,6 +161,14 @@ const days = Array.from({ length: 30 }, (_, d) =>
     };
 
     input.addEventListener("input", render);
+    category.addEventListener("change", () => ((picked = true), showCategory()));
+    date.addEventListener("change", () => ((demo.querySelector("[data-date-label]") as HTMLElement).textContent = date.value));
+    currency.addEventListener("change", () => {
+      const { parts } = parse(input.value, ["GBP", "EUR", "USD"]);
+      input.value = parts.map(([w, kind]) => (kind === "currency" ? currency.value : w)).join("");
+      currencyLabel.textContent = currency.value;
+      render();
+    });
     input.addEventListener("scroll", () => (mirror.scrollLeft = input.scrollLeft));
     input.addEventListener("pointerdown", stopTyping);
     input.addEventListener("focus", stopTyping);
