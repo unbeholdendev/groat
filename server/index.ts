@@ -36,6 +36,7 @@ const timer = setInterval(() => {
   }
 }, 86_400_000);
 const checkIns = setInterval(() => void app.checkIn(), 3_600_000);
+const reminders = setInterval(() => void app.remind(), 60_000);
 app.use("*", serveStatic({ root: "./dist" }));
 app.get("*", serveStatic({ path: "./dist/index.html" }));
 
@@ -50,6 +51,7 @@ async function shutdown(signal: string) {
   log("info", "process.shutdown.started", { signal });
   clearInterval(timer);
   clearInterval(checkIns);
+  clearInterval(reminders);
   app.close();
   const deadline = setTimeout(() => {
     log("error", "process.shutdown.timed_out");

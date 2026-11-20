@@ -23,6 +23,7 @@ const changes: [string, Resource[]][] = [
   ["/api/import/preview", []],
   ["/api/chats", ["chats"]],
   ["/api/check-in", []],
+  ["/api/reminders", []],
   ["/api/drafts", []],
   ["/api/voice", []],
   ["/api/password", []],

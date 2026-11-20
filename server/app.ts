@@ -19,6 +19,7 @@ import { migrationsFolder } from "./db";
 import { liveUpdates } from "./live";
 import { errorKind, log, loggedFetch, requestLogging } from "./logging";
 import { valuer } from "./rates/valuer";
+import { reminders } from "./reminders";
 import { failed } from "./request";
 import { settingsRoutes } from "./settings/routes";
 import { statsRoutes } from "./stats/routes";
@@ -70,6 +71,7 @@ export function createApp(deps: Deps) {
   app.onError(failed);
   generateRecurring(ctx);
   const checkIn = checkIns(ctx);
+  const reminder = reminders(ctx);
 
   for (const file of ["sw.js", "manifest.webmanifest"])
     app.get(`/${file}`, () => new Response(Bun.file(`${import.meta.dir}/${file}`)));
@@ -102,6 +104,7 @@ export function createApp(deps: Deps) {
   app.route("/", statsRoutes(ctx));
   app.route("/", recurringRoutes(ctx));
   app.route("/", checkInRoutes(ctx, checkIn));
+  app.route("/", reminder.routes);
   app.route("/api/chats", chatRoutes(ctx));
   app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
@@ -111,6 +114,7 @@ export function createApp(deps: Deps) {
       live.publish(["recurring", "transactions"]);
     },
     checkIn: checkIn.tick,
+    remind: reminder.tick,
     close: live.close,
   });
 }

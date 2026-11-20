@@ -179,6 +179,16 @@ export function Privacy() {
           unavailable rates leave converted amounts unknown.
         </p>
 
+        <h2 className={sectionHead}>Daily reminders</h2>
+        <p>
+          Turning on a daily reminder asks the browser for a push subscription. The browser vendor’s push service issues
+          it: Google for Chrome and Android, Apple for Safari and iOS, Mozilla for Firefox. The server stores the
+          subscription address and keys, the chosen time and the device’s time zone, and each day sends an encrypted
+          notification through that service. The notification text is fixed and holds no ledger data. The push service
+          sees the server’s network address, when reminders arrive and which device they go to. Backups leave out
+          subscriptions and the server’s push key, so devices need to turn reminders on again after a restore.
+        </p>
+
         <h2 className={sectionHead}>Using Groat without AI</h2>
         <p>
           Leave the AI settings unset to use quick-add parsing, the full expense form, editing, categories, tags,

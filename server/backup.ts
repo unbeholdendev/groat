@@ -13,7 +13,7 @@ import { migrationsFolder } from "./db";
 import { valid } from "./request";
 import { log } from "./logging";
 
-const scrubbed = ["sessions", "api_tokens", "chat_messages", "chats"];
+const scrubbed = ["sessions", "api_tokens", "chat_messages", "chats", "reminders"];
 const notBackup = "That file isn’t a backup from this app";
 const upload = z.object({ backup: z.file() });
 
@@ -32,7 +32,9 @@ export function backupRoutes({ db, clock }: Pick<Ctx, "db" | "clock">) {
       const copy = new Database(path);
       copy.run("PRAGMA journal_mode = DELETE");
       for (const table of scrubbed) copy.run(`DELETE FROM ${table}`);
-      copy.run("UPDATE settings SET ai_base_url = NULL, ai_key = NULL, stt_base_url = NULL, stt_key = NULL");
+      copy.run(
+        "UPDATE settings SET ai_base_url = NULL, ai_key = NULL, stt_base_url = NULL, stt_key = NULL, vapid_public_key = NULL, vapid_private_key = NULL",
+      );
       // Without this the deleted session ids and AI keys would survive in free pages.
       copy.run("VACUUM");
       copy.close();

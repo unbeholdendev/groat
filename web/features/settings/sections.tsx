@@ -4,6 +4,7 @@ import { Ai } from "./ai";
 import { Backup } from "./backup";
 import { Members } from "./members";
 import { PasswordForm } from "./password-form";
+import { Reminder } from "./reminder";
 import { SettingsForm } from "./settings-form";
 import { SignOut } from "./sign-out";
 import { Tokens } from "./tokens";
@@ -35,6 +36,12 @@ export const sections: Section[] = [
       <path d="M12 4l1.8 4.2L18 10l-4.2 1.8L12 16l-1.8-4.2L6 10l4.2-1.8zM18 15l.8 1.7 1.7.8-1.7.8L18 20l-.8-1.7-1.7-.8 1.7-.8z" />
     ),
     Page: Ai,
+  },
+  {
+    id: "reminder",
+    label: "Reminder",
+    icon: <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" />,
+    Page: Reminder,
   },
   {
     id: "members",

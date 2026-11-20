@@ -5,7 +5,7 @@ import { z } from "zod";
 import { active, admin, credentials, type Env, hashCost } from "./access";
 import type { Ctx } from "../context";
 import { body } from "../request";
-import { apiTokens, sessions, users } from "../schema";
+import { apiTokens, reminders, sessions, users } from "../schema";
 
 const password = z.object({ password: credentials.shape.password });
 
@@ -103,6 +103,7 @@ export function memberRoutes({ db, clock }: Pick<Ctx, "db" | "clock">) {
     db.update(users).set({ deletedAt: clock().toISOString() }).where(eq(users.id, user.id)).run();
     db.delete(sessions).where(eq(sessions.userId, user.id)).run();
     db.delete(apiTokens).where(eq(apiTokens.userId, user.id)).run();
+    db.delete(reminders).where(eq(reminders.userId, user.id)).run();
     return c.json({});
   });
 

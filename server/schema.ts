@@ -44,6 +44,8 @@ export const settings = sqliteTable(
     sttKey: text(),
     checkIns: integer({ mode: "boolean" }).notNull().default(true),
     lastCheckInAt: text(),
+    vapidPublicKey: text(),
+    vapidPrivateKey: text(),
   },
   (t) => [check("single_row", sql`${t.id} = 1`)],
 );
@@ -171,3 +173,16 @@ export const categoryOrder = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.categoryId] })],
 );
+
+export const reminders = sqliteTable("reminders", {
+  endpoint: text().primaryKey(),
+  userId: integer()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  p256dh: text().notNull(),
+  auth: text().notNull(),
+  origin: text().notNull(),
+  time: text().notNull(),
+  timeZone: text().notNull(),
+  lastSentOn: text(),
+});

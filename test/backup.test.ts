@@ -80,6 +80,9 @@ async function household() {
   db.run("INSERT INTO chats (title) VALUES ('Spending')");
   db.run("INSERT INTO chat_messages (chat_id, message) VALUES (1, '\"hi\"')");
   db.run("INSERT INTO sessions (id, user_id, expires_at) VALUES ('live-session-6f1c2', 1, '9999')");
+  await call("GET", "/api/reminders");
+  db.run(`INSERT INTO reminders (endpoint, user_id, p256dh, auth, origin, time, time_zone)
+    VALUES ('https://fcm.googleapis.com/fcm/send/device', 1, 'key', 'auth', 'https://groat.test', '20:00', 'UTC')`);
   return h;
 }
 
@@ -110,11 +113,14 @@ test("a backup restores into a fresh instance with its financial data and accoun
       ai_key: null,
       stt_base_url: null,
       stt_key: null,
+      vapid_public_key: null,
+      vapid_private_key: null,
     }));
   for (const table of kept.filter((t) => t !== "settings"))
     expect([table, dump(target.db, table)]).toEqual([table, dump(source.db, table)]);
   expect(dump(target.db, "settings")).toEqual(blank(source.db));
-  for (const table of ["sessions", "api_tokens", "chats", "chat_messages"]) expect(dump(target.db, table)).toEqual([]);
+  for (const table of ["sessions", "api_tokens", "chats", "chat_messages", "reminders"])
+    expect(dump(target.db, table)).toEqual([]);
   expect(dump(target.db, "transactions").length).toBe(3);
 
   expect((await target.login("admin", "secret")).status).toBe(200);

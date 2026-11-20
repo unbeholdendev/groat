@@ -90,3 +90,28 @@ test("public icon URLs serve image bytes with the declared dimensions", async ()
   expect(bytes.readUInt16LE(2)).toBe(1);
   expect([bytes[6], bytes[7]]).toEqual([32, 32]);
 });
+
+test("worker shows a pushed reminder and opens the app when tapped", async () => {
+  const { runInNewContext } = await import("node:vm");
+  const handlers: Record<string, (event: any) => void> = {};
+  const shown: unknown[][] = [];
+  const opened: string[] = [];
+  const waits: Promise<unknown>[] = [];
+  runInNewContext(await Bun.file("server/sw.js").text(), {
+    URL,
+    location: { origin: "https://groat.test" },
+    self: {
+      addEventListener: (type: string, handler: (event: any) => void) => {
+        handlers[type] = handler;
+      },
+      registration: { showNotification: async (...args: unknown[]) => shown.push(args) },
+      clients: { matchAll: async () => [], openWindow: async (url: string) => opened.push(url) },
+    },
+  });
+  const waitUntil = (p: Promise<unknown>) => waits.push(p);
+  handlers.push({ data: { json: () => ({ title: "Groat", body: "Anything to add?" }) }, waitUntil });
+  handlers.notificationclick({ notification: { close: () => {} }, waitUntil });
+  await Promise.all(waits);
+  expect(shown).toEqual([["Groat", { body: "Anything to add?", icon: "/icon-192.png", tag: "reminder" }]]);
+  expect(opened).toEqual(["/"]);
+});
