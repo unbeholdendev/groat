@@ -22,4 +22,4 @@ Run `bun run lint` before committing; it must pass. `bun run format` fixes layou
 
 ### Landing site
 
-`site/` is the Astro landing page, with its own `package.json` (`cd site && bun install && bun run build`). `bun run clips [name…]` re-records the clips in `site/public/clips` against a seeded throwaway server and a real model. It needs ffmpeg, an emoji font, and `CLIPS_AI_URL`, `CLIPS_AI_KEY` and `CLIPS_AI_MODEL`; AI replies differ each run, so look at the clips before committing.
+`site/` is the Astro landing page, with its own `package.json` (`cd site && bun install && bun run build`). It imports `shared/`, so its image builds from the repo root (`docker build --target site .`); the manual "Deploy site" Forgejo workflow pushes it to Dokploy on giran. `bun run clips [name…]` re-records the clips in `site/public/clips` against a seeded throwaway server and a real model. It needs ffmpeg, an emoji font, and `CLIPS_AI_URL`, `CLIPS_AI_KEY` and `CLIPS_AI_MODEL`; AI replies differ each run, so look at the clips before committing.

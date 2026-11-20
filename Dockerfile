@@ -6,6 +6,20 @@ RUN bun install --frozen-lockfile
 COPY . .
 RUN bun run build
 
+FROM ${BUN_IMAGE} AS site-build
+WORKDIR /app/site
+COPY site/package.json site/bun.lock ./
+RUN bun install --frozen-lockfile
+COPY shared /app/shared
+COPY site ./
+RUN bun --bun run build
+
+# The landing page, built only with --target site.
+FROM caddy:2.11.8-alpine@sha256:f6228111e5fafa1a5238258d0858e103f10599b8d1659a146e7726681a002bb9 AS site
+COPY --from=site-build /app/site/dist /srv
+EXPOSE 8080
+CMD ["caddy", "file-server", "--root", "/srv", "--listen", ":8080"]
+
 FROM ${BUN_IMAGE}
 ARG VERSION=dev
 ARG REVISION=unknown

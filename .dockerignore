@@ -5,3 +5,5 @@ dist
 .env
 .env.*
 *.sqlite*
+site/node_modules
+site/dist

@@ -1,0 +1,49 @@
+name: Deploy site
+
+on: workflow_dispatch
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: docker
+    env:
+      IMAGE: ${{ vars.REGISTRY }}/${{ github.repository }}-site:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+        with:
+          # Keeps the layer cache in the host daemon; the default driver's builder is deleted with the job.
+          driver: docker
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ vars.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: site
+          push: true
+          tags: ${{ env.IMAGE }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Pin image and deploy
+        env:
+          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+          DOKPLOY_TOKEN: ${{ secrets.DOKPLOY_TOKEN }}
+          APP_ID: ${{ vars.DOKPLOY_SITE_APP_ID }}
+        run: |
+          set -euo pipefail
+          : "${APP_ID:?set the DOKPLOY_SITE_APP_ID variable}"
+          curl -fsS -X POST "$DOKPLOY_URL/api/application.update" \
+            -H "x-api-key: $DOKPLOY_TOKEN" -H "Content-Type: application/json" \
+            -d "{\"applicationId\":\"$APP_ID\",\"dockerImage\":\"$IMAGE\"}"
+          curl -fsS -X POST "$DOKPLOY_URL/api/application.deploy" \
+            -H "x-api-key: $DOKPLOY_TOKEN" -H "Content-Type: application/json" \
+            -d "{\"applicationId\":\"$APP_ID\"}"
