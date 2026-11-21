@@ -306,6 +306,16 @@ code {
   word-spacing: 0.25em;
 }
 
+.demo[data-idle] .bar {
+  animation: beckon 1.3s ease-in-out infinite;
+}
+
+@keyframes beckon {
+  50% {
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+}
+
 .bar:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

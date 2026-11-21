@@ -92,7 +92,7 @@ const days = Array.from({ length: 30 }, (_, d) =>
       <select aria-label="Currency" data-currency>{byRecent(recent).map((c) => <option>{c}</option>)}</select>
     </label>
   </div>
-  <p class="demo-note" id="demo-note" aria-live="polite" data-note>Try your own line.</p>
+  <p class="demo-note" id="demo-note" aria-live="polite" data-note>Tap the bar and try your own line.</p>
 </div>
 
 <script>
@@ -190,8 +190,8 @@ const days = Array.from({ length: 30 }, (_, d) =>
 
     const rates: Record<string, number> = { GBP: 1, EUR: 0.86, USD: 0.76 };
     const pounds = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    let eatingOut = 187.8;
-    let meals = 11;
+    const start = { eatingOut: 187.8, meals: 11 };
+    let { eatingOut, meals } = start;
 
     const add = () => {
       const p = parse(input.value, recent);
@@ -206,7 +206,7 @@ const days = Array.from({ length: 30 }, (_, d) =>
         meals++;
       }
       const seg = document.createElement("i");
-      seg.className = "new";
+      seg.className = auto ? "new auto" : "new";
       seg.style.setProperty("--c", chosen.dataset.colour || "var(--accent)");
       seg.style.setProperty("--h", String(Math.min(24, Math.max(3, Math.round(value / 3)))));
       todayBar.append(seg);
@@ -239,7 +239,16 @@ const days = Array.from({ length: 30 }, (_, d) =>
 
     let typing = 0;
     let auto = true;
-    const stopTyping = () => ((auto = false), clearTimeout(typing));
+    const stopTyping = () => {
+      if (!auto) return;
+      auto = false;
+      clearTimeout(typing);
+      demo.removeAttribute("data-idle");
+      note.setAttribute("aria-live", "polite");
+      note.textContent = "Tap the bar and try your own line.";
+      input.value = "";
+      render();
+    };
     const wait = (ms: number) => new Promise((done) => (typing = window.setTimeout(done, ms)));
     const type = async (text: string) => {
       for (let i = 0; i <= text.length && auto; i++) {
@@ -270,6 +279,7 @@ const days = Array.from({ length: 30 }, (_, d) =>
     input.addEventListener("focus", stopTyping);
 
     if (still.matches) {
+      auto = false;
       input.value = "ramen 24.50 #friends";
       render();
       continue;
@@ -277,6 +287,24 @@ const days = Array.from({ length: 30 }, (_, d) =>
     shown = 0;
     format(0);
     countTo(total, 1400);
-    void type("ramen 24.50 #friends");
+    note.setAttribute("aria-live", "off");
+    const base = total;
+    const examples = ["ramen 24.50 #friends", "taxi home 14.80", "coffee 3.20 EUR", "? how much on eating out"];
+    const reset = () => {
+      for (const seg of todayBar.querySelectorAll(".auto")) seg.remove();
+      ({ eatingOut, meals } = start);
+      currency.value = currencyLabel.textContent = "GBP";
+      total = base;
+      countTo(total, 700);
+    };
+    void (async () => {
+      for (let i = 0; auto; i = (i + 1) % examples.length) {
+        if (i === 0 && todayBar.querySelector(".auto")) reset();
+        await type(examples[i]);
+        demo.toggleAttribute("data-idle", auto);
+        await wait(2600);
+        demo.removeAttribute("data-idle");
+      }
+    })();
   }
 </script>
