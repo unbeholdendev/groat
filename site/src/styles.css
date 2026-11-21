@@ -501,6 +501,62 @@ code {
   margin: 0;
 }
 
+.ledger {
+  list-style: none;
+  margin: 14px -20px -18px;
+  padding: 4px 0;
+  border-top: 1px solid var(--line);
+}
+
+.ledger li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 20px;
+}
+
+.ledger li.new {
+  animation: arrive 400ms var(--ease);
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.ledger .what {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.ledger .what > *,
+.ledger small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ledger small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+
+.ledger .amount {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink2);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .clip {
   display: flex;
   flex-direction: column;
@@ -827,7 +883,8 @@ footer .mark {
 @media (prefers-reduced-motion: reduce) {
   .button,
   .answer,
-  .skyline i.new {
+  .skyline i.new,
+  .ledger li.new {
     transition: none;
     animation: none;
   }

@@ -3,6 +3,16 @@ import { byRecent } from "../../../shared/amount";
 import { defaultCategories } from "../../../shared/categories";
 
 const total = 1284.6;
+const look = new Map(
+  defaultCategories.flatMap(([name, emoji, colour, children = []]) => [
+    [name, { emoji, colour }],
+    ...children.map(([n, e]) => [n, { emoji: e, colour }] as const),
+  ]),
+);
+const seed = [
+  { note: "lunch", category: "Eating out", amount: "£12.90" },
+  { note: "milk and bread", category: "Groceries", amount: "£3.45" },
+];
 const words: Record<string, string> = {
   Groceries: "groceries|tesco|lidl|sainsbury's|market|milk|bread",
   "Eating out": "ramen|pizza|thai|dim|lunch|dinner|coffee|sushi|curry",
@@ -93,6 +103,17 @@ const days = Array.from({ length: 30 }, (_, d) =>
     </label>
   </div>
   <p class="demo-note" id="demo-note" aria-live="polite" data-note>Tap the bar and try your own line.</p>
+  <ul class="ledger" aria-label="Recent expenses" data-ledger>
+    {
+      seed.map((e) => (
+        <li>
+          <span class="tile" style={`--c:${look.get(e.category)?.colour}`}>{look.get(e.category)?.emoji}</span>
+          <span class="what"><span>{e.note}</span><small>{e.category}</small></span>
+          <span class="amount">{e.amount}</span>
+        </li>
+      ))
+    }
+  </ul>
 </div>
 
 <script>
@@ -119,6 +140,7 @@ const days = Array.from({ length: 30 }, (_, d) =>
     const question = demo.querySelector("[data-question]") as HTMLElement;
     const reply = demo.querySelector("[data-reply]") as HTMLElement;
     const note = demo.querySelector("[data-note]") as HTMLElement;
+    const ledger = demo.querySelector("[data-ledger]") as HTMLElement;
     let picked = false;
 
     const showCategory = () => {
@@ -210,6 +232,31 @@ const days = Array.from({ length: 30 }, (_, d) =>
       seg.style.setProperty("--c", chosen.dataset.colour || "var(--accent)");
       seg.style.setProperty("--h", String(Math.min(24, Math.max(3, Math.round(value / 3)))));
       todayBar.append(seg);
+      const row = document.createElement("li");
+      row.className = auto ? "new auto" : "new";
+      const rowTile = document.createElement("span");
+      rowTile.className = "tile";
+      rowTile.textContent = chosen.dataset.emoji ?? "";
+      rowTile.style.setProperty("--c", chosen.dataset.colour || "var(--line-strong)");
+      const what = document.createElement("span");
+      what.className = "what";
+      const meta = [
+        date.value !== today() && dayLabel(date.value),
+        category.value,
+        ...p.tags.map((t) => `#${t}`),
+      ].filter(Boolean);
+      what.append(token(p.note || "Expense"), Object.assign(document.createElement("small"), { textContent: meta.join("  ") }));
+      const cur = p.currency ?? currency.value;
+      const sum = document.createElement("span");
+      sum.className = "amount";
+      sum.textContent = pounds(value);
+      if (cur !== "GBP") {
+        const original = new Intl.NumberFormat("en-GB", { style: "currency", currency: cur }).format(amount);
+        sum.append(Object.assign(document.createElement("small"), { textContent: original }));
+      }
+      row.append(rowTile, what, sum);
+      ledger.prepend(row);
+      ledger.children[3]?.remove();
       total += value;
       countTo(total, 700);
       note.textContent = `Added ${p.note || "an expense"} · ${pounds(value)}`;
@@ -290,7 +337,9 @@ const days = Array.from({ length: 30 }, (_, d) =>
     note.setAttribute("aria-live", "off");
     const base = total;
     const examples = ["ramen 24.50 #friends", "14.80 taxi home", "coffee 3.20 EUR", "? how much on eating out"];
+    const seedRows = ledger.innerHTML;
     const reset = () => {
+      ledger.innerHTML = seedRows;
       for (const seg of todayBar.querySelectorAll(".auto")) seg.remove();
       ({ eatingOut, meals } = start);
       currency.value = currencyLabel.textContent = "GBP";
