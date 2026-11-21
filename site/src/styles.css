@@ -884,7 +884,8 @@ footer .mark {
   .button,
   .answer,
   .skyline i.new,
-  .ledger li.new {
+  .ledger li.new,
+  .demo[data-idle] .bar {
     transition: none;
     animation: none;
   }

@@ -228,12 +228,12 @@ const days = Array.from({ length: 30 }, (_, d) =>
         meals++;
       }
       const seg = document.createElement("i");
-      seg.className = auto ? "new auto" : "new";
+      seg.className = "new";
       seg.style.setProperty("--c", chosen.dataset.colour || "var(--accent)");
       seg.style.setProperty("--h", String(Math.min(24, Math.max(3, Math.round(value / 3)))));
       todayBar.append(seg);
       const row = document.createElement("li");
-      row.className = auto ? "new auto" : "new";
+      row.className = "new";
       const rowTile = document.createElement("span");
       rowTile.className = "tile";
       rowTile.textContent = chosen.dataset.emoji ?? "";
@@ -284,29 +284,6 @@ const days = Array.from({ length: 30 }, (_, d) =>
       else add();
     });
 
-    let typing = 0;
-    let auto = true;
-    const stopTyping = () => {
-      if (!auto) return;
-      auto = false;
-      clearTimeout(typing);
-      demo.removeAttribute("data-idle");
-      note.setAttribute("aria-live", "polite");
-      note.textContent = "Tap the bar and try your own line.";
-      input.value = "";
-      render();
-    };
-    const wait = (ms: number) => new Promise((done) => (typing = window.setTimeout(done, ms)));
-    const type = async (text: string) => {
-      for (let i = 0; i <= text.length && auto; i++) {
-        input.value = text.slice(0, i);
-        render();
-        await wait(i === 0 ? 500 : 70);
-      }
-      await wait(900);
-      if (auto) form.requestSubmit();
-    };
-
     input.addEventListener("input", render);
     category.addEventListener("change", () => ((picked = true), showCategory()));
     date.max = date.value = today();
@@ -322,38 +299,14 @@ const days = Array.from({ length: 30 }, (_, d) =>
       render();
     });
     input.addEventListener("scroll", () => (mirror.scrollLeft = input.scrollLeft));
-    input.addEventListener("pointerdown", stopTyping);
-    input.addEventListener("focus", stopTyping);
+    input.addEventListener("focus", () => demo.removeAttribute("data-idle"), { once: true });
 
-    if (still.matches) {
-      auto = false;
-      input.value = "ramen 24.50 #friends";
-      render();
-      continue;
-    }
+    input.value = "ramen 24.50 #friends";
+    render();
+    demo.setAttribute("data-idle", "");
+    if (still.matches) continue;
     shown = 0;
     format(0);
     countTo(total, 1400);
-    note.setAttribute("aria-live", "off");
-    const base = total;
-    const examples = ["ramen 24.50 #friends", "14.80 taxi home", "coffee 3.20 EUR", "? how much on eating out"];
-    const seedRows = ledger.innerHTML;
-    const reset = () => {
-      ledger.innerHTML = seedRows;
-      for (const seg of todayBar.querySelectorAll(".auto")) seg.remove();
-      ({ eatingOut, meals } = start);
-      currency.value = currencyLabel.textContent = "GBP";
-      total = base;
-      countTo(total, 700);
-    };
-    void (async () => {
-      for (let i = 0; auto; i = (i + 1) % examples.length) {
-        if (i === 0 && todayBar.querySelector(".auto")) reset();
-        await type(examples[i]);
-        demo.toggleAttribute("data-idle", auto);
-        await wait(2600);
-        demo.removeAttribute("data-idle");
-      }
-    })();
   }
 </script>
