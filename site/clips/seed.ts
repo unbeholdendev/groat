@@ -62,7 +62,7 @@ function rows(): Row[] {
     if (n === 33) out.push({ note: "birthday present", amount: "35.00", date, category: "Gifts", tags: ["family"] });
   }
   const trip = 95;
-  out.push(
+  out.unshift(
     {
       note: "flights to Lisbon",
       amount: "184.00",

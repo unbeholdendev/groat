@@ -134,10 +134,10 @@ export const clips: Record<string, Scene> = {
   },
   "check-in": {
     before: checkIn,
+    open: (page) => place(composer(page), gap, "instant"),
     run: async ({ page, wait }) => {
       const card = page.getByRole("link", { name: /Check-in/ }).first();
       await card.waitFor();
-      const anchor = await edge(composer(page), "top");
       await page.waitForTimeout(2200);
       await card.click();
       await page.waitForTimeout(1500);
@@ -149,10 +149,11 @@ export const clips: Record<string, Scene> = {
       await type(page, "make spotify recurring");
       await page.keyboard.press("Enter");
       await wait(() => answered(page));
-      await place(sent(page), anchor - gap / 2, "smooth");
+      const below = await edge(page.getByRole("button", { name: "Chats" }).locator(".."), "bottom");
+      await place(sent(page), below + gap / 2, "smooth");
     },
     crop: async (page) => ({
-      top: (await edge(sent(page), "top")) - 6,
+      top: gap / 2 - 6,
       bottom: await edge(page.getByText(/^Answers come from your own data/), "top"),
     }),
   },
