@@ -289,7 +289,7 @@ const days = Array.from({ length: 30 }, (_, d) =>
     countTo(total, 1400);
     note.setAttribute("aria-live", "off");
     const base = total;
-    const examples = ["ramen 24.50 #friends", "taxi home 14.80", "coffee 3.20 EUR", "? how much on eating out"];
+    const examples = ["ramen 24.50 #friends", "14.80 taxi home", "coffee 3.20 EUR", "? how much on eating out"];
     const reset = () => {
       for (const seg of todayBar.querySelectorAll(".auto")) seg.remove();
       ({ eatingOut, meals } = start);
