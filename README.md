@@ -1,6 +1,25 @@
 # Groat
 
-A self-hosted expense tracker for one person or a group sharing a ledger.
+Add an expense in one line. Type `ramen 24.50 #friends` and Groat fills in the category from what you wrote before. Ask about your spending in plain English, dictate an expense or photograph a receipt. Groat runs on your own server, for one person or a household sharing a ledger.
+
+[groat.unbeholden.dev](https://groat.unbeholden.dev) · free and open source under Apache-2.0
+
+<p>
+  <img src="site/public/clips/add.jpg" alt="The add bar after adding ramen for £24.50, filed under Eating out" height="320">
+  <img src="site/public/clips/ask.jpg" alt="Groat answering how much was spent on eating out since June" height="320">
+  <img src="site/public/clips/stats.jpg" alt="Stats by category, compared with the previous period" height="320">
+</p>
+
+- Type a note, an amount and `#tags`. The category fills in from past notes, with no AI needed.
+- Start with `?` to ask a question. Groat answers from the ledger.
+- Dictate an expense, or photograph a receipt and check the expense it becomes.
+- Once a week, an unread check-in flags a price that crept up or a category well above usual.
+- Stats compare any period with the one before, by category.
+- Every currency, Bitcoin included. Groat fetches the rates.
+- A household shares one ledger, and each member signs in separately.
+- Install it on your phone over HTTPS. It keeps working offline and syncs when back online.
+- Post expenses from an iOS Shortcut or Tasker with an API token.
+- AI is optional. An admin connects any OpenAI-compatible API or a ChatGPT plan.
 
 ## Run
 
