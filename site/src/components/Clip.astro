@@ -49,9 +49,11 @@ const size = sizes[name as keyof typeof sizes];
     (entries) => {
       for (const { target, isIntersecting } of entries) {
         if (!isIntersecting) continue;
-        const video = target as HTMLVideoElement;
-        video.poster = `/clips/${(video.parentElement as HTMLElement).dataset.clip}.jpg`;
-        near.unobserve(video);
+        const group = target.closest("[data-player]") ?? (target.parentElement as HTMLElement);
+        for (const video of group.querySelectorAll("video")) {
+          video.poster = `/clips/${(video.parentElement as HTMLElement).dataset.clip}.jpg`;
+          near.unobserve(video);
+        }
       }
     },
     { rootMargin: "300px 0px" },
