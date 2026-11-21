@@ -75,8 +75,8 @@ const ways = [
           <AddBar />
           <div class="hero-text">
             <p class="lede">
-              Type a note and an amount; the category fills in from what you wrote before. It works for one person or a
-              group sharing a ledger.
+              Type a note and an amount. Groat remembers how you categorised the same note before. It works for one person
+              or a group sharing a ledger.
             </p>
             <p class="free">Free, open source under Apache-2.0, and self-hosted.</p>
             <div class="command">
@@ -165,7 +165,11 @@ const ways = [
             <div><h3>Backups</h3><p>Download one file from Settings, or copy the database on a schedule.</p></div>
             <div>
               <h3>AI is optional</h3>
-              <p>Dictation, receipt photos, asking and the check-in need it. An admin connects any OpenAI-compatible API or a ChatGPT plan.</p>
+              <p>
+                Dictation, receipt photos, asking and the check-in need it. An admin connects an
+                <a href={`${repo}#configuration`}>OpenAI-compatible API key</a>, or signs in with a
+                <a href={`${repo}#chatgpt-subscription`}>ChatGPT plan</a>, which covers everything but dictation.
+              </p>
             </div>
           </div>
         </section>

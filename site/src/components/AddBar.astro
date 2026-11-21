@@ -33,8 +33,10 @@ const days = Array.from({ length: 30 }, (_, d) =>
 ---
 
 <div class="demo" data-demo>
+  <p class="demo-tag">Interactive demo · Nothing is saved</p>
+  <p class="total-label">Spent this month</p>
   <p class="total" data-total={total}>
-    <span class="sr">£1,284.60</span>
+    <span class="sr">£1,284.60 spent this month</span>
     <span aria-hidden="true" data-count>£1,284<span class="pence">.60</span></span>
   </p>
   <div class="skyline" aria-hidden="true">
@@ -90,7 +92,7 @@ const days = Array.from({ length: 30 }, (_, d) =>
       <select aria-label="Currency" data-currency>{byRecent(recent).map((c) => <option>{c}</option>)}</select>
     </label>
   </div>
-  <p class="demo-note" id="demo-note" aria-live="polite" data-note>Try your own line. This is a demo; nothing is saved.</p>
+  <p class="demo-note" id="demo-note" aria-live="polite" data-note>Try your own line.</p>
 </div>
 
 <script>
@@ -210,7 +212,7 @@ const days = Array.from({ length: 30 }, (_, d) =>
       todayBar.append(seg);
       total += value;
       countTo(total, 700);
-      note.textContent = `Added ${p.note || "an expense"}, ${pounds(value)}. Nothing is saved.`;
+      note.textContent = `Added ${p.note || "an expense"} · ${pounds(value)}`;
       input.value = "";
       picked = false;
       render();

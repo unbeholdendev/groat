@@ -222,6 +222,24 @@ code {
   padding: 24px 20px 18px;
 }
 
+.demo-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin: 0 0 16px;
+}
+
+.total-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink3);
+  margin: 0 0 4px;
+}
+
 .total {
   font:
     700 clamp(60px, 8vw, 76px) / 1 "Libre Caslon Text",
