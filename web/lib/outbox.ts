@@ -2,6 +2,7 @@ import { type MutationCacheNotifyEvent, onlineManager, type QueryClient } from "
 import { z } from "zod";
 import { send } from "./api";
 import { isLocallySignedOut } from "./device";
+import { unreachable } from "./online";
 import { type Request, transaction } from "./schemas";
 import { watchSession } from "./session";
 
@@ -36,30 +37,44 @@ export const sync = (
       addRequestId(r);
       return { queued: !meta?.transient && !onlineManager.isOnline() };
     },
-    mutationFn: async (r: Request, { client, meta }) => {
-      if (
-        !client
-          .getMutationCache()
-          .getAll()
-          .some((m) => m.state.variables === r)
-      )
-        throw new Error("This change was removed");
-      if (isLocallySignedOut()) throw new Error("Sign in before retrying this change");
-      const owner = typeof meta?.owner === "string" ? meta.owner : "";
-      if (!owner) throw Object.assign(new Error("Sign in as the original user to sync this change"), { status: 401 });
-      const current = watchSession(client, owner);
-      let data = await send(r[0], r[1], r[2], owner);
-      current();
-      if (meta?.edited && isNewTransaction(r)) {
-        const { id } = transaction.parse(data);
-        data = await send("PUT", `/api/transactions/${id}`, r[2], owner);
-        current();
-      }
-      await patch(client, data, r);
-      current();
-      return data;
+    retry: (_, e: Error & { unreachable?: boolean; repeatable?: boolean }) => {
+      if (e.unreachable) unreachable();
+      return !!(e.unreachable && e.repeatable);
     },
+    mutationFn: (r: Request, { client, meta }) =>
+      replay(client, r, meta, patch).catch((e) => {
+        throw Object.assign(e, { repeatable: r[0] !== "POST" || isNewTransaction(r) });
+      }),
   });
+
+async function replay(
+  client: QueryClient,
+  r: Request,
+  meta: Record<string, unknown> | undefined,
+  patch: (client: QueryClient, data: unknown, request: Request) => unknown,
+) {
+  if (
+    !client
+      .getMutationCache()
+      .getAll()
+      .some((m) => m.state.variables === r)
+  )
+    throw new Error("This change was removed");
+  if (isLocallySignedOut()) throw new Error("Sign in before retrying this change");
+  const owner = typeof meta?.owner === "string" ? meta.owner : "";
+  if (!owner) throw Object.assign(new Error("Sign in as the original user to sync this change"), { status: 401 });
+  const current = watchSession(client, owner);
+  let data = await send(r[0], r[1], r[2], owner);
+  current();
+  if (meta?.edited && isNewTransaction(r)) {
+    const { id } = transaction.parse(data);
+    data = await send("PUT", `/api/transactions/${id}`, r[2], owner);
+    current();
+  }
+  await patch(client, data, r);
+  current();
+  return data;
+}
 
 export function retain(client: QueryClient, { type, mutation: m }: MutationCacheNotifyEvent) {
   if (m && (m.state.isPaused || queuedContext.safeParse(m.state.context).data?.queued) && !m.meta?.retained)

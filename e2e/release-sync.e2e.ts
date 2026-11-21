@@ -255,7 +255,7 @@ for (const updateFails of [false, true])
     });
     await context.setOffline(false);
     const outbox = page.getByRole("region", { name: "Unsent changes" });
-    await expect(outbox).toContainText("Couldn’t reach the server");
+    await expect(outbox).toContainText("Waiting for a connection");
     await outbox.getByRole("button", { name: "Edit" }).click();
     await outbox.getByLabel("Note").fill("corrected accepted");
     await outbox.getByLabel("Amount").fill("3.50");
@@ -267,7 +267,6 @@ for (const updateFails of [false, true])
       await page.route("**/api/transactions/*", (route) =>
         route.fulfill({ status: 400, json: { error: "Correction not saved" } }),
       );
-    await outbox.getByRole("button", { name: "Retry" }).click();
     if (updateFails) {
       await expect(outbox).toContainText("Correction not saved");
       await page.reload();
@@ -280,3 +279,32 @@ for (const updateFails of [false, true])
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ note: "corrected accepted", amount: 350 });
   });
+
+test("an unreachable server queues the expense and syncs it once the server answers", async ({ app: page }) => {
+  await expect(bar(page)).toBeVisible();
+  await page.route("**/api/**", (route) => route.abort("connectionrefused"));
+  await add(page, "coffee 3");
+  const outbox = page.getByRole("region", { name: "Unsent changes" });
+  await expect(outbox).toContainText("Waiting for a connection");
+  await page.unroute("**/api/**");
+  await expect(outbox).toBeHidden({ timeout: 10_000 });
+  await expect(page.getByRole("button", { name: "coffee", exact: true })).toBeVisible();
+  expect((await (await page.request.get("/api/transactions")).json()).length).toBe(1);
+});
+
+test("a recurring expense whose response is lost is never created twice", async ({ app: page }) => {
+  await expect(bar(page)).toBeVisible();
+  await page.route("**/api/recurring", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    await route.fetch();
+    await route.abort();
+  });
+  await page.getByRole("button", { name: "Full form" }).click();
+  await page.getByLabel("Note").fill("Gym");
+  await page.getByLabel("Amount").fill("30");
+  await page.getByLabel("Repeat").selectOption("month");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.waitForTimeout(5000);
+  expect(await (await page.request.get("/api/recurring")).json()).toHaveLength(1);
+  await expect(page.getByText("Couldn’t reach the server")).toBeVisible();
+});

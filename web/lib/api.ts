@@ -21,7 +21,9 @@ export async function send(method: string, path: string, body?: unknown, owner?:
           body: JSON.stringify(body),
         };
   const res = await fetch(path, { method, ...init }).catch(() => {
-    throw new Error("Couldn’t reach the server. Check your connection and try again.");
+    throw Object.assign(new Error("Couldn’t reach the server. Check your connection and try again."), {
+      unreachable: true,
+    });
   });
   const json: unknown = await res.json().catch(() => ({}));
   if (!res.ok)
@@ -80,5 +82,6 @@ export const useSendNow = (key?: string) => {
     mutationKey: ["send", key],
     meta: { owner, transient: true },
     networkMode: "always",
+    retry: false,
   });
 };
