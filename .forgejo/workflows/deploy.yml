@@ -33,6 +33,7 @@ jobs:
           push: true
           tags: ${{ env.IMAGE }}
           labels: org.opencontainers.image.revision=${{ github.sha }}
+          build-args: UMAMI_WEBSITE_ID=${{ vars.UMAMI_WEBSITE_ID }}
 
       - name: Pin image and deploy
         env:

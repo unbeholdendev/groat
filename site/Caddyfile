@@ -1,0 +1,35 @@
+{
+	admin off
+	servers {
+		trusted_proxies static private_ranges
+		trusted_proxies_strict
+	}
+}
+
+:8080 {
+	root * /srv
+
+	@umami path /u/script.js /u/api/send
+	handle @umami {
+		uri strip_prefix /u
+		header -Via
+		reverse_proxy https://umami.unbeholden.dev {
+			header_up Host {upstream_hostport}
+			header_up -Cookie
+			# Umami reads True-Client-IP before X-Forwarded-For, which Giran rewrites with this container's address.
+			header_up True-Client-IP {client_ip}
+			header_down -Server
+			header_down -X-Powered-By
+			header_down -Set-Cookie
+			header_down -Access-Control-*
+			transport http {
+				dial_timeout 3s
+				response_header_timeout 3s
+			}
+		}
+	}
+
+	handle {
+		file_server
+	}
+}

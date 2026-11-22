@@ -9,6 +9,7 @@ import AddBar from "../components/AddBar.astro";
 import Clip from "../components/Clip.astro";
 import Player from "../components/Player.astro";
 
+const websiteId = import.meta.env.UMAMI_WEBSITE_ID;
 const repo = "https://github.com/unbeholdendev/groat";
 const install = `${repo}#run`;
 const command = [
@@ -66,6 +67,7 @@ const ways = [
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {websiteId && <script is:inline defer src="/u/script.js" data-website-id={websiteId} />}
   </head>
   <body>
     <div class="wrap">
