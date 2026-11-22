@@ -135,7 +135,7 @@ export async function period({ db, value }: Pick<Ctx, "db" | "value">, q: Range)
   };
 }
 
-async function sats({ db, value, clock }: Pick<Ctx, "db" | "value" | "clock">, q: Range) {
+export async function sats({ db, value, clock }: Pick<Ctx, "db" | "value" | "clock">, q: Range) {
   const { baseCurrency, sats } = settings(db);
   if (!sats || baseCurrency === "BTC") return null;
   const valued = await value(entries(db, q), "BTC");
@@ -157,8 +157,3 @@ async function sats({ db, value, clock }: Pick<Ctx, "db" | "value" | "clock">, q
         : { total: spent.baseAmount, income: earned.baseAmount },
   };
 }
-
-export const stats = async (ctx: Pick<Ctx, "db" | "value" | "clock">, q: Range) => ({
-  ...(await period(ctx, q)),
-  sats: await sats(ctx, q),
-});

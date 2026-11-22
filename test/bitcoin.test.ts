@@ -73,7 +73,7 @@ async function spending(baseCurrency: string) {
       date,
       categoryId: all.find((c) => c.name === category)!.id,
     });
-  const sats = async () => (await t.call("GET", "/api/stats?from=2026-09-01&to=2026-10-31&group=month")).body.sats;
+  const sats = async () => (await t.call("GET", "/api/stats/sats?from=2026-09-01&to=2026-10-31")).body;
   return { ...t, add, sats };
 }
 
@@ -118,6 +118,16 @@ test("sats totals follow a tag scope", async () => {
     tags: ["trip"],
   });
   await call("PUT", "/api/settings", { sats: true });
-  const { body } = await call("GET", "/api/stats?from=2026-09-01&to=2026-10-31&group=month&tag=trip");
-  expect(body.sats).toMatchObject({ total: 50000, unconverted: 0 });
+  const { body } = await call("GET", "/api/stats/sats?from=2026-09-01&to=2026-10-31&tag=trip");
+  expect(body).toMatchObject({ total: 50000, unconverted: 0 });
+});
+
+test("period stats never wait on BTC rates, even with sats on", async () => {
+  const { call, add, fetches } = await spending("GBP");
+  await add("76.00", "2026-10-02", "Groceries");
+  await call("PUT", "/api/settings", { sats: true });
+  const before = fetches.length;
+  const { body } = await call("GET", "/api/stats?from=2026-10-01&to=2026-10-10&group=month");
+  expect(body.total).toBe(7600);
+  expect(fetches.slice(before)).toEqual([]);
 });

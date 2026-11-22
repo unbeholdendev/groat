@@ -7,7 +7,7 @@ import { useApi, useCategories, useSettings } from "../../lib/api";
 import { rangeLabel } from "../../../shared/dates";
 import { money } from "../../lib/money";
 import { change, days, span } from "../../lib/period";
-import { period, tag as tagSchema } from "../../lib/schemas";
+import { period, sats as satsSchema, tag as tagSchema } from "../../lib/schemas";
 import type { Unit } from "../../../shared/amount";
 import { UnitContext } from "../../lib/unit";
 import { ByCategory } from "./by-category";
@@ -25,7 +25,8 @@ type InSats = ReturnType<typeof thenAndToday>;
 const thenAndToday = (unit: Unit, show: (n: number) => string) => (then: number, today: number | undefined) =>
   [`${money(then, "BTC", unit)} then`, today !== undefined && `${show(today)} today`].filter((t) => t !== false);
 
-const SatsLine = ({ sats, inSats }: { sats: Period["sats"]; inSats: InSats }) =>
+type Sats = z.infer<typeof satsSchema> | undefined;
+const SatsLine = ({ sats, inSats }: { sats: Sats; inSats: InSats }) =>
   sats && (
     <p className="num mt-1.5 text-[13px] font-medium text-ink2">
       {[...inSats(sats.total, sats.today?.total), ...(sats.unconverted ? ["incomplete"] : [])].join(" · ")}
@@ -37,11 +38,18 @@ const group = (from: string, to: string) => {
   if (n <= 62) return "day";
   return n <= 366 ? "week" : "month";
 };
-const useSeries = ([from, to]: [string, string], by = group(from, to), tag = "") =>
-  useApi(period, [`/api/stats?from=${from}&to=${to}&group=${by}`, tag && `&tag=${encodeURIComponent(tag)}`], {
-    enabled: !!from && !!to && from <= to,
-    throwOnError: true,
-  }).data;
+const scope = ([from, to]: [string, string], tag = "") => ({
+  query: `from=${from}&to=${to}${tag && `&tag=${encodeURIComponent(tag)}`}`,
+  enabled: !!from && !!to && from <= to,
+});
+const useSeries = (range: [string, string], by = group(...range), tag = "") => {
+  const { query, enabled } = scope(range, tag);
+  return useApi(period, [`/api/stats?${query}&group=${by}`], { enabled, throwOnError: true }).data;
+};
+const useSats = (range: [string, string], tag = "") => {
+  const { query, enabled } = scope(range, tag);
+  return useApi(satsSchema, [`/api/stats/sats?${query}`], { enabled }).data;
+};
 
 export function StatsPage() {
   const { tag } = route.useSearch();
@@ -66,6 +74,7 @@ function PeriodStats() {
   const now = useSeries(s.range);
   const ref = useSeries(s.ref, "month");
   const full = useSeries(s.full);
+  const sats = useSats(s.range);
   const head = <HeroHead presets={presets} preset={preset} range={s.range} onPreset={setPreset} onRange={setRange} />;
 
   if (!now || !ref || !full)
@@ -89,7 +98,7 @@ function PeriodStats() {
       <section>
         {head}
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="mt-7 block" />
-        <SatsLine sats={now.sats} inSats={inSats} />
+        <SatsLine sats={sats} inSats={inSats} />
         <p className="mt-2.5 flex min-h-[26px] flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-ink2">
           {incomplete
             ? "Incomplete totals · comparison unavailable"
@@ -123,7 +132,7 @@ function PeriodStats() {
           }
         />
       </section>
-      <Breakdowns now={now} prev={ref} range={s.range} vs={vs} show={show} inSats={inSats} />
+      <Breakdowns now={now} prev={ref} sats={sats} range={s.range} vs={vs} show={show} inSats={inSats} />
       <ByTag now={now} prev={ref} vs={vs} show={show} />
     </>
   );
@@ -141,6 +150,7 @@ function TagStats({ tag }: { tag: string }) {
   const preset = custom || range.join() !== whole.join() ? "Custom" : "Whole tag";
   const [scrubbed, setScrubbed] = useState<ReactNode>(null);
   const now = useSeries(range, undefined, tag);
+  const sats = useSats(range, tag);
   const head = (
     <HeroHead
       presets={tagPresets}
@@ -175,7 +185,7 @@ function TagStats({ tag }: { tag: string }) {
       <section>
         {head}
         <Total amount={now.total} currency={now.baseCurrency} unit={unit} className="mt-7 block" />
-        <SatsLine sats={now.sats} inSats={inSats} />
+        <SatsLine sats={sats} inSats={inSats} />
         <p className="mt-2.5 flex min-h-[26px] flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-ink2">
           {scrubbed ?? (now.unconverted > 0 ? `${length} · incomplete` : length)}
         </p>
@@ -195,7 +205,7 @@ function TagStats({ tag }: { tag: string }) {
           aria={`${show(now.total)} in total${now.unconverted > 0 ? ", excluding expenses without rates" : ""}.`}
         />
       </section>
-      <Breakdowns now={now} range={range} tag={tag} show={show} inSats={inSats} />
+      <Breakdowns now={now} sats={sats} range={range} tag={tag} show={show} inSats={inSats} />
       <ByCurrency now={now} show={show} />
     </>
   );
@@ -204,14 +214,14 @@ function TagStats({ tag }: { tag: string }) {
 function Breakdowns(props: {
   now: Period;
   prev?: Period;
+  sats: Sats;
   range: [string, string];
   tag?: string;
   vs?: string;
   show: (n: number) => string;
   inSats: InSats;
 }) {
-  const { now, prev } = props;
-  const sats = now.sats;
+  const { now, prev, sats } = props;
   const categories = useCategories();
   const income = useSettings()?.income;
   const [shown, setBreakdown] = useState<"Spending" | "Income">("Spending");

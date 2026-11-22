@@ -178,15 +178,15 @@ export const period = z.object({
   tags: z.array(z.object({ name: z.string(), total: z.number() })),
   currencies: z.array(z.object({ currency: z.string(), amount: z.number(), base: z.number().nullable() })),
   buckets: z.array(z.object({ start: z.string(), total: z.number() })),
-  sats: z
-    .object({
-      total: z.number(),
-      income: z.number(),
-      unconverted: z.number(),
-      today: z.object({ total: z.number(), income: z.number() }).nullable(),
-    })
-    .nullish(),
 });
+export const sats = z
+  .object({
+    total: z.number(),
+    income: z.number(),
+    unconverted: z.number(),
+    today: z.object({ total: z.number(), income: z.number() }).nullable(),
+  })
+  .nullable();
 
 export function unsent(body: unknown, id: number): Transaction | undefined {
   const sent = transactionInput.safeParse(body).data;
