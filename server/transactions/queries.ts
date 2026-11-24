@@ -103,6 +103,13 @@ export function savedTransaction(db: Db, id: number) {
 }
 
 export function suggestions(db: Db, prefix: string) {
+  const { note } = schema.transactions;
+  const extending = latestPerNote(db, sql`lower(substr(${note}, 1, length(${prefix}))) = lower(${prefix})`);
+  if (extending.length) return extending;
+  return latestPerNote(db, sql`lower(substr(${prefix} || ' ', 1, length(${note}) + 1)) = lower(${note} || ' ')`, true);
+}
+
+function latestPerNote(db: Db, match: SQL, longestFirst = false) {
   const ranked = db
     .select({
       note: schema.transactions.note,
@@ -116,14 +123,14 @@ export function suggestions(db: Db, prefix: string) {
       ),
     })
     .from(schema.transactions)
-    .where(and(visible, sql`lower(substr(${schema.transactions.note}, 1, length(${prefix}))) = lower(${prefix})`))
+    .where(and(visible, match))
     .as("ranked");
   const { note, categoryId, currency, amount } = ranked;
   return db
     .select({ note, categoryId, currency, amount })
     .from(ranked)
     .where(eq(ranked.n, 1))
-    .orderBy(desc(ranked.date), desc(ranked.id))
+    .orderBy(...(longestFirst ? [sql`length(${note}) DESC`] : []), desc(ranked.date), desc(ranked.id))
     .limit(10)
     .all();
 }

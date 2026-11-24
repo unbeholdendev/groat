@@ -162,3 +162,11 @@ test("quick entry survives navigation between Home and Settings", async ({ app: 
   await page.getByRole("link", { name: "Expenses", exact: true }).click();
   await expect(bar(page)).toHaveValue("Coffee 3.20 #work");
 });
+
+test("a longer note keeps a past note's category", async ({ app: page }) => {
+  await seed(page, [{ note: "darek", amount: "20.00", categoryId: 5, date: "2026-01-05" }]);
+  await page.reload();
+  await bar(page).fill("darek karel");
+  await expect(page.getByLabel("Category")).toHaveValue("5");
+  await expect(page.getByRole("button", { name: /darek/ })).toHaveCount(0);
+});

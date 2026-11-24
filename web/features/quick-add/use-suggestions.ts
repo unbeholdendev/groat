@@ -12,7 +12,10 @@ export function useSuggestions(p: ReturnType<typeof parse>, text: string, lastCu
     s.currency === "BTC"
       ? `${s.note} ${s.amount} sats `
       : `${s.note} ${formatAmount(s.amount, s.currency)}${s.currency === lastCurrency ? "" : ` ${s.currency.toLowerCase()}`} `;
-  const fills = p.note.length > 1 && !p.amount && !p.currency && !p.tags.length ? guesses.slice(0, 3) : [];
+  const fills =
+    p.note.length > 1 && !p.amount && !p.currency && !p.tags.length
+      ? guesses.filter((s) => s.note.toLowerCase().startsWith(p.note.toLowerCase())).slice(0, 3)
+      : [];
   const ghost =
     fills[0] && line(fills[0]).toLowerCase().startsWith(text.toLowerCase()) ? line(fills[0]).slice(text.length) : "";
   return { guess: p.note.length > 1 ? guesses[0] : undefined, fills, ghost, line };

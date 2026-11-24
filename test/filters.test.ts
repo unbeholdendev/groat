@@ -69,3 +69,17 @@ test("autocomplete suggests distinct notes with the latest live match's details"
   ]);
   expect((await call("GET", "/api/notes?prefix=%25")).body).toEqual([]);
 });
+
+test("a note that extends a past one keeps its details", async () => {
+  const { call } = setup();
+  const gifts = (await call("POST", "/api/categories", { name: "Gifts", icon: "🎁", color: "#f00" })).body.id;
+  await call("POST", "/api/transactions", { note: "Darek", amount: "20", currency: "GBP", categoryId: gifts });
+  await call("POST", "/api/transactions", { note: "dar", amount: "1", currency: "GBP" });
+  await call("POST", "/api/transactions", { note: "darekk", amount: "1", currency: "GBP" });
+  expect((await call("GET", "/api/notes?prefix=darek%20karel")).body).toEqual([
+    { note: "Darek", categoryId: gifts, currency: "GBP", amount: 2000 },
+  ]);
+  expect((await call("GET", "/api/notes?prefix=darekk%20karel")).body.map((s: { note: string }) => s.note)).toEqual([
+    "darekk",
+  ]);
+});
